@@ -10,3 +10,6 @@ source: ha-rest-api
 ---
 collected_at: 2026-08-17 23:16:21
 source: ha-rest-api
+---
+collected_at: 2026-08-17 23:18:38
+source: ha-rest-api

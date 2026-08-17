@@ -8,16 +8,22 @@ OBRAIN_DIR="/data/cold/obrain"
 LOG_FILE="$OBRAIN_DIR/daily-notes/sync-pull-$(date +%F).log"
 CONFLICT_LOG="$OBRAIN_DIR/daily-notes/conflicts-$(date +%F).md"
 
-mkdir -p "$(dirname "$LOG_FILE")"
+cd "$OBRAIN_DIR"
 
+# 先检查是否有本地未提交变更（包括未跟踪文件），必须在任何日志写入之前
+# 避免日志文件本身被检测为变更导致死循环
+HAS_CHANGES=0
+if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+    HAS_CHANGES=1
+fi
+
+# 现在可以安全地创建日志目录和定义 log 函数
+mkdir -p "$(dirname "$LOG_FILE")"
 log() {
     echo "[$(date '+%F %T')] $*" | tee -a "$LOG_FILE"
 }
 
-cd "$OBRAIN_DIR"
-
-# 检查是否有本地未提交变更（包括未跟踪文件），如果有先暂存
-if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+if [ "$HAS_CHANGES" -eq 1 ]; then
     log "检测到本地未提交变更，暂存..."
     git stash push -m "auto-stash-before-pull-$(date +%s)" --include-untracked
     STASHED=1

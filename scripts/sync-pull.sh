@@ -16,8 +16,8 @@ log() {
 
 cd "$OBRAIN_DIR"
 
-# 检查是否有本地未提交变更，如果有先暂存
-if ! git diff --quiet || ! git diff --cached --quiet; then
+# 检查是否有本地未提交变更（包括未跟踪文件），如果有先暂存
+if ! git diff --quiet || ! git diff --cached --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
     log "检测到本地未提交变更，暂存..."
     git stash push -m "auto-stash-before-pull-$(date +%s)" --include-untracked
     STASHED=1

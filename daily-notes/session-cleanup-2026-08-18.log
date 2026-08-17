@@ -415,3 +415,49 @@
 [2026-08-18 00:11:42] ⚠️ 5 个会话需要关注
 [2026-08-18 00:11:42] === 巡检完成 ===
 [2026-08-18 00:11:42] === 会话清理完成 ===
+[2026-08-18 00:11:45] === 会话自动清理开始 ===
+[2026-08-18 00:11:45] 配置: MIN_TOKENS=100000, MIN_DAYS_INACTIVE=7, MAX_SESSIONS=10, KEEP_ARCHIVE_DAYS=30, DRY_RUN=False
+[2026-08-18 00:11:45] 📦 已备份数据库到: /home/sevenzhan/.hermes/state.bak-session-cleanup-20260818-001145
+[2026-08-18 00:11:45] === 步骤1: 查找需要清理的会话 ===
+[2026-08-18 00:11:45] 🔍 发现 10 个候选清理会话:
+[2026-08-18 00:11:45]   - miloco:agent:main:miloco-suggest:miloco-suggest:00fd3a4a | 节能建议：客厅与阳台 | api_server | 1,343,053 tokens | 结束: 未结束 | 不活跃: 2天 | 消息: 68
+[2026-08-18 00:11:45]   - miloco:agent:main:miloco-suggest:miloco-suggest:8c17e71d | 节能建议: 客厅无人时 | api_server | 1,339,573 tokens | 结束: 未结束 | 不活跃: 2天 | 消息: 70
+[2026-08-18 00:11:45]   - miloco:agent:main:miloco-suggest:miloco-suggest:67f4488f | 节能建议：客厅及偏厅 #3 | api_server | 1,327,004 tokens | 结束: 未结束 | 不活跃: 2天 | 消息: 74
+[2026-08-18 00:11:45]   - miloco:agent:main:miloco-suggest:miloco-suggest:22c8060e | 智能家庭屏提醒: 偏厅照明及客厅灯光优化 | api_server | 1,314,516 tokens | 结束: 未结束 | 不活跃: 2天 | 消息: 66
+[2026-08-18 00:11:45]   - miloco:agent:main:miloco-suggest:miloco-suggest:be23039b | 节能建议: 客厅吊灯 & 阳台玻璃门 | api_server | 1,304,301 tokens | 结束: 未结束 | 不活跃: 2天 | 消息: 78
+[2026-08-18 00:11:45]   - miloco:agent:main:miloco-suggest:miloco-suggest:7fe88cf4 | 节能建议通知 #4 | api_server | 1,195,369 tokens | 结束: 未结束 | 不活跃: 2天 | 消息: 60
+[2026-08-18 00:11:45]   - miloco:agent:main:miloco-suggest:miloco-suggest:701e611f | 家庭安全与节能提醒 | api_server | 1,152,383 tokens | 结束: 未结束 | 不活跃: 2天 | 消息: 58
+[2026-08-18 00:11:45]   - miloco:agent:main:miloco-suggest:miloco-suggest:4bf4b1c4 | 节能建议：客厅吊灯 #44 | api_server | 1,150,825 tokens | 结束: 未结束 | 不活跃: 2天 | 消息: 44
+[2026-08-18 00:11:45]   - miloco:agent:main:miloco-suggest:miloco-suggest:732be7d4 | 智能监控提醒 | api_server | 1,149,906 tokens | 结束: 未结束 | 不活跃: 2天 | 消息: 60
+[2026-08-18 00:11:45]   - miloco:agent:main:miloco-suggest:miloco-suggest:cdafed52 | 节能提醒：多处设备未及时关闭 | api_server | 1,138,730 tokens | 结束: 未结束 | 不活跃: 2天 | 消息: 58
+[2026-08-18 00:11:45] === 步骤2: 提取会话知识内容 ===
+[2026-08-18 00:11:45] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:00fd3a4a (节能建议：客厅与阳台)
+[2026-08-18 00:11:45] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:8c17e71d (节能建议: 客厅无人时)
+[2026-08-18 00:11:45] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:67f4488f (节能建议：客厅及偏厅 #3)
+[2026-08-18 00:11:45] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:22c8060e (智能家庭屏提醒: 偏厅照明及客厅灯光优化)
+[2026-08-18 00:11:45] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:be23039b (节能建议: 客厅吊灯 & 阳台玻璃门)
+[2026-08-18 00:11:45] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:7fe88cf4 (节能建议通知 #4)
+[2026-08-18 00:11:45] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:701e611f (家庭安全与节能提醒)
+[2026-08-18 00:11:45] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:4bf4b1c4 (节能建议：客厅吊灯 #44)
+[2026-08-18 00:11:45] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:732be7d4 (智能监控提醒)
+[2026-08-18 00:11:45] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:cdafed52 (节能提醒：多处设备未及时关闭)
+[2026-08-18 00:11:45] ✅ 知识提取完成
+[2026-08-18 00:11:45] === 步骤3: 归档会话 ===
+[2026-08-18 00:11:45] ✅ 已归档 10 个会话
+[2026-08-18 00:11:45] === 步骤4: 更新 hermes-memory 分类知识库 ===
+[2026-08-18 00:11:45]   📝 更新分类文件: device-control.md
+[2026-08-18 00:11:45]   📝 更新分类文件: device-control.md
+[2026-08-18 00:11:45]   📝 更新分类文件: device-control.md
+[2026-08-18 00:11:45]   📝 更新分类文件: device-control.md
+[2026-08-18 00:11:45]   📝 更新分类文件: technical-details.md
+[2026-08-18 00:11:45]   📝 更新分类文件: technical-details.md
+[2026-08-18 00:11:45]   📝 更新分类文件: device-control.md
+[2026-08-18 00:11:45]   📝 更新分类文件: device-control.md
+[2026-08-18 00:11:45]   📝 更新分类文件: technical-details.md
+[2026-08-18 00:11:45]   📝 更新分类文件: device-control.md
+[2026-08-18 00:11:45]   📝 更新分类文件: device-control.md
+[2026-08-18 00:11:45] ✅ 更新了 11 个分类知识条目
+[2026-08-18 00:11:45] === 步骤5: 清理旧归档文件 ===
+[2026-08-18 00:11:45] ✅ 无需清理旧归档文件
+[2026-08-18 00:11:45] === 步骤6: 更新每日简报 ===
+[2026-08-18 00:11:45] === 步骤7: Git 同步 ===

@@ -366,3 +366,52 @@
 [2026-08-18 00:11:35] ✅ 无需清理旧归档文件
 [2026-08-18 00:11:35] === 步骤6: 更新每日简报 ===
 [2026-08-18 00:11:35] === 步骤7: Git 同步 ===
+[2026-08-18 00:11:40] ✅ 已推送到 obrain 远端
+[2026-08-18 00:11:40] === 步骤8: 验证清理结果 ===
+[2026-08-18 00:11:40] 📊 清理后剩余活跃会话: 1295 个, 总计 167,307,182 tokens
+[2026-08-18 00:11:40] 🔍 运行健康检查...
+[2026-08-18 00:11:42] === 服务健康巡检 2026-08-18 00:11 ===
+[2026-08-18 00:11:42] 🟢 hermes-gateway.service — running
+[2026-08-18 00:11:42] 🟢 miloco-supervisord.service — running
+[2026-08-18 00:11:42] 🟢 docker — active
+[2026-08-18 00:11:42] 🟢 ollama — active
+[2026-08-18 00:11:42] 🟢 1panel-core — active
+[2026-08-18 00:11:42] 🟢 1panel-agent — active
+[2026-08-18 00:11:42] 🟢 miloco-backend — RUNNING
+[2026-08-18 00:11:42] 🟢 honcho-api-1 — Up 27 hours
+[2026-08-18 00:11:42] 🟢 honcho-deriver-1 — Up 33 hours
+[2026-08-18 00:11:42] 🟢 honcho-redis-1 — Up 34 hours (healthy)
+[2026-08-18 00:11:42] 🟢 honcho-database-1 — Up 34 hours (healthy)
+[2026-08-18 00:11:42] 🟢 firecrawl-api-1 — Up 35 hours
+[2026-08-18 00:11:42] 🟢 firecrawl-redis-1 — Up 35 hours
+[2026-08-18 00:11:42] 🟢 firecrawl-rabbitmq-1 — Up 35 hours (healthy)
+[2026-08-18 00:11:42] 🟢 firecrawl-nuq-postgres-1 — Up 35 hours
+[2026-08-18 00:11:42] 🟢 firecrawl-playwright-service-1 — Up 35 hours
+[2026-08-18 00:11:42] 🟢 open-webui — Up 36 hours (healthy)
+[2026-08-18 00:11:42] 🟢 port 1810 — listening
+[2026-08-18 00:11:42] 🟢 port 3002 — listening
+[2026-08-18 00:11:42] 🟢 port 8000 — listening
+[2026-08-18 00:11:42] 🟢 port 11434 — listening
+[2026-08-18 00:11:42] 🟢 port 8642 — listening
+[2026-08-18 00:11:42] 🟢 port 8080 — listening
+[2026-08-18 00:11:42] 🟢 port 18080 — listening
+[2026-08-18 00:11:42] 
+[2026-08-18 00:11:42] --- Docker 磁盘占用 ---
+[2026-08-18 00:11:42] Images: 17.07GB (可回收 16.61GB (97%))
+[2026-08-18 00:11:42] Containers: 90.62MB (可回收 0B (0%))
+[2026-08-18 00:11:42] Local Volumes: 287.5MB (可回收 0B (0%))
+[2026-08-18 00:11:42] Build Cache: 1.948GB (可回收 1.211GB)
+[2026-08-18 00:11:42] 🟢 /data/fast — 469G 总量，已用 9.4G（3%），剩 436G
+[2026-08-18 00:11:42] 🟢 /data/cold — 5.5T 总量，已用 80G（2%），剩 5.1T
+[2026-08-18 00:11:42] 🟢 Ollama /v1/models — HTTP 200
+[2026-08-18 00:11:42] 🟢 Hermes API Server /v1/models — HTTP 401 (认证正常)
+[2026-08-18 00:11:42] 🟢 SiliconFlow key 有效 + Qwen3-VL-32B-Instruct 可用
+[2026-08-18 00:11:42] 📊 当前微信会话: 3 条消息 ≈ 108 tokens
+[2026-08-18 00:11:42] 🔴 会话「untitled」(subagent) ≈ 203,098 tokens — 超 20 万，压缩易卡死，建议 /new 开新会话
+[2026-08-18 00:11:42] 🔴 会话「untitled」(subagent) ≈ 235,827 tokens — 超 20 万，压缩易卡死，建议 /new 开新会话
+[2026-08-18 00:11:42] 🟡 会话「The user wants to up」(tui) ≈ 103,806 tokens — 接近压缩阈值，考虑开新会话
+[2026-08-18 00:11:42] 🟡 会话「Archive old sessions」(feishu) ≈ 157,676 tokens — 接近压缩阈值，考虑开新会话
+[2026-08-18 00:11:42] 🟡 会话「归档会话分析完成」(feishu) ≈ 118,823 tokens — 接近压缩阈值，考虑开新会话
+[2026-08-18 00:11:42] ⚠️ 5 个会话需要关注
+[2026-08-18 00:11:42] === 巡检完成 ===
+[2026-08-18 00:11:42] === 会话清理完成 ===

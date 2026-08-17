@@ -18,8 +18,8 @@ CORE_FILES=(
     "$AUTO_RULES_DIR/governance.md"
 )
 
-# 可选文件 (最新的每日导出)
-LATEST_EXPORT=$(ls -t "$HERMES_MEM_DIR"/export-*.md 2>/dev/null | head -1 || true)
+# 可选文件 (最新的单一文件版本)
+LATEST_EXPORT="$HERMES_MEM_DIR/export.md"
 LATEST_HA_SUMMARY=$(ls -t "$OBRAIN_DIR/device-logs"/ha-summary-*.md 2>/dev/null | head -1 || true)
 LATEST_MILOCO_SUMMARY=$(ls -t "$OBRAIN_DIR/device-logs"/miloco-summary-*.md 2>/dev/null | head -1 || true)
 LATEST_DAILY=$(ls -t "$OBRAIN_DIR/daily-notes"/*.md 2>/dev/null | grep -v "sync-\|conflicts-" | head -1 || true)

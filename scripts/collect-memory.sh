@@ -12,23 +12,23 @@ TIMESTAMP=$(date '+%F %T')
 collect_hermes_memory() {
     local out_dir="$OBRAIN_DIR/hermes-memory"
     mkdir -p "$out_dir"
-    
+
     # 导出 Hermes 记忆（需要 hermes CLI 支持）
     if command -v hermes >/dev/null 2>&1; then
         # 尝试导出记忆
-        hermes memory export --format markdown --output "$out_dir/export-$TODAY.md" 2>/dev/null || true
-        
+        hermes memory export --format markdown --output "$out_dir/export.md" 2>/dev/null || true
+
         # 导出偏好/配置
-        hermes config show --format yaml > "$out_dir/config-$TODAY.yaml" 2>/dev/null || true
-        
+        hermes config show --format yaml > "$out_dir/config.yaml" 2>/dev/null || true
+
         # 导出技能列表
-        hermes skills list --format json > "$out_dir/skills-$TODAY.json" 2>/dev/null || true
+        hermes skills list --format json > "$out_dir/skills.json" 2>/dev/null || true
     fi
-    
+
     # 记录采集时间
-    echo "---" >> "$out_dir/export-$TODAY.md"
-    echo "collected_at: $TIMESTAMP" >> "$out_dir/export-$TODAY.md"
-    echo "source: hermes-cli" >> "$out_dir/export-$TODAY.md"
+    echo "---" >> "$out_dir/export.md"
+    echo "collected_at: $TIMESTAMP" >> "$out_dir/export.md"
+    echo "source: hermes-cli" >> "$out_dir/export.md"
 }
 
 # ========== Home Assistant 状态快照 ==========
@@ -95,13 +95,13 @@ collect_miloco_state() {
 sync_home_profile() {
     local out_dir="$OBRAIN_DIR/home-profile"
     mkdir -p "$out_dir"
-    
-    # 从 Miloco 导出 home-profile（如果有该技能）
+
+    # 从 Miloco 导出 home-profile（如果有该技能） - 单一文件
     if command -v miloco-cli >/dev/null 2>&1; then
-        miloco-cli home-profile export --format markdown --output "$out_dir/members-$TODAY.md" 2>/dev/null || true
+        miloco-cli home-profile export --format markdown --output "$out_dir/members.md" 2>/dev/null || true
     fi
-    
-    # 也同步 ~/workspace/docs/ 到 family-docs（如果存在）
+
+    # 也同步 ~/workspace/docs/ 到 family-docs（如果存在） - 单一文件夹
     if [ -d "$HOME/workspace/docs" ]; then
         rsync -av --delete "$HOME/workspace/docs/" "$OBRAIN_DIR/family-docs/" 2>/dev/null || true
     fi
@@ -111,13 +111,13 @@ sync_home_profile() {
 export_automation_rules() {
     local out_dir="$OBRAIN_DIR/automation-rules"
     mkdir -p "$out_dir"
-    
-    # Miloco 规则
+
+    # Miloco 规则 - 单一文件
     if command -v miloco-cli >/dev/null 2>&1; then
-        miloco-cli rule list --format yaml > "$out_dir/miloco-rules-$TODAY.yaml" 2>/dev/null || true
-        
-        # 规则治理文档
-        cat > "$out_dir/governance-$TODAY.md" <<'GOV_EOF'
+        miloco-cli rule list --format yaml > "$out_dir/miloco-rules.yaml" 2>/dev/null || true
+
+        # 规则治理文档 - 单一文件 governance.md
+        cat > "$out_dir/governance.md" <<'GOV_EOF'
 # 自动化规则治理原则
 
 ## 核心原则
@@ -143,7 +143,7 @@ export_automation_rules() {
 - 阳台: 1个
 GOV_EOF
     fi
-    
+
     # HA 自动化（已在 collect_ha_snapshot 中获取）
     if [ -f "$OBRAIN_DIR/device-logs/ha-automations-$TODAY.json" ]; then
         cp "$OBRAIN_DIR/device-logs/ha-automations-$TODAY.json" "$out_dir/ha-automations-$TODAY.json" 2>/dev/null || true

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # /data/cold/obrain/scripts/load-obrain-memory.sh
 # Hermes 启动时加载 obrain 知识库记忆
-# 将关键 Markdown 文件内容注入到 Hermes 记忆/上下文中
+# 将关键 Markdown 文件内容直接输出，供 Hermes 读取
+# 不再生成 merged-context-*.md 中间文件，直接读取源文件即可
 
 set -euo pipefail
 
@@ -45,8 +46,7 @@ for f in "${OPTIONAL_FILES[@]}"; do
     echo "  📄 $f"
 done
 
-# 生成合并的上下文文件，供 Hermes 读取
-CONTEXT_FILE="$OBRAIN_DIR/hermes-memory/merged-context-$(date +%F).md"
+# 直接输出合并内容到 stdout，供 Hermes 通过管道/重定向读取
 {
     echo "# obrain 知识库合并上下文"
     echo ""
@@ -79,14 +79,12 @@ CONTEXT_FILE="$OBRAIN_DIR/hermes-memory/merged-context-$(date +%F).md"
             echo ""
         fi
     done
-} > "$CONTEXT_FILE"
+}
 
 echo ""
-echo "✅ 合并上下文已生成: $CONTEXT_FILE"
-echo ""
-echo "=== 加载完成 ==="
-echo ""
-echo "Hermes 可通过以下方式读取:"
-echo "  1. 直接读取 $CONTEXT_FILE"
-echo "  2. 通过 skill 系统加载 (obrain-knowledge-sync 技能)"
-echo "  3. 启动脚本中 source 此文件的输出"
+echo "=== 加载完成 ===" >&2
+echo "" >&2
+echo "Hermes 可通过以下方式读取:" >&2
+echo "  1. 直接执行此脚本并捕获 stdout: /data/cold/obrain/scripts/load-obrain-memory.sh" >&2
+echo "  2. 通过 skill 系统加载 (obrain-knowledge-sync 技能)" >&2
+echo "  3. 启动脚本中 source 此文件的输出" >&2

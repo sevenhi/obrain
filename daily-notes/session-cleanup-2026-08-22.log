@@ -372,3 +372,53 @@ Build Cache: 0B (可回收 0B)
 [2026-08-22 16:41:28]   归档会话: miloco:agent:main:miloco-suggest:miloco-suggest:f36b25f6
 [2026-08-22 16:41:28] ✅ 会话归档完成
 [2026-08-22 16:41:28] === 步骤4: 同步到 obrain 知识库 ===
+[main d3db743] session-cleanup: 2026-08-22 - archived 10 sessions, extracted knowledge
+ 13 files changed, 476 insertions(+)
+ create mode 100644 hermes-memory/extracted-knowledge-2026-08-22-164128.md
+ create mode 100644 hermes-sessions/archived/session-miloco:agent:main:miloco-suggest:miloco-suggest:3ddb410e-2026-08-22.json
+ create mode 100644 hermes-sessions/archived/session-miloco:agent:main:miloco-suggest:miloco-suggest:52d0c04d-2026-08-22.json
+ create mode 100644 hermes-sessions/archived/session-miloco:agent:main:miloco-suggest:miloco-suggest:6bcaa36c-2026-08-22.json
+ create mode 100644 hermes-sessions/archived/session-miloco:agent:main:miloco-suggest:miloco-suggest:70022c69-2026-08-22.json
+ create mode 100644 hermes-sessions/archived/session-miloco:agent:main:miloco-suggest:miloco-suggest:77805d04-2026-08-22.json
+ create mode 100644 hermes-sessions/archived/session-miloco:agent:main:miloco-suggest:miloco-suggest:7f6e8968-2026-08-22.json
+ create mode 100644 hermes-sessions/archived/session-miloco:agent:main:miloco-suggest:miloco-suggest:944352de-2026-08-22.json
+ create mode 100644 hermes-sessions/archived/session-miloco:agent:main:miloco-suggest:miloco-suggest:bf3ce2cc-2026-08-22.json
+ create mode 100644 hermes-sessions/archived/session-miloco:agent:main:miloco-suggest:miloco-suggest:e3967ec2-2026-08-22.json
+ create mode 100644 hermes-sessions/archived/session-miloco:agent:main:miloco-suggest:miloco-suggest:f36b25f6-2026-08-22.json
+ create mode 100644 hermes-sessions/extracted-knowledge/knowledge-2026-08-22-164128.md
+To github.com:sevenhi/obrain.git
+   90f64d2..d3db743  main -> main
+[2026-08-22 16:41:32] ✅ 已推送到 obrain 远端
+[2026-08-22 16:41:32] === 步骤5: 验证清理结果 ===
+[2026-08-22 16:41:32] 📊 清理后剩余活跃会话: 2169|156359565
+[2026-08-22 16:41:32] 🔍 运行健康检查...
+=== 服务健康巡检 2026-08-22 16:41 ===
+🟢 hermes-gateway.service — running
+🟢 miloco-supervisord.service — running
+🟢 docker — active
+🟢 1panel-core — active
+🟢 1panel-agent — active
+🟢 miloco-backend — RUNNING
+🟢 firecrawl-api-1 — Up 2 days
+🟢 firecrawl-redis-1 — Up 6 days
+🟢 firecrawl-rabbitmq-1 — Up 6 days (healthy)
+🟢 firecrawl-nuq-postgres-1 — Up 6 days
+🟢 firecrawl-playwright-service-1 — Up 6 days
+🟢 port 1810 — listening
+🟢 port 3002 — listening
+🟢 port 8642 — listening
+🟢 port 18080 — listening
+
+--- Docker 磁盘占用 ---
+Images: 6.323GB (可回收 5.677GB (89%))
+Containers: 19.94MB (可回收 0B (0%))
+Local Volumes: 552.9MB (可回收 0B (0%))
+Build Cache: 0B (可回收 0B)
+🟢 /data/fast — 469G 总量，已用 164M（1%），剩 445G
+🟢 /data/cold — 5.5T 总量，已用 72G（2%），剩 5.1T
+🟢 Hermes API Server /v1/models — HTTP 401 (认证正常)
+🔴 SiliconFlow key 探测 — HTTP 401 (key 可能失效)
+📊 当前微信会话: 3 条消息 ≈ 101 tokens
+🟢 会话健康 — 无超长会话
+=== 巡检完成 ===
+[2026-08-22 16:41:33] === 会话清理完成 ===

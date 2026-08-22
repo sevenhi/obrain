@@ -242,3 +242,45 @@
 [2026-08-22 00:34:47] ⚠️ 1 个会话需要关注
 [2026-08-22 00:34:47] === 巡检完成 ===
 [2026-08-22 00:34:47] === 会话清理完成 ===
+[2026-08-22 16:18:08] 📦 已备份数据库到: /home/sevenzhan/.hermes/state.db.bak-session-cleanup-20260822-161808
+[2026-08-22 16:18:08] === 步骤1: 查找需要清理的会话 ===
+[2026-08-22 16:19:28] 📦 已备份数据库到: /home/sevenzhan/.hermes/state.db.bak-session-cleanup-20260822-161928
+[2026-08-22 16:19:28] === 步骤1: 查找需要清理的会话 ===
+[2026-08-22 16:28:35] 📦 已备份数据库到: /home/sevenzhan/.hermes/state.db.bak-session-cleanup-20260822-162835
+[2026-08-22 16:28:35] === 步骤1: 查找需要清理的会话 ===
+[2026-08-22 16:28:35] 🔍 发现 10 个候选清理会话:
+[2026-08-22 16:28:35]   - mt1m6erofnpjp5 | 完全移除Open WebUI服务 | cli | 15680685 tokens | 结束: 未结束 | 不活跃: 0天 | 消息: 876
+[2026-08-22 16:28:35]   - mt3rjgmo9wquy8 | 巡检结果推送改为微信 | cli | 3867604 tokens | 结束: 未结束 | 不活跃: 0天 | 消息: 175
+[2026-08-22 16:28:35]   - mt36oksugxt4ro | Miloco未在飞书接收消息 | cli | 2758400 tokens | 结束: 未结束 | 不活跃: 0天 | 消息: 274
+[2026-08-22 16:28:35]   - miloco:agent:main:miloco-suggest:miloco-suggest:4729b902 | 处理偏厅灯光开启提醒 | api_server | 2385473 tokens | 结束: 未结束 | 不活跃: 0天 | 消息: 84
+[2026-08-22 16:28:35]   - miloco:agent:main:miloco-suggest:miloco-suggest:df5336ef | 摄像头检测报告 | api_server | 1424529 tokens | 结束: 未结束 | 不活跃: 0天 | 消息: 86
+[2026-08-22 16:28:35]   - miloco:agent:main:miloco-suggest:miloco-suggest:68baffd7 | Handle smart camera event notification | api_server | 1204235 tokens | 结束: 未结束 | 不活跃: 0天 | 消息: 52
+[2026-08-22 16:28:35]   - miloco:agent:main:miloco-suggest:miloco-suggest:3afe026e | 节能建议：客厅无人时吊灯开启 #18 | api_server | 1024973 tokens | 结束: 未结束 | 不活跃: 6天 | 消息: 58
+[2026-08-22 16:28:35]   - miloco:agent:main:miloco-suggest:miloco-suggest:d85cce84 | 节能建议：客厅无人时吊灯和风扇未关闭 | api_server | 1018621 tokens | 结束: 未结束 | 不活跃: 7天 | 消息: 58
+[2026-08-22 16:28:35]   - 20260816_115542_5e4c89 | FireCrawl服务故障及迁移 | tui | 1005718 tokens | 结束: 1786859242.52456 | 不活跃: 6天 | 消息: 193
+[2026-08-22 16:28:35]   - miloco:agent:main:miloco-suggest:miloco-suggest:6620c251 | 客厅摄像头检测 #2 | api_server | 1003649 tokens | 结束: 未结束 | 不活跃: 7天 | 消息: 52
+[2026-08-22 16:28:35] === 步骤2: 提取会话知识内容 ===
+[2026-08-22 16:28:35] 📖 处理会话: mt1m6erofnpjp5 (完全移除Open WebUI服务)
+[2026-08-22 16:28:35] 📖 处理会话: mt3rjgmo9wquy8 (巡检结果推送改为微信)
+[2026-08-22 16:28:35] 📖 处理会话: mt36oksugxt4ro (Miloco未在飞书接收消息)
+[2026-08-22 16:28:35] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:4729b902 (处理偏厅灯光开启提醒)
+[2026-08-22 16:28:35] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:df5336ef (摄像头检测报告)
+[2026-08-22 16:28:35] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:68baffd7 (Handle smart camera event notification)
+[2026-08-22 16:28:35] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:3afe026e (节能建议：客厅无人时吊灯开启 #18)
+[2026-08-22 16:28:35] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:d85cce84 (节能建议：客厅无人时吊灯和风扇未关闭)
+[2026-08-22 16:28:35] 📖 处理会话: 20260816_115542_5e4c89 (FireCrawl服务故障及迁移)
+[2026-08-22 16:28:35] 📖 处理会话: miloco:agent:main:miloco-suggest:miloco-suggest:6620c251 (客厅摄像头检测 #2)
+[2026-08-22 16:28:35] ✅ 知识提取完成: /data/cold/obrain/hermes-sessions/extracted-knowledge/knowledge-2026-08-22-162835.md
+[2026-08-22 16:28:35] === 步骤3: 归档会话 ===
+[2026-08-22 16:28:35]   归档会话: mt1m6erofnpjp5
+[2026-08-22 16:28:35]   归档会话: mt3rjgmo9wquy8
+[2026-08-22 16:28:35]   归档会话: mt36oksugxt4ro
+[2026-08-22 16:28:35]   归档会话: miloco:agent:main:miloco-suggest:miloco-suggest:4729b902
+[2026-08-22 16:28:35]   归档会话: miloco:agent:main:miloco-suggest:miloco-suggest:df5336ef
+[2026-08-22 16:28:35]   归档会话: miloco:agent:main:miloco-suggest:miloco-suggest:68baffd7
+[2026-08-22 16:28:35]   归档会话: miloco:agent:main:miloco-suggest:miloco-suggest:3afe026e
+[2026-08-22 16:28:35]   归档会话: miloco:agent:main:miloco-suggest:miloco-suggest:d85cce84
+[2026-08-22 16:28:35]   归档会话: 20260816_115542_5e4c89
+[2026-08-22 16:28:35]   归档会话: miloco:agent:main:miloco-suggest:miloco-suggest:6620c251
+[2026-08-22 16:28:35] ✅ 会话归档完成
+[2026-08-22 16:28:35] === 步骤4: 同步到 obrain 知识库 ===

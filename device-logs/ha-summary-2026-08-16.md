@@ -1,3 +1,0 @@
----
-collected_at: 2026-08-16 18:18:03
-source: ha-rest-api

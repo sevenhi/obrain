@@ -1,12 +1,3 @@
-# 忽略同步过程生成的日志和冲突文件
-/daily-notes/sync-*.log
-/daily-notes/sync-pull-*.log
-/daily-notes/sync-push-*.log
-/daily-notes/conflicts-*.md
-/daily-notes/watcher-*.log
-
 # 忽略系统文件
 .DS_Store
 Thumbs.db
-hermes-sessions/**
-.sessions/**

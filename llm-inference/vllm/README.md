@@ -57,4 +57,4 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 - 更新检查:`tracker/vllm-tracker/check_updates.sh`
 - Wiki 同步:`tracker/vllm-tracker/sync_wiki.py --push`(pageId 566290559,surgical 增量)
 - 定时任务:cron `e0c951b60eea`
-- 更新流程细节:`docs/vllm-文档更新流程.md`、`docs/vllm-文档更新-定时任务配置.md`
+- 更新流程细节:`tracker/vllm-tracker/vllm-文档更新流程.md`、`tracker/vllm-tracker/vllm-文档更新-定时任务配置.md`

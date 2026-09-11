@@ -46,7 +46,7 @@ Layout colMajor = Layout<Shape<_4,_8>, Stride<_1,_4>>{};   // (m,n) → m + n*4 
 **一个可复现的 composition 例子**(官方 02_layout_algebra 的例):
 
 ```cpp
-// composition(B, A) = B∘A :先按 A 重排索引,再按 B 映射 —— 直觉是"按 A 决定遍历顺序"
+// composition(A, B) = A∘B :先按 B 重排索引,再按 A 映射 —— 直觉是"按 B 决定遍历顺序"
 // 官方例:A = (6,2):(8,2)   (6行2列,行步长8、列步长2)
 //        B = (4,3):(3,1)
 // 结果:A∘B = ((2,2),3):((24,2),8)
@@ -110,7 +110,7 @@ LayoutC_TV: ((_4,_8),(_2,_2)):((_32,_1),(_16,_8))
 
 **TN 含义(容易讲反)**:MMA atom 命名用两个字母分别描述 A、B(相对各自行/列主序的自然形态):
 - `T` = A 是 **transposed**;`N` = B 是 **non-transposed**;
-- 在 Ampere mma 约定里"transposed"指 **K-major **:A 是 M×K 沿 K 连续(行主序 M×K)、B 也要求 K-major(K 连续)。
+- **在 Ampere mma 约定里"transposed"指 **K-major**:A 是 M×K 沿 K 连续(行主序 M×K)、B 也要求 K-major(K 连续)。
 - 所以 **TN atom 要求 A、B 均 K-major(A 行主序 M×K、B 沿 K 连续)——这正是 mma 指令的原生布局**。写 kernel 时 smem/fragment 排布按"两操作数都 K-major"放,别把 T/N 和 行/列主序搞反。
 
 这些 TV layout 由 CuTe 架构师**按底层 PTX mma 的数据访问模式预先设计好**,使用者**不必自己研究 PTX mma 指令**。这正是 CuTe 的"开箱即用"价值。

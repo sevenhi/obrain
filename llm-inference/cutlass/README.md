@@ -49,7 +49,7 @@ CUTLASS(CUDA Templates for Linear Algebra Subroutines)是 NVIDIA 开源的 **hea
 
 ## 更新与同步
 
-- 更新检查:`cutlass-tracker/check_updates.sh`
-- Wiki 同步:`cutlass-tracker/sync_wiki.py`(pageId 566290114)
-- 内容源:`cutlass-tracker/wiki_v9_content.md` / `wiki_v9_clean.md`(可读版,含 floatpilot 宏)
-- 周报:每日产出在 `cutlass-tracker/daily_reports/`
+- 更新检查:`tracker/cutlass-tracker/check_updates.sh`
+- Wiki 同步:`tracker/cutlass-tracker/sync_wiki.py`(pageId 566290114)
+- 内容源:`tracker/cutlass-tracker/wiki_v9_content.md` / `wiki_v9_clean.md`(可读版,含 floatpilot 宏)
+- 周报:每日产出在 `tracker/cutlass-tracker/daily_reports/`

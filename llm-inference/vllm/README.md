@@ -6,13 +6,13 @@ source:
   - "wiki: vLLM wiki | pageId 566290559 space ~zhanbin"
   - "code: vLLM 仓库 (分析基准 commit b74ac0bc6, v0.28.1rc0-40)"
   - "code: vLLM flash-attention fork | commit 506341a143fc (2026-09-04 起)"
-  - "doc: vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md (canonical)"
+  - "doc: tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md (canonical)"
 date: 2026-09
 ---
 
 # vLLM 推理引擎
 
-> 领域索引。完整内容见 canonical 文档 `vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md`(563 行,八大主题)。
+> 领域索引。完整内容见 canonical 文档 `tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md`(563 行,八大主题)。
 > 本页只放定位、关键事实与导航,不重复正文。
 
 ## 一句话定位
@@ -54,7 +54,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 
 ## 更新与同步(由定时任务维护,本页不追)
 
-- 更新检查:`vllm-tracker/check_updates.sh`
-- Wiki 同步:`vllm-tracker/sync_wiki.py --push`(pageId 566290559,surgical 增量)
+- 更新检查:`tracker/vllm-tracker/check_updates.sh`
+- Wiki 同步:`tracker/vllm-tracker/sync_wiki.py --push`(pageId 566290559,surgical 增量)
 - 定时任务:cron `e0c951b60eea`
 - 更新流程细节:`docs/vllm-文档更新流程.md`、`docs/vllm-文档更新-定时任务配置.md`

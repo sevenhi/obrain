@@ -137,7 +137,7 @@ mainloop 里"从 global 搬数据"这条腿,不同代 GPU 用不同指令,编程
 | Blackwell (B100/B200) | **TMA + UMMA** `tcgen05` | SM100 改用 tcgen05.mma(UMMA):单线程发射、操作数直接放 TMEM、2-SM MMA 用 cluster 配对;wgmma 为 Hopper-only |
 | Volta/Turing (V100/T4) 及更早 | 普通 `cp.global→shared` | 无异步拷贝指令,需显式 barrier,难隐藏延迟 |
 
-> 纠错(2026-09 review):`cp.async` 自 Ampere 引入,Ada 属 Ampere 阵营;**没有异步拷贝指令、需显式 barrier** 的一代是 Volta/Turing 及更早。选型时别把 Ada 当"旧代"。
+> 纠错:`cp.async` 自 Ampere 引入,Ada 属 Ampere 阵营;**没有异步拷贝指令、需显式 barrier** 的一代是 Volta/Turing 及更早。选型时别把 Ada 当"旧代"。
 
 TMA 相对 `cp.async` 的核心优势是**bulk 整块搬 + 硬件协调 + 不占满所有线程**:一个线程即可发起整块拷贝,配合 named barrier 做到达同步,腾出资源给计算。这直接催生了下面的 warp 特化。
 
@@ -190,12 +190,12 @@ pipelining 让"谁先谁后"变复杂,正确性靠两种同步保证:
 **一句话**:tile-based 追求"每块算得高效",Stream-K 追求"每个核都别闲着"——后者在大范围非规整几何上更稳。
 
 **⚠ 但 Stream-K 有代价(fixup,上之前先看)**:
-- 一个输出 tile 的 K 维度被拆给**多个 CTA** 分头算 → 需要**跨 CTA 归约(fixup)**:额外 workspace + 归约开销(in-memory atomic / 二次 pass);
-- 部分和累加**顺序不确定** → 结果**位级不可复现**(Fp16 累加尤其敏感);
-- 对精度敏感场景(测试 golden 对齐、需要确定性输出)要先评估。
-- 在 CUTLASS 里以 **TileScheduler**(sm90 的 `StreamKScheduler`)形式提供,不是默认行为——要显式选。
+- 一个输出 tile 的 K 维度被拆给**多个 CTA** 分头算 → 需要**跨 CTA 归约(fixup)**;**SM90 默认在同一 kernel 内**由持有最后 K-split 的 CTA 用 barrier 轮询合并 partial(不是独立归约 kernel),临时 workspace 是额外开销;
+- **默认 `ReductionMode::Deterministic`(确定性归约)**,不是"天然不可复现";想要更高吞吐才选 `Nondeterministic`(放弃位级确定性);
+- 仍要评估:fixup 同步与 workspace 占用对性能/实现的额外负担,尤其精度敏感场景。
+- 在 CUTLASS 里调度器是**模板参数**(`cutlass::gemm::StreamKScheduler`),经 `GemmUniversal` 注入——要显式选,不是默认行为。
 
-> tail effect 纠错(2026-09 review):输出 tile 总数 `⌈M/TileM⌉×⌈N/TileN⌉` 不能被 **SM 数**(而非"网格/H·W")整除时才有尾部空闲;H·W 是卷积记法,GEMM 用 M/N。
+> tail effect:**输出 tile 总数 `⌈M/TileM⌉×⌈N/TileN⌉` 不能被 SM 数整除**时才有尾部空闲(而不是按"网格/H·W"判);H·W 是卷积记法,GEMM 用 M/N。
 
 ---
 
@@ -216,11 +216,11 @@ Layout colMajor = Layout<Shape<_4,_8>, Stride<_1,_4>>{};
 
 - `logical_divide(layout, divisor_layout)`:按逻辑模式切分一个 layout
 - `zipped_divide(layout, tile)` / `tiled_divide(layout, tile)`:按 tile 把 layout 切成块
-- `partitioned_divide(layout, partition)`:按 partition 划分,得到"每个线程分到哪块"的映射
+- `partitioned_divide(layout, partition)` 等划分系(部分 CUTLASS 版本/分支提供,与 `tiled_divide` 族相关):按 partition 划分,得到"每个线程分到哪块"的映射
 - `coalesce(layout)`:化简(把相邻可合并模式合并,得到更少 mode 的等价 layout)
 - `flatten` / `repeat` / `composition` 等基础工具
 
-这些运算把"大 Layout"切成"分给 thread/warp/Tensor Core 的小 Layout",是 CUTLASS 抽象数据分布的核心机制。**注意别记错名**(2026-09 review 校对):不存在 `left_padding`/`partitioned_into_TV`/`tiled_` 这类函数;`TV layout`(thread-value)是真实概念,但函数名是 `partitioned_divide` 系列。
+这些运算把"大 Layout"切成"分给 thread/warp/Tensor Core 的小 Layout",是 CUTLASS 抽象数据分布的核心机制。**注意别记错名**:不存在 `left_padding`/`partitioned_into_TV` 这类函数;`TV layout`(thread-value)是真实概念——切分函数以 `divide` 系列(`logical_divide` / `tiled_divide` / `zipped_divide`)为主。
 
 **现代 CUTLASS(3.x/4.x)= "Layout 代数描述数据 + 模板参数描述 tiling + Pipeline 描述流水 + (4.x)CuTe DSL Python 生成 kernel"** 的组合产物。
 

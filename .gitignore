@@ -7,3 +7,6 @@ __pycache__/
 
 # 本地编辑器配置(Obsidian)
 .obsidian/
+
+# bot 审批中间产物(仅本地产出,不入库)
+.review/

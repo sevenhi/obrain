@@ -36,6 +36,14 @@ CUTLASS(CUDA Templates for Linear Algebra Subroutines)是 NVIDIA 开源的 **hea
 
 **四代演进**:1.x(2018,基本 GEMM 分解)→ 2.x(2019-2023,TF32/稀疏/Grouped/Hopper)→ 3.x(2023,CuTe 核心库架构级重构)→ 4.x(2026,CuTe DSL Python 接口,Blackwell 性能与手写 C++ 差距 <2%,public beta)
 
+## 本库沉淀条目(obrain 内可读)
+
+> 领域 README 只放导航;**真正的可读正文在 obrain 的 `concepts/` 下**,随浏览随时打开。
+
+| 条目 | 类型 | 一句话 | 状态 |
+|---|---|---|---|
+| [分层 GEMM:tiling 分解](concepts/gemm-tiling.md) | concept | 硬件三层并发 → 三层 tiling → mainloop/epilogue 流水 → Stream-K/CuTe,含代码/数据/checklist | ✅ 入库(2026-09,doc-writer+quick-assistant 审批) |
+
 ## 内容导航(canonical 章节)
 
 1. 项目简介与定位 → 2. 整体架构与核心概念 → 3. CuTe 详解 → 4. GEMM 算法与策略 → 5. 卷积与扩展 → 6. 参考资源

@@ -2,7 +2,7 @@
 
 > **代码版本**：commit `b74ac0bc6`（main 分支，`v0.28.1rc0-40-gb74ac0bc6`）
 > **分析范围**：整体架构、Scheduler、PagedAttention / KV Cache、连续批处理、模型加载与推理路径、分布式推理
-> **仓库根**：`/home/cambricon/zhanbin/vllm`
+> **仓库根**：`/home/cambricon/zhanbin/repos/vllm`
 > 文中 `path:line` 引用均为实际源码位置，基于一手实读。本笔记聚焦本任务要求的 6 个重点，与同目录下覆盖 API server / 模型注册 / 量化 / 采样 / 分布式细节的分篇互补，不重复其内容。
 
 ---

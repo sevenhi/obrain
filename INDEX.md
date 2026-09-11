@@ -14,9 +14,9 @@
 ├── library/     原始资料只读存档(pdf/pptx/书籍,永不编辑):papers/ books/ manuals/ training/ personal/
 ├── projects/    自己写的代码 + 实验脚本:work/ patent/ scratch/
 ├── archive/     一次性产物 / 旧草稿:保留期 90 天,到期清理
-├── scripts/     审查作业脚本(不动,cron 依赖)
-├── *-tracker/   定时 wiki 同步管线(不动,cron + workdir 依赖)
-└── docs/        (阶段3前暂存)canonical 活文档 + 被 cron 引用的 SOP
+├── scripts/     审查作业脚本(cron 调用)
+├── tracker/     定时 wiki 同步管线(统一管理,含 vllm/cutlass/flash-attention-tracker)
+└── repos/       只读上游克隆(vllm)
 ```
 
 **判据**:`obrain` = 提炼后的知识条目(可检索、有索引、按领域);`library` = 原始资料存档(永不编辑)。两者不混;obrain 引用 library/archive/tracker 文件用 `source:` 指向,不复制。

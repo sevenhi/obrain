@@ -2,7 +2,7 @@
 
 > **任务**：分析 vLLM 服务层与周边特性实现（kanban t_be52d847）
 > **代码版本**：commit `b74ac0bc61d8b8f74848664b1a3b4e878f047861`（`git describe`: `v0.28.1rc0-40-gb74ac0bc6`，main 分支，2026-08-28）
-> **仓库路径**：`/home/cambricon/zhanbin/vllm`（官方 vllm-project/vllm）
+> **仓库路径**：`/home/cambricon/zhanbin/repos/vllm`（官方 vllm-project/vllm）
 > **说明**：本任务覆盖 5 大主题，每个主题的源码级分析分别成文于 `docs/vllm-*-notes.md`，本文为总览索引。
 
 ## 主题覆盖与验收对照

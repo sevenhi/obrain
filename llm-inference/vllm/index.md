@@ -5,14 +5,12 @@ tags: [vllm, llm-inference, pagedattention, kv-cache]
 source:
   - "code: vLLM 仓库 (分析基准 commit b74ac0bc6, v0.28.1rc0-40)"
   - "code: vLLM flash-attention fork | commit 506341a143fc (2026-09-04 起)"
-  - "doc: tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md (canonical)"
 date: 2026-09
 ---
 
 # vLLM 推理引擎
 
-> 领域索引。完整内容见 canonical 文档 `tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md`(563 行,八大主题)。
-> 本页只放定位、关键事实与导航,不重复正文。
+> 领域索引。**知识本体在 `concepts/` 深度概念篇 + `notes/` 源码笔记**,内容自足,不依赖库外文件。本页放定位、关键事实与导航。
 
 ## 一句话定位
 
@@ -32,11 +30,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 - 版本:v0.28.0(2026-08-26);Stars ~90k / Forks ~21k
 - **V1 架构(`vllm/v1/`)是唯一现役主线**,旧 `vllm/engine/` 仅兼容保留;网上多数资料讲的是 V0,两者调度模型本质不同
 - 分析基准 commit `b74ac0bc6`;FA fork `506341a143fc`
-- 主线 `vllm/v1/` 目录(canonical 文档源码一手实读自这里)
-
-## 内容导航(canonical 八大主题)
-
-1. 项目概述与背景 → 2. 整体架构 → 3. PagedAttention 原理 → 4. FlashAttention 技术细节 → 5. 连续批处理与调度 → 6. KV Cache 管理 → 7. 分布式推理 → 8. 性能调优 → 9. 参考链接
+- 主线 `vllm/v1/` 目录(本库 notes 源码一手实读自这里)
 
 ## 深度概念篇(concepts,2026-09 多源综合+bot 审批)
 

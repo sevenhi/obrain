@@ -37,7 +37,7 @@
 - YAML frontmatter:`title` / `type: concept|howto|...` / `tags` / `source`(结构化多来源)/ `date`
 - 正文:TL;DR → 机制(因果)→ 可复现细节(代码/结构图)→ 数据对比 → 实践 checklist → 溯源
 - **正文只写事实,绝不带内部审批标记**(`2026-09 review 校正` 这类会被 doc-writer 判 blocking,曾全局清理)
-- 溯源路径标注基准(相对知识库根 `~/zhanbin/obrain/`;tracker 在 `~/zhanbin/`)
+- 溯源路径标注基准(相对知识库根 `~/zhanbin/obrain/`;库内以 obrain 为根,内容自足)
 
 ## 4. 审批(用 review_obrain_batch.sh)
 

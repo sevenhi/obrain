@@ -7,7 +7,6 @@ source:
   - "pdf: FlashAttention-2 | Dao et al. arXiv:2307.08691 ICLR 2024"
   - "web: Tri Dao FlashAttention-2 博客 (work partitioning) | https://princeton-nlp.github.io/flash-atttention-2/"
   - "pdf: UW CSE 599M 讲义 From Online Softmax to FlashAttention (Zihao Ye) | https://courses.cs.washington.edu/courses/cse599m/23sp/notes/flashattn.pdf"
-  - "doc: tracker/flash-attention-tracker/flash-attention-annual-report.md §2 (canonical)"
 date: 2026-09
 ---
 
@@ -67,7 +66,7 @@ online softmax 的关键:维护**每行各两个标量(即 m、l 是长度为 Br
 - 所以 running sum 要 rescale:`l_new = l_old · e^{m_old - m_new} + Σ_block e^{s_k - m_new}`;
 - 已累加的输出版本同理:`O ← O · e^{m_old - m_new} + ...`(输出的每行按旧 max 的权重整体收缩)。
 
-这正是 canonical 里那段伪代码做的事(`li = li * exp(mi - mi_new) + sum(exp(Sij - mi_new))`),用**标量 rescale** 换来**块间精确合并**——softmax 在该增量形式下"变可结合"了。
+这正是论文里那段伪代码做的事(`li = li * exp(mi - mi_new) + sum(exp(Sij - mi_new))`),用**标量 rescale** 换来**块间精确合并**——softmax 在该增量形式下"变可结合"了。
 
 ---
 
@@ -79,7 +78,7 @@ online softmax 的关键:维护**每行各两个标量(即 m、l 是长度为 Br
 
 ```
 Input: Q,K,V ∈ R^{N×d}; SRAM 容量 M
-Bc = ceil(M / (4d))           # K/V block 列数(论文 Algorithm 1 为 ceil;canonical 里简写为 floor)
+Bc = ceil(M / (4d))           # K/V block 列数(论文 Algorithm 1 为 ceil;实现常简写为 floor)
 Br = min(ceil(M/(4d)), d)     # Q block 行数(FA1 论文)
 for i = 1..ceil(N/Br):        # (简化变体)外层:遍历 Q blocks
   Qi = Q[i...];  Oi = 0;  mi = -inf;  li = 0
@@ -148,7 +147,7 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
 1.5. **先看 mask 是否适配(选型第一问)**:FA 的 fused kernel 只支持 **有结构、可跳块** 的 mask(因果 causal / sliding window / ALiBi / padding);传入**任意 dense soft-mask** 需逐块读 mask、甚至回退到物化 S,FA 优势尽失——先确认你的 mask 类型再选 FA。
 2. **记得它是 exact(数学精确,非 bitwise)**:FA 输出与标准 softmax **数学上相同、无近似**(不是稀疏近似),但浮点累加顺序不同,结果与朴素实现有 **ulp 级数值差异**(fp16 下更明显)——换了 kernel 后 loss 曲线不完全 bitwise-repro 是正常,不是 bug。
 3. **显存收益来自反向重算**:无需存 N×N 中间矩阵,前向只存 LSE/m,l 统计量;训练长序列显存峰值 O(N²)→O(N),这是它让长 context 训练可行的关键(见 §6.5)。
-4. **Block 大小 Br/Bc 的取舍**:受 SRAM 容量 M 和 head dim d 约束(`Bc≈M/(4d)`、`Br≈min(⌈M/(4d)⌉,d)`);**实数参考:A100 上 d=64 时 Br/Bc≈128、d=128 时≈64**(见 canonical §2.2.5)。Br/Bc 越大,每次 HBM 加载复用越多,但 SRAM 占满 → 调优平衡点。
+4. **Block 大小 Br/Bc 的取舍**:受 SRAM 容量 M 和 head dim d 约束(`Bc≈M/(4d)`、`Br≈min(⌈M/(4d)⌉,d)`);**实数参考:A100 上 d=64 时 Br/Bc≈128、d=128 时≈64**。Br/Bc 越大,每次 HBM 加载复用越多,但 SRAM 占满 → 调优平衡点。
 4.5. **规避 FA1 低 occupancy**:FA1 只在 batch×head 维度并行,长序列小 batch(batch×heads 少)时 grid 喂不满 SM → 换 FA2 或开 FA2 的序列维 split-K。
 5. **精细化路线**:要更高利用率先看 **work partitioning**(FA1→FA2 的主改进:threadblock/warp 划分、层级并行),再看硬件特性(TMA/WGMMA/FP8)。
 6. **数值稳定性**:online softmax 的 running max 保证 `exp(s-m)` 不溢出;rescale 必须保留——去掉它**数学上错**(各块分母不一致),不是数值精度问题。
@@ -161,5 +160,4 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
 - FA2 论文(work partitioning、基于 CUTLASS 3.x): Dao, https://arxiv.org/abs/2307.08691 (ICLR 2024)
 - Tri Dao 的 FA2 博客(25-40%→72% MFU、A100 230 TFLOP/s): https://princeton-nlp.github.io/flash-atttention-2/
 - UW CSE 599M 讲义 *From Online Softmax to FlashAttention*(softmax 不结合→online softmax 的推导): https://courses.cs.washington.edu/courses/cse599m/23sp/notes/flashattn.pdf
-- canonical 库内文档 §2(各代原理/伪代码): `~/zhanbin/tracker/flash-attention-tracker/flash-attention-annual-report.md`
 - 官方实现仓库(含 FA1/FA2 kernel 与 `benchmarks/` 复测): https://github.com/Dao-AILab/flash-attention

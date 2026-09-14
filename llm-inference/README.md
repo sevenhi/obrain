@@ -12,13 +12,13 @@
 
 ## 领域索引
 
-| 主题 | 文件夹 | canonical 全文 |
-|---|---|---|
-| [vLLM](vllm/index.md) | `llm-inference/vllm/` | `tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md` |
-| [CUTLASS](cutlass/index.md) | `llm-inference/cutlass/` | `docs/CUTLASS-完整技术文档.md` |
-| [FlashAttention](flash-attention/index.md) | `llm-inference/flash-attention/` | `tracker/flash-attention-tracker/flash-attention-annual-report.md` |
+| 主题 | 文件夹 |
+|---|---|
+| [vLLM](vllm/index.md) | `llm-inference/vllm/` |
+| [CUTLASS](cutlass/index.md) | `llm-inference/cutlass/` |
+| [FlashAttention](flash-attention/index.md) | `llm-inference/flash-attention/` |
 
-> 注:vLLM canonical 文档《vLLM 推理引擎与 FlashAttention 完整技术文档》同时覆盖 FA(第四主题),跨领域内容集中在此,未在 FA 页重复。
+> 三个领域各自在 obrain 内自成索引(`index.md`)+ 深度概念篇(`concepts/`),内容自足,不依赖库外文件。跨领域关系见下方速查。
 
 ## 共同主题速查(跨领域)
 

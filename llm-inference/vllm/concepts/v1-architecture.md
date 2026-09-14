@@ -6,7 +6,7 @@ source:
   - "code: vLLM V1 源码(commit b74ac0bc6) notes 一手实读 | notes/vllm-core-architecture-notes.md §0 §4 §5"
   - "web: vLLM 官方 Architecture Overview | https://docs.vllm.ai/en/latest/design/arch_overview/"
   - "web: vLLM V1 Guide | https://docs.vllm.ai/en/latest/usage/v1_guide/"
-  - "doc: tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md (canonical)"
+  - "doc: notes/vllm-core-architecture-notes.md (库内源码笔记)"
 date: 2026-09
 ---
 
@@ -199,4 +199,3 @@ GPUModelRunner.execute_model()
 - **V1 源码一手实读**: notes/vllm-core-architecture-notes.md §0(架构总览/初始化链路)、§4(加载与推理路径)、§5(分布式)
 - **官方 Architecture Overview**: https://docs.vllm.ai/en/latest/design/arch_overview/
 - **V1 Guide**: https://docs.vllm.ai/en/latest/usage/v1_guide/
-- **canonical 文档**: tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md(§2 整体架构、§7 分布式推理)

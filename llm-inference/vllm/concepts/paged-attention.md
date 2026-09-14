@@ -7,7 +7,7 @@ source:
   - "web: vLLM Blog — Easy, Fast, and Cheap LLM Serving with PagedAttention | https://blog.vllm.ai/2023-06-20/vllm.html"
   - "web: zeroentropy.dev — PagedAttention: vLLM's OS-style KV cache memory manager | https://zeroentropy.dev/concepts/paged-attention/"
   - "code: vLLM V1 源码(commit b74ac0bc6)notes 一手实读 | notes/vllm-core-architecture-notes.md"
-  - "doc: tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md (canonical)"
+  - "doc: notes/vllm-core-architecture-notes.md (库内源码笔记)"
 date: 2026-09
 ---
 
@@ -136,6 +136,5 @@ V1 把分页分成**底层块池**与**高层管理**两层(read notes §2 有 p
 - **vLLM 博客**(吞吐提升 2-4×、KV cache 显存占比场景图——"每请求 KV cache 占显存比例"图,与 §1 的"60-70% 浪费在 slack"是不同口径): https://blog.vllm.ai/2023-06-20/vllm.html
 - **zeroentropy 解读**(naive 33%→paged 84% 玩具演示、~2.5× 并发;70B/8K/32 req 预分配 80GB): https://zeroentropy.dev/concepts/paged-attention/
 - **V1 源码一手实读**: notes/vllm-core-architecture-notes.md §2(BlockPool / KVCacheManager / 块布局 / prefix caching)
-- **canonical 文档**: tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md(§3 PagedAttention 原理、§6 KV Cache 管理)
 
-> **路径基准**：正文与溯源里的相对路径(`notes/...`、`tracker/...`)均相对知识库根 `~/zhanbin/obrain/`(其中 notes 在该 vllm 域内,`tracker/` 在 `~/zhanbin/` 下)。条目移动时先确认基准。
+> **路径基准**：正文与溯源里的相对路径(`notes/...`)均相对知识库根 `~/zhanbin/obrain/`。条目移动时先确认基准。

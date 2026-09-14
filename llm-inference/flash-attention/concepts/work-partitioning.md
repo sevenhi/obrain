@@ -4,8 +4,7 @@ type: concept
 tags: [flashattention, fa2, work-partitioning, warp, split-k, threadblock, parallelism]
 source:
   - "pdf: FlashAttention-2 | Dao arXiv:2307.08691 ICLR 2024"
-  - "web: Tri Dao FlashAttention-2 博客 (work partitioning) | https://princeton-nlp.github.io/flash-atttention-2/"
-  - "doc: tracker/flash-attention-tracker/flash-attention-annual-report.md §2.3 (canonical)"
+  - "web: Tri Dao FA2 博客 (work partitioning) | https://princeton-nlp.github.io/flash-atttention-2/"
 date: 2026-09
 ---
 
@@ -144,7 +143,6 @@ grid = (batch, nheads, n_splits)       # 沿 K/V 切(分 split)
 
 - FlashAttention-2 论文(§3.2 减 non-matmul FLOPs、§3.3 序列维并行): Dao, https://arxiv.org/abs/2307.08691 (ICLR 2024)
 - Tri Dao FA2 博客(25-40%→72% MFU、A100 230 TFLOP/s、warp 划分示意图;`flash-atttention-2` 为站点真实拼写): https://princeton-nlp.github.io/flash-atttention-2/
-- canonical 库内文档 §2.3(FA2 伪代码与细节): `~/zhanbin/tracker/flash-attention-tracker/flash-attention-annual-report.md`
 
 ---
 

@@ -6,7 +6,7 @@ source:
   - "pdf: PagedAttention 论文 (SOSP 2023) | arXiv:2309.06180 — Figure 3 吞吐对比 (Orca 等 baseline, 2-4x)"
   - "web: vLLM Blog — Easy, Fast, and Cheap LLM Serving with PagedAttention | https://vllm-project.github.io/2023/06/20/vllm.html"
   - "code: vLLM V1 源码(commit b74ac0bc6) notes 一手实读 | notes/vllm-core-architecture-notes.md §1 §3"
-  - "doc: tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md (canonical)"
+  - "doc: notes/vllm-core-architecture-notes.md (库内源码笔记)"
 date: 2026-09
 ---
 
@@ -152,4 +152,3 @@ EngineCore.step()                        # core.py:597
 - **ORCA**(首次提出 iteration-level batching, vLLM 的吞吐 baseline 参照): arXiv:2207.03718
 - **vLLM 博客**(吞吐测量、与 baseline 对比): https://vllm-project.github.io/2023/06/20/vllm.html
 - **V1 源码一手实读**: notes/vllm-core-architecture-notes.md §1(调度器/统一预算/chunked prefill)、§3(连续批处理/step 循环)
-- **canonical 文档**: tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md(§5 连续批处理与调度)

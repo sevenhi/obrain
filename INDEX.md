@@ -19,7 +19,7 @@
 └── repos/       只读上游克隆(vllm)
 ```
 
-**判据**:`obrain` = 提炼后的知识条目(可检索、有索引、按领域);`library` = 原始资料存档(永不编辑)。两者不混;obrain 引用 library/archive/tracker 文件用 `source:` 指向,不复制。
+**判据**:`obrain` = 提炼后的知识条目(可检索、有索引、按领域,内容自足);`library` = 原始资料存档(永不编辑)。两者不混;obrain 引用 library/archive 文件用 `source:` 指向,不复制;obrain 知识不依赖 tracker 同步管线。
 
 ## 领域列表
 

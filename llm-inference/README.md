@@ -14,9 +14,9 @@
 
 | 主题 | 文件夹 | canonical 全文 | wiki pageId |
 |---|---|---|---|
-| [vLLM](vllm/README.md) | `llm-inference/vllm/` | `tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md` | 566290559 |
+| [vLLM](vllm/index.md) | `llm-inference/vllm/` | `tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md` | 566290559 |
 | [CUTLASS](cutlass/index.md) | `llm-inference/cutlass/` | `docs/CUTLASS-完整技术文档.md` | 566290114 |
-| [FlashAttention](flash-attention/README.md) | `llm-inference/flash-attention/` | `tracker/flash-attention-tracker/flash-attention-annual-report.md` | 561077705 |
+| [FlashAttention](flash-attention/index.md) | `llm-inference/flash-attention/` | `tracker/flash-attention-tracker/flash-attention-annual-report.md` | 561077705 |
 
 > 注:vLLM canonical 文档《vLLM 推理引擎与 FlashAttention 完整技术文档》同时覆盖 FA(第四主题),跨领域内容集中在此,未在 FA 页重复。
 

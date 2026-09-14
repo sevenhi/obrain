@@ -60,4 +60,4 @@ date: 2026-09
 - **allocator 只能保护它知道的 stream / lifetime**
 - **正确修复是精确同步**,不是 `cudaDeviceSynchronize` 全局兜底
 
-> 一句话:allocator 管逻辑所有权;stream 管实际访问顺序。相同结论的速记版见领域 `README.md` 与清单篇。
+> 一句话:allocator 管逻辑所有权;stream 管实际访问顺序。相同结论的速记版见领域 `index.md` 与清单篇。

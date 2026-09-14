@@ -26,7 +26,7 @@
 | 领域 | 文件夹 | 一句话说明 | 最近更新 |
 |---|---|---|---|
 | GPU/框架 显存生命周期 | `gpu-memory-lifecycle/` | 框架 allocator vs CUDA stream 的生命周期心智模型 + TFRA 事故案例 | 2026-09 |
-| LLM 推理引擎栈 | `llm-inference/` | vLLM / FlashAttention / CUTLASS 三层索引 + vllm 分篇笔记(notes/) | 2026-09 |
+| LLM 推理引擎栈 | `llm-inference/` | vLLM / FlashAttention / CUTLASS 三层索引 + concept/howto 深度条目(cutlass 6 篇、FA 3 篇,均为多源综合+bot 审批) + vllm notes/ | 2026-09 |
 
 ---
 

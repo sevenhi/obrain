@@ -14,21 +14,33 @@ date: 2026-09
 
 # FlashAttention
 
-> 领域索引。完整内容见 canonical 文档 `tracker/flash-attention-tracker/flash-attention-annual-report.md`(735 行)。
-> 本页只放定位、关键事实与导航,不重复正文。
+> 领域索引(导航起始页)。完整内容见 canonical 文档 `tracker/flash-attention-tracker/flash-attention-annual-report.md`(749 行)。
+> **真正的可读正文在 `concepts/` 子目录**,每篇一个专题、可独立打开读懂。本页只放定位、关键事实与导航。
 
 ## 一句话定位
 
-FlashAttention 是 Tri Dao 主导的开源高效 Attention 实现,核心思想是 **IO-aware tiling**:把 attention 分块(tile),减少 GPU HBM 与 SRAM 间内存读写次数,在不损失精度前提下**加速 + 省显存**。从 2022 起已四代演进。
+FlashAttention 是 Tri Dao 主导的开源高效 Attention 实现,核心思想是 **IO-aware tiling**:把 attention 分块(tile)放进 SRAM,用 online softmax 让 softmax 可增量合并,从而**不在 HBM 实例化完整的 N×N attention 矩阵**——不损失精度(精确)地**加速 + 省显存**。从 2022 起已四代演进。
+
+**一句话收益**:标准 attention 的 HBM 访存 Θ(N²d) → FlashAttention Θ(N²d²/M)(M=SRAM),显存 O(N²)→O(N)。**瓶颈是内存搬运,不是计算**。
 
 ## 四代演进
 
 | 代次 | 时间 | 论文 | 目标 GPU | 核心实现技术 | MFU(前向) |
 |---|---|---|---|---|---|
-| FA1 | 2022.05 | NeurIPS 2022 | A100 | CUTLASS 3.x tiling, online softmax | 25-40% |
+| FA1 | 2022.05 | NeurIPS 2022 | A100 | IO-aware tiling + online softmax | 25-40% |
 | FA2 | 2023.07 | ICLR 2024 | A100+H100 | 更好 work partitioning, 减 non-matmul FLOPs | 50-73% |
 | FA3 | 2024.07 | blog | H100 | WGMMA async, TMA, FP8 | ~75% FP16 / ~80% FP8 |
 | FA4 | 2025.03 | TBD | H100+B200 | CuTe DSL, Python kernel generation | TBD |
+
+## 本库沉淀条目(obrain 内可读)
+
+> 领域 README 只放导航;**正文在 `concepts/` 下**,随浏览随时打开。
+
+| 条目 | 类型 | 一句话 | 状态 |
+|---|---|---|---|
+| [IO-aware tiling 与 Online Softmax](concepts/io-aware-tiling.md) | concept | 为什么标准 attention 慢(内存 N²)、softmax 不结合→online softmax、完整算法、IO 复杂度、FA2+ 演进 | 🔄 审批中 |
+| [并行与 Work Partitioning(FA2)](concepts/work-partitioning.md) | concept | FA2 为什么快 2×:减 non-matmul FLOPs、warp 按 Q 行切分免通信、序列维 split-K | 🔄 审批中 |
+| [Hopper 异步内核(FA3)](concepts/fa3-hopper-async.md) | concept | FA3:异步 WGMMA、TMA、softmax/matmul/load 重叠 pipeline、FP8 | 🔄 审批中 |
 
 ## 为什么快(标准 Attention 的问题)
 
@@ -38,21 +50,16 @@ FlashAttention 是 Tri Dao 主导的开源高效 Attention 实现,核心思想�
 - IO 开销:标准 attention 需 **O(N²·d)** 次 HBM 读写(完整 N×N 矩阵实例化两次)
 - FA 通过 tiling + online softmax,把 HBM 访问降到 **O(N²)**(与 sequence length 线性相关的下界)
 
-## 内容导航(canonical 章节)
-
-1. 总体概况(四代演进表)→ 2. 各代算法原理与实现细节(标准问题/FA1/FA2/FA3/FA4)→ 3. 技术对比与性能... → 参考链接
-
 ## 相关文档与论文(本地副本)
 
-- `archive/flash-attention-技术分析笔记.md` — 技术分析笔记(2026-08-28,已归档)
 - `library/papers/FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness.pdf` (FA1 论文)
 - `library/papers/FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision.pdf` (FA3)
 - `tracker/flash-attention-tracker/dynamic_causal_analysis.md` / `dynamic_causal_implementation_deep_dive.md` — dynamic causal 专题
-- `archive/flash_attention_wiki.html` — wiki 页面快照(已归档)
+- `archive/flash_attention_wiki.html` / `flash-attention-技术分析笔记.md`(已归档)
 
 ## 更新与同步
 
 - 更新检查:`tracker/flash-attention-tracker/check_updates.sh`
 - Wiki 同步:`tracker/flash-attention-tracker/sync_wiki.py --push`(pageId 561077705,surgical 增量)
-- **新提交审查闭环**:先 `submit_wiki_review.sh` 审查 → `review_passed: YES/NO`;NO 时走 `discuss_wiki_review.sh` 专家讨论后重审 → 仍 NO 则停下汇报用户(详见 AGENTS.md)
+- **新提交审查闭环**:`submit_wiki_review.sh` → review_passed YES/NO → NO 时 `discuss_wiki_review.sh` 专家讨论(详见 AGENTS.md)
 - 每日报告:`tracker/flash-attention-tracker/daily_reports/`

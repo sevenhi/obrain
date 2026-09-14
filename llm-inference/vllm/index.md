@@ -42,9 +42,9 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 | [连续批处理与统一 Token 预算](concepts/continuous-batching.md) | concept | 迭代级调度 + 统一 token 预算,decode/prefill/chunk 混批填满 max_num_batched_tokens,吞吐 2-4× |
 | [V1 引擎架构](concepts/v1-architecture.md) | concept | 调度执行解耦的多进程 + 异步调度心智模型,EngineCore / Worker / GPUModelRunner 三层 |
 
-## 相关分篇笔记(已并入本领域 `notes/` 子目录)
+## 相关分篇笔记(本领域 `notes/` 子目录)
 
-> 深挖 vLLM 各子域的知识笔记,已从 docs/ 移入 `obrain/llm-inference/vllm/notes/`。
+> 深挖 vLLM 各子域的知识笔记,同属本领域 `notes/` 目录。
 
 - `notes/vllm-core-architecture-notes.md` 核心架构
 - `notes/vllm-model-registry-notes.md` 模型注册

@@ -3,17 +3,17 @@
 > **任务**：分析 vLLM 服务层与周边特性实现（kanban t_be52d847）
 > **代码版本**：commit `b74ac0bc61d8b8f74848664b1a3b4e878f047861`（`git describe`: `v0.28.1rc0-40-gb74ac0bc6`，main 分支，2026-08-28）
 > **仓库**：vllm-project/vllm（github.com/vllm-project/vllm）
-> **说明**：本任务覆盖 5 大主题，每个主题的源码级分析分别成文于 `docs/vllm-*-notes.md`，本文为总览索引。
+> **说明**：本任务覆盖 5 大主题，每个主题的源码级分析分别成文于 `notes/vllm-*-notes.md`，本文为总览索引。
 
 ## 主题覆盖与验收对照
 
 | # | 主题 | 笔记文件 | 关键实现细节数 |
 |---|---|---|---|
-| 1 | API server 层与 OpenAI 兼容接口 | `docs/vllm-api-server-openai-compat-notes.md` | ≥8 组（CLI 拓扑 / FastAPI 构建 / chat.callchain / 协议校验 / AsyncLLM 对接） |
-| 2 | 模型加载与注册机制 | `docs/vllm-model-registry-notes.md` | ≥5 组（10 分类字典 / 懒加载 / 多架构复用 / _ModelInfo 子进程探测） |
-| 3 | 量化支持（GPTQ/AWQ/FP8） | `docs/vllm-quantization-gptq-awq-fp8-notes.md` | ≥9 组（注册工厂 / auto_gptq / auto_awq / fp8 / MoE 后端） |
-| 4 | 分布式执行（TP/PP、Ray、通信初始化） | `docs/vllm-distributed-ray-notes.md` | ≥5 组（Executor 抽象 / Ray actor / Rank 重排 / 通信组初始化） |
-| 5 | 采样参数与惩罚机制 | `docs/vllm-sampling-penalties-notes.md` | ≥8 组（V1 采样管线 / Metadata / 三类惩罚算子 / top-k/p / 参数映射） |
+| 1 | API server 层与 OpenAI 兼容接口 | `notes/vllm-api-server-openai-compat-notes.md` | ≥8 组（CLI 拓扑 / FastAPI 构建 / chat.callchain / 协议校验 / AsyncLLM 对接） |
+| 2 | 模型加载与注册机制 | `notes/vllm-model-registry-notes.md` | ≥5 组（10 分类字典 / 懒加载 / 多架构复用 / _ModelInfo 子进程探测） |
+| 3 | 量化支持（GPTQ/AWQ/FP8） | `notes/vllm-quantization-gptq-awq-fp8-notes.md` | ≥9 组（注册工厂 / auto_gptq / auto_awq / fp8 / MoE 后端） |
+| 4 | 分布式执行（TP/PP、Ray、通信初始化） | `notes/vllm-distributed-ray-notes.md` | ≥5 组（Executor 抽象 / Ray actor / Rank 重排 / 通信组初始化） |
+| 5 | 采样参数与惩罚机制 | `notes/vllm-sampling-penalties-notes.md` | ≥8 组（V1 采样管线 / Metadata / 三类惩罚算子 / top-k/p / 参数映射） |
 
 验收标准：覆盖 5 主题、每主题 ≥3 个带源码引用的实现细节 —— **已满足**。
 
@@ -29,8 +29,8 @@
 
 ## 各主题笔记链接
 
-1. **API server 与 OpenAI 兼容接口** → `docs/vllm-api-server-openai-compat-notes.md`
-2. **模型加载与注册机制** → `docs/vllm-model-registry-notes.md`
-3. **量化支持（GPTQ/AWQ/FP8）** → `docs/vllm-quantization-gptq-awq-fp8-notes.md`
-4. **分布式执行与 Ray 集成** → `docs/vllm-distributed-ray-notes.md`
-5. **采样参数与惩罚机制** → `docs/vllm-sampling-penalties-notes.md`
+1. **API server 与 OpenAI 兼容接口** → `notes/vllm-api-server-openai-compat-notes.md`
+2. **模型加载与注册机制** → `notes/vllm-model-registry-notes.md`
+3. **量化支持（GPTQ/AWQ/FP8）** → `notes/vllm-quantization-gptq-awq-fp8-notes.md`
+4. **分布式执行与 Ray 集成** → `notes/vllm-distributed-ray-notes.md`
+5. **采样参数与惩罚机制** → `notes/vllm-sampling-penalties-notes.md`

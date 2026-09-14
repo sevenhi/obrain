@@ -72,7 +72,7 @@ Scheduler 维护两个队列：
 当 `allocate_slots` 返回 `None`（KV cache 块不足）时触发抢占（`scheduler.py:654-716`）：
 - **PRIORITY 策略**：抢占优先级最低的运行中请求（`scheduler.py:667-700`）；
 - **默认策略**：抢占队尾（`running.pop()`，`scheduler.py:702`）；
-- 被抢占请求经 `_preempt_request()`（`scheduler.py:1370`）处理：可**recompute**（丢弃其 KV cache，退回 waiting 重新 prefill）或**counted**（保留部分计算进度）。
+- 被抢占请求经 `_preempt_request()`（`scheduler.py:1370`）处理：**V1 只有 recompute 一种模式**——释放其 KV cache 块（进 LRU 前缀缓存）、`num_computed_tokens = 0`、退回 waiting 重排（重排靠 prefix cache 命中减重算；V0 的 counted/swap 不再存在，2026-09 实读源码确认）。
 
 ### 1.5 关键数据结构
 

@@ -39,6 +39,16 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 
 1. 项目概述与背景 → 2. 整体架构 → 3. PagedAttention 原理 → 4. FlashAttention 技术细节 → 5. 连续批处理与调度 → 6. KV Cache 管理 → 7. 分布式推理 → 8. 性能调优 → 9. 参考链接
 
+## 深度概念篇(concepts,2026-09 多源综合+bot 审批)
+
+> 把 notes/ 的源码事实提炼成"打开一篇能读懂"的知识沉淀(机制原理 + 数据 + 实践)。
+
+| 篇目 | 类型 | 一句话 |
+|---|---|---|
+| [PagedAttention 与分页 KV Cache](concepts/paged-attention.md) | concept | 显存管理心法:分页 + block table,利用率 33%→84%、batch 2-4×,是连续批处理/prefix caching/抢占的地基 |
+| [连续批处理与统一 Token 预算](concepts/continuous-batching.md) | concept | 迭代级调度 + 统一 token 预算,decode/prefill/chunk 混批填满 max_num_batched_tokens,吞吐 2-4× |
+| [V1 引擎架构](concepts/v1-architecture.md) | concept | 调度执行解耦的多进程 + 异步调度心智模型,EngineCore / Worker / GPUModelRunner 三层 |
+
 ## 相关分篇笔记(已并入本领域 `notes/` 子目录)
 
 > 深挖 vLLM 各子域的知识笔记,已从 docs/ 移入 `obrain/llm-inference/vllm/notes/`。

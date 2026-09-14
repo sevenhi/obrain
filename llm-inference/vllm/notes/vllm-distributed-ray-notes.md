@@ -1,7 +1,7 @@
 # vLLM 分布式执行与 Ray 集成研究笔记
 
 > 所阅读代码版本：vLLM v0.28.1rc0-40-gb74ac0bc6（commit `b74ac0bc61d8b8f74848664b1a3b4e878f047861`，main 分支）
-> 仓库路径：`/home/cambricon/zhanbin/repos/vllm`
+> 仓库：vllm-project/vllm（github.com/vllm-project/vllm）
 > 说明：文中所有 path:line 引用均来自实际读取源码验证；未深入的部分在文末「待补项」明确列出，未做推测性填充。
 
 ## 1. 架构总览：Executor 抽象与后端选择

@@ -8,7 +8,6 @@ source:
   - "web: CuTe Layout Algebra | https://docs.nvidia.com/cutlass/latest/media/docs/cpp/cute/02_layout_algebra.html"
   - "web: Lei Mao's Log Book — CuTe Thread-Value Layout | https://leimao.github.io/blog/CuTe-Thread-Value-Layout/ (2025-10)"
   - "web: Lei Mao's Log Book — CuTe Tiled MMA | https://leimao.github.io/blog/CuTe-Tiled-MMA/"
-  - "doc: archive/CUTLASS-完整技术文档.md §3.5 (canonical)"
 date: 2026-09
 ---
 
@@ -164,4 +163,3 @@ PTX 指令 → Operation + MMA_Traits → Atom
 - 官方 Source on GitHub: `include/cute/layout.hpp` / `include/cute/atom/mma_traits.hpp`
 - TV layout 与 inverse TV layout(含 `SM80_16x8x16` 完整 TV layout): Lei Mao's Log Book, https://leimao.github.io/blog/CuTe-Thread-Value-Layout/ (2025-10)
 - CuTe Tiled MMA: https://leimao.github.io/blog/CuTe-Tiled-MMA/ (Lei Mao's Log Book)
-- canonical 库内文档 §3.5: `archive/CUTLASS-完整技术文档.md`(位于 `~/zhanbin/archive/`,obrain 库外)

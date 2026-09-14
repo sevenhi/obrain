@@ -2,7 +2,7 @@
 title: TFRA prepare async thread 踩内存 — 事故复盘
 type: case
 tags: [tfra, mlu, cnco, memory, debugging]
-source: library/training/framework_cuda_memory_lifecycle_training_with_tfra_case_v2.pptx
+source: "ppt: 显存生命周期培训 v2 (primary, 来源已提炼入库)"
 date: 2026-09
 ---
 

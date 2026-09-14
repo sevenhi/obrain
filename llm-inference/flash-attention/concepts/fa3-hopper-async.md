@@ -4,7 +4,7 @@ type: concept
 tags: [flashattention, fa3, hopper, wgmma, tma, asynchrony, fp8, pipeline]
 source:
   - "web: Tri Dao FA3 Blog | https://tridao.me/blog/2024/flash3/"
-  - "pdf: FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision | library/papers/FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision.pdf"
+  - "pdf: FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision | arXiv:2407.08608 NeurIPS 2024"
 date: 2026-09
 ---
 
@@ -148,5 +148,5 @@ O      = P_fp8 @ V_fp8          # 第二个 WGMMA 也是 FP8 GEMM(不是 V 保�
 ## 6. 溯源
 
 - Tri Dao FA3 博客(overlap、WGMMA/TMA、FP8、pingpong 拓扑;570→620-640 TFLOPS、exp≈3.9 TFLOPS 等博客口径数字): https://tridao.me/blog/2024/flash3/
-- FlashAttention-3 论文(§3.2 pingpong scheduling、§3.3 block quantization + incoherent processing 的 128×128/1×128 粒度、§5 性能与 2.6× 误差;NeurIPS 2024): `~/zhanbin/library/papers/FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision.pdf`
+- FlashAttention-3 论文(§3.2 pingpong scheduling、§3.3 block quantization + incoherent processing 的 128×128/1×128 粒度、§5 性能与 2.6× 误差;NeurIPS 2024): https://arxiv.org/abs/2407.08608
 - 相关:CUTLASS 领域的 WGMMA/TMA/epilogue 篇(同硬件特性,跨参考)

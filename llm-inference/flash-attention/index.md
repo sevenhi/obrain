@@ -6,7 +6,7 @@ source:
   - "code: github.com/Dao-AILab/flash-attention | Star 24.7k"
   - "pdf: FlashAttention FA1 | arXiv:2205.14135 NeurIPS 2022"
   - "pdf: FlashAttention-2 FA2 | arXiv:2307.08691 ICLR 2024"
-  - "pdf: FlashAttention-3 | library/papers/FlashAttention-3...pdf"
+  - "pdf: FlashAttention-3 | arXiv:2407.08608 NeurIPS 2024"
 date: 2026-09
 ---
 
@@ -48,8 +48,7 @@ FlashAttention 是 Tri Dao 主导的开源高效 Attention 实现,核心思想�
 - IO 开销:标准 attention 需 **Θ(Nd + N²)** 次 HBM 读写(元素访问,完整 N×N 矩阵实例化两次)
 - FA 通过 tiling + online softmax,把 HBM 访问降到 **Θ(N²d²/M)**(M=SRAM 容量;对比标准 Θ(Nd+N²),大 N 时数量级下降)
 
-## 相关文档与论文(本地副本)
+## 相关论文(公开可溯源)
 
-- `library/papers/FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness.pdf` (FA1 论文)
-- `library/papers/FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision.pdf` (FA3)
-- `archive/flash_attention_wiki.html` / `flash-attention-技术分析笔记.md`(已归档)
+- FA1: Dao et al., *FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness*, NeurIPS 2022, arXiv:2205.14135
+- FA3: Dao et al., *FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision*, NeurIPS 2024, arXiv:2407.08608

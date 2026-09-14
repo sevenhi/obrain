@@ -8,7 +8,6 @@ source:
   - "web: CuTe Layout Algebra | https://docs.nvidia.com/cutlass/latest/media/docs/cpp/cute/02_layout_algebra.html"
   - "pdf: Stream-K: Work-centric Parallel Decomposition | arXiv:2301.03598"
   - "web: CUTLASS Tutorial: Efficient GEMM Kernel Designs with Pipelining | https://research.colfax-intl.com/cutlass-tutorial-design-of-a-gemm-kernel/ (Colfax Research, 2024-09)"
-  - "doc: archive/CUTLASS-完整技术文档.md (canonical, 库内二次整理的完整文档, 上游为 NVIDIA CUTLASS 官方站)"
 date: 2026-09
 ---
 
@@ -245,6 +244,5 @@ Layout colMajor = Layout<Shape<_4,_8>, Stride<_1,_4>>{};
 - CuTe Layout 核心抽象与 Layout 代数: https://docs.nvidia.com/cutlass/latest/media/docs/cpp/cute/01_layout.html / 02_layout_algebra.html
 - Stream-K work-centric 分块与 14×/6.7× 数据: arXiv:2301.03598 (Osama / Merrill / Cecka / Garland / Owens)
 - Hopper pipelining(双缓冲、warp-spec、~65% FP16 利用率、H200 3,958 TFLOPS / 4.8 TB/s 数字): Colfax Research CUTLASS Tutorial Part 2, https://research.colfax-intl.com/cutlass-tutorial-design-of-a-gemm-kernel/
-- CUTLASS 四代演进与完整背景: 库内 `docs/CUTLASS-完整技术文档.md`(canonical)
 
 *注:H200 SXM 的 Tensor Core 3,958 TFLOPS / HBM 4.8 TB/s 数值来自 Colfax 教程(2024-09),用于说明"算力≫带宽"的张力量级,具体型号规格以 NVIDIA 官网最新为准。*

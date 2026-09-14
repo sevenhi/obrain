@@ -17,8 +17,8 @@ date: 2026-09
 
 | 类型 | 标识符写法 | 示例 |
 |---|---|---|
-| `ppt` | 文件名(建议带版本号) | `ppt: 显存生命周期培训 v2 | library/training/framework_..._v2.pptx` |
-| `pdf` | 文件名 + 页码 | `pdf: CUDA Programming Guide | 我拷贝到 library/manuals/ 的副本, §2.3 Stream-Ordered` |
+| `ppt` | 文件名(建议带版本号) | `ppt: 显存生命周期培训 v2 (primary)` |
+| `pdf` | 标题 + 出处 | `pdf: FlashAttention FA1 | arXiv:2205.14135 NeurIPS 2022` |
 | `web` | 页面标题 + URL | `web: PyTorch CUDA semantics | https://pytorch.org/docs/...` |
 | `wiki` | 页面标题 + pageId | `wiki: <内部 wiki 页标题> | pageId <NNNNNNNN>`(内部 wiki 地址含明文 pageId,只登记不公开展示) |
 | `code` | 仓库路径 + 文件/行 | `code: TF BFCAllocator | github.com/tensorflow/tensorflow bfc_allocator.h` |

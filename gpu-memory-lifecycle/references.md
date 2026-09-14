@@ -2,7 +2,7 @@
 title: 显存生命周期 - 参考资料索引
 type: reference
 tags: [pytorch, tensorflow, cuda]
-source: library/training/framework_cuda_memory_lifecycle_training_with_tfra_case_v2.pptx
+source: "ppt: 显存生命周期培训 v2 (primary, 来源已提炼入库)"
 date: 2026-09
 ---
 
@@ -23,9 +23,7 @@ date: 2026-09
 
 ## 内部资料
 
-- Cambricon wiki CUDA 相关页(PPT 内引用的两个页面)
-  - https://wiki.cambricon.com/pages/viewpage.action?pageId=487949186
-  - https://wiki.cambricon.com/pages/viewpage.action?pageId=57464721
+- Cambricon wiki CUDA 相关页(PPT 内引用的两个页面,内部 wiki 地址明文 pageId 不外引)
 - Cambricon MLU-OPS BANG-C guide:Queue / cnrtQueueSync 等接口,用于并行流水任务通信和同步
 - 内部案例:TFRA prepare async thread + cncoInsertAndEvict 扩容踩内存(见 `../cases/tfra-prepare-async-thread.md`)
 
@@ -35,5 +33,4 @@ date: 2026-09
 
 ## 来源
 
-- 原始 deck: `library/training/framework_cuda_memory_lifecycle_training_with_tfra_case_v2.pptx`(30 页 + 讲者备注)
-- 讲者建议课时 45–60 分钟 + 15 分钟 code review 练习
+- 原始来源:显存生命周期培训 deck v2(30 页 + 讲者备注,来源已提炼入库)

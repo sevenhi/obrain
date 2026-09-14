@@ -2,7 +2,7 @@
 title: TensorFlow 算子开发 + BFC allocator
 type: concept
 tags: [tensorflow, bfc, allocator, OPE_KERNEL_CONTEXT]
-source: library/training/framework_cuda_memory_lifecycle_training_with_tfra_case_v2.pptx
+source: "ppt: 显存生命周期培训 v2 (primary, 来源已提炼入库)"
 date: 2026-09
 ---
 

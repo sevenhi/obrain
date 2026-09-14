@@ -7,7 +7,6 @@ source:
   - "web: NVIDIA Tech Blog — CUTLASS 3.x: Orthogonal, Reusable, and Composable Abstractions | https://developer.nvidia.com/blog/cutlass-3-x-orthogonal-reusable-and-composable-abstractions-for-gemm-kernel-design/ (2025-07-16)"
   - "pdf: Stream-K: Work-centric Parallel Decomposition | arXiv:2301.03598"
   - "code: cutlass sm90_tile_scheduler_stream_k.hpp / sm100_tile_scheduler_stream_k.hpp | github.com/NVIDIA/cutlass"
-  - "doc: archive/CUTLASS-完整技术文档.md §3.4 (canonical)"
 date: 2026-09
 ---
 
@@ -188,4 +187,3 @@ using Kernel = cutlass::gemm::kernel::GemmUniversal<
 - Stream-K 实现与默认 deterministic 归约: `cutlass/gemm/kernel/sm90_tile_scheduler_stream_k.hpp` / `sm100_tile_scheduler_stream_k.hpp`;默认 persistent 在 `sm90_tile_scheduler.hpp`
 - Grouped/Stream-K 互斥: NVIDIA/cutlass issue #1941
 - Blackwell persistent clusters / Cluster Launch Control: https://docs.nvidia.com/cutlass/4.7.0/media/docs/cpp/blackwell_cluster_launch_control.html
-- canonical 库内文档 §3.4: `~/zhanbin/archive/CUTLASS-完整技术文档.md`(obrain 库外)

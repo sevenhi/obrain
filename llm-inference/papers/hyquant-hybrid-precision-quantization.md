@@ -3,7 +3,7 @@ title: HyQuant — 面向 LLM Attention 的混合精度量化
 type: concept
 tags: [attention, quantization, kv-cache, llm-inference, long-context, hyquant]
 source:
-  - "pdf: HyQuant 论文全文 | arXiv:2608.27875v1 | library/2608.27875v1.pdf"
+  - "pdf: HyQuant 论文全文 | arXiv:2608.27875v1"
   - "web: HyQuant 代码仓库 | https://github.com/jerrysfls/HyQuant"
 date: 2026-09
 ---

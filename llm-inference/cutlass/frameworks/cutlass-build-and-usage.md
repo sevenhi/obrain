@@ -6,7 +6,6 @@ source:
   - "web: NVIDIA CUTLASS Quickstart | https://docs.nvidia.com/cutlass/4.7.0/media/docs/cpp/quickstart.html"
   - "code: examples/49_hopper_gemm_with_collective_builder / 71_blackwell_gemm_with_collective_builder | github.com/NVIDIA/cutlass"
   - "web: NVIDIA Tech Blog — CUTLASS 3.x abstractions (CollectiveBuilder 用法) | https://developer.nvidia.com/blog/cutlass-3-x-orthogonal-reusable-and-composable-abstractions-for-gemm-kernel-design/ (2025-07)"
-  - "doc: archive/CUTLASS-完整技术文档.md §4/§5 (canonical)"
 date: 2026-09
 ---
 
@@ -200,4 +199,3 @@ make cutlass_profiler -j16
 - Quickstart / 初始构建步骤: https://docs.nvidia.com/cutlass/4.7.0/media/docs/cpp/quickstart.html
 - CollectiveBuilder 示例与构建: `examples/49_hopper_gemm_with_collective_builder` / `71_blackwell_gemm_with_collective_builder`
 - 3.x blog(CollectiveBuilder 代码语境): https://developer.nvidia.com/blog/cutlass-3-x-orthogonal-reusable-and-composable-abstractions-for-gemm-kernel-design/
-- canonical 库内文档 §4(构建)/ §5(示例与用法): `~/zhanbin/archive/CUTLASS-完整技术文档.md`(obrain 库外)

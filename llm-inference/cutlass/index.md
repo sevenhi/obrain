@@ -5,7 +5,6 @@ tags: [cutlass, gpu, gemm, cute, cuda]
 source:
   - "code: github.com/NVIDIA/cutlass | 版本 4.8.0 (2026-08, 支持至 Rubin SM107)"
   - "web: NVIDIA CUTLASS 官方文档站 | https://docs.nvidia.com/cutlass/latest/"
-  - "doc: archive/CUTLASS-完整技术文档.md (canonical, 库内二次整理的完整文档, 上游为 NVIDIA CUTLASS 官方站)"
 date: 2026-09
 ---
 
@@ -71,7 +70,5 @@ date: 2026-09
 
 ## 相关资源
 
-- canonical 完整文档:`archive/CUTLASS-完整技术文档.md`(400 行,二次整理)
-- `archive/CUTLASS-技术调研笔记.md` / `CUTLASS-资源清单.md`(已归档)
 - 官方文档站:https://docs.nvidia.com/cutlass/latest/
 - GitHub:https://github.com/NVIDIA/cutlass

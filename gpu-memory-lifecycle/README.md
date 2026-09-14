@@ -5,7 +5,7 @@
 
 - **type**: `domain`
 - **tags**: `cuda`, `memory-lifecycle`, `gpu`, `tensorflow`, `pytorch`
-- **source**: `library/training/framework_cuda_memory_lifecycle_training_with_tfra_case_v2.pptx`
+- **source**: 显存生命周期培训 v2 (primary, 来源已提炼入库)
 
 ## 一句话核心
 

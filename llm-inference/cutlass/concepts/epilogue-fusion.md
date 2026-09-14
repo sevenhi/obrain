@@ -6,7 +6,6 @@ source:
   - "web: NVIDIA Custom epilogue fusions for GEMMs | https://docs.nvidia.com/cutlass/latest/media/docs/operators/tutorials/001_gemm_with_fused_epilogue.html"
   - "code: CUTLASS examples 12_gemm_bias_relu / 35_gemm_softmax / 37_gemm_layernorm / 45_dual_gemm | github.com/NVIDIA/cutlass"
   - "web: PyTorch Blog — TorchInductor's CuteDSL backend | https://pytorch.org/blog/gemms-torchinductor-cutedsl-backend/ (2026-04)"
-  - "doc: ~/zhanbin/archive/CUTLASS-完整技术文档.md §3.3 (canonical, obrain 库外)"
 date: 2026-09
 ---
 
@@ -161,4 +160,3 @@ PyTorch 的 TorchInductor 在 GEMM 上有三套 autotune 后端:Triton、CUTLASS
 - 官方 Operator API epilogue fusion 教程(Blackwell `sm_100f`,Python 函数式 epilogue): https://docs.nvidia.com/cutlass/latest/media/docs/operators/tutorials/001_gemm_with_fused_epilogue.html(第 2-4 段讲了 `EpilogueArguments` / `GemmArguments` / `get_operators` 的用法)
 - 融合示例: `12_gemm_bias_relu` / `35_gemm_softmax` / `37_gemm_layernorm_gemm_fusion` / `45_dual_gemm` / `50_hopper_gemm_with_epilogue_swizzle` / `113_hopper_gemm_activation_fusion`(EVT 现代范式,github.com/NVIDIA/cutlass)
 - TorchInductor 引入 CuteDSL 及 epilogue fusion 竞争力说明(2026-04,引文为中文转译): https://pytorch.org/blog/gemms-torchinductor-cutedsl-backend/
-- canonical 库内文档 §3.3 Epilogue(综述 EVT 相关模板与示例): `archive/CUTLASS-完整技术文档.md`

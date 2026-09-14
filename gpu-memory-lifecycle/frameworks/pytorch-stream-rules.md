@@ -2,7 +2,7 @@
 title: PyTorch 算子开发:流与显存生命周期规则
 type: howto
 tags: [pytorch, record_stream, stream, cuda]
-source: library/training/framework_cuda_memory_lifecycle_training_with_tfra_case_v2.pptx
+source: "ppt: 显存生命周期培训 v2 (primary, 来源已提炼入库)"
 date: 2026-09
 ---
 

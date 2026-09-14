@@ -5,7 +5,6 @@ tags: [cutlass, gemm, tuning, profiler, roofline, stages, warp-specialization, t
 source:
   - "web: NVIDIA CUTLASS Profiler 文档 | https://docs.nvidia.com/cutlass/latest/media/docs/cpp/profiler.html"
   - "web: NVIDIA Tech Blog — CUTLASS 4.x / 自动调优 (2025-09) | developer.nvidia.com/blog"
-  - "doc: ~/zhanbin/archive/CUTLASS-完整技术文档.md §6 (canonical, obrain 库外)"
 date: 2026-09
 ---
 
@@ -125,4 +124,3 @@ make cutlass_profiler -j16
 - CUTLASS Profiler 用法与输出字段: https://docs.nvidia.com/cutlass/latest/media/docs/cpp/profiler.html
 - tile 选择收益量化:不建议引单一数字——canonical 的 3.2×/22% 源自 arXiv:2411.16954("GEMM 性能建模 / RF",特定于 RTX 4070 + naive tiled kernel,不可泛化);真实收益以 profiler 本机实测为准
 - 自动调优硬数据(穷举 >700min、启发式 16 候选 96%，H100/Llama 3 405B；DeepSeek-R1 99%、>5×编译加速,B200): NVIDIA 官方博客 CUTLASS 4.2 autotuning, https://developer.nvidia.com/blog/improving-gemm-kernel-auto-tuning-efficiency-on-nvidia-gpus-with-heuristics-and-cutlass-4-2/ (2025-09)
-- Hopper/Blackwell 专属优化(TMA/WGMMA/clusters/TMEM)与 tile/stages 调优综述: canonical 库内文档 §6, `~/zhanbin/archive/CUTLASS-完整技术文档.md`(obrain 库外)

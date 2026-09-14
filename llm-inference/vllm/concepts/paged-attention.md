@@ -137,4 +137,4 @@ V1 把分页分成**底层块池**与**高层管理**两层(read notes §2 有 p
 - **zeroentropy 解读**(naive 33%→paged 84% 玩具演示、~2.5× 并发;70B/8K/32 req 预分配 80GB): https://zeroentropy.dev/concepts/paged-attention/
 - **V1 源码一手实读**: notes/vllm-core-architecture-notes.md §2(BlockPool / KVCacheManager / 块布局 / prefix caching)
 
-> **路径基准**：正文与溯源里的相对路径(`notes/...`)均相对知识库根 `~/zhanbin/obrain/`。条目移动时先确认基准。
+> **路径基准**：正文与溯源里的相对路径(`notes/...`、`../concepts/...`)均相对 obrain 根。条目移动时先确认基准。

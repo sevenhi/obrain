@@ -12,11 +12,11 @@
 
 ## 领域索引
 
-| 主题 | 文件夹 | canonical 全文 | wiki pageId |
-|---|---|---|---|
-| [vLLM](vllm/index.md) | `llm-inference/vllm/` | `tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md` | 566290559 |
-| [CUTLASS](cutlass/index.md) | `llm-inference/cutlass/` | `docs/CUTLASS-完整技术文档.md` | 566290114 |
-| [FlashAttention](flash-attention/index.md) | `llm-inference/flash-attention/` | `tracker/flash-attention-tracker/flash-attention-annual-report.md` | 561077705 |
+| 主题 | 文件夹 | canonical 全文 |
+|---|---|---|
+| [vLLM](vllm/index.md) | `llm-inference/vllm/` | `tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md` |
+| [CUTLASS](cutlass/index.md) | `llm-inference/cutlass/` | `docs/CUTLASS-完整技术文档.md` |
+| [FlashAttention](flash-attention/index.md) | `llm-inference/flash-attention/` | `tracker/flash-attention-tracker/flash-attention-annual-report.md` |
 
 > 注:vLLM canonical 文档《vLLM 推理引擎与 FlashAttention 完整技术文档》同时覆盖 FA(第四主题),跨领域内容集中在此,未在 FA 页重复。
 
@@ -30,7 +30,3 @@
 | 主题                             | 文件                                                | 一句话                                      |
 | ------------------------------ | ------------------------------------------------- | ---------------------------------------- |
 | HyQuant — LLM Attention 混合精度量化 | `papers/hyquant-hybrid-precision-quantization.md` | 竖线+局部窗口留全精度,其余 KV 压低比特(arXiv 2608.27875) |
-
-## 更新维护(各 tracker 各自跑,本组只做索引)
-
-三个项目各自有 `*-tracker/` 目录(定时检查 GitHub 提交 → 生成报告 → `sync_wiki.py` 同步 wiki),详见各领域 README 的「更新与同步」节。

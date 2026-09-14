@@ -3,7 +3,6 @@ title: vLLM 推理引擎
 type: domain
 tags: [vllm, llm-inference, pagedattention, kv-cache]
 source:
-  - "wiki: vLLM wiki | pageId 566290559 space ~zhanbin"
   - "code: vLLM 仓库 (分析基准 commit b74ac0bc6, v0.28.1rc0-40)"
   - "code: vLLM flash-attention fork | commit 506341a143fc (2026-09-04 起)"
   - "doc: tracker/vllm-tracker/vllm-推理引擎与FlashAttention-完整技术文档.md (canonical)"
@@ -61,10 +60,3 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 - `notes/vllm-api-server-openai-compat-notes.md` OpenAI 兼容 API server
 - `notes/vllm-serving-layer-analysis.md` 服务层分析
 - `notes/vllm-full-technical-report.md` 完整技术报告
-
-## 更新与同步(由定时任务维护,本页不追)
-
-- 更新检查:`tracker/vllm-tracker/check_updates.sh`
-- Wiki 同步:`tracker/vllm-tracker/sync_wiki.py --push`(pageId 566290559,surgical 增量)
-- 定时任务:cron `e0c951b60eea`
-- 更新流程细节:`tracker/vllm-tracker/vllm-文档更新流程.md`、`tracker/vllm-tracker/vllm-文档更新-定时任务配置.md`

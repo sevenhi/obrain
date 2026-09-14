@@ -41,7 +41,7 @@
 1. 每篇用 YAML frontmatter:`title` / `type` / `tags` / `source` / `date`
 2. 每篇开头一段「TL;DR」,30 秒讲完结论
 3. 概念篇管「懂」,案例篇管「查」,清单篇管「用」——三类分开,不混在一篇里
-4. 引用外部资料只放链接索引(`references.md`),不复制全文
-5. **多来源登记**(ppt / pdf / 网页 / wiki …):每篇 `source` 写成「类型 + 标识符 + 链接」结构化形式;来源互不相同但内容重叠时,只收一条知识,`source` 里列全部出处 → 详见 `SOURCE-POLICY.md`
+4. 引用外部资料只放链接索引([references.md](gpu-memory-lifecycle/references.md) 为范式),不复制全文
+5. **多来源登记**(ppt / pdf / 网页 / wiki …):每篇 `source` 写成「类型 + 标识符 + 链接」结构化形式;来源互不相同但内容重叠时,只收一条知识,`source` 里列全部出处 → 详见 [SOURCE-POLICY.md](SOURCE-POLICY.md)
 6. 拿到新资料先问「这条知识是不是已在库里?」→ 是则补 source 去重,否则新开篇;不建两篇内容重叠的篇
-7. **把某领域"做厚"**(升级到专业深度、多源综合、bot 审批)时,按 `THICKEN-PROCESS.md` 完整流程走(定位判断→深度标准→多源综合→写成→审批→修正闭环→收尾→高频坑)
+7. **把某领域"做厚"**(升级到专业深度、多源综合、bot 审批)时,按 [THICKEN-PROCESS.md](THICKEN-PROCESS.md) 完整流程走(定位判断→深度标准→多源综合→写成→审批→修正闭环→收尾→高频坑)

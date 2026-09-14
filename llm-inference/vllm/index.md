@@ -46,11 +46,11 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 
 > 深挖 vLLM 各子域的知识笔记,同属本领域 `notes/` 目录。
 
-- `notes/vllm-core-architecture-notes.md` 核心架构
-- `notes/vllm-model-registry-notes.md` 模型注册
-- `notes/vllm-quantization-gptq-awq-fp8-notes.md` 量化
-- `notes/vllm-distributed-ray-notes.md` 分布式 / Ray
-- `notes/vllm-sampling-penalties-notes.md` sampling / penalties
-- `notes/vllm-api-server-openai-compat-notes.md` OpenAI 兼容 API server
-- `notes/vllm-serving-layer-analysis.md` 服务层分析
-- `notes/vllm-full-technical-report.md` 完整技术报告
+- [notes/vllm-core-architecture-notes.md](notes/vllm-core-architecture-notes.md) 核心架构
+- [notes/vllm-model-registry-notes.md](notes/vllm-model-registry-notes.md) 模型注册
+- [notes/vllm-quantization-gptq-awq-fp8-notes.md](notes/vllm-quantization-gptq-awq-fp8-notes.md) 量化
+- [notes/vllm-distributed-ray-notes.md](notes/vllm-distributed-ray-notes.md) 分布式 / Ray
+- [notes/vllm-sampling-penalties-notes.md](notes/vllm-sampling-penalties-notes.md) sampling / penalties
+- [notes/vllm-api-server-openai-compat-notes.md](notes/vllm-api-server-openai-compat-notes.md) OpenAI 兼容 API server
+- [notes/vllm-serving-layer-analysis.md](notes/vllm-serving-layer-analysis.md) 服务层分析
+- [notes/vllm-full-technical-report.md](notes/vllm-full-technical-report.md) 完整技术报告

@@ -16,12 +16,12 @@
 
 | 章节 | 文件 | 定位 |
 |---|---|---|
-| 核心心智模型(必读) | `concepts/host-vs-device-lifetime.md` | 懂:两条时间线、异步≠并发、happens-before |
-| PyTorch 规则 | `frameworks/pytorch-stream-rules.md` | 用:side stream 写法 |
-| TensorFlow / BFC | `frameworks/tensorflow-bfc.md` | 懂+BFC 边界 |
-| TFRA 事故案例 | `cases/tfra-prepare-async-thread.md` | 查:踩内存根因复盘 |
-| Code review 检查清单 | `practices/memory-lifecycle-checklist.md` | 用:评审 + 反模式 |
-| 参考资料索引 | `references.md` | 溯源:官方文档链接 |
+| 核心心智模型(必读) | [concepts/host-vs-device-lifetime.md](concepts/host-vs-device-lifetime.md) | 懂:两条时间线、异步≠并发、happens-before |
+| PyTorch 规则 | [frameworks/pytorch-stream-rules.md](frameworks/pytorch-stream-rules.md) | 用:side stream 写法 |
+| TensorFlow / BFC | [frameworks/tensorflow-bfc.md](frameworks/tensorflow-bfc.md) | 懂+BFC 边界 |
+| TFRA 事故案例 | [cases/tfra-prepare-async-thread.md](cases/tfra-prepare-async-thread.md) | 查:踩内存根因复盘 |
+| Code review 检查清单 | [practices/memory-lifecycle-checklist.md](practices/memory-lifecycle-checklist.md) | 用:评审 + 反模式 |
+| 参考资料索引 | [references.md](references.md) | 溯源:官方文档链接 |
 
 ## 三层速记
 

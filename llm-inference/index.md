@@ -29,4 +29,4 @@
 
 | 主题                             | 文件                                                | 一句话                                      |
 | ------------------------------ | ------------------------------------------------- | ---------------------------------------- |
-| HyQuant — LLM Attention 混合精度量化 | `papers/hyquant-hybrid-precision-quantization.md` | 竖线+局部窗口留全精度,其余 KV 压低比特(arXiv 2608.27875) |
+| HyQuant — LLM Attention 混合精度量化 | [papers/hyquant-hybrid-precision-quantization.md](papers/hyquant-hybrid-precision-quantization.md) | 竖线+局部窗口留全精度,其余 KV 压低比特(arXiv 2608.27875) |

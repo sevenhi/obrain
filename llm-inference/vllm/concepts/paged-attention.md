@@ -6,8 +6,7 @@ source:
   - "pdf: Efficient Memory Management for LLM Serving with PagedAttention | Kwon et al. 2023 | arXiv:2309.06180 (SOSP 2023)"
   - "web: vLLM Blog — Easy, Fast, and Cheap LLM Serving with PagedAttention | https://vllm-project.github.io/2023/06/20/vllm.html"
   - "web: zeroentropy.dev — PagedAttention: vLLM's OS-style KV cache memory manager | https://zeroentropy.dev/concepts/paged-attention/"
-  - "code: vLLM V1 源码(commit b74ac0bc6)notes 一手实读 | notes/vllm-core-architecture-notes.md"
-  - "doc: notes/vllm-core-architecture-notes.md (库内源码笔记)"
+  - "code: vLLM V1 源码(commit b74ac0bc6) 一手实读 (经 notes 提炼,notes 已删,以源码 commit 为准)"
 date: 2026-09
 ---
 
@@ -101,7 +100,7 @@ Paged: K/V 按 (block, slot) 散在多个物理块,block table 索引
 
 ## 5. V1 里的落地:BlockPool + 引用计数 + 内容哈希
 
-V1 把分页分成**底层块池**与**高层管理**两层(read notes §2 有 path:line 级一手细节):
+V1 把分页分成**底层块池**与**高层管理**两层(源码 path:line 级一手细节,基准 commit `b74ac0bc6`):
 
 - **BlockPool**(`block_pool.py`):物理块的 free list + 按块内容哈希的 `BlockHashToBlockMap` + LRU 淘汰 + ref_cnt 回收;
 - **KVCacheManager**(`kv_cache_manager.py`):Scheduler 操作 KV cache 的**唯一入口**,`allocate_slots`(分三阶段:释放冗余 → 处理 prefix token → 为新 token 分块)、`get_computed_blocks`(prefix 查询)、`free`/`evict_blocks`;
@@ -135,6 +134,6 @@ V1 把分页分成**底层块池**与**高层管理**两层(read notes §2 有 p
 - **PagedAttention 论文**(分页思想、内存利用率、吞吐基准): Kwon et al., *Efficient Memory Management for Large Language Model Serving with PagedAttention*, SOSP 2023, arXiv:2309.06180
 - **vLLM 博客**(吞吐提升 2-4×、KV cache 显存占比场景图——"每请求 KV cache 占显存比例"图,与 §1 的"60-70% 浪费在 slack"是不同口径): https://vllm-project.github.io/2023/06/20/vllm.html
 - **zeroentropy 解读**(naive 33%→paged 84% 玩具演示、~2.5× 并发;70B/8K/32 req 预分配 80GB): https://zeroentropy.dev/concepts/paged-attention/
-- **V1 源码一手实读**: notes/vllm-core-architecture-notes.md §2(BlockPool / KVCacheManager / 块布局 / prefix caching)
+- **V1 源码一手实读**: `vllm/v1/core/`(BlockPool / KVCacheManager / 块布局 / prefix caching)与 `_custom_ops.py`(reshape_and_cache_flash / swap_blocks),基准 commit `b74ac0bc6`(原 notes `vllm-core-architecture-notes.md` §2 **已删,以源码 commit b74ac0bc6 为准**)
 
-> **路径基准**：正文与溯源里的相对路径(`notes/...`、`../concepts/...`)均相对 obrain 根。条目移动时先确认基准。
+> **路径基准**：正文与溯源里的相对路径均相对本领域 `vllm/` 目录(如 `concepts/...`)。条目移动时先确认基准。

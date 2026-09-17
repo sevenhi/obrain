@@ -5,8 +5,7 @@ tags: [vllm, continuous-batching, scheduler, decode, prefill, chunked-prefill, t
 source:
   - "pdf: PagedAttention 论文 (SOSP 2023) | arXiv:2309.06180 — Figure 3 吞吐对比 (Orca 等 baseline, 2-4x)"
   - "web: vLLM Blog — Easy, Fast, and Cheap LLM Serving with PagedAttention | https://vllm-project.github.io/2023/06/20/vllm.html"
-  - "code: vLLM V1 源码(commit b74ac0bc6) notes 一手实读 | notes/vllm-core-architecture-notes.md §1 §3"
-  - "doc: notes/vllm-core-architecture-notes.md (库内源码笔记)"
+  - "code: vLLM V1 源码(commit b74ac0bc6) 一手实读 (经 notes 提炼,notes 已删,以源码 commit 为准)"
 date: 2026-09
 ---
 
@@ -42,7 +41,7 @@ date: 2026-09
 
 ## 2. V1 的统一 token 预算模型(Scheduler 的灵魂)
 
-V1 调度器**不区分"prefill 阶段"和"decode 阶段"**(这是和网上大量 V0 资料的本质区别)。源码注释(notes §1.1)原话:
+V1 调度器**不区分"prefill 阶段"和"decode 阶段"**(这是和网上大量 V0 资料的本质区别)。源码注释(`scheduler.py:502-511`)原话:
 
 > 每个 request 只有 `num_computed_tokens` 和 `num_tokens_with_spec`。每一步调度器尽力让每个 request 的 `num_computed_tokens` 追上 `num_tokens_with_spec`。
 
@@ -66,7 +65,7 @@ V1 调度器**不区分"prefill 阶段"和"decode 阶段"**(这是和网上大�
 
 ## 3. 双队列 + 每步重排(Scheduler 如何工作)
 
-Scheduler 维护两个队列,V1 调度顺序(notes §1.2):
+Scheduler 维护两个队列,V1 调度顺序(scheduler.py:548 起,先 RUNNING 后 WAITING):
 
 ```
 schedule() 每步:
@@ -106,7 +105,7 @@ step 3: [decode A][decode B][prefill C 尾 200 tok]
 
 ## 5. Continuous Batching 的 step 循环(EngineCore)
 
-V1 的连续批处理由 EngineCore 的 step 循环驱动(notes §3.1):
+V1 的连续批处理由 EngineCore 的 step 循环驱动(`core.py:597` `step()`):
 
 ```
 EngineCore.step()                        # core.py:597(行号以 597 为准,v1-architecture 篇亦同)
@@ -141,7 +140,7 @@ EngineCore.step()                        # core.py:597(行号以 597 为准,v1-a
 2. **decode 阶段算术强度极低**:它是 memory-bound;连续批处理的核心价值就是**不让 decode 阶段 GPU 空转**(用混进来的 prefill 填满)。
 3. **chunked prefill 默认开但要懂取舍**:要吞吐混批 → 开;要单请求 prefill 低延迟(如交互式) → 考虑关或调 `long_prefill_token_threshold`。
 4. **max_num_batched_tokens 是"每步喂多少"的旋钮**:示例默认 2048 但源码注释明确说它\"mainly for convenience when testing\"——**实际部署会被 EngineArgs 按模型/长度自动调整,别拿 2048 当线上真值**,查启动日志里的生效值再调。
-5. **注意 V0/V1 资料差异**:网上大量调度文章讲的是旧版(V0 里 waiting 只 prefill、running 只 decode 两条路径);当前主线 `vllm/v1/` 是统一 token 预算模型(Read the notes,不是老教程)。
+5. **注意 V0/V1 资料差异**:网上大量调度文章讲的是旧版(V0 里 waiting 只 prefill、running 只 decode 两条路径);当前主线 `vllm/v1/` 是统一 token 预算模型(以 `vllm/v1/` 源码为准,不是老教程)。
 6. **抢占(块不足)是连续批处理的兜底**:`allocate_slots` 失败触发抢占(默认抢 running 队尾),释放块进 LRU、被抢占请求重排靠 prefix cache 减重算——调参时看 **KV cache 余量比看 batch 数字更本质**(可观测指标:`vllm:num_preemptions_total` 看抢占次数、scheduler 指标看每步 batch 填充,别凭感觉)。
 
 ---
@@ -151,4 +150,4 @@ EngineCore.step()                        # core.py:597(行号以 597 为准,v1-a
 - **PagedAttention 论文**(iteration-level scheduling、吞吐对比 Figure 3): Kwon et al., SOSP 2023, arXiv:2309.06180
 - **ORCA**(首次提出 iteration-level batching, vLLM 的吞吐 baseline 参照): arXiv:2207.03718
 - **vLLM 博客**(吞吐测量、与 baseline 对比): https://vllm-project.github.io/2023/06/20/vllm.html
-- **V1 源码一手实读**: notes/vllm-core-architecture-notes.md §1(调度器/统一预算/chunked prefill)、§3(连续批处理/step 循环)
+- **V1 源码一手实读**: `vllm/v1/core/sched/scheduler.py`(调度器/统一预算/chunked prefill)与 `vllm/v1/engine/core.py`(step 循环),基准 commit `b74ac0bc6`(原 notes `vllm-core-architecture-notes.md` §1/§3 **已删,以源码 commit b74ac0bc6 为准**)

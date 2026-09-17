@@ -3,10 +3,9 @@ title: vLLM V1 引擎架构:调度执行解耦的多进程心智模型
 type: concept
 tags: [vllm, v1, architecture, scheduler, worker, async, multiprocess, engine]
 source:
-  - "code: vLLM V1 源码(commit b74ac0bc6) notes 一手实读 | notes/vllm-core-architecture-notes.md §0 §4 §5"
+  - "code: vLLM V1 源码(commit b74ac0bc6) 一手实读 (经 notes 提炼,notes 已删,以源码 commit 为准)"
   - "web: vLLM 官方 Architecture Overview | https://docs.vllm.ai/en/latest/design/arch_overview/"
   - "web: vLLM V1 Guide | https://docs.vllm.ai/en/latest/usage/v1_guide/"
-  - "doc: notes/vllm-core-architecture-notes.md (库内源码笔记)"
 date: 2026-09
 ---
 
@@ -100,13 +99,28 @@ AsyncLLM.add_request()  →  ZMQ  →  EngineCore 入 waiting 队列
 ```
 每个请求 token 走完这一圈;连续批处理让它**不止一次**(每步续 1 token,循环若干轮直到 FINISHED)。
 
+**全链路视角(HTTP → 采样 → 响应,全库唯一一张完整链路图)**——把本文三层结构与 API 层、采样层接起来:
+```
+HTTP 请求(POST /v1/chat/completions)
+  └─ OpenAI 兼容 API router        (vllm/entrypoints/openai/chat_completion/api_router.py)
+       └─ OpenAIServingChat         (chat_completion/serving.py;参数经 to_sampling_params 归一)
+            └─ AsyncLLM.generate    (vllm/v1/engine/async_llm.py, EngineClient 协议)
+                 └─ EngineCore(独立进程,本文主角)
+                      └─ Scheduler → Executor 调度 (vllm/v1/executor/)
+                           └─ Worker(可能为 Ray actor / mp 进程)
+                                └─ 模型前向(GPUModelRunner;含量化 Linear 层)
+                                     └─ Sampler 采样 (vllm/v1/sample/sampler.py)
+                                          └─ 输出 → Detokenizer → 响应(SSE/JSON)
+```
+API 层与采样层的展开分别见 [api-server-openai-compat.md](api-server-openai-compat.md) 与 [sampling-penalties.md](sampling-penalties.md);本文聚焦中间的引擎三层。
+
 > **输出回路**:EngineCore 只产 logits/采样结果,结果经 ZMQ 回 **AsyncLLM(前端进程)**,由 OutputProcessor / detokenize 后**流式返回**(`vllm/v1/engine/output_processor.py`、`core_client.py`)——decode 与流式发送留在 API 层,EngineCore 不碰。
 
 ---
 
 ## 3. 初始化链路(EngineCore 起来时做了什么)
 
-`EngineCore.__init__` 的 5 步(notes §0):
+`EngineCore.__init__` 的 5 步(`core.py:108-205`):
 
 1. `register_all_kvcache_specs` + `get_kv_cache_specs()`:收集模型每层对 KV cache 的需求(block_size、head 数等);
 2. `determine_available_memory()`:跑 dummy batch 测峰值显存,算出可用于 KV cache 的余量;
@@ -158,7 +172,7 @@ GPUModelRunner.execute_model()
 
 ## 5. 执行器:UniProc / Multiproc / Ray 三选一
 
-`Executor.get_class()` 据 `ParallelConfig` 选实现(notes §4.1/§5):
+`Executor.get_class()` 据 `ParallelConfig` 选实现(`vllm/v1/executor/abstract.py:49`):
 
 | Executor | 场景 | 机制 |
 |---|---|---|
@@ -194,8 +208,26 @@ GPUModelRunner.execute_model()
 
 ---
 
-## 8. 溯源
+## 8. 整体架构串联:一条请求的五段旅程
 
-- **V1 源码一手实读**: notes/vllm-core-architecture-notes.md §0(架构总览/初始化链路)、§4(加载与推理路径)、§5(分布式)
+把 vLLM 各主题串成一条完整的请求处理链路(各段细节在对应 concept 篇):
+
+**① 请求入口**:一条 `POST /v1/chat/completions` 进入 FastAPI 路由层,路由只做返回形态分流,真实逻辑在 `OpenAIServingChat`;`to_sampling_params` 把请求参数映射成引擎侧 `SamplingParams`(三级回退 + 校验),再经 `AsyncLLM.generate()` 交给引擎进程([api-server-openai-compat.md](api-server-openai-compat.md))。
+
+**② 模型加载(启动时)**:`ModelConfig.registry` 作为唯一 chokepoint 解析 `hf_config.architectures` → 实现类;注册表走"分类字典 + 懒加载",能力探测经磁盘缓存 + 子进程避免主进程初始化 CUDA;权重由 `get_model_loader()` 分派注入;checkpoint 带 `quantization_config` 时同阶段选定量化方法([model-registry.md](model-registry.md))。
+
+**③ 量化层**:选定量化(GPTQ/AWQ/FP8)后,各 Linear 层被 `get_quant_method()` 换成对应 `*LinearMethod`,经 `create_weights()` 定义量化权重、`choose_mp_linear_kernel()` 选内核,`apply()` 完成反量化矩阵乘([quantization-gptq-awq-fp8.md](quantization-gptq-awq-fp8.md))。
+
+**④ 分布式执行**:模型层经 `Executor` 抽象跑在 worker 上——单卡 UniProc、单节点多卡 Multiproc、跨节点 Ray(创建 actor 后重排 rank、下发 rendezvous、建 TP/PP 通信组;权重按 TP 切片、前向 all-reduce)([distributed-ray.md](distributed-ray.md))。
+
+**⑤ 采样输出**:前向 logits 进入 `Sampler` 管线——原始 logits 算 logprobs,再白名单/bad words/惩罚(repetition 乘性、presence+frequency 加性)/温度/min_p/top-k/p,指数竞赛选出 token,经 Detokenizer 还原,由 AsyncLLM 的 collector 逐 token 流式返回拼成 SSE/JSON([sampling-penalties.md](sampling-penalties.md))。
+
+**一句话总结**:vLLM 的架构主轴是「**薄 HTTP 层 + 异步引擎进程 + 模型/量化/采样的懒加载分派 + 可插拔分布式执行器**」——请求参数在入口被归一成引擎契约,模型与量化按能力条件化加载,采样参数被张量化后交给 GPU 端统一管线,从而支撑高吞吐连续批处理与多后端扩展。
+
+---
+
+## 9. 溯源
+
+- **V1 源码一手实读**: `vllm/v1/engine/`、`vllm/v1/core/sched/`、`vllm/v1/worker/`、`vllm/v1/executor/`(架构总览/初始化链路/加载与推理路径/分布式;原 notes `vllm-core-architecture-notes.md` §0/§4/§5 **已删,以源码 commit b74ac0bc6 为准**)
 - **官方 Architecture Overview**: https://docs.vllm.ai/en/latest/design/arch_overview/
 - **V1 Guide**: https://docs.vllm.ai/en/latest/usage/v1_guide/

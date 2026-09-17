@@ -44,6 +44,8 @@ else:                         支持自定义 qualname 字符串 → resolve_obj
 
 **Ray 路径独有的开销/能力**:placement group 调度、bundle 级 GPU 绑定、rank 重排、driver→worker 环境变量同步、TCP rendezvous 地址下发。**mp 路径这些都在本机内完成**——明白这一点,部署时选后端的判断依据就清楚了:单节点多卡用 mp(无 Ray 开销),跨节点才用 Ray。
 
+**非阻塞两段式执行(Ray executor 的 execute_model)**:`execute_model`(ray_executor.py 约 400 行起)在 `uses_sampler` 且有调度 token 时**暂存 scheduler_output**、直接返回预置的 `COMPLETED_NONE_FUTURE`(ray_executor.py:46),真正的前向延迟到 `sample_tokens()` 触发——把"下发调度"与"执行前向"拆成两段,支持非阻塞式调度(引擎侧异步调度的配套机制,见 [v1-architecture.md](v1-architecture.md) §2)。
+
 ---
 
 ## 2. Ray 执行器:Worker 创建与 Rank 重排(核心)

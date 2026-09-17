@@ -110,7 +110,11 @@ vLLM 加载权重前需知道模型能力(是否池化/多模态/支持 PP),由 
 
 ---
 
-## 4. 新增一个模型要改哪里(可复现操作)
+## 4. 注册之后:权重加载链(补全"注册+加载"闭环)
+
+注册表只负责"架构名 → 类",权重注入由 `model_loader` 完成另一段分派:`get_model_loader()`(`vllm/model_executor/model_loader/__init__.py:119`)据 `load_config.load_format` 选 loader——`DefaultModelLoader`(`default_loader.py:43`,从 HF Hub/Safetensors 流式加载、按层名匹配,默认)或 `ShardedStateLoader`/`TensorizerLoader`/`RunaiStreamerLoader` 等变体;`get_model()`(`model_loader/__init__.py:127`)实例化 `nn.Module` 后调 `loader.load_weights()` 注入权重。TP/PP 切分无需用户干预——`ColumnParallelLinear`/`RowParallelLinear` 在层内自动完成。即:**架构解析(本文 §3)→ 类实例化 → loader 分派注入权重**,三段接力构成"注册+加载"的完整范围。
+
+## 5. 新增一个模型要改哪里(可复现操作)
 
 以新增原生支持架构为例,**只改两处**:
 
@@ -121,7 +125,7 @@ vLLM 加载权重前需知道模型能力(是否池化/多模态/支持 PP),由 
 
 ---
 
-## 5. 实践要点(checklist)
+## 6. 实践要点(checklist)
 
 1. **加新模型只动两处**:实现文件 + 注册表一行(记得补 `tests/models/registry.py` 示例)。别试图改解析逻辑。
 2. **"Unrecognized architecture" 是四类之一**:先分清——加载失败(看日志)/ 已废弃(查 `_PREVIOUSLY_SUPPORTED_MODELS` 的最后版本)/ 插件外置(查 `_OOT_SUPPORTED_MODELS` 的插件 URL)/ 真不支持(看 `Supported architectures` 列表)。不同类别的解法完全不同。
@@ -133,8 +137,8 @@ vLLM 加载权重前需知道模型能力(是否池化/多模态/支持 PP),由 
 
 ---
 
-## 6. 溯源
+## 7. 溯源
 
-- 源码一手实读: `vllm/model_executor/models/registry.py`(分类字典 / `_VLLM_MODELS` / `_ModelRegistry.resolve_model_cls` / `_ModelInfo` / 子进程探测),基准 commit `b74ac0bc6`
+- 源码一手实读: `vllm/model_executor/models/registry.py`(分类字典 / `_VLLM_MODELS` / `_ModelRegistry.resolve_model_cls` / `_ModelInfo` / 子进程探测)+ `vllm/model_executor/model_loader/`(`get_model_loader` / `get_model`,§4 加载链),基准 commit `b74ac0bc6`
 - 配置链入口: `vllm/config/model.py:1027`(`ModelConfig.registry`) / `:1245`(`_verify_quantization` 无关,但 arch 解析同文件 `:2209`)
 - 版本差异基线: 本文对照自 notes `vllm-model-registry-notes.md`(已删);早期 `Models` 枚举 / `_MODELS` 字典 / `resolve_obj_cls` 在本版演进为分类字典 / `_VLLM_MODELS` / `_ModelRegistry.resolve_model_cls`

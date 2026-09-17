@@ -4,6 +4,7 @@ type: concept
 tags: [vllm, quantization, gptq, awq, fp8, moe, kv-cache, model-executor]
 source:
   - "code: vLLM V1 源码 (commit b74ac0bc6, v0.28.1rc0-40) | vllm/model_executor/layers/quantization/ 一手实读 (经 notes 提炼)"
+  - "web: vLLM docs — Quantization | https://docs.vllm.ai/en/latest/features/quantization/"
 date: 2026-09
 ---
 

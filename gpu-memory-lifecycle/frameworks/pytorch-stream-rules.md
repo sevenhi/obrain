@@ -42,7 +42,7 @@ creation_stream.wait_event(event)
 # then allow tensor deallocation
 ```
 
-`record_stream` 定义:当 tensor 被释放时,确保该 tensor 内存在 stream 上**当时已排队的工作完成之前**不会被另一 tensor 复用。
+`record_stream` 的完整语义(官方原话、为何 allocator 默认不知道 side stream 访问)见概念篇 [§4.1 record_stream](../concepts/host-vs-device-lifetime.md);此处不重复,只留一句:**把"这个 tensor 在 side stream 上也用过"补进 allocator 的 bookkeeping**。
 
 ## debug
 

@@ -16,7 +16,7 @@ date: 2026-09
 |---|---|---|
 | PyTorch CUDA semantics | pytorch.org/docs/stable/notes/cuda.html | GPU op 异步、stream 顺序、caching allocator 复用 / record_stream |
 | torch.Tensor.record_stream | pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html | allocator 只知道创建 stream;跨 stream 使用需记录/同步,避免提前复用 |
-| NVIDIA CUDA Programming Guide — Stream-Ordered Allocator | docs.nvidia.com/cuda/cuda-c-programming-guide/ | cudaMallocAsync / cudaFreeAsync 与 stream-order semantics |
+| NVIDIA CUDA Programming Guide — Stream-Ordered Allocator | docs.nvidia.com/cuda/cuda-programming-guide/index.html | cudaMallocAsync / cudaFreeAsync 与 stream-order semantics |
 | TensorFlow OpKernelContext | github.com/tensorflow/tensorflow (op_kernel.h) | allocate_output / allocate_temp 执行期分配语义 |
 | TensorFlow BFCAllocator source | github.com/tensorflow/tensorflow (bfc_allocator.h) | best-fit with coalescing;safe frontier / timestamped chunks |
 | TensorFlow allocator.h | github.com/tensorflow/tensorflow (allocator.h) | AllocationAttributes / freed_by_func:按 timing 限制可复用 chunk |

@@ -25,8 +25,8 @@
 
 | 领域 | 文件夹 | 一句话说明 | 最近更新 |
 |---|---|---|---|
-| GPU/框架 显存生命周期 | `gpu-memory-lifecycle/` | 框架 allocator vs CUDA stream 的生命周期心智模型 + TFRA 事故案例 | 2026-09 |
-| LLM 推理引擎栈 | `llm-inference/` | vLLM / FlashAttention / CUTLASS 三层索引 + concept/howto 深度条目(cutlass 6 篇、FA 3 篇、vLLM 6 篇,均多源综合+bot 审批) + vllm 源码 notes/ | 2026-09 |
+| GPU/框架 显存生命周期 | [`gpu-memory-lifecycle/`](gpu-memory-lifecycle/index.md) | 框架 allocator vs CUDA stream 的生命周期心智模型 + TFRA 事故案例 | 2026-09 |
+| LLM 推理引擎栈 | [`llm-inference/`](llm-inference/index.md) | vLLM / FlashAttention / CUTLASS 三层索引 + concept/howto 深度条目(cutlass 6 篇、FA 3 篇、vLLM 6 篇,均多源综合+bot 审批) + vllm 源码 notes/ | 2026-09 |
 
 ---
 
@@ -34,13 +34,13 @@
 
 - **临时查证** → 直接搜关键词(`happens-before`、`record_stream`、`BFC`、`cnrtQueueSync`)
 - **回顾某领域** → 打开该领域 `index.md`,按索引跳
-- **完整学习** → 按各篇底部「延伸阅读」的链式顺序读
+- **完整学习** → 打开领域 index.md,按 `concepts/` 深度篇导航顺序读(各篇文末『溯源』可回原始文献)
 
 ## 收纳规范(给自己定的,写这条是为了以后不纠结)
 
 1. 每篇用 YAML frontmatter:`title` / `type` / `tags` / `source` / `date`
 2. 每篇开头一段「TL;DR」,30 秒讲完结论
-3. 概念篇管「懂」,案例篇管「查」,清单篇管「用」——三类分开,不混在一篇里
+3. 概念篇管「懂」,案例篇管「查」,清单篇管「用」——三类分开,不混在一篇里(type 全集为 concept/case/checklist/howto/reference/domain 六类)
 4. 引用外部资料只放链接索引([references.md](gpu-memory-lifecycle/references.md) 为范式),不复制全文
 5. **多来源登记**(ppt / pdf / 网页 / wiki …):每篇 `source` 写成「类型 + 标识符 + 链接」结构化形式;来源互不相同但内容重叠时,只收一条知识,`source` 里列全部出处 → 详见 [SOURCE-POLICY.md](SOURCE-POLICY.md)
 6. 拿到新资料先问「这条知识是不是已在库里?」→ 是则补 source 去重,否则新开篇;不建两篇内容重叠的篇

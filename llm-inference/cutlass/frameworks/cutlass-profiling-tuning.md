@@ -4,7 +4,8 @@ type: howto
 tags: [cutlass, gemm, tuning, profiler, roofline, stages, warp-specialization, tma, tmem]
 source:
   - "web: NVIDIA CUTLASS Profiler 文档 | https://docs.nvidia.com/cutlass/latest/media/docs/cpp/profiler.html"
-  - "web: NVIDIA Tech Blog — CUTLASS 4.x / 自动调优 (2025-09) | developer.nvidia.com/blog"
+  - "web: NVIDIA Tech Blog — Improving GEMM Kernel Auto-Tuning Efficiency on NVIDIA GPUs with Heuristics and CUTLASS 4.2 (2025-09) | https://developer.nvidia.com/blog/improving-gemm-kernel-auto-tuning-efficiency-on-nvidia-gpus-with-heuristics-and-cutlass-4-2/"
+  - "pdf: Understanding GEMM Performance and Energy on NVIDIA Ada Lovelace: A Machine Learning-Based Analytical Approach | arXiv:2411.16954"
 date: 2026-09
 ---
 

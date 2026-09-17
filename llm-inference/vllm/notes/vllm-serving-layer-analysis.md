@@ -1,6 +1,6 @@
 # vLLM 服务层与周边特性实现 — 分析笔记（总览）
 
-> **任务**：分析 vLLM 服务层与周边特性实现（kanban t_be52d847）
+> **任务**：分析 vLLM 服务层与周边特性实现
 > **代码版本**：commit `b74ac0bc61d8b8f74848664b1a3b4e878f047861`（`git describe`: `v0.28.1rc0-40-gb74ac0bc6`，main 分支，2026-08-28）
 > **仓库**：vllm-project/vllm（github.com/vllm-project/vllm）
 > **说明**：本任务覆盖 5 大主题，每个主题的源码级分析分别成文于 `notes/vllm-*-notes.md`，本文为总览索引。

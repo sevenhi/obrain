@@ -3,9 +3,14 @@
 > 领域索引。主题:框架运行时里,host 侧逻辑所有权与 device 侧实际执行生命周期是不同的两套时间线。
 > 面向:TensorFlow / PyTorch 算子开发(含 Cambricon MLU)。来源培训 deck + 内部事故。
 
-- **type**: `domain`
-- **tags**: `cuda`, `memory-lifecycle`, `gpu`, `tensorflow`, `pytorch`
-- **source**: 显存生命周期培训 v2 (primary, 来源已提炼入库)
+---
+title: GPU / 框架 显存生命周期
+type: domain
+tags: [cuda, memory-lifecycle, gpu, tensorflow, pytorch]
+source:
+  - "ppt: 显存生命周期培训 v2 (primary, 来源已提炼入库)"
+date: 2026-09
+---
 
 ## 一句话核心
 

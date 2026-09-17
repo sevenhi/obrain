@@ -186,4 +186,4 @@ using Kernel = cutlass::gemm::kernel::GemmUniversal<
 - Stream-K 论文(work-centric、14×/6.7×): arXiv:2301.03598
 - Stream-K 实现与默认 deterministic 归约: `cutlass/gemm/kernel/sm90_tile_scheduler_stream_k.hpp` / `sm100_tile_scheduler_stream_k.hpp`;默认 persistent 在 `sm90_tile_scheduler.hpp`
 - Grouped/Stream-K 互斥: NVIDIA/cutlass issue #1941
-- Blackwell persistent clusters / Cluster Launch Control: https://docs.nvidia.com/cutlass/4.7.0/media/docs/cpp/blackwell_cluster_launch_control.html
+- Blackwell persistent clusters / Cluster Launch Control: https://docs.nvidia.com/cutlass/latest/media/docs/cpp/blackwell_cluster_launch_control.html(版本 pin 说明:本篇其余官方文档链接用 latest 跟随最新版,本条曾 pin 4.7.0 快照、现统一为 latest;需查历史版本时把 URL 中 `latest` 换成如 `4.7.0`)

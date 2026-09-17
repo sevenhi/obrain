@@ -196,6 +196,8 @@ make cutlass_profiler -j16
 
 ## 9. 溯源
 
+> 版本 pin 说明:本篇正文链接统一 pin 4.7.0 docs(快照稳定、不随 latest 漂移);需最新版时把 URL 中 `4.7.0` 换成 `latest`。
+
 - Quickstart / 初始构建步骤: https://docs.nvidia.com/cutlass/4.7.0/media/docs/cpp/quickstart.html
 - CollectiveBuilder 示例与构建: `examples/49_hopper_gemm_with_collective_builder` / `71_blackwell_gemm_with_collective_builder`
 - 3.x blog(CollectiveBuilder 代码语境): https://developer.nvidia.com/blog/cutlass-3-x-orthogonal-reusable-and-composable-abstractions-for-gemm-kernel-design/

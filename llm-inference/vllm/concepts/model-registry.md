@@ -4,6 +4,7 @@ type: concept
 tags: [vllm, model-registry, architecture, lazy-loading, model-executor, transformers]
 source:
   - "code: vLLM V1 源码 (commit b74ac0bc6, v0.28.1rc0-40) | vllm/model_executor/models/registry.py 一手实读 (经 notes 提炼)"
+  - "web: vLLM docs — Basic Model(新增模型贡献指南) | https://docs.vllm.ai/en/latest/contributing/model/basic/"
 date: 2026-09
 ---
 

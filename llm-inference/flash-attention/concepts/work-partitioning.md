@@ -98,7 +98,7 @@ Warp 3:  Q rows 96-127 → ...
 
 ## 4. 序列维并行:切 Q(免合并)与切 KV(需归并)要分清
 
-**容易混淆的关键结构**:FA2 论文的 threadblock 级序列并行是**沿 Q 行切**——`grid ≈ (num_q_blocks, batch, nheads)`,每个 block 算一段 **Q 行**,各行 softmax 独立,**block 之间"no communication at all"**、**根本不需要 reduction kernel**。注意:**网格结构与 FA1 本质相同**(FA1 的 grid = (batch, nheads, ceil(N/Br)) 也已把 Q 切块、每 block 算 Br 行);FA2 的关键改进**不在 grid 层级新增并行维,而在 block 内部**:把 warp 划分从"各 warp 按 K/V 段切"(要跨 warp 合并)改成"各 warp 按 Q 行切"(行间独立、免通信),并利用** Q 行天然可独立计算**这一性质充分并行:
+**容易混淆的关键结构**:FA2 论文的 threadblock 级序列并行是**沿 Q 行切**——`grid ≈ (num_q_blocks, batch, nheads)`,每个 block 算一段 **Q 行**,各行 softmax 独立,**block 之间"no communication at all"**、**根本不需要 reduction kernel**。这正是 FA2 在论文 §3.2 明确宣称的新增并行维:"The first version of FlashAttention parallelizes over batch size and number of heads... we now additionally parallelize over the sequence length dimension."——即 **FA1 只沿 batch×heads 并行,序列长而 batch×heads 少时喂不满 GPU;FA2 才新增沿序列维(把 Q 切块)的并行**。在此基础上,FA2 的另一关键改进在 **block 内部**:把 warp 划分从"各 warp 按 K/V 段切"(要跨 warp 合并)改成"各 warp 按 Q 行切"(行间独立、免通信),并利用 **Q 行天然可独立计算**这一性质充分并行:
 
 ```
 grid = (num_q_blocks, batch, nheads)   # 沿 Q 切
@@ -124,6 +124,8 @@ grid = (batch, nheads, n_splits)       # 沿 K/V 切(分 split)
 - **二者动机相同**:长序列/少 batch 时把更多的 threadblock 塞进 GPU(补 occupancy);
 
 > 一句话:FA2 序列并行加的是"切 Q"(免归并);"切 KV 要归并"是 FlashDecoding/split-K 的事,别混。
+
+> **防御性脚注(防再翻烧饼)**:FA1 开源实现(v1.0.x)源码里 `dim3 grid(params.b, params.h, params.num_splits)` 的**第三维是 num_splits 占用率启发式**(默认 1、上限 ~30),**不是** ceil(N/Br);Q 块在 kernel 内由 `for (l = blockIdx.z; l < steps; l += num_splits)` 串行遍历。"FA1 的 grid 第三维就是 ceil(N/Br)、早已沿 Q 并行"是误读开源实现的产物——论文口径(FA1 仅 batch×heads 并行)才是对的。
 
 ---
 

@@ -7,7 +7,7 @@ source:
   - "web: PyTorch CUDA semantics | https://pytorch.org/docs/stable/notes/cuda.html"
   - "web: torch.Tensor.record_stream | https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html"
   - "code: TF BFCAllocator | github.com/tensorflow/tensorflow bfc_allocator.h"
-  - "web: CUDA Programming Guide — Stream-Ordered Allocator | https://docs.nvidia.com/cuda/cuda-c-programming-guide/"
+  - "web: CUDA Programming Guide — Stream-Ordered Allocator | https://docs.nvidia.com/cuda/cuda-programming-guide/index.html"
 date: 2026-09
 ---
 
@@ -161,6 +161,6 @@ with torch.cuda.stream(s):
 - PyTorch CUDA semantics(异步、stream、caching allocator 复用 / record_stream): https://pytorch.org/docs/stable/notes/cuda.html
 - torch.Tensor.record_stream: https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html
 - TensorFlow OpKernelContext / BFCAllocator / allocator.h: github.com/tensorflow/tensorflow (op_kernel.h / bfc_allocator.h / allocator.h)
-- CUDA Stream-Ordered Allocator(cudaMallocAsync/cudaFreeAsync 的 stream-order 语义): https://docs.nvidia.com/cuda/cuda-c-programming-guide/
+- CUDA Stream-Ordered Allocator(cudaMallocAsync/cudaFreeAsync 的 stream-order 语义): https://docs.nvidia.com/cuda/cuda-programming-guide/index.html
 
 > 事故案例(TFRA prepare async thread)+ code review 清单见 [领域 index](../index.md)。本文是"懂"的心智模型,那两篇是"查"和"用"的实体。

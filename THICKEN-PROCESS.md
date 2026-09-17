@@ -1,7 +1,7 @@
 # obrain 知识库"做厚"流程手册(固化版)
 
 > 2026-09-14 由 CUTLASS(6篇)/ FlashAttention(3篇)/ vLLM(3篇)三轮实战固化。
-> 目标:给定一个领域,把它从"README 几句话 + notes 研究笔记"升级成"打开一篇能读懂、有专业深度、可沉淀分享"的知识库条目。
+> 目标:给定一个领域,把它从"领域 index.md 几句话 + notes 研究笔记"升级成"打开一篇能读懂、有专业深度、可沉淀分享"的知识库条目。
 
 ---
 
@@ -9,11 +9,11 @@
 
 | obrain 现状 | 是否要做厚 | 怎么做 |
 |---|---|---|
-| 领域 README 只有导航/几句话 | ✅ | 新增 concept/howto 深度篇(本流程) |
+| 领域 index.md 只有导航/几句话 | ✅ | 新增 concept/howto 深度篇(本流程) |
 | notes/ 是源码研究笔记(path:line 级) | ⚠️ 不完全 | 提炼成知识范式(TL;DR/机制/数据/实践),notes 保留作源码参考 |
 | 已有深度 concept 篇 | 否 | 不重复,只补缺 |
 
-> vLLM 教训:notes 已是高质量源码实读,缺的不是"从零写",而是"提炼成可沉淀范式"。先读 README + notes,判断差距再动手。
+> vLLM 教训:notes 已是高质量源码实读,缺的不是"从零写",而是"提炼成可沉淀范式"。先读领域 index.md + notes,判断差距再动手。
 
 ## 1. 深度标准(concept 篇四要素,缺一不可)
 
@@ -34,7 +34,7 @@
 
 ## 3. 写成(结构与规范)
 
-- YAML frontmatter:`title` / `type: concept|howto|...` / `tags` / `source`(结构化多来源)/ `date`
+- YAML frontmatter:`title` / `type: concept|case|checklist|howto|reference|domain`(全集六类) / `tags` / `source`(结构化多来源)/ `date`
 - 正文:TL;DR → 机制(因果)→ 可复现细节(代码/结构图)→ 数据对比 → 实践 checklist → 溯源
 - **正文只写事实,绝不带内部审批标记**(`2026-09 review 校正` 这类会被 doc-writer 判 blocking,曾全局清理)
 - 溯源路径标注基准(相对知识库根 `~/zhanbin/obrain/`;库内以 obrain 为根,内容自足)
@@ -71,7 +71,7 @@ bot 意见分两类:
 ## 6. 收尾(达标即入库)
 
 1. 校验:正文无 review 元信息残留、代码围栏数偶(闭合)、多篇无矛盾;
-2. 更新领域 README(加 entries 导航,一句定位);
+2. 更新领域 index.md(加 entries 导航,一句定位);
 3. 更新全局 `INDEX.md`(领域描述反映已做厚篇数);
 4. git commit(work 区干净);
 5. **沉淀进 skill `knowledge-base-ingest`**:该领域的高频坑追加到 skill(FA/CUTLASS/vLLM 各有一块),供下次写同类内容直接查。
@@ -79,5 +79,5 @@ bot 意见分两类:
 ## 7. 高频坑速查(写这三大领域必看,详见 skill)
 
 - **CUTLASS**:CuTe divide 系列 API 名(别杜撰 `partitioned_into_TV`)、scheduler 默认 persistent、bias layout 易反、Stream-K 确定性默认值。
-- **FlashAttention**:IO 复杂度标准是 Θ(Nd+N²) 非 Θ(N²d)、FA1 伪代码外层 K/V、FA2 grid 与 FA1 相同(改进在 block 内 warp)、online-softmax m/l 是行向量、FA 输出非 bitwise、FA3 FP8 是 block-quantize+incoherent 非"V 保持 BF16"。
+- **FlashAttention**:IO 复杂度标准是 Θ(Nd+N²) 非 Θ(N²d)、FA1 伪代码外层 K/V、FA1 只沿 batch×heads 并行 / FA2 新增沿序列维(切 Q)并行(论文 §3.2 口径;FA1 v1.0.x grid 第三维是 num_splits 启发式非 ceil(N/Br))、改进同时也在 block 内 warp 划分、online-softmax m/l 是行向量、FA 输出非 bitwise、FA3 FP8 是 block-quantize+incoherent 非"V 保持 BF16"。
 - **vLLM**:2-4× 归因主要来自分页非调度、counted 抢占不存在(V1 只有 recompute)、step/step_with_batch_queue 两路径、Worker 进程模型随 Executor、Ray 类名、URL。

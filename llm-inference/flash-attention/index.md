@@ -32,7 +32,7 @@ FlashAttention 是 Tri Dao 主导的开源高效 Attention 实现,核心思想�
 
 ## 本库沉淀条目(obrain 内可读)
 
-> 领域 README 只放导航;**正文在 `concepts/` 下**,随浏览随时打开。
+> 领域 index.md 只放导航;**正文在 `concepts/` 下**,随浏览随时打开。
 
 | 条目 | 类型 | 一句话 | 状态 |
 |---|---|---|---|
@@ -51,4 +51,5 @@ FlashAttention 是 Tri Dao 主导的开源高效 Attention 实现,核心思想�
 ## 相关论文(公开可溯源)
 
 - FA1: Dao et al., *FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness*, NeurIPS 2022, arXiv:2205.14135
+- FA2: Dao, *FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning*, ICLR 2024, arXiv:2307.08691
 - FA3: Dao et al., *FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision*, NeurIPS 2024, arXiv:2407.08608

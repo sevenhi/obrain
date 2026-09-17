@@ -4,6 +4,7 @@ type: concept
 tags: [vllm, distributed, ray, executor, tp, pp, parallel-state, ncl]
 source:
   - "code: vLLM V1 源码 (commit b74ac0bc6, v0.28.1rc0-40) | vllm/v1/executor/ + vllm/distributed/ 一手实读 (经 notes 提炼)"
+  - "web: vLLM docs — Parallelism and Scaling | https://docs.vllm.ai/en/latest/serving/parallelism_scaling/"
 date: 2026-09
 ---
 

@@ -1,3 +1,14 @@
+---
+title: LLM 推理引擎栈
+type: domain
+tags: [llm-inference, vllm, flash-attention, cutlass]
+source:
+  - "code: vLLM 仓库 (分析基准 commit b74ac0bc6, v0.28.1rc0-40)"
+  - "code: github.com/Dao-AILab/flash-attention"
+  - "code: github.com/NVIDIA/cutlass"
+date: 2026-09
+---
+
 # LLM 推理引擎栈
 
 > 领域组索引。本组围绕「LLM 推理性能技术栈」,覆盖三个紧密相关且互相集成的项目。

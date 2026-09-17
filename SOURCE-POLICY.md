@@ -48,8 +48,29 @@ date: 2026-09
 
 1. 提炼出「知识条目」,不复制原文
 2. 查重:该条是否已在库里?→ 已在 → 补写 `source` 并标日期,不新开篇
-3. 不在 → 判断归属领域与 type(concept/case/checklist/practice/reference)
-4. 落篇 + 更新该领域 README 索引 + 若新领域则登记进全局 INDEX
+3. 不在 → 判断归属领域与 type(concept/case/checklist/howto/reference/domain,实际六类;目录↔type 默认映射与已知例外见 §5)
+4. 落篇 + 更新该领域 index.md 索引 + 若新领域则登记进全局 INDEX
+
+## 5. 目录 ↔ type 默认映射(惯例 + 已知例外)
+
+新条目落哪个目录、type 标什么,按下面的**默认惯例**走;例外是历史现状,登记在案、不强行回改:
+
+| 目录 | 默认 type | 约定强度 |
+|---|---|---|
+| `concepts/` | concept(机制原理) | 强约定 |
+| `cases/` | case(事故复盘) | 强约定 |
+| `practices/` | checklist(清单) | 强约定 |
+| `notes/` | 源码一手实读笔记(**豁免** TL;DR/frontmatter 要求,见 §6) | 强约定(豁免) |
+| `frameworks/` | howto(工具上手) | 弱约定(**已知例外:`gpu-memory-lifecycle/frameworks/tensorflow-bfc.md` 的 type 是 concept**) |
+| `papers/` | 论文笔记 | 弱约定(**已知例外:`llm-inference/papers/hyquant-hybrid-precision-quantization.md` 的 type 是 concept**) |
+| `references.md`(领域根) | reference(链接索引) | 补充映射 |
+| `index.md`(领域根) | domain(领域导航页) | 补充映射 |
+
+> 原则:目录是组织,type 是内容属性;两者默认对齐,冲突时以实际内容定 type、并在此表登记例外,避免新规范自己引入新矛盾。
+
+## 6. notes/ 豁免条款
+
+`notes/` 目录定位是**源码一手实读笔记**(path:line 级参考材料),**豁免**知识条目的 TL;DR 与 YAML frontmatter 要求——它不是知识条目,是源码参考。给 notes 逐篇补 frontmatter/TL;DR 属于误用规范,不要做。
 
 ## 对现有库的说明
 

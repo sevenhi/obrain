@@ -59,10 +59,10 @@ date: 2026-09
 | 调度写在 GPU 执行进程 | 每 GPU 一个调度器,跨卡状态(state: block table / 预算)要同步,复杂且不一致 |
 | **V1:独立 EngineCore 进程** | 调度状态一份、与 GPU 计算天然重叠,Worker 无脑执行 |
 
-核心收益是**异步调度**(async scheduling)。注意区分两个 step 路径——**不启用异步时单步 `step()`**(core.py:596,排的是**本步** batch N,`future.result()` 等的就是这个 batch):
+核心收益是**异步调度**(async scheduling)。注意区分两个 step 路径——**不启用异步时单步 `step()`**(core.py:597,排的是**本步** batch N,`future.result()` 等的就是这个 batch;行号以 597 为准,注释引用较多):
 
 ```
-EngineCore.step()                            # core.py:596 (每步:schedule 本步 batch N → 下发 → 取回结果)
+EngineCore.step()                            # core.py:597 (每步:schedule 本步 batch N → 下发 → 取回结果)
   scheduler.schedule()
   executor.execute_model(non_block)
   model_output = future.result()             # 等的就是刚下发的 batch N 自己
@@ -129,7 +129,7 @@ num_blocks     = kv_cache_bytes ÷ (num_layers × num_kv_heads × block_size × 
 
 ## 4. 执行层:Worker 与 GPUModelRunner
 
-**Worker(每 GPU 一个进程)**:
+**Worker(每 GPU 一个,同进程或独立进程视 Executor,UniProc 时同进程)**:
 - `load_model()`:加载权重(nn.Module);
 - `execute_model()`:处理 pipeline parallel 的 inter-stage 张量传递,再调 model_runner;
 - `determine_available_memory()`:测峰值显存(配合 EngineCore 的 KV 余量计算)。

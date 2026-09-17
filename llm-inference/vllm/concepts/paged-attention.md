@@ -4,7 +4,7 @@ type: concept
 tags: [vllm, pagedattention, kv-cache, memory, block-table, gpu, llm-serving]
 source:
   - "pdf: Efficient Memory Management for LLM Serving with PagedAttention | Kwon et al. 2023 | arXiv:2309.06180 (SOSP 2023)"
-  - "web: vLLM Blog — Easy, Fast, and Cheap LLM Serving with PagedAttention | https://blog.vllm.ai/2023-06-20/vllm.html"
+  - "web: vLLM Blog — Easy, Fast, and Cheap LLM Serving with PagedAttention | https://vllm-project.github.io/2023/06/20/vllm.html"
   - "web: zeroentropy.dev — PagedAttention: vLLM's OS-style KV cache memory manager | https://zeroentropy.dev/concepts/paged-attention/"
   - "code: vLLM V1 源码(commit b74ac0bc6)notes 一手实读 | notes/vllm-core-architecture-notes.md"
   - "doc: notes/vllm-core-architecture-notes.md (库内源码笔记)"
@@ -15,7 +15,7 @@ date: 2026-09
 
 ## TL;DR
 
-**PagedAttention 把 KV cache 当成 OS 的虚拟内存来管**:物理块固定(默认 16 token/层),每个序列一张 **block table** 把逻辑位置映射到物理块,按需从全局块池懒分配。这一层"间接寻址"把 KV cache 的利用率从 naive 连续分配的 **~33% 提到 ~84%**(zeroentropy 玩具演示,对应 ~2.5× 并发),并让 vLLM 相对 FasterTransformer/Orca 拿到 **2-4× 吞吐提升**(论文实测,同延迟口径),把跨请求前缀共享变成页表上的一个引用计数而不是架构改动。它同时是 vLLM 吞吐神话的**地基**(连续批处理、prefix caching、抢占全建立在"块可独立分配/释放"之上)。
+**PagedAttention 把 KV cache 当成 OS 的虚拟内存来管**:物理块固定(默认 16 token/层),每个序列一张 **block table** 把逻辑位置映射到物理块,按需从全局块池懒分配。这一层"间接寻址"把 KV cache 的利用率从 naive 连续分配的 **~33% 提到 ~84%**(zeroentropy 玩具演示,对应 ~2.5× 并发),并构成 vLLM **相对 Orca(同为迭代级调度的整机)拿到 2-4× 同延迟吞吐提升**(论文实测)的**主要来源**(相比真正静态批处理 HF/FasterTransformer 的 14-24× 是另一口径全引擎收益,见 [continuous-batching.md](continuous-batching.md))。这层"间接寻址"还把跨请求前缀共享变成页表上的一个引用计数而不是架构改动。它同时是 vLLM 吞吐神话的**地基**(连续批处理、prefix caching、抢占全建立在"块可独立分配/释放"之上)。
 
 > **先记住一个反转直觉**:注意力计算谁都会,真正决定 LLM serving 吞吐上限的,是**怎么在显存里安放 KV cache**。PagedAttention 的核心不是新的数学,而是一个**内存管理思想(分页)**。
 
@@ -133,7 +133,7 @@ V1 把分页分成**底层块池**与**高层管理**两层(read notes §2 有 p
 ## 7. 溯源
 
 - **PagedAttention 论文**(分页思想、内存利用率、吞吐基准): Kwon et al., *Efficient Memory Management for Large Language Model Serving with PagedAttention*, SOSP 2023, arXiv:2309.06180
-- **vLLM 博客**(吞吐提升 2-4×、KV cache 显存占比场景图——"每请求 KV cache 占显存比例"图,与 §1 的"60-70% 浪费在 slack"是不同口径): https://blog.vllm.ai/2023-06-20/vllm.html
+- **vLLM 博客**(吞吐提升 2-4×、KV cache 显存占比场景图——"每请求 KV cache 占显存比例"图,与 §1 的"60-70% 浪费在 slack"是不同口径): https://vllm-project.github.io/2023/06/20/vllm.html
 - **zeroentropy 解读**(naive 33%→paged 84% 玩具演示、~2.5× 并发;70B/8K/32 req 预分配 80GB): https://zeroentropy.dev/concepts/paged-attention/
 - **V1 源码一手实读**: notes/vllm-core-architecture-notes.md §2(BlockPool / KVCacheManager / 块布局 / prefix caching)
 

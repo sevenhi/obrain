@@ -10,9 +10,9 @@
 | # | 主题 | 笔记文件 | 关键实现细节数 |
 |---|---|---|---|
 | 1 | API server 层与 OpenAI 兼容接口 | `notes/vllm-api-server-openai-compat-notes.md` | ≥8 组（CLI 拓扑 / FastAPI 构建 / chat.callchain / 协议校验 / AsyncLLM 对接） |
-| 2 | 模型加载与注册机制 | `notes/vllm-model-registry-notes.md` | ≥5 组（10 分类字典 / 懒加载 / 多架构复用 / _ModelInfo 子进程探测） |
-| 3 | 量化支持（GPTQ/AWQ/FP8） | `notes/vllm-quantization-gptq-awq-fp8-notes.md` | ≥9 组（注册工厂 / auto_gptq / auto_awq / fp8 / MoE 后端） |
-| 4 | 分布式执行（TP/PP、Ray、通信初始化） | `notes/vllm-distributed-ray-notes.md` | ≥5 组（Executor 抽象 / Ray actor / Rank 重排 / 通信组初始化） |
+| 2 | 模型加载与注册机制 | `../concepts/model-registry.md` | ≥5 组（10 分类字典 / 懒加载 / 多架构复用 / _ModelInfo 子进程探测） |
+| 3 | 量化支持（GPTQ/AWQ/FP8） | `../concepts/quantization-gptq-awq-fp8.md` | ≥9 组（注册工厂 / auto_gptq / auto_awq / fp8 / MoE 后端） |
+| 4 | 分布式执行（TP/PP、Ray、通信初始化） | `../concepts/distributed-ray.md` | ≥5 组（Executor 抽象 / Ray actor / Rank 重排 / 通信组初始化） |
 | 5 | 采样参数与惩罚机制 | `notes/vllm-sampling-penalties-notes.md` | ≥8 组（V1 采样管线 / Metadata / 三类惩罚算子 / top-k/p / 参数映射） |
 
 验收标准：覆盖 5 主题、每主题 ≥3 个带源码引用的实现细节 —— **已满足**。
@@ -30,7 +30,7 @@
 ## 各主题笔记链接
 
 1. **API server 与 OpenAI 兼容接口** → `notes/vllm-api-server-openai-compat-notes.md`
-2. **模型加载与注册机制** → `notes/vllm-model-registry-notes.md`
-3. **量化支持（GPTQ/AWQ/FP8）** → `notes/vllm-quantization-gptq-awq-fp8-notes.md`
-4. **分布式执行与 Ray 集成** → `notes/vllm-distributed-ray-notes.md`
+2. **模型加载与注册机制** → `../concepts/model-registry.md`
+3. **量化支持（GPTQ/AWQ/FP8）** → `../concepts/quantization-gptq-awq-fp8.md`
+4. **分布式执行与 Ray 集成** → `../concepts/distributed-ray.md`
 5. **采样参数与惩罚机制** → `notes/vllm-sampling-penalties-notes.md`

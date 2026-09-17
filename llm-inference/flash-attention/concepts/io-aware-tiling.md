@@ -122,7 +122,7 @@ FA1 已达 IO 下界,但在 **A100 上只有 25-40% 的理论 FLOP 利用率**(�
 - **FA1 的并行维度不足**:线程块**只沿 batch × head 维度划分、不沿序列维**——batch×heads 少(batch 小、序列长)时 grid 太小、喂不满 SM,occupancy 低;同时 FA1 的 warp 把 **K/V 沿序列维切给各 warp(split-K)**,每个 warp 产出一份全宽的部分输出,聚合要经 shared memory 归约,通信 + 同步多;
 - **FA2**(ICLR 2024,基于 CUTLASS 3.x/CuTe 重写,约 2×)改进 **work partitioning**:把 threadblock 和 warp 的并行更好地贴合 GPU(减少共享内存读写、提高 occupancy)——FA2 论文 Table 1 端到端训练 196~225 TFLOPs/s(最高 72% MFU,GPT3-2.7B 8k);attention kernel 单独基准最高 ~230 TFLOPs/s(73% 理论峰值);**不同配置数字不同,以原文献口径为准**;
 - **FA3**(H100)进一步用 **WGMMA 异步、TMA、低精度(FP8)** 挖 Hopper 特性(见 work-partitioning 与 fa3 篇);
-- **FA4**(2025)用 **CuTe DSL(Python)生成 kernel**,支持 H100+B200 及新特性。
+- **FA4**(2026,MLSys,arXiv:2603.05451)聚焦 **Blackwell(B200/GB200)**:瞄准"张量核翻倍但 smem 带宽/exp 单元没跟上"的非对称硬件缩放,用完全异步 MMA + 更大 tile、**软件模拟 exp 与条件 softmax rescale**(砍 non-matmul)、以及 **TMEM + 2-CTA MMA** 减 smem 流量与反传 atomic add;整条用 **CuTe DSL(Python)** 实现(BF16 B200 上 up to 1613 TFLOPS / 71% util,比 cuDNN 9.13 快至 1.3×、比 Triton 至 2.7×,编译比 C++ 模板快 20-30×)。
 
 > 一句话:FA1 解决"少搬数据"(IO-optimal);FA2+ 解决"算得更满"(并行/利用率/软硬件特性)。两者都在 FlashAttention 家族里层层叠加。
 
@@ -147,7 +147,7 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
 1.5. **先看 mask 是否适配(选型第一问)**:FA 的 fused kernel 只支持 **有结构、可跳块** 的 mask(因果 causal / sliding window / ALiBi / padding);传入**任意 dense soft-mask** 需逐块读 mask、甚至回退到物化 S,FA 优势尽失——先确认你的 mask 类型再选 FA。
 2. **记得它是 exact(数学精确,非 bitwise)**:FA 输出与标准 softmax **数学上相同、无近似**(不是稀疏近似),但浮点累加顺序不同,结果与朴素实现有 **ulp 级数值差异**(fp16 下更明显)——换了 kernel 后 loss 曲线不完全 bitwise-repro 是正常,不是 bug。
 3. **显存收益来自反向重算**:无需存 N×N 中间矩阵,前向只存 LSE/m,l 统计量;训练长序列显存峰值 O(N²)→O(N),这是它让长 context 训练可行的关键(见 §6.5)。
-4. **Block 大小 Br/Bc 的取舍**:受 SRAM 容量 M 和 head dim d 约束(`Bc≈M/(4d)`、`Br≈min(⌈M/(4d)⌉,d)`);**实数参考:A100 上 d=64 时 Br/Bc≈128、d=128 时≈64**。Br/Bc 越大,每次 HBM 加载复用越多,但 SRAM 占满 → 调优平衡点。
+4. **Block 大小 Br/Bc 的取舍**:受 SRAM 容量 M 和 head dim d 约束(`Bc≈M/(4d)`、`Br≈min(⌈M/(4d)⌉,d)`);**实数参考:A100 上 d=64 时 Br/Bc≈128、d=128 时≈64**。Br/Bc 越大,每次 HBM 加载复用越多,但 SRAM 占满 → 调优平衡点。**口径注意**:`Bc≈M/(4d)`(d=128 时≈64)是 **FA1 口径**(4d 预算下 K/V+O 都进 SRAM);FA2 把 Q 常驻寄存器、不再占 SRAM,block 尺寸才放宽到 128×128(见 work-partitioning 篇的 FA2 常见配置)——两处不矛盾。
 4.5. **规避 FA1 低 occupancy**:FA1 只在 batch×head 维度并行,长序列小 batch(batch×heads 少)时 grid 喂不满 SM → 换 FA2 或开 FA2 的序列维 split-K。
 5. **精细化路线**:要更高利用率先看 **work partitioning**(FA1→FA2 的主改进:threadblock/warp 划分、层级并行),再看硬件特性(TMA/WGMMA/FP8)。
 6. **数值稳定性**:online softmax 的 running max 保证 `exp(s-m)` 不溢出;rescale 必须保留——去掉它**数学上错**(各块分母不一致),不是数值精度问题。

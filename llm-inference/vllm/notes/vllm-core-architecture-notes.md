@@ -317,7 +317,7 @@ GPUModelRunner.execute_model()
 
 本笔记聚焦调度器 / KV cache / PagedAttention / 连续批处理 / 模型加载推理路径 / 分布式框架六大主题。同目录已有分篇覆盖的细分内容不再重复：
 - API server 层与 OpenAI 兼容 → `vllm-api-server-openai-compat-notes.md`
-- 模型注册机制 → `vllm-model-registry-notes.md`
-- 量化（GPTQ/AWQ/FP8）→ `vllm-quantization-gptq-awq-fp8-notes.md`
-- Ray 分布式执行细节 → `vllm-distributed-ray-notes.md`
+- 模型注册机制 → `../concepts/model-registry.md`
+- 量化（GPTQ/AWQ/FP8）→ `../concepts/quantization-gptq-awq-fp8.md`
+- Ray 分布式执行细节 → `../concepts/distributed-ray.md`
 - 采样与惩罚 → `vllm-sampling-penalties-notes.md`

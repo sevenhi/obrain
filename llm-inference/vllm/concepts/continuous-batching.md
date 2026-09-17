@@ -109,7 +109,7 @@ step 3: [decode A][decode B][prefill C 尾 200 tok]
 V1 的连续批处理由 EngineCore 的 step 循环驱动(notes §3.1):
 
 ```
-EngineCore.step()                        # core.py:597
+EngineCore.step()                        # core.py:597(行号以 597 为准,v1-architecture 篇亦同)
   if not scheduler.has_requests(): return
   scheduler_output = scheduler.schedule()          # 重排整个 batch
   future = executor.execute_model(non_block)       # 异步下发到 worker

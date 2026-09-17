@@ -141,7 +141,7 @@ O      = P_fp8 @ V_fp8          # 第二个 WGMMA 也是 FP8 GEMM(不是 V 保�
 4. **warp specialization 是核心且是"1 producer + 2 consumer"的 pingpong**:producer/consumer 分工交错让 softmax 藏进 GEMM 影子——读 FA3 kernel 先看这层。
 5. **长序列用 SplitKV**:KV 维 split 到多 block 增高并行,注意有最终 reduce(同 cutlass split-K)。
 6. **反向也重叠**:FA3 反向靠 3-stage pipeline 重算 attention matrix 来 overlap——训练场景它同样重要。
-7. **性能口径别混**:BF16(75-85% 利用率)相对 FA2 加速 1.5-2×;FP8 是 ~1.2-1.3 PFLOPS(61-66% MFU)——两条曲线是不同维度。
+7. **性能口径别混**:BF16(~75% 利用率)相对 FA2 加速 1.5-2×;FP8 是 ~1.2-1.3 PFLOPS(61-66% MFU)——两条曲线是不同维度。
 
 ---
 

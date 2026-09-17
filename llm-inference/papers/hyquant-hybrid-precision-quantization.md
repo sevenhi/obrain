@@ -25,6 +25,25 @@ LLM 长上下文推理时,attention 高度不平衡——**极少量 key 位置(
 2. **量化误差在"高分数位置"被放大**:K/V 扰动经大量 query 反复访问而放大。均匀 4-bit 误差显著大于 8-bit;但**保留 top-1%/top-5% 高分数位置为全精度后,其余 4-bit 的误差一路逼近 8-bit 水平**(1K~32K 序列都成立)。这直接催生混合精度设计。
 3. 现有方法(KV eviction 如 H2O/SnapKV/PyramidKV,或 KV cache 量化如 KIVI/KVTuner)大多假设 token 同质,对"知识型长 CoT"里 token 重要性非平稳的情况(被 evict 的后来可能变关键)不够稳。竖线是 query 分布级现象(大量 query 都关注某 key),比单 query 关键更持久。
 
+### 机制推导:为什么"竖线保留精度"能兜住均匀低比特的误差
+
+这是 HyQuant 成立的关键因果链,拆成三步:
+
+**① 竖线位置是 attention 输出误差的"杠杆点"。** 输出 `O_i = Σ_j a_ij V_j`,其中 `a_ij = softmax(S_ij)`。若某个 key 位置 `j*` 被大量 query 给予很高的 `a_ij`,那么 `V_j*` 的量化噪声 `ΔV_j*` 会以**加权和**的形式进入多个输出:`ΔO_i ≈ a_ij* · ΔV_j*`。对竖线位置 `a_ij*` 大 ⇒ 同样的 `ΔV` 被放大成更大的输出误差。**均匀量化把所有位置一视同仁,恰恰在这个杠杆点上放了最大风险**。
+
+**② 保留竖线 = 在杠杆点上去掉噪声源。** 对竖线位置保留全精度(`ΔV=0`),即使其余 `K_Q` 位被压到 4-bit,噪声只从低注意力权重的 token 进来,对输出的贡献被 `a_ij` 天然加权稀释。
+
+**③ 为什么"低比特误差逼近 8-bit"是必然。** 竖线(top-5%)+ 窗口盖住 82~86% 的 attention mass,意味着输出几乎全部来自"已保留精度"的部分;其余 14~18% 的低注意力部分即使 4-bit,其误差经小权重进入输出,贡献与"全 8-bit"相当。**所以不是"2-bit 免费的午餐",而是"用极小的全精度预算(只护住高杠杆点),把有效量化噪声压到 8-bit 水平"**。
+
+### 机制推导:为什么 decode 的"反量化融合进 attention"省带宽
+
+Decode 是带宽受限(显存/带宽密集),瓶颈是**从 HBM 把 KV cache 搬进 SRAM** 的字节数,不是 FLOPs。
+
+- **KIVI/KVTuner 的做法**(dequantize-then-attend):先从 HBM 读低比特 KV → 反量化成 FP16 中间张量(写回或占用更多寄存器/SRAM) → 再 attend。多一趟反量化中间态的搬运。
+- **HyQuant 的做法**(dequantize-in-attention):扫描被量化的 KV 块时,**在它即将作为 matmul 操作数进 Tensor Core 前那一刻才反量化**,不物化整份全精度中间态。
+
+省带宽的关键:**低比特 KV 在 HBM 里占的字节少(4-bit vs 16-bit = 4× 压缩)**,反量化发生在片上(读出来即用),不把扩大的中间态来回搬。所以 decode 加速 `1.32×~3.58×` 正是"少搬了低比特那 4× 的字节 + 融合避免中间态往返"的量化体现。
+
 ## 方法(怎么做)
 
 把每个 layer/head 的 key 分成互斥三段:`K = K_VL ∪ K_Win ∪ K_Q`:
@@ -54,6 +73,49 @@ LLM 长上下文推理时,attention 高度不平衡——**极少量 key 位置(
 | KVTuner | sensitivity-aware 混合精度但按 **layer** 分配;HyQuant 按 **token** 分配 |
 | KIVI / KVQuant | 纯 KV cache 量化(降误差),没显式利用持久竖线做 token 级全精度保留 |
 | 前作(如 H2O) | 只做了 Decode 端;HyQuant 是 **Prefill+Decode 两端一体化** |
+
+## 可复现细节(示意)
+
+**KV 三段划分**(每个 layer/head 的 key 序列,互斥三段):
+
+```
+K 序列:   [0 ............... 非窗口前缀 ..............) [最近 W 个 key]
+            ├─ K_VL:竖线 top-ρ≈5%(分散挑出)→ 全精度 FP16
+            └─ K_Q:其余 ~95% → 低比特 K4V4
+               (prefill 算子内为 INT8/FP8 或 INT4/FP4)   K_Win → 全精度 FP16
+
+K = K_VL ∪ K_Win ∪ K_Q(互斥三段)
+竖线分数 S(k) = Σ_t a_t,k(列向累计 attention mass,轻量 reduction 增量维护,开销 3%~5%)
+```
+
+**Decode 混合精度 kernel(dequantize-in-attention,示意伪代码)**:
+
+```python
+# (示意)按论文描述语义概括,非论文原码:单遍 online-softmax,
+# 量化块在"即将进 Tensor Core 前"才反量化,不物化全精度中间态。
+def hyquant_decode_step(q, kv_blocks):
+    m, l, acc = -inf, 0, zeros_like(q)          # online softmax 状态
+    for blk in kv_blocks:                       # 扫描 KV cache 块
+        k_raw, v_raw = load_hbm(blk)            # 低比特块为 4-bit 打包存储
+        if blk.tag in ("VL", "Win"):            # K_VL 竖线 ∪ K_Win 窗口
+            k, v = k_raw, v_raw                 #   全精度,直通
+        else:                                   # K_Q 低比特块
+            k, v = dequant(k_raw), dequant(v_raw)   # 片上即时反量化(dequantize-in-attention)
+        s = q @ k.T                             # 分块打分(Tensor Core)
+        m_new = max(m, rowmax(s)); p = exp(s - m_new)
+        r = exp(m - m_new)                      # online softmax rescale
+        acc = acc * r + p @ v
+        l = l * r + rowsum(p); m = m_new
+    return acc / l
+```
+
+> 与 KIVI/KVTuner 的对比:后者先反量化出全精度中间张量再 attend(dequantize-then-attend),多一趟搬运;HyQuant 只在算子内即时反量化,decode kernel 加速 1.32×~3.58×(随前缀增长而增大)。
+
+## 选型要点(何时用)
+
+- **用 HyQuant 类方案**:长上下文(数 K~32K+ 前缀)decode 带宽受限场景;attention 有明显竖线/sink 的 decoder LM(主流模型均有);要压 KV cache 显存又怕均匀 4-bit 精度崩。
+- **不必用**:短上下文(decode 未到带宽瓶颈,端到端仅 1.04×~1.17×);需要 bitwise 严格复现的离线评测;非 H100 类硬件(论文未验证)。
+- **同族对比**:只要省显存 → KIVI/KVQuant(纯量化,更简单);可接受丢 token 换稀疏加速 → MInference/H2O 系;layer 级混合精度够用 → KVTuner。HyQuant 差异化 = **token 级精度分配 + Prefill/Decode 一体化**。
 
 ## 局限
 

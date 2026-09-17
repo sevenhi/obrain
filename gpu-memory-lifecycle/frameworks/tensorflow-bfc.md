@@ -1,8 +1,12 @@
 ---
 title: TensorFlow 算子开发 + BFC allocator
 type: concept
-tags: [tensorflow, bfc, allocator, OPE_KERNEL_CONTEXT]
-source: "ppt: 显存生命周期培训 v2 (primary, 来源已提炼入库)"
+tags: [tensorflow, bfc, allocator, OpKernelContext]
+source:
+  - "ppt: 显存生命周期培训 v2 (primary, 来源已提炼入库)"
+  - "code: TF BFCAllocator(best-fit with coalescing / safe frontier / freed_at_count) | github.com/tensorflow/tensorflow bfc_allocator.h"
+  - "code: TF allocator.h(AllocationAttributes / freed_by_func) | github.com/tensorflow/tensorflow allocator.h"
+  - "code: TF op_kernel.h(OpKernelContext / allocate_output / allocate_temp) | github.com/tensorflow/tensorflow op_kernel.h"
 date: 2026-09
 ---
 

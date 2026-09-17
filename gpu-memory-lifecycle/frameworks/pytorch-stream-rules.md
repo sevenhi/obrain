@@ -2,7 +2,10 @@
 title: PyTorch 算子开发:流与显存生命周期规则
 type: howto
 tags: [pytorch, record_stream, stream, cuda]
-source: "ppt: 显存生命周期培训 v2 (primary, 来源已提炼入库)"
+source:
+  - "ppt: 显存生命周期培训 v2 (primary, 来源已提炼入库)"
+  - "web: PyTorch CUDA semantics(streams / side stream / caching allocator) | https://pytorch.org/docs/stable/notes/cuda.html"
+  - "web: torch.Tensor.record_stream 定义 | https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html"
 date: 2026-09
 ---
 

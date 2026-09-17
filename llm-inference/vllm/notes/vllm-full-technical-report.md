@@ -243,7 +243,7 @@ Ray 路径独有的开销/能力：placement group 调度、bundle 级 GPU 绑�
 本报告由其整合而成（同 commit，可直接溯源）：
 
 - `notes/vllm-api-server-openai-compat-notes.md`（第 2 章）
-- `notes/vllm-model-registry-notes.md`（第 3 章）
-- `notes/vllm-quantization-gptq-awq-fp8-notes.md`（第 4 章）
-- `notes/vllm-distributed-ray-notes.md`（第 5 章）
+- `../concepts/model-registry.md`（第 3 章,经 notes 提炼）
+- `../concepts/quantization-gptq-awq-fp8.md`（第 4 章,经 notes 提炼）
+- `../concepts/distributed-ray.md`（第 5 章,经 notes 提炼）
 - `notes/vllm-sampling-penalties-notes.md`（第 6 章）

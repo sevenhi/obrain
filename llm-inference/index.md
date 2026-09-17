@@ -23,7 +23,7 @@
 ## 共同主题速查(跨领域)
 
 - **显存/内存**:vLLM 的 PagedAttention/KV cache 是 host-vs-device lifetime 心智模型(见 `../gpu-memory-lifecycle/`)的最佳实例;FA/CUTLASS 都在 stream 上异步执行。
-- **底层依赖链**:vLLM 集成 FA;FA1 基于 CUTLASS 3.x 构建。升级某个时注意链路兼容。
+- **底层依赖链**:vLLM 集成 FA;FA2 基于 CUTLASS 3.x 构建。升级某个时注意链路兼容。
 
 ## 论文笔记
 

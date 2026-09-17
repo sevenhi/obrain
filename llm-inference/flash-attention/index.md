@@ -27,8 +27,8 @@ FlashAttention 是 Tri Dao 主导的开源高效 Attention 实现,核心思想�
 |---|---|---|---|---|---|
 | FA1 | 2022.05 | NeurIPS 2022 | A100 | IO-aware tiling + online softmax | 25-40% |
 | FA2 | 2023.07 | ICLR 2024 | A100+H100 | 更好 work partitioning, 减 non-matmul FLOPs | 50-73% |
-| FA3 | 2024.07 | blog | H100 | WGMMA async, TMA, FP8 | ~75% FP16 / ~80% FP8 |
-| FA4 | 2025.03 | TBD | H100+B200 | CuTe DSL, Python kernel generation | TBD |
+| FA3 | 2024.07 | NeurIPS 2024 | H100 | WGMMA async, TMA, FP8 | ~75% FP16 / ~61-66% FP8 |
+| FA4 | 2026.03 | arXiv:2603.05451 (MLSys 2026) | B200 | CuTe DSL, 异步 UMMA/tcgen05, 软 exp+软 softmax rescale, TMEM+2-CTA MMA | ~71% (BF16, up to 1613 TFLOPS) |
 
 ## 本库沉淀条目(obrain 内可读)
 

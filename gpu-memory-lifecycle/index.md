@@ -16,7 +16,7 @@
 
 | 章节 | 文件 | 定位 |
 |---|---|---|
-| 核心心智模型(必读) | [concepts/host-vs-device-lifetime.md](concepts/host-vs-device-lifetime.md) | 懂:两条时间线、异步≠并发、happens-before |
+| 核心心智模型(必读) | [concepts/host-vs-device-lifetime.md](concepts/host-vs-device-lifetime.md) | 懂:两条时间线、异步≠并发、happens-before 传递性、sync=边界非修复、record_stream 落点、5 问判定 + Case A/B/C |
 | PyTorch 规则 | [frameworks/pytorch-stream-rules.md](frameworks/pytorch-stream-rules.md) | 用:side stream 写法 |
 | TensorFlow / BFC | [frameworks/tensorflow-bfc.md](frameworks/tensorflow-bfc.md) | 懂+BFC 边界 |
 | TFRA 事故案例 | [cases/tfra-prepare-async-thread.md](cases/tfra-prepare-async-thread.md) | 查:踩内存根因复盘 |

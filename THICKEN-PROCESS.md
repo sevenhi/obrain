@@ -65,7 +65,7 @@ bot 意见分两类:
 - 三轮复审仍 NO → 停止,汇报用户(不无限重试);
 - **quick-assistant 对长文档可能超时**(600s RC=124):超时 → 用 doc-writer 复审意见 + quick-assistant 首审覆盖来兜底,判通过,不为 qa 复审反复重跑(重跑大概率再超时);
 - **权威数字竞争时用一手核实**:bot grep 被引 PDF 全文比 web 缓存可靠(FA3"840 TFLOPS"被 qa grep 出只在 ISBN 里、论文只写 740)。Python/源码实测 > bot 猜(如 vLLM `gpu_memory_utilization` 源码实测 0.92,doc-writer 给过时 0.9);
-- URL 先 curl 验证(博客 `blog.vllm.ai` 非 github.io;文档站 `docs.vllm.ai`);
+- URL 先 curl/浏览器验证(**vLLM 2023 博客页实测在 `vllm-project.github.io/2023/06/20/vllm.html`(现行有效),`blog.vllm.ai/2023-06-20/...` 已 404**;文档站是 `docs.vllm.ai`)。不同域名年代归属会反转,别凭旧印象,验证当前页;2026-09 曾实测确认此反转;
 - **修完笔记(src 一手资料)里同样错误**(vLLM counted 抢占源头在 notes,正文修完 notes 也回修)。
 
 ## 6. 收尾(达标即入库)

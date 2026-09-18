@@ -160,7 +160,7 @@ stage 3:  [copy A3/B3 → smem buf0]  [mma B2]    // buf0 已被算完,可复用
 
 把 warp 分成**两拨角色**:producer warp(专职搬数据:global→smem,用 TMA `cp.async.bulk.tensor` 或 `cp.async`)和 consumer warp(专职算:smem→register,发射 `wgmma`/`mma` 到 Tensor Core)。生产与消费**并发运行**,各自循环,靠 barrier 同步。
 
-> 纠错:别把 `wgmma` 当搬运指令——`wgmma`(warp-group MMA)是 Hopper 的**计算**指令,由 consumer 发射;producer 负责的是 **TMA 异步批量搬数据**(`cp.async.bulk.tensor`),二者分工正是 warp 特化的核心。
+> 纠错:别把 `wgmma` 当搬运指令——`wgmma`(warp-group MMA)是 Hopper 的**计算**指令,由 consumer 发射;producer 负责的是 **TMA 异步批量搬数据**(`cp.async.bulk.tensor`),二者分工正是 warp 特化的核心。wgmma 指令本身的机制(操作数位置约束、SMEM 布局、descriptor、同步)详见 [hopper-wgmma.md](hopper-wgmma.md)。
 
 ### 4.3 效果参考
 

@@ -48,6 +48,7 @@ date: 2026-09
 | Epilogue 收尾融合 | [concepts/epilogue-fusion.md](concepts/epilogue-fusion.md) | 为什么 epilogue 是性能关键、融合模式(bias/act/scale/转置)、与主循环分界 | ✅ 已写 |
 | TileScheduler 与负载均衡 | [concepts/tile-scheduler.md](concepts/tile-scheduler.md) | tile-based / Stream-K / Grouped 三种调度,SM 占用率,tail effect,fixup | ✅ 已写 |
 | CuTe Layout 代数 | [concepts/cute-layout-algebra.md](concepts/cute-layout-algebra.md) | Layout 抽象、代数运算(divide/product/coalesce)、Atom/TiledMMA、TV layout | ✅ 已写 |
+| Hopper WGMMA 指令机制 | [concepts/hopper-wgmma.md](concepts/hopper-wgmma.md) | warpgroup 级异步 MMA、SM90 atom 命名/形状、8 种 GMMA layout atom、descriptor、同步三件套 | ✅ 已写 |
 
 ### 工具与上手(用)
 | 专题 | 文件 | 一句话 | 状态 |
@@ -60,6 +61,7 @@ date: 2026-09
 ## 内容雷区(读/写 CUTLASS 时的坑速记)
 
 - **wgmma 是 Hopper 的计算指令**,不是搬运;producer 搬数据用 TMA `cp.async.bulk.tensor`
+- **WGMMA 操作数位置是硬约束非建议**:B 恒 SMEM,A 可 SMEM 或 RMEM(SS/RS),累加器 C 恒 RMEM——详见 [concepts/hopper-wgmma.md](concepts/hopper-wgmma.md)
 - **`cp.async` 自 Ampere 引入**,Ada 属 Ampere 阵营;无异步指令的一代是 Volta/Turing
 - **CuTe 运算名**:是 `logical_divide`/`zipped_divide`/`tiled_divide`/`coalesce`/`composition`/`complement`,不是 `left_padding`/`partitioned_into_TV`
 - **Stream-K 有 fixup 代价**:跨 CTA 归约 + workspace;默认 `ReductionMode::Deterministic` 已是确定性归约(非"天然不可复现")

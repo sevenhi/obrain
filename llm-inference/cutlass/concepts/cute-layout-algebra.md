@@ -114,7 +114,7 @@ LayoutC_TV: ((_4,_8),(_2,_2)):((_32,_1),(_16,_8))
 
 这些 TV layout 由 CuTe 架构师**按底层 PTX mma 的数据访问模式预先设计好**,使用者**不必自己研究 PTX mma 指令**。这正是 CuTe 的"开箱即用"价值。
 
-> ⚠ Hopper wgmma 的 TV layout 形态与 Ampere 的线程级 2D TV layout **不同**:Hopper GMMA 的 `ThrID` 是 `Layout<_128>`(warp-group 级),配 `SM90::GmmaDescriptor`(`Major::K` / `Major::MN`)+ swizzle atom(如 `Layout_SW128_Atom`)表达数据排布——别把 §3 的 Ampere 读法直接套到 Hopper(wgmma 无 Ampere 那种 `WarpsTileMode`,该名在 CUTLASS 全库不存在)。
+> ⚠ Hopper wgmma 的 TV layout 形态与 Ampere 的线程级 2D TV layout **不同**:Hopper GMMA 的 `ThrID` 是 `Layout<_128>`(warp-group 级),配 `SM90::GmmaDescriptor`(`Major::K` / `Major::MN`)+ swizzle atom(如 `Layout_SW128_Atom`)表达数据排布——别把 §3 的 Ampere 读法直接套到 Hopper(wgmma 无 Ampere 那种 `WarpsTileMode`,该名在 CUTLASS 全库不存在)。wgmma 的 atom 命名/形状约束、8 种 GMMA layout atom、descriptor 与同步机制详见 [hopper-wgmma.md](hopper-wgmma.md)。
 
 ---
 

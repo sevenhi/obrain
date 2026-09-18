@@ -44,7 +44,7 @@ date: 2026-09
 ### 核心概念(懂)
 | 专题 | 文件 | 一句话 | 状态 |
 |---|---|---|---|
-| 分层 GEMM:tiling 分解 | [concepts/gemm-tiling.md](concepts/gemm-tiling.md) | 硬件三层并发 → 三层 tiling → mainloop/epilogue → pipelining → Stream-K → CuTe | ✅ 已审批入库 |
+| 分层 GEMM:tiling 分解 | [concepts/gemm-tiling.md](concepts/gemm-tiling.md) | 硬件三层并发 → 三层 tiling → mainloop/epilogue → pipelining → Stream-K → CuTe | ✅ 已入库 |
 | Epilogue 收尾融合 | [concepts/epilogue-fusion.md](concepts/epilogue-fusion.md) | 为什么 epilogue 是性能关键、融合模式(bias/act/scale/转置)、与主循环分界 | ✅ 已写 |
 | TileScheduler 与负载均衡 | [concepts/tile-scheduler.md](concepts/tile-scheduler.md) | tile-based / Stream-K / Grouped 三种调度,SM 占用率,tail effect,fixup | ✅ 已写 |
 | CuTe Layout 代数 | [concepts/cute-layout-algebra.md](concepts/cute-layout-algebra.md) | Layout 抽象、代数运算(divide/product/coalesce)、Atom/TiledMMA、TV layout | ✅ 已写 |
@@ -66,7 +66,7 @@ date: 2026-09
 - **CuTe 运算名**:是 `logical_divide`/`zipped_divide`/`tiled_divide`/`coalesce`/`composition`/`complement`,不是 `left_padding`/`partitioned_into_TV`
 - **Stream-K 有 fixup 代价**:跨 CTA 归约 + workspace;默认 `ReductionMode::Deterministic` 已是确定性归约(非"天然不可复现")
 
-> 以上为三 bot 审批(2026-09)纠错沉淀,详见各篇正文。
+> 以上为多轮审查纠错沉淀(2026-09),详见各篇正文。
 
 ---
 

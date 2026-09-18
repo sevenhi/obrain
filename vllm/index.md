@@ -34,7 +34,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 - 主线 `vllm/v1/` 目录(本库概念篇的源码一手实读来自这里)
 - **关键版本差异(区别于网上旧资料)**:API 层 `api_server.py` 已退化为 59 行 shim,协议端点拆独立子包;模型注册从 `Models` 枚举演进为 `registry.py` 分类字典 + `_ModelRegistry`;量化合并为 `auto_gptq.py`/`auto_awq.py` + 统一 kernel 选型;executor 迁至 `vllm/v1/executor/`;采样惩罚在 `vllm/v1/sample/ops/` + argmax 不变性分组框架(详见各概念篇)
 
-## 深度概念篇(concepts,2026-09 多源综合+bot 审批)
+## 深度概念篇(concepts,2026-09 多源综合 + 深度打磨)
 
 > 源码一手实读 + 官方文档多源综合,提炼成"打开一篇能读懂"的知识沉淀(机制原理 + 数据 + 实践)。
 

@@ -62,7 +62,6 @@ date: 2026-09
 | `practices/` | checklist(清单) | 强约定 |
 | `notes/` | 源码一手实读笔记(**豁免** TL;DR/frontmatter 要求,见 §6) | 强约定(豁免) |
 | `frameworks/` | howto(工具上手) | 弱约定(**已知例外:`gpu-memory-lifecycle/frameworks/tensorflow-bfc.md` 的 type 是 concept**) |
-| `papers/` | 论文笔记 | 弱约定(**已知例外:`llm-inference/papers/hyquant-hybrid-precision-quantization.md` 的 type 是 concept**) |
 | `references.md`(领域根) | reference(链接索引) | 补充映射 |
 | `index.md`(领域根) | domain(领域导航页) | 补充映射 |
 

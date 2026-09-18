@@ -21,12 +21,24 @@
 
 **判据**:`obrain` = 提炼后的知识条目(可检索、有索引、按领域,内容自足);`library` = 原始资料存档(永不编辑)。两者不混;obrain 引用 library/archive 文件用 `source:` 指向,不复制;obrain 知识不依赖 tracker 同步管线。
 
-## 领域列表
+## 领域列表(5 个独立领域)
 
 | 领域 | 文件夹 | 一句话说明 | 最近更新 |
 |---|---|---|---|
-| GPU/框架 显存生命周期 | [`gpu-memory-lifecycle/`](gpu-memory-lifecycle/index.md) | 框架 allocator vs CUDA stream 的生命周期心智模型 + TFRA 事故案例 | 2026-09 |
-| LLM 推理引擎栈 | [`llm-inference/`](llm-inference/index.md) | vLLM / FlashAttention / CUTLASS 三层索引 + concept/howto 深度条目(cutlass 7 篇、FA 3 篇、vLLM 8 篇,均多源综合+bot 审批) | 2026-09 |
+| GPU/框架 显存生命周期 | [`gpu-memory-lifecycle/`](gpu-memory-lifecycle/index.md) | 框架 allocator vs CUDA stream 的生命周期心智模型 + TFRA 事故案例(5 篇) | 2026-09 |
+| CUTLASS | [`cutlass/`](cutlass/index.md) | 高性能 GEMM 模板库与 CuTe DSL:造内核的库(concepts 5 + frameworks 2,共 7 篇) | 2026-09 |
+| FlashAttention | [`flash-attention/`](flash-attention/index.md) | IO-aware 注意力内核机制(3 篇) | 2026-09 |
+| 量化算法 | [`quantization/`](quantization/index.md) | LLM 量化算法:权重/KV cache 量化的算法侧(1 篇,原 papers/ 论文笔记域) | 2026-09 |
+| vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构等(8 篇) | 2026-09 |
+
+## 三层关系(CUTLASS → FA → vLLM)
+
+**CUTLASS(造内核的库)→ FlashAttention(注意力内核)→ vLLM(整机推理引擎)**,自底向上三层:vLLM 集成 FA;FA2 基于 CUTLASS 3.x 构建,升级任一层注意链路兼容。
+
+## 跨域速查
+
+- **显存/内存**:vLLM 的 PagedAttention/KV cache 是 host-vs-device lifetime 心智模型(见 [`gpu-memory-lifecycle/`](gpu-memory-lifecycle/index.md))的**最佳实例**(全库独有的一对);FA/CUTLASS 都在 stream 上异步执行。
+- **量化双视角**:算法侧见 [`quantization/`](quantization/index.md),engine 侧(GPTQ/AWQ/FP8 注册分派)见 [`vllm/`](vllm/concepts/quantization-gptq-awq-fp8.md)。
 
 ---
 

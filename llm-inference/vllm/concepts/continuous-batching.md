@@ -6,6 +6,13 @@ source:
   - "pdf: PagedAttention 论文 (SOSP 2023) | arXiv:2309.06180 — Figure 3 吞吐对比 (Orca 等 baseline, 2-4x)"
   - "web: vLLM Blog — Easy, Fast, and Cheap LLM Serving with PagedAttention | https://vllm-project.github.io/2023/06/20/vllm.html"
   - "code: vLLM V1 源码(commit b74ac0bc6) 一手实读 (经 notes 提炼,notes 已删,以源码 commit 为准)"
+  - "web: 学习笔记:LLM大模型推理优化-Chunk Pre-fill | https://mp.weixin.qq.com/s/6YUgjMfWYdvryRP-gzppMQ (微信文章)"
+  - "web: vLLM Optimization 文档(Chunked Prefill 节) | https://docs.vllm.ai/en/latest/configuration/optimization/"
+  - "web: vLLM V1 Guide(Chunked Prefill V1/V0 差异) | https://docs.vllm.ai/en/latest/usage/v1_guide/"
+  - "web: NVIDIA TensorRT-LLM Chunked Prefill 官方博客 | https://developer.nvidia.com/blog/streamlining-ai-inference-performance-and-deployment-with-nvidia-tensorrt-llm-chunked-prefill/"
+  - "web: HuggingFace 博客 — How Long Prompts Block Other Requests | https://huggingface.co/blog/tngtech/llm-performance-blocked-by-long-prompts"
+  - "web: Deadline-Aware Adaptive Prefill Chunking (SLOWeave) | arXiv:2609.07883"
+  - "web: prefill-chunking-profiler | https://github.com/JohnScheuer/prefill-chunking-profiler"
 date: 2026-09
 ---
 
@@ -13,7 +20,7 @@ date: 2026-09
 
 ## TL;DR
 
-**连续批处理 = 迭代级(iteration-level)调度**:不是"一批一起算完再换下一批",而是**每一步都重新调度整个 batch**——完成的请求立刻移出、等待中的新请求按预算补进来、运行中请求再续 1 个 token。配合 V1 的**统一 token 预算模型**,decode + prefill 在同一 step 混批(且 prefill 被 chunk),尽量(至多)把 GPU 每一轮填到 `max_num_batched_tokens`(默认 2048;低负载时填不满)。
+**连续批处理 = 迭代级(iteration-level)调度**:不是"一批一起算完再换下一批",而是**每一步都重新调度整个 batch**——完成的请求立刻移出、等待中的新请求按预算补进来、运行中请求再续 1 个 token。配合 V1 的**统一 token 预算模型**,decode + prefill 在同一 step 混批(且 prefill 被 chunk;**V1 里 chunked prefill 条件允许即默认开启**,V0 是按模型特性条件启用),尽量(至多)把 GPU 每一轮填到 `max_num_batched_tokens`(默认 2048;低负载时填不满)。
 
 > 吞吐数字别挂错账:相对真正静态批处理(HF/transformers)FasterTransformer 的连续批处理本身就快 **14-24×**;SOSP 论文的 **2-4×** 是 **vLLM(含 PagedAttention + 连续批处理)整机** vs **Orca**(本身已是迭代级调度)的同延迟吞吐——而这 2-4× 的优势主要来自 **PagedAttention 的内存管理**,不是调度粒度本身(对 Orca 而言连续批处理已不是增量)。两个数字、两种归因,别混。
 
@@ -97,9 +104,32 @@ step 3: [decode A][decode B][prefill C 尾 200 tok]
 ```
 
 - **收益**：decode 和 prefill 同 batch 混合,GPU 每步都填满;
-- **代价**：单个 prefill 的延迟略增(拆开做),这正是默认开启、但 `long_prefill_token_threshold` 可对超长 prefill 限流的原因。
+- **代价**：单个 prefill 的延迟略增(拆开做)。配套旋钮:`long_prefill_token_threshold` 只是"多长算长 prompt"的**分类阈值**,真正限制超长 prefill 每步可调度 token 数的是 `max_long_partial_prefills`(见 §7 第 3 条)。
 
 > 取舍心法:chunked prefill 是在 **吞吐(填满 GPU) vs prefill 延迟(一次做完)** 之间做权衡。服务场景默认要吞吐,所以翻成"拆开缝进空隙"。
+
+### 4.1 V1 vs V0:默认开启是版本级差异
+
+vLLM V1 Guide 明确:**V1 里 chunked prefill 在条件允许时默认开启(enabled by default whenever possible)**,而 V0 是根据模型特性**条件启用**——这是 V1/V0 的一个重要行为差异,也印证 §2 的"统一 token 预算一个模型通吃":prefill/decode 不分阶段后,chunk 混批天然就是调度器的默认行为,不再是可选特性开关。实践上 **V1 不需要手动设 `enable_chunked_prefill`**(§3 数据结构里 `enable_chunked_prefill` 默认 True 即此)。
+
+### 4.2 跨引擎视角:不只 vLLM
+
+NVIDIA **TensorRT-LLM 也采用 chunked prefill**(官方博客):把 prompt token 切成小块、避免 prefill 阶段阻塞正在 decode 的请求,收益口径一致——**提升 GPU 利用率、简化部署**(不必为长短请求分离调优)。说明"prefill 分块与 decode 混批"已是行业共识做法,不是 vLLM 独有 trick。
+
+### 4.3 权衡的量化视角:长 prompt 阻塞队列
+
+HuggingFace(TNG,24×H100 自托管集群)的实测博客把"为什么需要 chunk"讲得更细:
+
+- 单次 prefill 本身就能打满 GPU(compute-bound),所以 vLLM 默认策略下**每个 prefill chunk 只含单个请求的 prompt token**;
+- 后果:prefill 队列**顺序调度**——一个超长 prompt 的请求在 prefill 期间,后续请求的首 token(TTFT)被整体推迟,即"**长 prompt 阻塞队列**"(微信科普文的动机段同口径;具体等待占比无实测出处,量化以 HF/TNG 实测博客为准);
+- chunking 把长 prefill 摊到多个 step,每步只占用部分 token 预算,decode 请求不必暂停 → **TTFT/decode 流畅度(延迟)与整批吞吐之间的权衡**,chunk 大小是旋钮。
+
+前沿方向:**Deadline-Aware Adaptive Prefill Chunking(SLOWeave,arXiv:2609.07883)** 按请求截止时间**自适应**调 chunk 大小,而不是全局固定值——吞吐-延迟权衡从静态调参走向按 SLA 动态调度(另有 GitHub 工具 `prefill-chunking-profiler` 可对 full vs chunked prefill 做实测对比;不同方向的近作 Nexus(arXiv:2507.06608)则做 Intra-GPU Prefill/Decode 分离,与本篇 chunked prefill 是两条路线)。
+
+### 4.4 通俗理解(微信原文类比)
+
+- **餐厅服务员**:好服务员是 A 桌倒水、B 桌上菜**交替进行**,而不是把 A 桌全套服务做完才理 B——任务交错,谁都不干等;
+- **资源分配示例**:若 GPU 每步预算够跑 **16 个 decode** 或 **4 个完整 prefill**,调度器可以混合出 **8 decode + 2 prefill chunk**——decode 请求优先保持活跃,剩余预算切给 prefill,分块大小可按负载动态调。这正是 §3"先 RUNNING 后 WAITING、按剩余 token_budget 切块"的直观版。
 
 ---
 
@@ -138,7 +168,7 @@ EngineCore.step()                        # core.py:597(行号以 597 为准,v1-a
 
 1. **吞吐瓶颈看调度频率,不是 batch 大小**:服务器频繁新请求时,谁能每步重排谁就赢——这解释了 vLLM 相对静态 batching 的倍增。
 2. **decode 阶段算术强度极低**:它是 memory-bound;连续批处理的核心价值就是**不让 decode 阶段 GPU 空转**(用混进来的 prefill 填满)。
-3. **chunked prefill 默认开但要懂取舍**:要吞吐混批 → 开;要单请求 prefill 低延迟(如交互式) → 考虑关或调 `long_prefill_token_threshold`。
+3. **chunked prefill 默认开但要懂取舍**:V1 里默认开启、**不需要手动设 `enable_chunked_prefill`**(V0 是按模型特性条件启用,老教程的开关经验别照搬);要吞吐混批 → 保持默认;要单请求 prefill 低延迟(如交互式) → 调小 `max_long_partial_prefills`(限制超长 prompt 每步可调度的 partial prefill token 数),配合 `long_prefill_token_threshold` 调整"多长算长 prompt"的分类线,或直接关。长 prompt 会顺序阻塞 prefill 队列、推高后续请求 TTFT(见 §4.3),高 QPS + 长短混合流量场景尤其注意 chunk 大小。
 4. **max_num_batched_tokens 是"每步喂多少"的旋钮**:示例默认 2048 但源码注释明确说它\"mainly for convenience when testing\"——**实际部署会被 EngineArgs 按模型/长度自动调整,别拿 2048 当线上真值**,查启动日志里的生效值再调。
 5. **注意 V0/V1 资料差异**:网上大量调度文章讲的是旧版(V0 里 waiting 只 prefill、running 只 decode 两条路径);当前主线 `vllm/v1/` 是统一 token 预算模型(以 `vllm/v1/` 源码为准,不是老教程)。
 6. **抢占(块不足)是连续批处理的兜底**:`allocate_slots` 失败触发抢占(默认抢 running 队尾),释放块进 LRU、被抢占请求重排靠 prefix cache 减重算——调参时看 **KV cache 余量比看 batch 数字更本质**(可观测指标:`vllm:num_preemptions_total` 看抢占次数、scheduler 指标看每步 batch 填充,别凭感觉)。
@@ -148,6 +178,11 @@ EngineCore.step()                        # core.py:597(行号以 597 为准,v1-a
 ## 8. 溯源
 
 - **PagedAttention 论文**(iteration-level scheduling、吞吐对比 Figure 3): Kwon et al., SOSP 2023, arXiv:2309.06180
-- **ORCA**(首次提出 iteration-level batching, vLLM 的吞吐 baseline 参照): arXiv:2207.03718
+- **ORCA**(首次提出 iteration-level batching, vLLM 的吞吐 baseline 参照): Yu et al., "Orca: A Distributed Serving System for Transformer-Based Generative Models", USENIX OSDI 2022, https://www.usenix.org/conference/osdi22/presentation/yu (无可靠 arXiv 号,不标)
 - **vLLM 博客**(吞吐测量、与 baseline 对比): https://vllm-project.github.io/2023/06/20/vllm.html
 - **V1 源码一手实读**: `vllm/v1/core/sched/scheduler.py`(调度器/统一预算/chunked prefill)与 `vllm/v1/engine/core.py`(step 循环),基准 commit `b74ac0bc6`(原 notes `vllm-core-architecture-notes.md` §1/§3 **已删,以源码 commit b74ac0bc6 为准**)
+- **微信文章**(chunked prefill 科普:动机/餐厅类比/资源分配示例): 学习笔记:LLM大模型推理优化 - Chunk Pre-fill,https://mp.weixin.qq.com/s/6YUgjMfWYdvryRP-gzppMQ(内容与本篇 §4 重叠,按 SOURCE-POLICY 并入不新开篇)
+- **vLLM 官方文档**: Optimization(Chunked Prefill 节)https://docs.vllm.ai/en/latest/configuration/optimization/ ;V1 Guide(V1 默认开启 chunked prefill 的 V1/V0 差异)https://docs.vllm.ai/en/latest/usage/v1_guide/
+- **NVIDIA TensorRT-LLM Chunked Prefill 博客**(跨引擎印证): https://developer.nvidia.com/blog/streamlining-ai-inference-performance-and-deployment-with-nvidia-tensorrt-llm-chunked-prefill/
+- **HuggingFace/TNG 博客**(长 prompt 阻塞队列的量化分析): https://huggingface.co/blog/tngtech/llm-performance-blocked-by-long-prompts
+- **前沿/工具**: SLOWeave《Deadline-Aware Adaptive Prefill Chunking》(按截止时间自适应分块方向, arXiv:2609.07883);Nexus(Intra-GPU Prefill/Decode 分离, arXiv:2507.06608,另一方向);prefill-chunking-profiler https://github.com/JohnScheuer/prefill-chunking-profiler (full vs chunked 实测对比)

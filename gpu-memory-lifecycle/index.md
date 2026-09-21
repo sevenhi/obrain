@@ -8,7 +8,7 @@ title: GPU / 框架 显存生命周期
 type: domain
 tags: [cuda, memory-lifecycle, gpu, tensorflow, pytorch]
 source:
-  - "ppt: 显存生命周期培训 v2 (primary, 来源已提炼入库)"
+  - "ppt: 显存生命周期培训 v2 (primary) | framework_cuda_memory_lifecycle_training_with_tfra_case_v2.pptx | ~/zhanbin/library/training/"
 date: 2026-09
 ---
 

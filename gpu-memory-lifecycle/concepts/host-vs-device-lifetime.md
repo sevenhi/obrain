@@ -3,7 +3,7 @@ title: host-side lifetime vs device-side execution lifetime(核心心智模型)
 type: concept
 tags: [cuda, memory-lifecycle, happens-before, async, stream, record-stream, caching-allocator]
 source:
-  - "ppt: 显存生命周期培训 v2 (primary, 来源已提炼入库)"
+  - "ppt: 显存生命周期培训 v2 (primary) | framework_cuda_memory_lifecycle_training_with_tfra_case_v2.pptx | ~/zhanbin/library/training/"
   - "web: PyTorch CUDA semantics | https://pytorch.org/docs/stable/notes/cuda.html"
   - "web: torch.Tensor.record_stream | https://pytorch.org/docs/stable/generated/torch.Tensor.record_stream.html"
   - "code: TF BFCAllocator | github.com/tensorflow/tensorflow bfc_allocator.h"

@@ -59,4 +59,4 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
 - LASER:80% 注意力概率 <10⁻³、20% <10⁻⁷(Jacobian ∝ a 的直接后果);Log-Weighted-Sum-Exp trick 后 FlashAttention 零修改可用;
 - SpAtten:attention 占 GPT-2 延迟 >50% / FLOPs ~10%,73% 时间在搬数据;仅 5.9% 样本需要 LSB;
 - MEGABYTE:GPT-3 尺寸 attention 只占 1.4% FLOPs;P=T^{1/3} → O(T^{4/3});
-- LLaMA:7B×1T tokens(143× Chinchilla 配比)仍单调变好;65B = 2048×A100 × 21 天。
+- LLaMA:7B×1T tokens(143 tokens/参数,约 7× Chinchilla 配比)仍单调变好;65B = 2048×A100 × 21 天。

@@ -2,7 +2,7 @@
 title: 显存生命周期 - 参考资料索引
 type: reference
 tags: [pytorch, tensorflow, cuda]
-source: "ppt: 显存生命周期培训 v2 (primary, 来源已提炼入库)"
+source: "ppt: 显存生命周期培训 v2 (primary) | framework_cuda_memory_lifecycle_training_with_tfra_case_v2.pptx | ~/zhanbin/library/training/"
 date: 2026-09
 ---
 
@@ -33,4 +33,4 @@ date: 2026-09
 
 ## 来源
 
-- 原始来源:显存生命周期培训 deck v2(30 页 + 讲者备注,来源已提炼入库)
+- 原始来源:显存生命周期培训 deck v2(30 页 + 讲者备注,来源已提炼入库) | framework_cuda_memory_lifecycle_training_with_tfra_case_v2.pptx | ~/zhanbin/library/training/

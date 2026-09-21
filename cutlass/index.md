@@ -74,3 +74,7 @@ date: 2026-09
 
 - 官方文档站:https://docs.nvidia.com/cutlass/latest/
 - GitHub:https://github.com/NVIDIA/cutlass
+
+## 相关条目(跨域互链)
+
+- [computer-vision/concepts/trt-vit-inference.md](../computer-vision/concepts/trt-vit-inference.md)——TRT-ViT 以 TensorRT 实测延迟(而非 FLOPs)为架构设计准绳,其效率分析的硬件根因(GEMM/attention 真实利用率、访存瓶颈)正是本域 tiling/Tensor Core 机制的应用侧实例;TensorRT 内部大量用 CUTLASS 生成 GEMM kernel。

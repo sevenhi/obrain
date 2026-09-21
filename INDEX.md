@@ -21,7 +21,7 @@
 
 **判据**:`obrain` = 提炼后的知识条目(可检索、有索引、按领域,内容自足);`library` = 原始资料存档(永不编辑)。两者不混;obrain 引用 library/archive 文件用 `source:` 指向,不复制;obrain 知识不依赖 tracker 同步管线。
 
-## 领域列表(5 个独立领域)
+## 领域列表(6 个独立领域)
 
 | 领域 | 文件夹 | 一句话说明 | 最近更新 |
 |---|---|---|---|
@@ -30,6 +30,7 @@
 | FlashAttention | [`flash-attention/`](flash-attention/index.md) | IO-aware 注意力内核机制(含 Rabe&Staats 省显存前驱,4 篇) | 2026-09 |
 | 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:权重/KV cache 量化 + 稀疏量化混合(SpQR)+ 低秩/剪枝路线(3 篇,原 papers/ 论文笔记域) | 2026-09 |
 | vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构等(8 篇) | 2026-09 |
+| Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核(4 篇) | 2026-09 |
 
 ## 三层关系(CUTLASS → FA → vLLM)
 
@@ -39,6 +40,7 @@
 
 - **显存/内存**:vLLM 的 PagedAttention/KV cache 是 host-vs-device lifetime 心智模型(见 [`gpu-memory-lifecycle/`](gpu-memory-lifecycle/index.md))的**最佳实例**(全库独有的一对);FA/CUTLASS 都在 stream 上异步执行。
 - **量化双视角**:算法侧见 [`quantization/`](quantization/index.md),engine 侧(GPTQ/AWQ/FP8 注册分派)见 [`vllm/`](vllm/concepts/quantization-gptq-awq-fp8.md)。
+- **硬件真实效率**:CUTLASS 的 tiling/Tensor Core 机制是理解「FLOPs≠延迟」的底层;应用侧实例见 [`computer-vision/concepts/trt-vit-inference.md`](computer-vision/concepts/trt-vit-inference.md)(以 TensorRT 实测延迟为架构设计准绳,TensorRT 内部以 CUTLASS 生成 GEMM kernel)。
 - **精确 attention 省显存谱系**:Milakov online softmax → Rabe & Staats O(1) 显存 → FlashAttention IO-aware([`flash-attention/concepts/exact-attention-memory-lineage.md`](flash-attention/concepts/exact-attention-memory-lineage.md))。
 
 ---

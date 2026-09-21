@@ -27,8 +27,8 @@
 |---|---|---|---|
 | GPU/框架 显存生命周期 | [`gpu-memory-lifecycle/`](gpu-memory-lifecycle/index.md) | 框架 allocator vs CUDA stream 的生命周期心智模型 + TFRA 事故案例(5 篇) | 2026-09 |
 | CUTLASS | [`cutlass/`](cutlass/index.md) | 高性能 GEMM 模板库与 CuTe DSL:造内核的库(concepts 5 + frameworks 2,共 7 篇) | 2026-09 |
-| FlashAttention | [`flash-attention/`](flash-attention/index.md) | IO-aware 注意力内核机制(3 篇) | 2026-09 |
-| 量化算法 | [`quantization/`](quantization/index.md) | LLM 量化算法:权重/KV cache 量化的算法侧(1 篇,原 papers/ 论文笔记域) | 2026-09 |
+| FlashAttention | [`flash-attention/`](flash-attention/index.md) | IO-aware 注意力内核机制(含 Rabe&Staats 省显存前驱,4 篇) | 2026-09 |
+| 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:权重/KV cache 量化 + 稀疏量化混合(SpQR)+ 低秩/剪枝路线(3 篇,原 papers/ 论文笔记域) | 2026-09 |
 | vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构等(8 篇) | 2026-09 |
 
 ## 三层关系(CUTLASS → FA → vLLM)
@@ -39,6 +39,7 @@
 
 - **显存/内存**:vLLM 的 PagedAttention/KV cache 是 host-vs-device lifetime 心智模型(见 [`gpu-memory-lifecycle/`](gpu-memory-lifecycle/index.md))的**最佳实例**(全库独有的一对);FA/CUTLASS 都在 stream 上异步执行。
 - **量化双视角**:算法侧见 [`quantization/`](quantization/index.md),engine 侧(GPTQ/AWQ/FP8 注册分派)见 [`vllm/`](vllm/concepts/quantization-gptq-awq-fp8.md)。
+- **精确 attention 省显存谱系**:Milakov online softmax → Rabe & Staats O(1) 显存 → FlashAttention IO-aware([`flash-attention/concepts/exact-attention-memory-lineage.md`](flash-attention/concepts/exact-attention-memory-lineage.md))。
 
 ---
 

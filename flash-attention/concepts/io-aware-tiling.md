@@ -7,6 +7,8 @@ source:
   - "pdf: FlashAttention-2 | Dao et al. arXiv:2307.08691 ICLR 2024"
   - "web: Tri Dao FlashAttention-2 博客 (work partitioning) | https://princeton-nlp.github.io/flash-atttention-2/"
   - "pdf: UW CSE 599M 讲义 From Online Softmax to FlashAttention (Zihao Ye) | https://courses.cs.washington.edu/courses/cse599m/23sp/notes/flashattn.pdf"
+  - "pdf: Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 引用[66]并设附录 B.5 专节比较;online softmax/lazy softmax 前驱) | arXiv:2112.05682 | ~/zhanbin/library/papers/Self-Attention does not Need O(n2) Memory.pdf"
+  - "pdf: Online normalizer calculation for softmax (Milakov & Gimelshein, FA1 引用[60], online softmax 最早出处) | arXiv:1805.02867 | https://arxiv.org/abs/1805.02867 (2026-09 实测 200)"
 date: 2026-09
 ---
 
@@ -53,6 +55,8 @@ softmax(合并整个 S 行) ≠ 合并各块单独算的 softmax
 如果你硬把一整行 S 切成几块、各自单独做 softmax,合的 `∑exp` 和 max 对不上,结果就是**错的(近似)**。这让"像 GEMM 一样按块算 attention"变得非平凡。
 
 **解法就是 online softmax**:用**增量式**维护 running max `m` 和 running sum `l`,让每块可以"边算边把信息并入全局统计",最后得到**精确**的 softmax(见下节推导)。
+
+> **前驱交叉引用**:这个"softmax 不必先看完整行"的观察早有谱系——Milakov & Gimelshein 的 online normalizer(arXiv:1805.02867,FA1 引用[60])提出增量归一化;Rabe & Staats《Self-Attention does not Need O(n²) Memory》(arXiv:2112.05682,FA1 引用[66])据此证明单 query attention 只需 **O(1) 额外显存**(lazy softmax + 在线 max 重归一),并给出 JAX 分块实现(O(√n) 显存,n=16384 时推理省 59×/反传省 32×)。**FA 的差异化**:R&S 优化"显存占用峰值"(速度与标准实现持平或略慢),FA 优化"HBM 访存次数"(2-4× 加速)——同一数学、不同工程目标。详见本域 [exact-attention-memory-lineage.md](exact-attention-memory-lineage.md)(含 FA1 附录 B.5 三点比较的提炼)。
 
 ---
 
@@ -160,4 +164,6 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
 - FA2 论文(work partitioning、基于 CUTLASS 3.x): Dao, https://arxiv.org/abs/2307.08691 (ICLR 2024)
 - Tri Dao 的 FA2 博客(25-40%→72% MFU、A100 230 TFLOP/s): https://princeton-nlp.github.io/flash-atttention-2/
 - UW CSE 599M 讲义 *From Online Softmax to FlashAttention*(softmax 不结合→online softmax 的推导): https://courses.cs.washington.edu/courses/cse599m/23sp/notes/flashattn.pdf
+- Online softmax 前驱:Milakov & Gimelshein, *Online normalizer calculation for softmax*, https://arxiv.org/abs/1805.02867 (2018)
+- O(1) 显存前驱(FA1 [66],附录 B.5 专节比较):Rabe & Staats, *Self-Attention does not Need O(n²) Memory*, https://arxiv.org/abs/2112.05682 → 本域详注 [exact-attention-memory-lineage.md](exact-attention-memory-lineage.md)
 - 官方实现仓库(含 FA1/FA2 kernel 与 `benchmarks/` 复测): https://github.com/Dao-AILab/flash-attention

@@ -7,6 +7,7 @@ source:
   - "pdf: FlashAttention FA1 | arXiv:2205.14135 NeurIPS 2022"
   - "pdf: FlashAttention-2 FA2 | arXiv:2307.08691 ICLR 2024"
   - "pdf: FlashAttention-3 | arXiv:2407.08608 NeurIPS 2024"
+  - "pdf: Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 前驱) | arXiv:2112.05682 | ~/zhanbin/library/papers/Self-Attention does not Need O(n2) Memory.pdf"
 date: 2026-09
 ---
 
@@ -37,6 +38,7 @@ FlashAttention 是 Tri Dao 主导的开源高效 Attention 实现,核心思想�
 | 条目 | 类型 | 一句话 | 状态 |
 |---|---|---|---|
 | [IO-aware tiling 与 Online Softmax](concepts/io-aware-tiling.md) | concept | 为什么标准 attention 慢(内存 N²)、softmax 不结合→online softmax、完整算法、IO 复杂度、FA2+ 演进 | ✅ 已入库 |
+| [精确注意力省显存谱系(Rabe & Staats)](concepts/exact-attention-memory-lineage.md) | concept | FA 前驱:lazy softmax+在线 max 重归一 → O(1) 存注意力;R&S 省"显存峰值"、FA 省"访存次数"(arXiv 2112.05682) | ✅ 已入库 |
 | [并行与 Work Partitioning(FA2)](concepts/work-partitioning.md) | concept | FA2 为什么快 2×:减 non-matmul FLOPs、warp 按 Q 行切分免通信、序列维 split-K | ✅ 已入库 |
 | [Hopper 异步内核(FA3)](concepts/fa3-hopper-async.md) | concept | FA3:异步 WGMMA、TMA、softmax/matmul/load 重叠 pipeline、FP8 | ✅ 已入库 |
 
@@ -53,3 +55,4 @@ FlashAttention 是 Tri Dao 主导的开源高效 Attention 实现,核心思想�
 - FA1: Dao et al., *FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness*, NeurIPS 2022, arXiv:2205.14135
 - FA2: Dao, *FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning*, ICLR 2024, arXiv:2307.08691
 - FA3: Dao et al., *FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision*, NeurIPS 2024, arXiv:2407.08608
+- 前驱: Rabe & Staats, *Self-Attention does not Need O(n²) Memory*, arXiv:2112.05682(FA1 引用[66],附录 B.5 专节比较)→ [exact-attention-memory-lineage.md](concepts/exact-attention-memory-lineage.md)

@@ -33,5 +33,4 @@ date: 2026-09
 
 ## 相关条目(跨域)
 
-- [gpu-memory-lifecycle](../gpu-memory-lifecycle/index.md):cuRAND state 存 global memory 跨 kernel 复用时受 host-vs-device 生命周期约束
 - [cutlass](../cutlass/index.md):同属 GPU kernel 工程域——Philox 融合进自定义 kernel 时的性能考量同"计算 vs 搬运"权衡

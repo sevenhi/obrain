@@ -61,7 +61,7 @@ date: 2026-09
 | `cases/` | case(事故复盘) | 强约定 |
 | `practices/` | checklist(清单) | 强约定 |
 | `notes/` | 源码一手实读笔记(**豁免** TL;DR/frontmatter 要求,见 §6) | 强约定(豁免) |
-| `frameworks/` | howto(工具上手) | 弱约定(**已知例外:`gpu-memory-lifecycle/frameworks/tensorflow-bfc.md` 的 type 是 concept**) |
+| `frameworks/` | howto(工具上手) | 弱约定 |
 | `references.md`(领域根) | reference(链接索引) | 补充映射 |
 | `index.md`(领域根) | domain(领域导航页) | 补充映射 |
 
@@ -73,4 +73,4 @@ date: 2026-09
 
 ## 对现有库的说明
 
-本库的 gpu-memory-lifecycle 概念篇已示范多来源合并(见 `concepts/host-vs-device-lifetime.md` 的 `source`,同时含 ppt 主源 + 官方文档多个来源)。后续每接一个新来源,按本策略补 `source` 即可。
+本库的多来源合并已示范在多个领域(如 FlashAttention 篇的 source 同时含 arXiv 论文多个来源、quantization 篇含论文 + 库内 PDF)。后续每接一个新来源,按本策略补 `source` 即可。

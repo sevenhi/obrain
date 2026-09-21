@@ -32,7 +32,7 @@ date: 2026-09
 ## 相关条目(跨域互链)
 
 - [cutlass/](../cutlass/index.md)——TRT-ViT 的效率分析根因(GEMM/attention 在硬件上的真实利用率)与 CUTLASS 的 tiling/Tensor Core 机制同源;TensorRT 内部以 CUTLASS 生成 GEMM kernel。互链见 [trt-vit-inference.md](concepts/trt-vit-inference.md) 实践要点。
-- [flash-attention/](../flash-attention/index.md)——NeRF/TRT-ViT 都涉及「访存而非算力是瓶颈」的判断,与 FA 的 IO-aware 分析同一方法论。
+- [attention/](../attention/index.md)——NeRF/TRT-ViT 都涉及「访存而非算力是瓶颈」的判断,与 FA 的 IO-aware 分析同一方法论。
 - [quantization/](../quantization/index.md)——与 OREPA 同属「模型压缩/加速」工具箱(重参数化 vs 量化,正交可叠加)。
 
 ## 溯源

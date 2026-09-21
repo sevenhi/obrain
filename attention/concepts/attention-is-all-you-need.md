@@ -137,10 +137,10 @@ causal = torch.tril(torch.ones(S, S))     # 因果掩码: 下三角为 1
 - **post-norm vs pre-norm**:原论文是 `LayerNorm(x+Sublayer(x))`(post-norm),深层训练不稳;GPT-3 起主流改 pre-norm,LLaMA 再换 RMSNorm——读老代码注意两种残差结构不可混。
 - **beam search 超参对翻译质量影响显著**:beam=4 + α=0.6 + checkpoint 平均,三件套是当年复现 SOTA 的必要条件,只训不平均会掉 ~0.5 BLEU 量级。
 - **batch 按 token 预算而非样本数**:25000+25000 tokens/batch 的思路延续到今天 LLM 训练(LLaMA 按 4M tokens/batch)。
-- **O(n²) 是留给后人的账单**:原论文已预告 restricted self-attention(邻域 r)作为长序列出路。今天的高效注意力谱系——FlashAttention(IO-aware 精确算法,见 [`flash-attention/`](../../flash-attention/index.md) 域)、StreamingLLM(sink+滚窗,见 [attention-sinks-streaming](attention-sinks-streaming.md))、稀疏剪枝硬件(SpAtten,见 [attention-variants-laser-spatten](attention-variants-laser-spatten.md))、多尺度分解(MEGABYTE,见 [megabyte-multiscale](megabyte-multiscale.md))——全部是在还这笔账。
+- **O(n²) 是留给后人的账单**:原论文已预告 restricted self-attention(邻域 r)作为长序列出路。今天的高效注意力谱系——FlashAttention(IO-aware 精确算法,见 [io-aware-tiling](io-aware-tiling.md))、StreamingLLM(sink+滚窗,见 [attention-sinks-streaming](attention-sinks-streaming.md))、稀疏剪枝硬件(SpAtten,见 [attention-variants-laser-spatten](attention-variants-laser-spatten.md))、多尺度分解(MEGABYTE,见 [megabyte-multiscale](megabyte-multiscale.md))——全部是在还这笔账。
 
 ## 溯源
 
 - 主源:本地 PDF(arXiv v5,2017-12-06),正文/表格数字均直接核对原文。
 - 交叉源:Illustrated Transformer(图解心智模型)、Annotated Transformer(PyTorch 复现参考),URL 已 curl 验证存活(2026-09-21)。
-- 关联条目:[attention-sinks-streaming](attention-sinks-streaming.md)(softmax 分母视角的延伸)、[llama-architecture](llama-architecture.md)(三项架构改进)、[`flash-attention/io-aware-tiling`](../../flash-attention/concepts/io-aware-tiling.md)(O(n²) 内存问题的精确解)。
+- 关联条目:[attention-sinks-streaming](attention-sinks-streaming.md)(softmax 分母视角的延伸)、[llama-architecture](llama-architecture.md)(三项架构改进)、[io-aware-tiling](io-aware-tiling.md)(O(n²) 内存问题的精确解)。

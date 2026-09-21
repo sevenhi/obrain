@@ -1,11 +1,11 @@
 ---
-title: attention-and-transformers 外部链接索引
+title: attention 外部链接索引
 type: reference
 tags: [transformer, attention, references]
 date: 2026-09
 ---
 
-# References — attention-and-transformers
+# References — attention
 
 > 只放链接索引,不复制全文(库规约)。全部 URL 于 2026-09-21 curl 实测存活(标注除外)。本地 PDF 原件在 `~/zhanbin/library/papers/`(只读)。
 

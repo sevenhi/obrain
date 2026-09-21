@@ -209,7 +209,7 @@ cute::warpgroup_wait<0>();                // = wgmma.wait_group.sync.aligned 0
 
 两个进阶要点:
 - **同 accumulator shape 的多条 wgmma 可免重复 fence**:Hopper 允许多条 `wgmma.mma_async` 同时在飞,只要累加器 shape 相同、写同一批寄存器地址,中间不需要再插 `wgmma.fence`——所以 `cute::gemm` 内部 MMA_K 循环里不用逐条 fence;
-- **`wait<N>` 的 N>0 是 overlap 的抓手**:warpgroup 有独立计算可做时(如 FA3 的 GEMM-softmax 重叠),让上一组 wgmma 还在飞、先干别的,靠 N>0 控制等待深度。FA3 的 pingpong/warp-spec 编排详见 [fa3-hopper-async.md](../../flash-attention/concepts/fa3-hopper-async.md)。
+- **`wait<N>` 的 N>0 是 overlap 的抓手**:warpgroup 有独立计算可做时(如 FA3 的 GEMM-softmax 重叠),让上一组 wgmma 还在飞、先干别的,靠 N>0 控制等待深度。FA3 的 pingpong/warp-spec 编排详见 [fa3-hopper-async.md](../../attention/concepts/fa3-hopper-async.md)。
 
 ---
 
@@ -279,7 +279,7 @@ Colfax Part 1 本身无性能数字(评论区作者也确认:量化收益看 FA3
 
 ≈ **3.2× 代际提升**(H100 FP16 dense 峰值精确口径 989.4 TFLOPS,datasheet 取整 ~1,000);单 TC 每周期算力按杨远航笔记的口径:Volta 1st-gen 128 FLOPs/cycle,每代翻倍 → Hopper 4th-gen **1024 FLOPs/cycle**、Blackwell 5th-gen 2048(Blackwell 已改用 `tcgen05`/UMMA,wgmma 为 Hopper-only)。
 
-**工程实效参照**:Colfax 团队成员 Hieu Pham 在评论区给的估计口径(原文带问号,非 FA3 论文作者本人)——FA3(H100,TMA+WGMMA+warp-spec)相对 FA2(A100,cp_async+WMMA+多级流水)约 **2~3×?**;FA3 论文正式口径为 **BF16 相对 FA2 加速 1.5-2×**(与库内 fa3 篇一致),论文实测 FP16/BF16 前向最高 **740 TFLOPS**,约为 H100 dense 峰值(989)的 **75%**。细节见 [fa3-hopper-async.md](../../flash-attention/concepts/fa3-hopper-async.md) 与 [gemm-tiling.md](gemm-tiling.md) §4。
+**工程实效参照**:Colfax 团队成员 Hieu Pham 在评论区给的估计口径(原文带问号,非 FA3 论文作者本人)——FA3(H100,TMA+WGMMA+warp-spec)相对 FA2(A100,cp_async+WMMA+多级流水)约 **2~3×?**;FA3 论文正式口径为 **BF16 相对 FA2 加速 1.5-2×**(与库内 fa3 篇一致),论文实测 FP16/BF16 前向最高 **740 TFLOPS**,约为 H100 dense 峰值(989)的 **75%**。细节见 [fa3-hopper-async.md](../../attention/concepts/fa3-hopper-async.md) 与 [gemm-tiling.md](gemm-tiling.md) §4。
 
 ---
 
@@ -303,5 +303,5 @@ Colfax Part 1 本身无性能数字(评论区作者也确认:量化收益看 FA3
   - Part 2(TMA + warp-specialization + ping-pong,GEMM kernel 整体设计):https://research.colfax-intl.com/cutlass-tutorial-design-of-a-gemm-kernel/
 - **代码参考**:`examples/cute/tutorial/wgmma_sm90.cu`(Pradeep Ramani 贡献,CUTLASS 3.5.1 加入):https://github.com/NVIDIA/cutlass
 - **PTX ISA**(wgmma.mma_async 语法、core matrix 图、descriptor 字段、imm-trans 仅 f16/bf16、Table 37 swizzle 与 majorness 独立):https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-mma-async
-- **性能数据**:H100 datasheet https://resources.nvidia.com/en-us-data-center-overview/nvidia-tensor-core-gpu-datasheet ;A100 datasheet https://www.nvidia.com/content/dam/en-zz/Solutions/Data-Center/a100/pdf/nvidia-a100-datasheet-us-nvidia-1758950-r4-web.pdf ;FA3 数字见库内 [fa3-hopper-async.md](../../flash-attention/concepts/fa3-hopper-async.md);TC 代际 FLOPs/cycle 口径见杨远航 CUTLASS 笔记导读(知乎专栏 https://www.zhihu.com/column/c_1938664963049763058 )
+- **性能数据**:H100 datasheet https://resources.nvidia.com/en-us-data-center-overview/nvidia-tensor-core-gpu-datasheet ;A100 datasheet https://www.nvidia.com/content/dam/en-zz/Solutions/Data-Center/a100/pdf/nvidia-a100-datasheet-us-nvidia-1758950-r4-web.pdf ;FA3 数字见库内 [fa3-hopper-async.md](../../attention/concepts/fa3-hopper-async.md);TC 代际 FLOPs/cycle 口径见杨远航 CUTLASS 笔记导读(知乎专栏 https://www.zhihu.com/column/c_1938664963049763058 )
 - **库内交叉**:[cute-layout-algebra.md](cute-layout-algebra.md)(Atom/TiledMMA/TV layout 通识 + Hopper GMMA 注记)、[gemm-tiling.md](gemm-tiling.md)(三层 tiling / warp 特化 / pipelining)、[../frameworks/cutlass-build-and-usage.md](../frameworks/cutlass-build-and-usage.md)(sm_90a 构建)、[../frameworks/cutlass-profiling-tuning.md](../frameworks/cutlass-profiling-tuning.md)(调优)

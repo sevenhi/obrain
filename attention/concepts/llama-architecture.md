@@ -65,7 +65,7 @@ AdamW β₁=0.9, **β₂=0.95**;cosine schedule 终值 = 10% max LR;weight decay
 
 ### 2.3 高效实现(§2.4,与 FA 域直接衔接)
 
-- **因果 attention 用 xformers 实现**:不存注意力权重、不算被因果掩码遮住的 QK 分数;论文明说前向"inspired by **Rabe and Staats (2021)**"(O(1) 内存注意力),反向用 **Dao et al. (2022) = FlashAttention** 的 recomputation——即 FA1 的内存分析前驱(详见 [`flash-attention/`](../../flash-attention/index.md) 域,批 C 将补 Rabe & Staats 专篇);
+- **因果 attention 用 xformers 实现**:不存注意力权重、不算被因果掩码遮住的 QK 分数;论文明说前向"inspired by **Rabe and Staats (2021)**"(O(1) 内存注意力),反向用 **Dao et al. (2022) = FlashAttention** 的 recomputation——即 FA1 的内存分析前驱(详见 [exact-attention-memory-lineage](exact-attention-memory-lineage.md),已入库);
 - **选择性激活重计算**:不用 PyTorch autograd,手写 transformer 层反向,只重算便宜激活、保存贵的(线性层输出)——比"全保存"省显存、比"全重算"省时间;
 - **模型并行 + 序列并行**(Korthikanti et al. 2022)+ all_reduce 通信与激活计算重叠;
 - **实测吞吐**:65B,2048×A100-80G,**380 tokens/s/GPU** → 1.4T tokens ≈ **21 天**。
@@ -105,4 +105,4 @@ AdamW β₁=0.9, **β₂=0.95**;cosine schedule 终值 = 10% max LR;weight decay
 
 - 主源:本地 PDF(arXiv v1,2023-02-27),Table 2-6/§2 配方数字直接核对原文;§3.3 MMLU 63.4 为 Table 6 值(论文 v1)。
 - 交叉源:Meta AI 官方博客(发布口径/democratize 叙事,2023-02-24,URL 大小写敏感——小写 llama 路径 curl 000 失败,官方 `Llama` 大写路径 200)、facebookresearch/llama 官方仓库、RoPE/RMSNorm/SwiGLU 三篇原始论文(组件出处核对)。全部 URL curl 验证存活(2026-09-21)。
-- 关联条目:[attention-is-all-you-need](attention-is-all-you-need.md)(被改的原始基线)、[`flash-attention/`](../../flash-attention/index.md)(xformers 高效 attention 的算法来源)、[megabyte-multiscale](megabyte-multiscale.md)(同期 Meta 的另一条 scaling 探索)。
+- 关联条目:[attention-is-all-you-need](attention-is-all-you-need.md)(被改的原始基线)、[exact-attention-memory-lineage](exact-attention-memory-lineage.md)(xformers 高效 attention 的算法来源:Rabe & Staats 前向 + FA1 反向)、[megabyte-multiscale](megabyte-multiscale.md)(同期 Meta 的另一条 scaling 探索)。

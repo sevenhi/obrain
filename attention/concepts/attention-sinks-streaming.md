@@ -146,4 +146,4 @@ window attention 在长流上输出接近随机;StreamingLLM 追平逐样本 one
 
 - 主源:本地 PDF(arXiv v4,2024-04-07,ICLR 2024 会议版),全部表格数字直接核对原文。
 - 交叉源:MIT Han Lab 项目页(集成时间线)、官方 GitHub repo(实现)、OpenReview(评审版)。URL 均已 curl 验证存活(2026-09-21);openreview API 有反爬挑战,forum 页 HTTP 200。
-- 关联条目:[attention-is-all-you-need](attention-is-all-you-need.md)(softmax 分母与 O(n²) 的来源)、[`vllm/`](../../vllm/index.md)(服务引擎侧 KV cache 管理)、[`flash-attention/`](../../flash-attention/index.md)(窗口内 attention 的高效内核)。
+- 关联条目:[attention-is-all-you-need](attention-is-all-you-need.md)(softmax 分母与 O(n²) 的来源)、[`vllm/`](../../vllm/index.md)(服务引擎侧 KV cache 管理)、[io-aware-tiling](io-aware-tiling.md)(窗口内 attention 的高效内核)。

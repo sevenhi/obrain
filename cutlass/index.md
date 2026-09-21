@@ -48,6 +48,7 @@ date: 2026-09
 | Epilogue 收尾融合 | [concepts/epilogue-fusion.md](concepts/epilogue-fusion.md) | 为什么 epilogue 是性能关键、融合模式(bias/act/scale/转置)、与主循环分界 | ✅ 已写 |
 | TileScheduler 与负载均衡 | [concepts/tile-scheduler.md](concepts/tile-scheduler.md) | tile-based / Stream-K / Grouped 三种调度,SM 占用率,tail effect,fixup | ✅ 已写 |
 | CuTe Layout 代数 | [concepts/cute-layout-algebra.md](concepts/cute-layout-algebra.md) | Layout 抽象、代数运算(divide/product/coalesce)、Atom/TiledMMA、TV layout | ✅ 已写 |
+| 两级 Micro-kernel 抽象 | [concepts/microkernel-abstraction.md](concepts/microkernel-abstraction.md) | BLIS 哲学如何搬到 GPU:空间级(TiledMMA/Copy)与时间级(Collective)microkernel、MMA Atom traits、dispatch policy、generalized partitioning | ✅ 已写 |
 | Hopper WGMMA 指令机制 | [concepts/hopper-wgmma.md](concepts/hopper-wgmma.md) | warpgroup 级异步 MMA、SM90 atom 命名/形状、8 种 GMMA layout atom、descriptor、同步三件套 | ✅ 已写 |
 
 ### 工具与上手(用)

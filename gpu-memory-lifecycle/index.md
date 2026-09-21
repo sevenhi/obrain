@@ -39,3 +39,7 @@ date: 2026-09
 - 症状:偶发 illegal memory access / 随机数值错 / Nsight 见两 stream overlap / 加 `cudaDeviceSynchronize` 就"好了"
 - 根因:**P 的两次访问没有跨 queue 的 happens-before**,不是 allocator 复用 P 本身错
 - 现场差异:`cnrtQueueSync(cnco_queue) ≠ cudaDeviceSynchronize()`——只能证明自己的 queue,不能证明 TF queue 已停用 P
+
+## 相关条目(跨域)
+
+- [cambricon-toolchain/frameworks/mlu-mim-partitioning.md](../cambricon-toolchain/frameworks/mlu-mim-partitioning.md):MIM 切分改变设备资源的物理边界,但**不改变实例内** host-vs-device 生命周期规则;GPU RNG state 跨 kernel 复用同理见 [gpu-rng](../gpu-rng/index.md)。

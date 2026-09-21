@@ -50,3 +50,8 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 | [API Server 与 OpenAI 兼容层](concepts/api-server-openai-compat.md) | concept | 59 行 shim + 四件套子包重构;薄路由 + app.state 注入、条件化路由注册、SO_REUSEPORT 多进程、SSE keep-alive |
 
 > 2026-09 收尾:原 `notes/` 5 篇源码笔记(sampling-penalties / api-server / core-architecture / full-technical-report / serving-layer-analysis)已按"先迁移独有内容、后删除"提炼并入上述概念篇,`notes/` 目录随之清空;溯源以源码 commit `b74ac0bc6` 为准。
+
+## 相关条目(跨域互链)
+
+- **长上下文/流式 KV cache 算法侧**:PagedAttention 解决"cache 装得下就全留"的分页管理;**装不下时逐出谁**见 [`attention-and-transformers/concepts/attention-sinks-streaming.md`](../attention-and-transformers/concepts/attention-sinks-streaming.md)(StreamingLLM:attention sink + 滚窗,4M token 稳定生成)。两者正交,vLLM 主线未内置 sink 逐出(TensorRT-LLM/SGLang/HF 已内置)。
+- **注意力内核与架构谱系**:[`flash-attention/`](../flash-attention/index.md)(内核路线)、[`attention-and-transformers/`](../attention-and-transformers/index.md)(Transformer 原始设计与变体演化)。

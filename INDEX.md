@@ -21,13 +21,17 @@
 
 **判据**:`obrain` = 提炼后的知识条目(可检索、有索引、按领域,内容自足);`library` = 原始资料存档(永不编辑)。两者不混;obrain 引用 library/archive 文件用 `source:` 指向,不复制;obrain 知识不依赖 tracker 同步管线。
 
-## 领域列表(6 个独立领域)
+## 领域列表(10 个独立领域)
 
 | 领域 | 文件夹 | 一句话说明 | 最近更新 |
 |---|---|---|---|
+| Attention 与 Transformer 架构 | [`attention-and-transformers/`](attention-and-transformers/index.md) | Transformer 原始设计 + 注意力变体演化:StreamingLLM/LASER/SpAtten/MEGABYTE/LLaMA(5 篇) | 2026-09 |
 | GPU/框架 显存生命周期 | [`gpu-memory-lifecycle/`](gpu-memory-lifecycle/index.md) | 框架 allocator vs CUDA stream 的生命周期心智模型 + TFRA 事故案例(5 篇) | 2026-09 |
-| CUTLASS | [`cutlass/`](cutlass/index.md) | 高性能 GEMM 模板库与 CuTe DSL:造内核的库(concepts 5 + frameworks 2,共 7 篇) | 2026-09 |
+| CUTLASS | [`cutlass/`](cutlass/index.md) | 高性能 GEMM 模板库与 CuTe DSL:造内核的库(concepts 6 + frameworks 2,共 8 篇) | 2026-09 |
 | FlashAttention | [`flash-attention/`](flash-attention/index.md) | IO-aware 注意力内核机制(含 Rabe&Staats 省显存前驱,4 篇) | 2026-09 |
+| GPU 随机数生成 | [`gpu-rng/`](gpu-rng/index.md) | counter-based(Philox)与 MTGP 两条 GPU PRNG 路线 + cuRAND 落地(1 篇) | 2026-09 |
+| C/C++ 语言工程 | [`cpp-language/`](cpp-language/index.md) | 模板/元编程实战 + C 符号与链接,howto 为主(2 篇) | 2026-09 |
+| 寒武纪工具链 | [`cambricon-toolchain/`](cambricon-toolchain/index.md) | CNGDB 调试器 + MLU MIM 算力切分(类 MIG),howto 为主(2 篇) | 2026-09 |
 | 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:权重/KV cache 量化 + 稀疏量化混合(SpQR)+ 低秩/剪枝路线(3 篇,原 papers/ 论文笔记域) | 2026-09 |
 | vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构等(8 篇) | 2026-09 |
 | Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核(4 篇) | 2026-09 |
@@ -38,8 +42,11 @@
 
 ## 跨域速查
 
+- **架构→内核→引擎全链**:[`attention-and-transformers/`](attention-and-transformers/index.md)(算法/架构)→ [`flash-attention/`](flash-attention/index.md)(内核)→ [`vllm/`](vllm/index.md)(引擎)。O(n²) 账单的三条路线:内核精确解(FA)、架构分解(MEGABYTE)、专用硬件稀疏(SpAtten);StreamingLLM(cache 逐出策略)与 vLLM PagedAttention(cache 分页管理)正交互补。LLaMA 训练的 xformers attention = Rabe & Staats 前向 + FA1 反向。
 - **显存/内存**:vLLM 的 PagedAttention/KV cache 是 host-vs-device lifetime 心智模型(见 [`gpu-memory-lifecycle/`](gpu-memory-lifecycle/index.md))的**最佳实例**(全库独有的一对);FA/CUTLASS 都在 stream 上异步执行。
 - **量化双视角**:算法侧见 [`quantization/`](quantization/index.md),engine 侧(GPTQ/AWQ/FP8 注册分派)见 [`vllm/`](vllm/concepts/quantization-gptq-awq-fp8.md)。
+- **随机数与显存**:cuRAND state 存 global memory 跨 kernel 复用([`gpu-rng/`](gpu-rng/index.md))受 host-vs-device 生命周期规则约束([`gpu-memory-lifecycle/`](gpu-memory-lifecycle/index.md))。
+- **异构工具链对照**:NVIDIA 与寒武纪成对——MIG ↔ MIM、cuda-gdb ↔ CNGDB(见 [`cambricon-toolchain/`](cambricon-toolchain/index.md));C++ 模板/链接基础见 [`cpp-language/`](cpp-language/index.md),CUTLASS 是其极端工业案例。
 - **硬件真实效率**:CUTLASS 的 tiling/Tensor Core 机制是理解「FLOPs≠延迟」的底层;应用侧实例见 [`computer-vision/concepts/trt-vit-inference.md`](computer-vision/concepts/trt-vit-inference.md)(以 TensorRT 实测延迟为架构设计准绳,TensorRT 内部以 CUTLASS 生成 GEMM kernel)。
 - **精确 attention 省显存谱系**:Milakov online softmax → Rabe & Staats O(1) 显存 → FlashAttention IO-aware([`flash-attention/concepts/exact-attention-memory-lineage.md`](flash-attention/concepts/exact-attention-memory-lineage.md))。
 

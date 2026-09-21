@@ -16,8 +16,10 @@ date: 2026-09
 - LASER: Attention with Exponential Transformation — https://arxiv.org/abs/2411.03493 (ICML 2025, PMLR 267:14902-14917)
 - SpAtten: Efficient Sparse Attention Architecture with Cascade Token and Head Pruning — https://arxiv.org/abs/2012.09852 (HPCA 2021;IEEE Xplore doc 9407256 对 curl 返回 202 反爬,以 arXiv 为准)
 - MEGABYTE: Predicting Million-byte Sequences with Multiscale Transformers — https://arxiv.org/abs/2305.07185 (NeurIPS 2023)
-- LLaMA: Open and Efficient Foundation Language Models — https://arxiv.org/abs/2302.13971
-- 组件原始论文:RoPE/RoFormer — https://arxiv.org/abs/2104.09864;RMSNorm — https://arxiv.org/abs/1910.07467;SwiGLU(GLU Variants)— https://arxiv.org/abs/2002.05202;FlashAttention — https://arxiv.org/abs/2205.14135
+- FlashAttention FA1 — https://arxiv.org/abs/2205.14135;FA2 — https://arxiv.org/abs/2307.08691;FA3 — https://arxiv.org/abs/2407.08608;FA4 (MLSys 2026) — arXiv:2603.05451(四代全部链接/博客口径见 [implementation/flash-attention-implementation.md](implementation/flash-attention-implementation.md) §7 溯源)
+- Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 前驱) — https://arxiv.org/abs/2112.05682
+- Online normalizer calculation for softmax (Milakov & Gimelshein, online softmax 最早出处) — https://arxiv.org/abs/1805.02867
+- LLaMA/RoPE/RMSNorm/SwiGLU 等模型架构组件论文已移至 [model-architecture/references.md](../model-architecture/references.md)
 
 ## 官方页 / 会议版
 
@@ -26,14 +28,13 @@ date: 2026-09
 - MEGABYTE OpenReview — https://openreview.net/forum?id=JTmO2V9Xpz
 - StreamingLLM ICLR 2024 OpenReview — https://openreview.net/forum?id=NG7sS51zVF
 - StreamingLLM ICLR proceedings — https://proceedings.iclr.cc/paper_files/paper/2024/hash/5e5fd18f863cbe6d8ae392a93fd271c9-Abstract-Conference.html
-- Meta AI 博客:Introducing LLaMA(2023-02-24)— https://ai.meta.com/blog/large-language-model-Llama-meta-ai/ (注意路径大小写敏感,`Llama` 大写;小写路径 curl 失败)
 
 ## 项目页 / 代码
 
 - StreamingLLM 项目页(MIT Han Lab)— https://hanlab.mit.edu/projects/streamingllm
 - StreamingLLM 代码 — https://github.com/mit-han-lab/streaming-llm
 - SpAtten 代码(SpinalHDL RTL + PyTorch 算法)— https://github.com/mit-han-lab/spatten
-- LLaMA 官方推理参考实现 — https://github.com/facebookresearch/llama
+- FlashAttention 官方实现仓库(含 FA1/FA2 kernel 与 `benchmarks/`)— https://github.com/Dao-AILab/flash-attention
 - MEGABYTE 官方仓库已失效(github.com/facebookresearch/megabyte → 404,2026-09-21 实测);第三方参考实现 — https://github.com/lucidrains/MEGABYTE-pytorch
 - Transformer 官方原始代码(tensor2tensor,已归档,后继 Trax)— https://github.com/tensorflow/tensor2tensor
 

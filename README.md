@@ -20,11 +20,12 @@
 
 **判据**:`obrain` = 提炼后的知识条目(可检索、有索引、按领域,内容自足);`library` = 原始资料存档(永不编辑)。两者不混;obrain 引用 library/archive 文件用 `source:` 指向,不复制;obrain 知识不依赖 tracker 同步管线。
 
-## 领域列表(6 个独立领域)
+## 领域列表(7 个独立领域)
 
 | 领域 | 文件夹 | 一句话说明 | 最近更新 |
 |---|---|---|---|
-| Attention | [`attention/`](attention/index.md) | 注意力机制与 Transformer:算法/架构层(AIAYN/StreamingLLM/LASER/SpAtten/MEGABYTE/LLaMA)+ GPU 内核/实现层(FA 四代/Rabe&Staats)(9 篇) | 2026-09 |
+| Attention | [`attention/`](attention/index.md) | 注意力机制两层结构:算法层 algorithm/(AIAYN/StreamingLLM/LASER+SpAtten/MEGABYTE/Rabe&Staats,5 篇)+ 实现层 implementation/(FA 四代合成篇,1 篇) | 2026-09 |
+| Model Architecture | [`model-architecture/`](model-architecture/index.md) | 通用 LLM 架构:归一化/激活/位置编码演进 + 训练哲学(Chinchilla/推理预算)+ GPT→LLaMA→Llama 2/3 定型线(1 篇) | 2026-09 |
 | CUTLASS | [`cutlass/`](cutlass/index.md) | 高性能 GEMM 模板库与 CuTe DSL:造内核的库(concepts 6 + frameworks 2,共 8 篇) | 2026-09 |
 | GPU 随机数生成 | [`gpu-rng/`](gpu-rng/index.md) | counter-based(Philox)与 MTGP 两条 GPU PRNG 路线 + cuRAND 落地(1 篇) | 2026-09 |
 | 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:权重/KV cache 量化 + 稀疏量化混合(SpQR)+ 低秩/剪枝路线(3 篇,原 papers/ 论文笔记域) | 2026-09 |
@@ -33,14 +34,15 @@
 
 ## 三层关系(CUTLASS → FA → vLLM)
 
-**CUTLASS(造内核的库)→ attention 内核层(FlashAttention,注意力内核)→ vLLM(整机推理引擎)**,自底向上三层:vLLM 集成 FA;FA2 基于 CUTLASS 3.x 构建,升级任一层注意链路兼容。
+**CUTLASS(造内核的库)→ attention 实现层(FlashAttention,注意力内核)→ vLLM(整机推理引擎)**,自底向上三层:vLLM 集成 FA;FA2/FA3 基于 CUTLASS 3.x 构建,升级任一层注意链路兼容。
 
 ## 跨域速查
 
-- **架构→内核→引擎全链**:[`attention/`](attention/index.md)(算法/架构层 + FA 内核层,合并域)→ [`vllm/`](vllm/index.md)(引擎)。O(n²) 账单的三条路线:内核精确解(FA)、架构分解(MEGABYTE)、专用硬件稀疏(SpAtten);StreamingLLM(cache 逐出策略)与 vLLM PagedAttention(cache 分页管理)正交互补。LLaMA 训练的 xformers attention = Rabe & Staats 前向 + FA1 反向。
+- **架构→内核→引擎全链**:[`model-architecture/`](model-architecture/index.md)(LLM 整体架构:RMSNorm/SwiGLU/RoPE/GQA)→ [`attention/`](attention/index.md)(注意力算法层 algorithm/ + FA 内核实现层 implementation/)→ [`vllm/`](vllm/index.md)(引擎)。O(n²) 账单的三条路线:内核精确解(FA 四代合成篇)、架构分解(MEGABYTE)、专用硬件稀疏(SpAtten);StreamingLLM(cache 逐出策略)与 vLLM PagedAttention(cache 分页管理)正交互补;Llama 3 的 GQA(8 KV 头)直接缩小 vLLM 管的 KV cache。LLaMA 训练的 xformers attention = Rabe & Staats 前向 + FA1 反向。
 - **量化双视角**:算法侧见 [`quantization/`](quantization/index.md),engine 侧(GPTQ/AWQ/FP8 注册分派)见 [`vllm/`](vllm/concepts/quantization-gptq-awq-fp8.md)。
 - **硬件真实效率**:CUTLASS 的 tiling/Tensor Core 机制是理解「FLOPs≠延迟」的底层;应用侧实例见 [`computer-vision/concepts/trt-vit-inference.md`](computer-vision/concepts/trt-vit-inference.md)(以 TensorRT 实测延迟为架构设计准绳,TensorRT 内部以 CUTLASS 生成 GEMM kernel)。
-- **精确 attention 省显存谱系**:Milakov online softmax → Rabe & Staats O(1) 显存 → FlashAttention IO-aware([`attention/concepts/exact-attention-memory-lineage.md`](attention/concepts/exact-attention-memory-lineage.md))。
+- **精确 attention 省显存谱系**:Milakov online softmax → Rabe & Staats O(1) 显存 → FlashAttention IO-aware([`attention/algorithm/exact-attention-memory-lineage.md`](attention/algorithm/exact-attention-memory-lineage.md))。
+- **FlashAttention 四代主线**:FA1 IO-aware tiling → FA2 work partitioning → FA3 Hopper 异步 → FA4 Blackwell,合成一篇 [`attention/implementation/flash-attention-implementation.md`](attention/implementation/flash-attention-implementation.md);底座机制见 [`cutlass/`](cutlass/index.md)(WGMMA/TMA/epilogue)。
 
 ---
 
@@ -48,7 +50,7 @@
 
 - **临时查证** → 直接搜关键词(`PagedAttention`、`split-K`、`TiledMMA`、`sink token`)
 - **回顾某领域** → 打开该领域 `index.md`,按索引跳
-- **完整学习** → 打开领域 index.md,按 `concepts/` 深度篇导航顺序读(各篇文末『溯源』可回原始文献)
+- **完整学习** → 打开领域 index.md,按深度篇目录(attention 域为 `algorithm/`+`implementation/`,其余域为 `concepts/`)导航顺序读(各篇文末『溯源』可回原始文献)
 
 ## 收纳规范(给自己定的,写这条是为了以后不纠结)
 

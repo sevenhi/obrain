@@ -121,7 +121,7 @@ remained_head  = top-k(s_h, h×(1−p_h))    # 级联: 一次剪除, 层间继�
 - **剪 token/head 不是剪权重**:没有可训练剪枝参数,选择完全在线(on the fly)、输入自适应 → 无法离线静态化,必须配 top-k 硬件/高效 kernel 才有实际收益;
 - **DRAM 功耗占 69% 决定了优化优先级**:访存削减(剪枝+progressive quant)优先于计算削减;这也解释了为何 BERT(计算受限)不该用 progressive quant;
 - **量化误差先过 softmax 再评估**:p(1−p) 收缩因子意味着 attention 概率的量化可以比 CNN 激活激进;
-- **对今天的意义**:SpAtten 是"稀疏 attention 加速器"路线的代表(2021);通用 GPU 上的同思想后代是各类动态稀疏 attention kernel,而"attention 是访存受限"这一诊断被 FlashAttention 用 IO-aware tiling 在通用硬件上解决(见 [io-aware-tiling](io-aware-tiling.md))——**同一个 profiling 结论,专用硬件与通用内核两条路线**。
+- **对今天的意义**:SpAtten 是"稀疏 attention 加速器"路线的代表(2021);通用 GPU 上的同思想后代是各类动态稀疏 attention kernel,而"attention 是访存受限"这一诊断被 FlashAttention 用 IO-aware tiling 在通用硬件上解决(见 [flash-attention-implementation](../implementation/flash-attention-implementation.md))——**同一个 profiling 结论,专用硬件与通用内核两条路线**。
 
 ## 3. 两条线索的交汇点
 
@@ -140,4 +140,4 @@ remained_head  = top-k(s_h, h×(1−p_h))    # 级联: 一次剪除, 层间继�
 
 - 主源:两篇本地 PDF,公式/表格数字直接核对原文(LASER Table 1-3、Fig.4 幂律;SpAtten Alg.2、Table I/II、Fig.13/14)。
 - 交叉源:PMLR v267 官方页(确认 ICML 2025 / PMLR 267:14902-14917)、mit-han-lab/spatten 仓库(SpinalHDL RTL + PyTorch 算法参考)。URL 均已 curl 验证存活(2026-09-21);SpAtten 的 IEEE Xplore 页(9407256)对 curl 返回 202 反爬,不列为源,以 arXiv 版为准。
-- 关联条目:[attention-is-all-you-need](attention-is-all-you-need.md)(√d_k 缩放与 QK-Norm 等"防尖锐"补丁的谱系)、[attention-sinks-streaming](attention-sinks-streaming.md)(长尾分布的 KV cache 侧推论)、[io-aware-tiling](io-aware-tiling.md)(访存受限诊断的通用内核解)、[`quantization/`](../../quantization/index.md)(量化侧对照)。
+- 关联条目:[attention-is-all-you-need](attention-is-all-you-need.md)(√d_k 缩放与 QK-Norm 等"防尖锐"补丁的谱系)、[attention-sinks-streaming](attention-sinks-streaming.md)(长尾分布的 KV cache 侧推论)、[flash-attention-implementation](../implementation/flash-attention-implementation.md)(访存受限诊断的通用内核解)、[`quantization/`](../../quantization/index.md)(量化侧对照)。

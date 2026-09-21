@@ -113,4 +113,4 @@ p(x_t | x_{0:t}) = softmax(E_local-embedᵀ h_local-out_{k,p}),  t=kP+p
 
 - 主源:本地 PDF(arXiv v1,2023-05-12),公式/复杂度推导/Table 2/3/5/音频节数字直接核对原文。
 - 交叉源:NeurIPS 2023 proceedings 官方 PDF(确认会议版)、OpenReview forum。官方 facebookresearch/megabyte 仓库已不存在(curl 404,2026-09-21 实测),不列入;第三方参考实现 lucidrains/MEGABYTE-pytorch 存活可查。URL 均已 curl 验证(2026-09-21)。
-- 关联条目:[attention-is-all-you-need](attention-is-all-you-need.md)(per-position FFN 成本的结构来源)、[io-aware-tiling](io-aware-tiling.md)(内核路线,与本篇架构路线正交可叠加)、[attention-sinks-streaming](attention-sinks-streaming.md)(cache 路线)。
+- 关联条目:[attention-is-all-you-need](attention-is-all-you-need.md)(per-position FFN 成本的结构来源)、[flash-attention-implementation](../implementation/flash-attention-implementation.md)(内核路线,与本篇架构路线正交可叠加)、[attention-sinks-streaming](attention-sinks-streaming.md)(cache 路线)。

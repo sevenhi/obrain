@@ -56,7 +56,7 @@ self-attention 本身是置换等变的,必须显式注入位置。原论文用�
 
 PE(pos,2i) = sin(pos/10000^(2i/d_model)),PE(pos,2i+1) = cos(pos/10000^(2i/d_model))
 
-波长构成 2π → 10000·2π 的几何级数。**选择理由**:对任意固定偏移 k,PE_{pos+k} 可表示为 PE_pos 的线性函数 → 模型容易学会"按相对位置 attend"。消融(Table 3 行 E):learned positional embedding 与正弦几乎同分(dev BLEU 25.7 vs 25.8),选正弦是因为**理论上可外推到比训练更长的序列**(后续 RoPE/ALiBi 的相对位置编码路线取代了它,见 llama-architecture 篇)。
+波长构成 2π → 10000·2π 的几何级数。**选择理由**:对任意固定偏移 k,PE_{pos+k} 可表示为 PE_pos 的线性函数 → 模型容易学会"按相对位置 attend"。消融(Table 3 行 E):learned positional embedding 与正弦几乎同分(dev BLEU 25.7 vs 25.8),选正弦是因为**理论上可外推到比训练更长的序列**(后续 RoPE/ALiBi 的相对位置编码路线取代了它,见 [llm-architecture](../../model-architecture/concepts/llm-architecture.md) 篇)。
 
 ### 1.5 整体结构:encoder-decoder + 三种 attention 用法
 
@@ -137,10 +137,10 @@ causal = torch.tril(torch.ones(S, S))     # 因果掩码: 下三角为 1
 - **post-norm vs pre-norm**:原论文是 `LayerNorm(x+Sublayer(x))`(post-norm),深层训练不稳;GPT-3 起主流改 pre-norm,LLaMA 再换 RMSNorm——读老代码注意两种残差结构不可混。
 - **beam search 超参对翻译质量影响显著**:beam=4 + α=0.6 + checkpoint 平均,三件套是当年复现 SOTA 的必要条件,只训不平均会掉 ~0.5 BLEU 量级。
 - **batch 按 token 预算而非样本数**:25000+25000 tokens/batch 的思路延续到今天 LLM 训练(LLaMA 按 4M tokens/batch)。
-- **O(n²) 是留给后人的账单**:原论文已预告 restricted self-attention(邻域 r)作为长序列出路。今天的高效注意力谱系——FlashAttention(IO-aware 精确算法,见 [io-aware-tiling](io-aware-tiling.md))、StreamingLLM(sink+滚窗,见 [attention-sinks-streaming](attention-sinks-streaming.md))、稀疏剪枝硬件(SpAtten,见 [attention-variants-laser-spatten](attention-variants-laser-spatten.md))、多尺度分解(MEGABYTE,见 [megabyte-multiscale](megabyte-multiscale.md))——全部是在还这笔账。
+- **O(n²) 是留给后人的账单**:原论文已预告 restricted self-attention(邻域 r)作为长序列出路。今天的高效注意力谱系——FlashAttention(IO-aware 精确算法,见 [flash-attention-implementation](../implementation/flash-attention-implementation.md))、StreamingLLM(sink+滚窗,见 [attention-sinks-streaming](attention-sinks-streaming.md))、稀疏剪枝硬件(SpAtten,见 [attention-variants-laser-spatten](attention-variants-laser-spatten.md))、多尺度分解(MEGABYTE,见 [megabyte-multiscale](megabyte-multiscale.md))——全部是在还这笔账。
 
 ## 溯源
 
 - 主源:本地 PDF(arXiv v5,2017-12-06),正文/表格数字均直接核对原文。
 - 交叉源:Illustrated Transformer(图解心智模型)、Annotated Transformer(PyTorch 复现参考),URL 已 curl 验证存活(2026-09-21)。
-- 关联条目:[attention-sinks-streaming](attention-sinks-streaming.md)(softmax 分母视角的延伸)、[llama-architecture](llama-architecture.md)(三项架构改进)、[io-aware-tiling](io-aware-tiling.md)(O(n²) 内存问题的精确解)。
+- 关联条目:[attention-sinks-streaming](attention-sinks-streaming.md)(softmax 分母视角的延伸)、[llm-architecture](../../model-architecture/concepts/llm-architecture.md)(三项架构改进)、[flash-attention-implementation](../implementation/flash-attention-implementation.md)(O(n²) 内存问题的精确解)。

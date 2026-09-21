@@ -51,7 +51,7 @@ s* ← s* · e^{m*-m_i} +       e^{s_i-m_i}
 m* ← m_i
 ```
 
-因果链:**max 未知 → 已累加量按旧 max 记的账,新 max 出现时全部要收缩同一因子 `e^{m_old-m_new}` → 乘法收缩可后置、不必重算**。这正是 io-aware-tiling 篇 §3 的 running max/running sum rescale——**同一数学,不同工程目标**(R&S 为省显存,FA 为省 HBM 访存)。
+因果链:**max 未知 → 已累加量按旧 max 记的账,新 max 出现时全部要收缩同一因子 `e^{m_old-m_new}` → 乘法收缩可后置、不必重算**。这正是 flash-attention-implementation 篇 §1.3 的 running max/running sum rescale——**同一数学,不同工程目标**(R&S 为省显存,FA 为省 HBM 访存)。
 
 ### 1.3 为什么"省显存"不等于"变快"
 
@@ -107,10 +107,10 @@ R&S 的时间复杂度仍是 **self-attention O(n²)、单 query O(n)**。作者
 ## 4. 实践要点
 
 1. **想省显存又要快 → 用 FlashAttention;只想要一个"数学上等价、可 drop-in 替换"的省显存实现(JAX/TPU 栈)→ memory_efficient_attention**。R&S 的价值一半是工程、一半是**认知纠偏**:"attention 天生吃 O(n²) 显存"是实现习惯,不是数学约束——做架构/硬件设计时别把它当前提。
-2. **chunk size 要自己调**:默认值(query 1024 / key 4096)是 TPU 上"运行时影响最小"的折中,不是内存最优;GPU 上要按 SRAM/HBM 重新扫(参照 io-aware-tiling 篇 §7 的 `Bc≈M/(4d)` 思路)。
+2. **chunk size 要自己调**:默认值(query 1024 / key 4096)是 TPU 上"运行时影响最小"的折中,不是内存最优;GPU 上要按 SRAM/HBM 重新扫(参照 [flash-attention-implementation](../implementation/flash-attention-implementation.md) 篇 §1.4 的 `Bc≈M/(4d)` 思路)。
 3. **反向必须 checkpointing**:否则前向省的显存被反传的中间量全吃回去;注意 checkpoint 要包在 `summarize_chunk` 这一层,`prevent_cse=False` 避免公共子表达式消除干扰重算语义。
 4. **max 的 `stop_gradient` 不能省**:否则梯度会流进 max 选择分支,与标准 softmax 梯度不一致。
-5. **rescale 是正确性要求,不是精度优化**:去掉 `e^{m*-m_i}` 收缩,各块分母基准不同 → 结果数学上错(与 io-aware-tiling 篇 §7.6 同一条坑)。
+5. **rescale 是正确性要求,不是精度优化**:去掉 `e^{m*-m_i}` 收缩,各块分母基准不同 → 结果数学上错(与 flash-attention-implementation 篇 §6 checklist 数值稳定性条目同一条坑)。
 6. **孤立算子基准会误导**:本实现单测算子慢 8-13%,放进 Transformer 训练反而快 4%——评估省显存 kernel 要看端到端 steps/sec。
 7. **谱系记法**(便于串库):Milakov & Gimelshein 2018(online softmax 归一化,arXiv:1805.02867)→ Jang et al. 2019(lazy softmax,带宽视角)→ **Rabe & Staats 2021(显存视角 + 稳定化 + 反传 + 实现)** → FlashAttention 2022(访存次数视角 + CUDA + 解析反向)→ FA2/FA3/FA4(并行度与硬件特性)。
 
@@ -120,4 +120,4 @@ R&S 的时间复杂度仍是 **self-attention O(n²)、单 query O(n)**。作者
 - 第二本地源:FA1 PDF(附录 B.1/B.5)——**三点差异对比全部出自 FA1 原文 B.5,不是本篇推断**;B.1 把 online normalizer 技巧归给 [60](Milakov & Gimelshein)与 [51,66];
 - 网络核对:arXiv 摘要页(2026-09 实测 200,标题 *Self-attention Does Not Need O(n²) Memory*)、官方实现仓库(google-research/memory_efficient_attention,实测 200)、lucidrains PyTorch 复现(实测 200)、Milakov & Gimelshein arXiv:1805.02867(实测 200);论文中 Rezaei 2021 JAX 复现与 Wang 2022 PyTorch 复现亦在致谢列出;
 - 发表状态:arXiv 预印本(v1 2021-12,v3 2022-10),**未见正式会议收录标注**——引用时按 preprint 处理,勿写成某会议论文;
-- 与库内其他篇的关系:online softmax 推导与 FA1 算法细节见 [io-aware-tiling.md](io-aware-tiling.md);反向重算 vs 解析反向的取舍见 [io-aware-tiling.md §6.5](io-aware-tiling.md);并行维度切分见 [work-partitioning.md](work-partitioning.md)。
+- 与库内其他篇的关系:online softmax 推导与 FA1 算法细节见 [flash-attention-implementation.md](../implementation/flash-attention-implementation.md) §1;反向重算 vs 解析反向的取舍见 [flash-attention-implementation.md §5](../implementation/flash-attention-implementation.md);并行维度切分见 [flash-attention-implementation.md §2](../implementation/flash-attention-implementation.md)。

@@ -26,7 +26,7 @@ date: 2026-09
 ## 相关条目(跨域互链)
 
 - [vLLM 量化:GPTQ / AWQ / FP8](../vllm/concepts/quantization-gptq-awq-fp8.md)——**engine 视角**:量化的注册/分派/内核集成如何在推理引擎里落地;本领域是**算法视角**(怎么量化、误差怎么控制),两者互补。
-- [attention/io-aware-tiling](../attention/concepts/io-aware-tiling.md)——FA3 的 FP8 block-quantize(Q/K/V 分块量化 + incoherent processing)是"量化进 attention kernel"的实例;HyQuant 的 dequantize-in-attention 同属此路线。
+- [attention/flash-attention-implementation](../attention/implementation/flash-attention-implementation.md)——FA3 的 FP8 block-quantize(Q/K/V 分块量化 + incoherent processing)是"量化进 attention kernel"的实例;HyQuant 的 dequantize-in-attention 同属此路线。
 - SpQR 的推理 kernel(稀疏 CSR matmul + dense 3/4-bit matmul)是 CUTLASS 域 GEMM 定制的应用场景(参见 [cutlass/](../cutlass/index.md))。
 
 ## 扩展位(待补充候选)

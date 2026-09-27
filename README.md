@@ -3,21 +3,25 @@
 > 技术知识库根目录(原 `INDEX.md`,2026-09 并入 README)。每个领域一个文件夹,里面至少有一个 `index.md` 作为该领域索引。
 > 定位:存档为主,平时不常看 → 目标是「扫 30 秒能找到,打开一篇能读懂」。
 
-## 目录规约(obrain vs library 判据)
+## 目录规约(自包含原则)
 
-`~/workspace/` 顶层现状(2026-09 核对实物):
+obrain 是自包含的知识库:只描述本文件夹内部结构;不引用任何设备的本地路径或文件名,只通过公开原始链接溯源;不依赖库外任何目录才能阅读。
 
 ```
-~/workspace/
-├── obrain -> /data/cold/obrain   知识库(本目录):提炼后的知识条目,md + frontmatter + 索引,按领域组织;符号链接,实体在 /data/cold 盘
-├── xiaomi-miloco/                miloco 智能家居项目源码(backend/cli/plugins/web/knowledge 等)
-├── homeassistant/                HA 自动化配置与脚本(fetch_automations.py、yaml/json、backups/)
-├── firecrawl/                    firecrawl 网页抓取服务部署(docker-compose + systemd unit)
-├── scripts/                      日常维护脚本(clean_hermes.sh 等)
-└── sessions/                     会话记录与监控杂项(memory/、miloco_mem_monitor.py)
+obrain/
+├── README.md             根入口(本文件)
+├── SOURCE-POLICY.md      多来源登记策略
+├── <domain>/             每个领域一个文件夹,至少含 index.md
+│   ├── index.md          领域索引/导航起始页(type: domain)
+│   ├── references.md     领域链接索引(可选,type: reference)
+│   ├── concepts/         概念篇:机制原理(type: concept)
+│   ├── frameworks/       工具上手篇(可选,type: howto)
+│   └── practices/        实践清单/选型对比(可选,type: checklist/comparison)
+└── profiles/             个人与家庭档案(非知识条目,豁免收纳规范)
 ```
 
-**判据**:`obrain` = 跨设备可用的提炼知识条目(可检索、有索引、按领域、内容自足);`library` = 可选的个人原始资料归档(当前未建立)。obrain 只通过公开原始链接溯源,不引用任何设备的本地路径或文件名,也不依赖同机其他目录才能阅读。
+> 例外:attention 域的深度篇分 `algorithm/`(算法层)与 `implementation/`(FA 内核实现层)两层,不用 `concepts/`。
+> 个人原始资料归档(library)等目录属于各设备本地布局,不写入本文档。
 
 ## 领域列表(7 个独立领域)
 

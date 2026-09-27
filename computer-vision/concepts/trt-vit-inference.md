@@ -3,7 +3,7 @@ title: TRT-ViT — 以 TensorRT 延迟为准绳的 ViT/CNN 混合架构设计
 type: concept
 tags: [vit, cnn, tensorrt, inference, architecture-design, hardware-aware-nas]
 source:
-  - "pdf: TRT-ViT 论文全文 | arXiv:2205.09579v2 (ByteDance, preprint under review) | ~/zhanbin/library/papers/TRT-ViT: TensorRT-oriented Vision Transformer.pdf ↑primary"
+  - "pdf: TRT-ViT 论文全文 | arXiv:2205.09579v2 (ByteDance, preprint under review) | TRT-ViT: TensorRT-oriented Vision Transformer.pdf ↑primary"
   - "web: TRT-ViT arXiv abs 页 | https://arxiv.org/abs/2205.09579 (抓取 2026-09-21)"
   - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/index.html (抓取 2026-09-21)"
   - "web: NVIDIA TensorRT GitHub | https://github.com/NVIDIA/TensorRT (抓取 2026-09-21)"
@@ -106,6 +106,6 @@ ImageNet-1K 分类(T4,TensorRT,batch=8;延迟单位 ms):
 
 ## 溯源
 
-- 主源:论文本地 PDF(见 frontmatter,`~/zhanbin/library/papers/`,只读存档)。所有表格数字(TeraFLOPS/TeraParams、ImageNet/ADE20K/COCO 延迟与精度、消融)直接取自论文 Table 1-9。
+- 主源:论文论文原文(链接见 frontmatter)。所有表格数字(TeraFLOPS/TeraParams、ImageNet/ADE20K/COCO 延迟与精度、消融)直接取自论文 Table 1-9。
 - 网络综合:arXiv abs 页(2205.09579v2)核对标题/作者/版本;NVIDIA TensorRT 官方文档与 GitHub(核对 TensorRT 定位:high-performance DL inference SDK);社区复现 Phoenix8215/TRT-ViT(确认论文作者未放官方代码,bytedance/TRT-ViT curl 404)。全部 URL 于 2026-09-21 curl 实测存活(200);paperswithcode 对应页为软 404(重定向 HF trending),已弃用不登记。
 - 跨域互链:CUTLASS(TensorRT 的 GEMM kernel 底座)见 [`../../cutlass/index.md`](../../cutlass/index.md);本域索引「相关条目」亦登记。

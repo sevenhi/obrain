@@ -3,7 +3,7 @@ title: 两级 Micro-kernel 抽象:BLIS 哲学如何搬到 GPU(CUTLASS 3.x)
 type: concept
 tags: [cutlass, cute, microkernel, blis, tiledmma, collective, partitioning]
 source:
-  - "pdf: A Generalized Micro-kernel Abstraction for GPU Linear Algebra (Thakkar/Cecka/Vuduc, BLIS Retreat 2023) | ~/zhanbin/library/papers/A Generalized Micro kernel Abstraction for GPU Linear Algebra.pdf (primary)"
+  - "pdf: A Generalized Micro-kernel Abstraction for GPU Linear Algebra (Thakkar/Cecka/Vuduc, BLIS Retreat 2023) | A Generalized Micro kernel Abstraction for GPU Linear Algebra.pdf (primary)"
   - "web: 同名讲稿公开 PDF (UT Austin BLIS Retreat 2023) | https://www.cs.utexas.edu/~flame/BLISRetreat2023/slides/Thakkar_BLISRetreat2023.pdf"
   - "web: CUTLASS 3.x: Orthogonal, Reusable, and Composable Abstractions for GEMM Kernel Design (NVIDIA Technical Blog, Thakkar et al., 2025-07) | https://developer.nvidia.com/blog/cutlass-3-x-orthogonal-reusable-and-composable-abstractions-for-gemm-kernel-design/"
   - "web: CUTLASS: Principled Abstractions for Handling Multidimensional Data Through Tensors and Spatial Microkernels | https://developer.nvidia.com/blog/cutlass-principled-abstractions-for-handling-multidimensional-data-through-tensors-and-spatial-microkernels/"

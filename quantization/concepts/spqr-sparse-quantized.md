@@ -3,7 +3,7 @@ title: SpQR — 稀疏+量化混合表示,近无损 LLM 权重压缩
 type: concept
 tags: [quantization, spqr, llm-compression, outlier, gptq, ptq, csr, near-lossless]
 source:
-  - "pdf: SpQR 论文全文(Dettmers/Svirschevski/Egiazarian et al., ↑primary) | arXiv:2306.03078 (ICLR 2024) | ~/zhanbin/library/papers/SpQR: A Sparse-Quantized Representation for Near-Lossless LLM Weight Compression.pdf"
+  - "pdf: SpQR 论文全文(Dettmers/Svirschevski/Egiazarian et al., ↑primary) | arXiv:2306.03078 (ICLR 2024)"
   - "web: SpQR 官方代码 | https://github.com/Vahe1994/SpQR (2026-09 实测 200;论文脚注称将并入 bitsandbytes)"
   - "web: bitsandbytes(作者 Tim Dettmers 的量化库,SpQR 拟集成) | https://github.com/TimDettmers/bitsandbytes (2026-09 实测 200)"
   - "web: ICLR 2024 poster 页(发表状态核对) | https://iclr.cc/virtual/2024/poster/18686 (2026-09 实测 200)"
@@ -120,7 +120,7 @@ python main.py $MODEL custom --custom_data_path=$DATA \
 
 ## 5. 溯源与多源综合说明
 
-- 主源 ↑primary:本地 PDF(arXiv:2306.03078v1, 2023-06-05),正文/附录 A-H 全部数据出自该文;
+- 主源 ↑primary:论文原文(arXiv:2306.03078v1, 2023-06-05),正文/附录 A-H 全部数据出自该文;
 - 发表状态:arXiv v1 为预印本,后收录 **ICLR 2024**(iclr.cc poster 页 + ICLR proceedings PDF,2026-09 实测);
 - 代码:github.com/Vahe1994/SpQR(2026-09 实测存活);论文脚注承诺并入 TimDettmers/bitsandbytes(实测存活,SpQR 集成状态以仓库当前 README 为准);
 - 交叉核对:GPTQ(arXiv:2210.17323)、LLM.int8()(arXiv:2208.07339)、Optimal Brain Compression(arXiv:2208.11580)的引用关系与本文 Related Work 一致;"4-bit 是 RTN 类方法最优点"出自 Dettmers & Zettlemoyer(arXiv:2212.09720)。

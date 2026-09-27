@@ -2,23 +2,13 @@
 title: Computer Vision - 参考资料索引
 type: reference
 tags: [nerf, vit, cnn, reparameterization, tensorrt]
-source: "pdf: 本域 5 篇源论文 | ~/zhanbin/library/papers/(只读存档)"
+source: "web: 本域论文来源索引 | 见下方 arXiv/官方链接"
 date: 2026-09
 ---
 
 # 参考资料索引
 
 > 溯源用。只放链接与「看什么」,不复制全文。**全部 URL 于 2026-09-21 curl 实测存活(HTTP 200)**;paperswithcode 的 TRT-ViT 页为软 404(重定向 HF trending),弃用;bytedance/TRT-ViT 官方仓库不存在(404),论文未开源。
-
-## 本地原始资料(library 只读,引用不复制)
-
-| 文件 | 对应条目 |
-|---|---|
-| ~/zhanbin/library/papers/NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis.pdf | nerf-view-synthesis |
-| ~/zhanbin/library/papers/NeRF++: Analyzing and Improving Neural Radiance Fields.pdf | nerf-view-synthesis |
-| ~/zhanbin/library/papers/TRT-ViT: TensorRT-oriented Vision Transformer.pdf | trt-vit-inference |
-| ~/zhanbin/library/papers/Online Convolutional Re-parameterization.pdf | cnn-reparameterization |
-| ~/zhanbin/library/papers/Towards a General Purpose CNN for Long Range Dependencies in ND.pdf | cnn-long-range-nd |
 
 ## 论文(arXiv)
 
@@ -32,7 +22,7 @@ date: 2026-09
 | RepVGG | https://arxiv.org/abs/2101.03697 | 重参数化前驱:VGG 式单路推理 + 多分支训练 |
 | DBB(Diverse Branch Block) | https://arxiv.org/abs/2103.13425 | 重参数化前驱:Inception 式多分支,OREPA 的直接对比对象 |
 | ACNet | https://arxiv.org/abs/1908.03930 | 最早的非对称卷积分支重参数化(1×3+3×1+3×3) |
-| CCNN(workshop 版) | https://arxiv.org/abs/2206.03398 | ICML 2022 Continuous Time Methods Workshop;本地 PDF 即此版 |
+| CCNN(workshop 版) | https://arxiv.org/abs/2206.03398 | ICML 2022 Continuous Time Methods Workshop;对应论文链接见上表 |
 | CCNN(ICLR 2023 正式版) | https://arxiv.org/abs/2301.10540 | 扩展版:新增点云 3D 实验,标题改为 Modelling Long Range Dependencies in ND |
 | FlexConv | https://arxiv.org/abs/2110.08059 | 前驱:可微 kernel 大小(高斯掩码) |
 | S4 | https://arxiv.org/abs/2111.00396 | 对照路线:结构化状态空间,长序列 1D 处理 |

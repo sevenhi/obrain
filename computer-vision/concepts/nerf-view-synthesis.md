@@ -3,8 +3,8 @@ title: NeRF — 神经辐射场视图合成(NeRF + NeRF++)
 type: concept
 tags: [nerf, view-synthesis, volume-rendering, implicit-representation, 3d-reconstruction]
 source:
-  - "pdf: NeRF 论文全文 | arXiv:2003.08934 ECCV 2020 (Best Paper Honorable Mention) | ~/zhanbin/library/papers/NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis.pdf ↑primary"
-  - "pdf: NeRF++ 技术报告全文 | arXiv:2010.07492 | ~/zhanbin/library/papers/NeRF++: Analyzing and Improving Neural Radiance Fields.pdf ↑primary"
+  - "pdf: NeRF 论文全文 | arXiv:2003.08934 ECCV 2020 (Best Paper Honorable Mention) | NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis.pdf ↑primary"
+  - "pdf: NeRF++ 技术报告全文 | arXiv:2010.07492 | NeRF++: Analyzing and Improving Neural Radiance Fields.pdf ↑primary"
   - "web: NeRF 官方项目页 | https://www.matthewtancik.com/nerf (抓取 2026-09-21)"
   - "web: NeRF 官方 TensorFlow 实现 | https://github.com/bmild/nerf (抓取 2026-09-21)"
   - "web: NeRF++ 官方 PyTorch 实现 | https://github.com/Kai-46/nerfplusplus (抓取 2026-09-21)"
@@ -119,6 +119,6 @@ NeRF++ 全部 8 个场景(T&T 4 + LF 4)三项指标(PSNR/SSIM/LPIPS)一致优于
 
 ## 溯源
 
-- 主源:两篇论文本地 PDF(见 frontmatter source,`~/zhanbin/library/papers/`,只读存档)。
+- 主源:两篇论文原文(链接见 frontmatter)。
 - 网络综合:arXiv abs 页(2003.08934 / 2010.07492)核对标题、作者、版本历史;官方项目页 matthewtancik.com/nerf(ECCV 2020 Oral, Best Paper Honorable Mention);官方代码 bmild/nerf(TensorFlow)、Kai-46/nerfplusplus(PyTorch DDP,数据约定:位姿是 camera-to-world、OpenCV 坐标系、归一化把相机放进单位球——与本文「实践要点」互证);arXiv:2006.10739(Fourier Features/NTK 理论,位置编码的「为什么」)。全部 URL 于 2026-09-21 curl 实测存活(200)。
 - 所有数字直接取自两篇论文正文/表格,未做外推。

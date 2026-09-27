@@ -3,8 +3,8 @@ title: 精确注意力的省显存谱系 — Rabe & Staats 的 O(1) 存注意力
 type: concept
 tags: [attention, memory-efficient-attention, online-softmax, rabe-staats, jax, tpu, gradient-checkpointing, flashattention-lineage]
 source:
-  - "pdf: Self-Attention does not Need O(n²) Memory(Rabe & Staats, Google Research, ↑primary) | arXiv:2112.05682v3 (2022-10-10) | ~/zhanbin/library/papers/Self-Attention does not Need O(n2) Memory.pdf"
-  - "pdf: FlashAttention FA1 论文 §3.1 / 附录 B.1、B.5(引用并设专节比较本文) | arXiv:2205.14135 | ~/zhanbin/library/papers/FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness.pdf"
+  - "pdf: Self-Attention does not Need O(n²) Memory(Rabe & Staats, Google Research, ↑primary) | arXiv:2112.05682v3 (2022-10-10)"
+  - "pdf: FlashAttention FA1 论文 §3.1 / 附录 B.1、B.5(引用并设专节比较本文) | arXiv:2205.14135"
   - "web: 官方 JAX 实现 + colab 复现 | https://github.com/google-research/google-research/tree/master/memory_efficient_attention (2026-09 实测 200)"
   - "web: PyTorch 复现(lucidrains) | https://github.com/lucidrains/memory-efficient-attention-pytorch (2026-09 实测 200)"
   - "web: 上游方法脉络 — Online normalizer calculation for softmax(Milakov & Gimelshein, FA1 附录标注为[60]) | https://arxiv.org/abs/1805.02867 (2026-09 实测 200);lazy softmax 首见 MNNFast, Jang et al. ISCA 2019"
@@ -116,8 +116,8 @@ R&S 的时间复杂度仍是 **self-attention O(n²)、单 query O(n)**。作者
 
 ## 5. 溯源与多源综合说明
 
-- 主源 ↑primary:本地 PDF(arXiv:2112.05682v3, 2022-10-10),含 Figure 1 完整 JAX 代码、Table 2/3 实测、§5.4 query-chunking 对比、§6 lazy softmax 出处自陈;
-- 第二本地源:FA1 PDF(附录 B.1/B.5)——**三点差异对比全部出自 FA1 原文 B.5,不是本篇推断**;B.1 把 online normalizer 技巧归给 [60](Milakov & Gimelshein)与 [51,66];
+- 主源 ↑primary:论文原文(arXiv:2112.05682v3, 2022-10-10),含 Figure 1 完整 JAX 代码、Table 2/3 实测、§5.4 query-chunking 对比、§6 lazy softmax 出处自陈;
+- 第二本地源:FA1 PDF(附录 B.1/B.5)——**三点差异对比全部出自 FA1 原文 B.5,不是本篇推断**;B.1 把 online normalizer 技巧归给文献 [60]（Milakov & Gimelshein）与 [51,66];
 - 网络核对:arXiv 摘要页(2026-09 实测 200,标题 *Self-attention Does Not Need O(n²) Memory*)、官方实现仓库(google-research/memory_efficient_attention,实测 200)、lucidrains PyTorch 复现(实测 200)、Milakov & Gimelshein arXiv:1805.02867(实测 200);论文中 Rezaei 2021 JAX 复现与 Wang 2022 PyTorch 复现亦在致谢列出;
 - 发表状态:arXiv 预印本(v1 2021-12,v3 2022-10),**未见正式会议收录标注**——引用时按 preprint 处理,勿写成某会议论文;
 - 与库内其他篇的关系:online softmax 推导与 FA1 算法细节见 [flash-attention-implementation.md](../implementation/flash-attention-implementation.md) §1;反向重算 vs 解析反向的取舍见 [flash-attention-implementation.md §5](../implementation/flash-attention-implementation.md);并行维度切分见 [flash-attention-implementation.md §2](../implementation/flash-attention-implementation.md)。

@@ -4,8 +4,13 @@ type: domain
 tags: [quantization, compression, llm-inference, kv-cache, low-rank, outlier]
 source:
   - "pdf: HyQuant 论文全文 | arXiv:2608.27875v1"
-  - "pdf: SpQR 论文全文 | arXiv:2306.03078 (ICLR 2024) | ~/zhanbin/library/papers/SpQR: A Sparse-Quantized Representation for Near-Lossless LLM Weight Compression.pdf"
-  - "pdf: On the Effectiveness of Low-Rank Matrix Factorization for LSTM Model Compression | arXiv:1908.09982 (PACLIC 2019) | ~/zhanbin/library/papers/On the Effectiveness of Low-Rank Matrix Factorization for LSTM Model Compression.pdf"
+  - "pdf: SpQR 论文全文 | arXiv:2306.03078 (ICLR 2024)"
+  - "pdf: On the Effectiveness of Low-Rank Matrix Factorization for LSTM Model Compression | arXiv:1908.09982 (PACLIC 2019)"
+  - "pdf: GPTQ | arXiv:2210.17323"
+  - "pdf: AWQ | arXiv:2306.00978"
+  - "pdf: SmoothQuant | arXiv:2211.10438"
+  - "pdf: KIVI | arXiv:2402.02750"
+  - "web: vLLM Quantization | https://docs.vllm.ai/en/latest/features/quantization/ | 阅读日期 2026-09-27"
 date: 2026-09
 ---
 
@@ -20,6 +25,8 @@ date: 2026-09
 | [HyQuant — LLM Attention 混合精度量化](concepts/hyquant-hybrid-precision-quantization.md) | concept | 竖线+局部窗口留全精度,其余 KV 压低比特(arXiv 2608.27875) |
 | [SpQR — 稀疏+量化混合表示](concepts/spqr-sparse-quantized.md) | concept | ~1% 高敏感 outlier 存 16-bit(CSR)+ 其余 3-4bit + bilevel 量化统计量,首个近无损(<1% PPL)3-4bit 权重压缩(arXiv 2306.03078, ICLR 2024) |
 | [LSTM 低秩压缩 — 分解 vs 剪枝](concepts/lstm-lowrank-compression.md) | concept | SVD/Semi-NMF vs 剪枝:压 W_h(天生低秩)远比压 W_i 安全,核范数是可压缩性先验(arXiv 1908.09982, PACLIC 2019) |
+| [PTQ: GPTQ / AWQ / SmoothQuant](concepts/ptq-gptq-awq-smoothquant.md) | concept | 权重/激活后训练量化的三条路线:二阶误差补偿、激活感知权重保护、平滑离群值后做 W8A8;按显存、硬件和质量目标选型 |
+| [KV Cache 量化](concepts/kv-cache-quantization.md) | concept | 把运行时 KV cache 从权重压缩问题单独拆出:按 token/channel 分组、对称/非对称量化、混合精度与长上下文权衡 |
 
 **共同心法(三篇一条线)**:压缩误差不是均匀分布的——HyQuant 按 attention mass 分精度、SpQR 按敏感度分位宽、LSTM 篇按谱结构(核范数)分压缩方式;**都是"把预算花在杠杆点上",而非全局均匀砍**。
 
@@ -31,5 +38,5 @@ date: 2026-09
 
 ## 扩展位(待补充候选)
 
-- 待补充:KIVI / KVTuner / AWQ / GPTQ(算法侧专篇,现散见于 SpQR 篇与 vllm 域)/ KVQuant 等量化算法(尚未入库,先登记不造假索引行)
-- 待补充:低秩路线的 Transformer 时代后继——LoRA / QLoRA(NF4+双重量化,与 SpQR 同作者脉络)、AQLM / QuIP#(2-bit 以下)
+- 已补充:GPTQ / AWQ / SmoothQuant(算法侧统一篇)与 KV cache 量化(KIVI + vLLM 工程视角)。
+- 待补充:KVQuant / KVTuner / AQLM / QuIP#(2-bit 以下),以及不同 GPU 架构上的实测基准。

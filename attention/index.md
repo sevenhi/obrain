@@ -3,12 +3,12 @@ title: Attention(算法层 algorithm/ + 实现层 implementation/)
 type: domain
 tags: [transformer, attention, self-attention, streamingllm, megabyte, laser, spatten, flashattention, gpu, cuda]
 source:
-  - "pdf: Attention Is All You Need | arXiv:1706.03762 NIPS 2017 | ~/zhanbin/library/papers/Attention is All You Need.pdf"
-  - "pdf: Efficient Streaming Language Models with Attention Sinks | arXiv:2309.17453 ICLR 2024 | ~/zhanbin/library/papers/Efficient Streaming Language Models With Attention Sinks.pdf"
-  - "pdf: LASER: Attention with Exponential Transformation | arXiv:2411.03493 ICML 2025 | ~/zhanbin/library/papers/LASER: Attention with Exponential Transformation.pdf"
-  - "pdf: SpAtten | arXiv:2012.09852 HPCA 2021 | ~/zhanbin/library/papers/SpAtten-- Efficient Sparse Attention Architecture with Cascade Token and Head Pruning.pdf"
-  - "pdf: MEGABYTE | arXiv:2305.07185 NeurIPS 2023 | ~/zhanbin/library/papers/MEGABYTE: Predicting Million-byte Sequences with Multiscale Transformers.pdf"
-  - "pdf: Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 前驱) | arXiv:2112.05682 | ~/zhanbin/library/papers/Self-Attention does not Need O(n2) Memory.pdf"
+  - "pdf: Attention Is All You Need | arXiv:1706.03762 NIPS 2017"
+  - "pdf: Efficient Streaming Language Models with Attention Sinks | arXiv:2309.17453 ICLR 2024"
+  - "pdf: LASER: Attention with Exponential Transformation | arXiv:2411.03493 ICML 2025"
+  - "pdf: SpAtten | arXiv:2012.09852 HPCA 2021"
+  - "pdf: MEGABYTE | arXiv:2305.07185 NeurIPS 2023"
+  - "pdf: Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 前驱) | arXiv:2112.05682"
   - "pdf: FlashAttention FA1/FA2/FA3/FA4 | arXiv:2205.14135 / 2307.08691 / 2407.08608 / 2603.05451(详细 source 见 implementation/flash-attention-implementation.md frontmatter)"
   - "code: github.com/Dao-AILab/flash-attention | Star 24.7k"
 date: 2026-09

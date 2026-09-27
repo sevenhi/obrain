@@ -3,7 +3,7 @@ title: Model Architecture(通用 LLM 架构)
 type: domain
 tags: [llm-architecture, llama, rmsnorm, swiglu, rope, alibi, gqa, mqa, mla, context-extension, yarn, moe, mixtral, deepseek, qwen, rwkv, chinchilla, scaling-laws, gpt]
 source:
-  - "pdf: LLaMA | arXiv:2302.13971 | ~/zhanbin/library/papers/LLaMA: Open and Efficient Foundation Language Models.pdf"
+  - "pdf: LLaMA | arXiv:2302.13971"
   - "pdf: Llama 2 | arXiv:2307.09288"
   - "pdf: The Llama 3 Herd of Models | arXiv:2407.21783"
   - "pdf: Chinchilla (Training Compute-Optimal LLMs) | arXiv:2203.15556"

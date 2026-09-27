@@ -7,7 +7,7 @@ date: 2026-09
 
 # References — attention
 
-> 只放链接索引,不复制全文(库规约)。全部 URL 于 2026-09-21 curl 实测存活(标注除外)。本地 PDF 原件在 `~/zhanbin/library/papers/`(只读)。
+> 只放链接索引,不复制全文(库规约)。全部 URL 于 2026-09-21 curl 实测存活(标注除外)。原始论文链接见本页 references，不依赖本地文件。
 
 ## 原论文(arXiv / 会议)
 

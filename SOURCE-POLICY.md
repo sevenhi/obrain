@@ -12,19 +12,21 @@ date: 2026-09
 
 ## 1. 来源类型与标识符格式
 
-`source` 统一写成结构化字符串(可逐条列表,每篇按需写 1~N 条):
-`类型: 描述 | 标识符 | 位置/链接`
+`source` 统一写成**跨设备可用的结构化字符串**(可逐条列表,每篇按需写 1~N 条):
+`类型: 标题 | 稳定标识符或原始 URL | 阅读/抓取日期 | 角色`
+
+原则：`source` 是知识的公开溯源，不是本机文件清单。优先使用 DOI、arXiv、出版社、官方文档、官方仓库或项目主页等跨设备可访问的原始链接。
 
 | 类型 | 标识符写法 | 示例 |
 |---|---|---|
-| `ppt` | 文件名(建议带版本号) | `ppt: 显存生命周期培训 v2 (primary)` |
-| `pdf` | 标题 + 出处 | `pdf: FlashAttention FA1 | arXiv:2205.14135 NeurIPS 2022` |
+| `ppt` | 标题 + 稳定公开链接 | `ppt: 显存生命周期培训 v2 | https://example.org/slides` |
+| `pdf` | 标题 + DOI/arXiv/出版社链接 | `pdf: FlashAttention FA1 | https://arxiv.org/abs/2205.14135` |
 | `web` | 页面标题 + URL | `web: PyTorch CUDA semantics | https://pytorch.org/docs/...` |
-| `wiki` | 页面标题 + pageId | `wiki: <内部 wiki 页标题> | pageId <NNNNNNNN>`(内部 wiki 地址含明文 pageId,只登记不公开展示) |
-| `code` | 仓库路径 + 文件/行 | `code: TF BFCAllocator | github.com/tensorflow/tensorflow bfc_allocator.h` |
-| `technote` | 内部文档/脑图 | `technote: 某某设计文档 | <存放路径>` |
+| `wiki` | 页面标题 + 稳定页面 URL | `wiki: 某某页面 | https://wiki.example.org/...` |
+| `code` | 仓库/项目 URL + 文件路径 | `code: TF BFCAllocator | https://github.com/tensorflow/tensorflow/...` |
+| `technote` | 标题 + 可访问 URL | `technote: 某某设计文档 | https://...` |
 
-标识符的意义:同一类型文件可能多次出现(不同版本 ppt)、不同位置(本地/远端 wiki),标识符让你能精确区分、避免混淆。
+标识符的意义:同一类型资料可能多次出现(不同版本、不同发布页面),稳定标识符和原始 URL 让不同设备、不同时间都能重新定位来源。不要在 source 中写本机绝对路径、家目录路径、挂载点、文件名或“本地副本”字段。
 
 ## 2. 内容重叠 → 只收一条,合并 source
 
@@ -37,18 +39,18 @@ date: 2026-09
 反例:某知识点同时出现在 wiki 和 pdf → 建了两篇 → 两篇内容漂移 → 找不到该信哪个。
 正确做法:一篇内容,`source` 两行。
 
-## 3. 下载型资料(重要,存档场景)
+## 3. 来源只登记公开链接(跨设备)
 
-- **ppt / pdf 这类可下载文件**:优先**保留一份本地副本**在知识库的 `assets/` 下(或引用你自己的归档目录),URL/在线 wiki 可能失效或改版。
-  - 副本路径写进 `source`(`本地副本:` 前缀),与原始链接并存
-- **web / wiki 在线页**:在线会更新,通常**不复制全文**,只在 `source` 记链接 + 记录「抓取/阅读日期」,便于判断时效
-- 取舍:价值高且稳定 → 存副本;动态更新 → 只记链接
+- **不在 obrain 保存或依赖本地原始文件**。正文只保留提炼后的知识；`source` 只登记 DOI、arXiv、出版社、官方文档、官方仓库或项目主页等原始链接。
+- PDF 论文优先登记 arXiv/DOI/出版社页面；网页登记 canonical URL；代码登记官方仓库或具体文件 URL。
+- 每条来源可附「阅读/抓取日期」和 `primary` 角色，但不要写本机路径、挂载点、家目录、文件名或本地副本说明。
+- 原始链接失效时，优先寻找同一来源的稳定替代链接并更新 source；不要用某台设备的临时下载路径替代。
 
 ## 4. 新资料入库流程(套用即省心)
 
 1. 提炼出「知识条目」,不复制原文
 2. 查重:该条是否已在库里?→ 已在 → 补写 `source` 并标日期,不新开篇
-3. 不在 → 判断归属领域与 type(concept/case/checklist/howto/reference/domain,实际六类;目录↔type 默认映射与已知例外见 §5)
+3. 不在 → 判断归属领域与 type(concept/case/checklist/howto/reference/domain/comparison,实际七类;目录↔type 默认映射与已知例外见 §5)
 4. 落篇 + 更新该领域 index.md 索引 + 若新领域则登记进全局 INDEX
 
 ## 5. 目录 ↔ type 默认映射(惯例 + 已知例外)
@@ -59,7 +61,7 @@ date: 2026-09
 |---|---|---|
 | `concepts/` | concept(机制原理) | 强约定 |
 | `cases/` | case(事故复盘) | 强约定 |
-| `practices/` | checklist(清单) | 强约定 |
+| `practices/` | checklist(清单) | 强约定;例外:vllm/practices/inference-engine-selection.md 为 comparison(选型对比) |
 | `notes/` | 源码一手实读笔记(**豁免** TL;DR/frontmatter 要求,见 §6) | 强约定(豁免) |
 | `frameworks/` | howto(工具上手) | 弱约定 |
 | `references.md`(领域根) | reference(链接索引) | 补充映射 |
@@ -70,6 +72,15 @@ date: 2026-09
 ## 6. notes/ 豁免条款
 
 `notes/` 目录定位是**源码一手实读笔记**(path:line 级参考材料),**豁免**知识条目的 TL;DR 与 YAML frontmatter 要求——它不是知识条目,是源码参考。给 notes 逐篇补 frontmatter/TL;DR 属于误用规范,不要做。
+
+## 7. 索引/政策/链接索引页的 frontmatter 豁免
+
+以下页面不是知识条目,豁免 `source` 字段;README.md 作为根入口额外豁免全部 frontmatter:
+
+- 各域 `index.md`(type: domain)
+- 各域 `references.md`(type: reference,自身即链接索引)
+- 根目录 `SOURCE-POLICY.md`
+- 根目录 `README.md`(豁免全部 frontmatter)
 
 ## 对现有库的说明
 

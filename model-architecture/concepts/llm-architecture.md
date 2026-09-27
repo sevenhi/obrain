@@ -1,9 +1,9 @@
 ---
 title: 通用 LLM 架构:归一化/激活/位置编码的演进与 LLaMA→Llama 2/3 定型线
 type: concept
-tags: [llama, llm-architecture, rmsnorm, layernorm, swiglu, gelu, rope, alibi, pre-normalization, position-encoding, scaling-laws, chinchilla, gqa, gpt, open-llm, meta-ai]
+tags: [llama, llm-architecture, rmsnorm, layernorm, swiglu, gelu, rope, alibi, pre-normalization, positional-encoding, scaling-laws, chinchilla, gqa, gpt, open-llm, meta-ai]
 source:
-  - "pdf: LLaMA: Open and Efficient Foundation Language Models (primary) | arXiv:2302.13971 (2023-02) | ~/zhanbin/library/papers/LLaMA: Open and Efficient Foundation Language Models.pdf"
+  - "pdf: LLaMA: Open and Efficient Foundation Language Models (primary) | arXiv:2302.13971 (2023-02)"
   - "pdf: Llama 2: Open Foundation and Fine-Tuned Chat Models | arXiv:2307.09288 (2023-07) | https://arxiv.org/abs/2307.09288"
   - "pdf: The Llama 3 Herd of Models | arXiv:2407.21783 (2024-07) | https://arxiv.org/html/2407.21783v3 (2026-09-21 实测可达)"
   - "pdf: Training Compute-Optimal Large Language Models (Chinchilla/Hoffmann) | arXiv:2203.15556 (2022-03) | https://arxiv.org/abs/2203.15556"

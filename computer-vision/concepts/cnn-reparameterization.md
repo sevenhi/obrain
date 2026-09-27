@@ -3,7 +3,7 @@ title: OREPA — 在线卷积重参数化(训练期即合并)
 type: concept
 tags: [reparameterization, cnn, repvgg, dbb, training-efficiency, orepa]
 source:
-  - "pdf: OREPA 论文全文 | arXiv:2204.00826 CVPR 2022 (浙大 + 阿里云) | ~/zhanbin/library/papers/Online Convolutional Re-parameterization.pdf ↑primary"
+  - "pdf: OREPA 论文全文 | arXiv:2204.00826 CVPR 2022 (浙大 + 阿里云) | Online Convolutional Re-parameterization.pdf ↑primary"
   - "web: OREPA 官方 PyTorch 实现 | https://github.com/JUGGHM/OREPA_CVPR2022 (抓取 2026-09-21)"
   - "web: RepVGG(重参数化前驱,VGG 式训练多分支/推理单 3×3) | arXiv:2101.03697 CVPR 2021 (抓取 2026-09-21)"
   - "web: DBB/Diverse Branch Block(重参数化前驱,Inception 式多分支) | arXiv:2103.13425 CVPR 2021 (抓取 2026-09-21)"
@@ -100,6 +100,6 @@ ImageNet-1K(120 epoch,同机复测,Top-1 / 训练显存 / 每 batch 秒):
 
 ## 溯源
 
-- 主源:论文本地 PDF(含补充材料,见 frontmatter,`~/zhanbin/library/papers/`,只读存档)。全部数字取自论文 Table 1-5 与附录 Table 2。
+- 主源:论文论文原文(含补充材料，链接见 frontmatter)。全部数字取自论文 Table 1-5 与附录 Table 2。
 - 网络综合:官方代码 JUGGHM/OREPA_CVPR2022(README 与论文互证:两步 pipeline = Linearization + Squeezing,「理论上分支无尺度会退化」的表述一致);前驱三篇 arXiv abs 页核对定位——RepVGG(2101.03697,VGG-style 多分支训练/单路推理)、DBB(2103.13425,Inception-like 多分支,ImageNet 最高 +1.9%)、ACNet(1908.03930,非对称 1×3+3×1+3×3 分支)。全部 URL 于 2026-09-21 curl 实测存活(200)。
 - 理论前驱:Arora et al., *On the Optimization of Deep Networks: Implicit Acceleration by Overparameterization*, ICML 2018(多层拓扑改变优化的 Lemma 1,OREPA 将其扩展到多分支)——登记备查,未单独抓全文。

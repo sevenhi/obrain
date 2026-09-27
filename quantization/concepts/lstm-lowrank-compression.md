@@ -3,7 +3,7 @@ title: LSTM 低秩压缩 — 低秩分解 vs 剪枝的两条压缩路线与"该�
 type: concept
 tags: [compression, low-rank, svd, semi-nmf, pruning, lstm, elmo, matrix-factorization]
 source:
-  - "pdf: On the Effectiveness of Low-Rank Matrix Factorization for LSTM Model Compression(Winata/Madotto/Shin/Barezi/Fung, HKUST CAiRE, ↑primary) | arXiv:1908.09982v1 (PACLIC 2019,arXiv comments 栏实测标注) | ~/zhanbin/library/papers/On the Effectiveness of Low-Rank Matrix Factorization for LSTM Model Compression.pdf"
+  - "pdf: On the Effectiveness of Low-Rank Matrix Factorization for LSTM Model Compression(Winata/Madotto/Shin/Barezi/Fung, HKUST CAiRE, ↑primary) | arXiv:1908.09982v1 (PACLIC 2019,arXiv comments 栏实测标注)"
   - "web: arXiv 摘要页 | https://arxiv.org/abs/1908.09982 (2026-09 实测 200)"
   - "web: AWD-LSTM 基线代码(Salesforce,论文实验用) | https://github.com/salesforce/awd-lstm-lm (2026-09 实测 200)"
   - "web: 方法脉络交叉核对 — Deep Compression(剪枝+量化+Huffman, Han et al.) | arXiv:1510.00149;Jaderberg et al. 低秩卷积加速 | BMVC 2014"
@@ -106,6 +106,6 @@ E(r) = R(M, M_r) / R(P, P_r),  R(a,b) = (a-b)/max(a,b)
 
 ## 5. 溯源与多源综合说明
 
-- 主源 ↑primary:本地 PDF(arXiv:1908.09982v1, 2019-08-27);发表状态以 arXiv comments 栏为准:**"Accepted in PACLIC 2019"**(2026-09 实测 arXiv 摘要页;PACLIC 33 = 2019-09 于日本函馆,会议 program 存活核对)——网传"EMNLP-IJCNLP 2019"无据,勿引用;
+- 主源 ↑primary:论文原文(arXiv:1908.09982v1, 2019-08-27);发表状态以 arXiv comments 栏为准:**"Accepted in PACLIC 2019"**(2026-09 实测 arXiv 摘要页;PACLIC 33 = 2019-09 于日本函馆,会议 program 存活核对)——网传"EMNLP-IJCNLP 2019"无据,勿引用;
 - 基线代码:github.com/salesforce/awd-lstm-lm(2026-09 实测存活);ELMo 权重来自 allennlp.org/elmo;
 - 方法脉络交叉核对:剪枝+量化+Huffman 的"压缩三件套"出自 Han et al. Deep Compression(arXiv:1510.00149,本文引其剪枝方法);低秩加速 CNN 出自 Jaderberg et al. BMVC 2014;Semi-NMF 出自 Ding et al. TPAMI 2010;TT-LSTM 对比数字出自 Grachev et al. 2017(本文 Table 1 转录)。

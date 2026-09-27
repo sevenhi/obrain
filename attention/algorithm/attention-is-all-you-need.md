@@ -3,7 +3,7 @@ title: Attention Is All You Need — Transformer 架构原始设计
 type: concept
 tags: [transformer, self-attention, qkv, multi-head, positional-encoding, scaled-dot-product, nmt]
 source:
-  - "pdf: Attention Is All You Need (primary) | arXiv:1706.03762 NIPS 2017 | ~/zhanbin/library/papers/Attention is All You Need.pdf"
+  - "pdf: Attention Is All You Need (primary) | arXiv:1706.03762 NIPS 2017"
   - "web: The Illustrated Transformer — Jay Alammar | https://jalammar.github.io/illustrated-transformer/"
   - "web: The Annotated Transformer — Harvard NLP | https://nlp.seas.harvard.edu/annotated-transformer/"
 date: 2026-09
@@ -141,6 +141,6 @@ causal = torch.tril(torch.ones(S, S))     # 因果掩码: 下三角为 1
 
 ## 溯源
 
-- 主源:本地 PDF(arXiv v5,2017-12-06),正文/表格数字均直接核对原文。
+- 主源:论文原文(arXiv v5,2017-12-06),正文/表格数字均直接核对原文。
 - 交叉源:Illustrated Transformer(图解心智模型)、Annotated Transformer(PyTorch 复现参考),URL 已 curl 验证存活(2026-09-21)。
 - 关联条目:[attention-sinks-streaming](attention-sinks-streaming.md)(softmax 分母视角的延伸)、[llm-architecture](../../model-architecture/concepts/llm-architecture.md)(三项架构改进)、[flash-attention-implementation](../implementation/flash-attention-implementation.md)(O(n²) 内存问题的精确解)。

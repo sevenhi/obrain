@@ -3,7 +3,7 @@ title: MEGABYTE — 多尺度 decoder 与百万字节级 tokenization-free 序�
 type: concept
 tags: [megabyte, multiscale, byte-level, long-sequence, patch, global-local, sub-quadratic-attention]
 source:
-  - "pdf: MEGABYTE: Predicting Million-byte Sequences with Multiscale Transformers (primary) | arXiv:2305.07185 NeurIPS 2023 | ~/zhanbin/library/papers/MEGABYTE: Predicting Million-byte Sequences with Multiscale Transformers.pdf"
+  - "pdf: MEGABYTE: Predicting Million-byte Sequences with Multiscale Transformers (primary) | arXiv:2305.07185 NeurIPS 2023"
   - "web: NeurIPS 2023 官方 PDF | https://proceedings.neurips.cc/paper_files/paper/2023/file/f8f78f8043f35890181a824e53a57134-Paper-Conference.pdf"
   - "web: OpenReview (NeurIPS 2023) | https://openreview.net/forum?id=JTmO2V9Xpz"
 date: 2026-09
@@ -111,6 +111,6 @@ p(x_t | x_{0:t}) = softmax(E_local-embedᵀ h_local-out_{k,p}),  t=kP+p
 
 ## 溯源
 
-- 主源:本地 PDF(arXiv v1,2023-05-12),公式/复杂度推导/Table 2/3/5/音频节数字直接核对原文。
+- 主源:论文原文(arXiv v1,2023-05-12),公式/复杂度推导/Table 2/3/5/音频节数字直接核对原文。
 - 交叉源:NeurIPS 2023 proceedings 官方 PDF(确认会议版)、OpenReview forum。官方 facebookresearch/megabyte 仓库已不存在(curl 404,2026-09-21 实测),不列入;第三方参考实现 lucidrains/MEGABYTE-pytorch 存活可查。URL 均已 curl 验证(2026-09-21)。
 - 关联条目:[attention-is-all-you-need](attention-is-all-you-need.md)(per-position FFN 成本的结构来源)、[flash-attention-implementation](../implementation/flash-attention-implementation.md)(内核路线,与本篇架构路线正交可叠加)、[attention-sinks-streaming](attention-sinks-streaming.md)(cache 路线)。

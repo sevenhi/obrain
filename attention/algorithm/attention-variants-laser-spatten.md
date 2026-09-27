@@ -3,8 +3,8 @@ title: 注意力变体双线索 — LASER(激活替换/训练视角)与 SpAtten(
 type: concept
 tags: [laser, spatten, attention-variants, gradient-saturation, token-pruning, head-pruning, progressive-quantization, accelerator, icml-2025, hpca-2021]
 source:
-  - "pdf: LASER: Attention with Exponential Transformation (primary) | arXiv:2411.03493 ICML 2025 (PMLR 267:14902-14917) | ~/zhanbin/library/papers/LASER: Attention with Exponential Transformation.pdf"
-  - "pdf: SpAtten: Efficient Sparse Attention Architecture with Cascade Token and Head Pruning (primary) | arXiv:2012.09852 HPCA 2021 | ~/zhanbin/library/papers/SpAtten-- Efficient Sparse Attention Architecture with Cascade Token and Head Pruning.pdf"
+  - "pdf: LASER: Attention with Exponential Transformation (primary) | arXiv:2411.03493 ICML 2025 (PMLR 267:14902-14917)"
+  - "pdf: SpAtten: Efficient Sparse Attention Architecture with Cascade Token and Head Pruning (primary) | arXiv:2012.09852 HPCA 2021"
   - "web: LASER PMLR 官方页 | https://proceedings.mlr.press/v267/duvvuri25a.html"
   - "code: mit-han-lab/spatten (SpinalHDL/Verilog + PyTorch 算法) | https://github.com/mit-han-lab/spatten"
 date: 2026-09

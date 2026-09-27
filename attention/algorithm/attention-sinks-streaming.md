@@ -3,7 +3,7 @@ title: Attention Sinks 与 StreamingLLM — 无限长流式生成的 KV cache �
 type: concept
 tags: [streamingllm, attention-sink, kv-cache, streaming-inference, sliding-window, iclr-2024]
 source:
-  - "pdf: Efficient Streaming Language Models with Attention Sinks (primary) | arXiv:2309.17453 ICLR 2024 | ~/zhanbin/library/papers/Efficient Streaming Language Models With Attention Sinks.pdf"
+  - "pdf: Efficient Streaming Language Models with Attention Sinks (primary) | arXiv:2309.17453 ICLR 2024"
   - "web: StreamingLLM 项目页 (MIT Han Lab) | https://hanlab.mit.edu/projects/streamingllm"
   - "code: mit-han-lab/streaming-llm | https://github.com/mit-han-lab/streaming-llm"
   - "web: OpenReview ICLR 2024 | https://openreview.net/forum?id=NG7sS51zVF"
@@ -144,6 +144,6 @@ window attention 在长流上输出接近随机;StreamingLLM 追平逐样本 one
 
 ## 溯源
 
-- 主源:本地 PDF(arXiv v4,2024-04-07,ICLR 2024 会议版),全部表格数字直接核对原文。
+- 主源:论文原文(arXiv v4,2024-04-07,ICLR 2024 会议版),全部表格数字直接核对原文。
 - 交叉源:MIT Han Lab 项目页(集成时间线)、官方 GitHub repo(实现)、OpenReview(评审版)。URL 均已 curl 验证存活(2026-09-21);openreview API 有反爬挑战,forum 页 HTTP 200。
 - 关联条目:[attention-is-all-you-need](attention-is-all-you-need.md)(softmax 分母与 O(n²) 的来源)、[`vllm/`](../../vllm/index.md)(服务引擎侧 KV cache 管理)、[flash-attention-implementation](../implementation/flash-attention-implementation.md)(窗口内 attention 的高效内核)。

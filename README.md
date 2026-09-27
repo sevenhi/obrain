@@ -5,12 +5,12 @@
 
 ## 目录规约(obrain vs library 判据)
 
-`~/zhanbin/` 顶层约定:
+`~/workspace/` 顶层约定:
 
 ```
-~/zhanbin/
+~/workspace/
 ├── obrain/      知识库:提炼后的知识条目(md + frontmatter + 索引,按领域组织)——本目录
-├── library/     原始资料只读存档(pdf/pptx/书籍,永不编辑):papers/ books/ manuals/ training/ personal/
+├── library/     可选的个人原始资料归档(不属于 obrain，obrain 不依赖其存在)
 ├── projects/    自己写的代码 + 实验脚本:work/ patent/ scratch/
 ├── archive/     一次性产物 / 旧草稿:保留期 90 天,到期清理
 ├── scripts/     审查作业脚本(cron 调用)
@@ -18,7 +18,7 @@
 └── repos/       只读上游克隆(vllm)
 ```
 
-**判据**:`obrain` = 提炼后的知识条目(可检索、有索引、按领域,内容自足);`library` = 原始资料存档(永不编辑)。两者不混;obrain 引用 library/archive 文件用 `source:` 指向,不复制;obrain 知识不依赖 tracker 同步管线。
+**判据**:`obrain` = 跨设备可用的提炼知识条目(可检索、有索引、按领域、内容自足);`library` = 可选的个人原始资料归档。obrain 只通过公开原始链接溯源，不引用任何设备的本地路径或文件名，也不依赖 library/archive/tracker 才能阅读。
 
 ## 领域列表(7 个独立领域)
 
@@ -26,11 +26,11 @@
 |---|---|---|---|
 | Attention | [`attention/`](attention/index.md) | 注意力机制两层结构:算法层 algorithm/(AIAYN/StreamingLLM/LASER+SpAtten/MEGABYTE/Rabe&Staats,5 篇)+ 实现层 implementation/(FA 四代合成篇,1 篇) | 2026-09 |
 | Model Architecture | [`model-architecture/`](model-architecture/index.md) | 通用 LLM 架构:归一化/激活/位置编码演进 + 训练哲学(Chinchilla/推理预算)+ GPT→LLaMA→Llama 2/3 定型线;MHA/MQA/GQA 注意力头谱系;RoPE 上下文扩展(PI/NTK/YaRN/LongRoPE);开源模型谱系与 MoE(Mistral/DeepSeek/Qwen/RWKV)(4 篇) | 2026-09 |
-| CUTLASS | [`cutlass/`](cutlass/index.md) | 高性能 GEMM 模板库与 CuTe DSL:造内核的库(concepts 6 + frameworks 2,共 8 篇) | 2026-09 |
+| CUTLASS | [`cutlass/`](cutlass/index.md) | 高性能 GEMM 模板库与 CuTe DSL:造内核的库(concepts 7 + frameworks 2,共 9 篇) | 2026-09 |
 | GPU 随机数生成 | [`gpu-rng/`](gpu-rng/index.md) | counter-based(Philox)与 MTGP 两条 GPU PRNG 路线 + cuRAND 落地(1 篇) | 2026-09 |
-| 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:权重/KV cache 量化 + 稀疏量化混合(SpQR)+ 低秩/剪枝路线(3 篇,原 papers/ 论文笔记域) | 2026-09 |
-| vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构等(8 篇) | 2026-09 |
-| Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核(4 篇) | 2026-09 |
+| 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:PTQ(GPTQ/AWQ/SmoothQuant)、KV cache 量化、稀疏量化混合(SpQR)+ 低秩/剪枝路线(5 篇,论文来源通过公开链接追溯) | 2026-09 |
+| vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构、生产部署、观测与引擎选型等(10 篇) | 2026-09 |
+| Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核、ONNX/TensorRT 部署(5 篇) | 2026-09 |
 
 ## 三层关系(CUTLASS → FA → vLLM)
 
@@ -50,14 +50,14 @@
 
 - **临时查证** → 直接搜关键词(`PagedAttention`、`split-K`、`TiledMMA`、`sink token`)
 - **回顾某领域** → 打开该领域 `index.md`,按索引跳
-- **完整学习** → 打开领域 index.md,按深度篇目录(attention 域为 `algorithm/`+`implementation/`,其余域为 `concepts/`)导航顺序读(各篇文末『溯源』可回原始文献)
+- **完整学习** → 打开领域 index.md,按深度篇目录(attention 域为 `algorithm/`+`implementation/`,其余域为 `concepts/`)导航顺序读(各篇 frontmatter 的 source 字段可回原始文献)
 
 ## 收纳规范(给自己定的,写这条是为了以后不纠结)
 
 1. 每篇用 YAML frontmatter:`title` / `type` / `tags` / `source` / `date`
 2. 每篇开头一段「TL;DR」,30 秒讲完结论
-3. 概念篇管「懂」,案例篇管「查」,清单篇管「用」——三类分开,不混在一篇里(type 全集为 concept/case/checklist/howto/reference/domain 六类)
-4. 引用外部资料只放链接索引([references.md](cutlass/index.md) 域内各领域 references 为范式),不复制全文
+3. 概念篇管「懂」,案例篇管「查」,清单篇管「用」——三类分开,不混在一篇里(type 全集为 concept/case/checklist/howto/reference/domain/comparison 七类,comparison 专用于选型对比)
+4. 引用外部资料只放链接索引(范式见 [attention/references.md](attention/references.md);cutlass/quantization/vllm 三域的链接索引即各篇 frontmatter 的 source 列表),不复制全文
 5. **多来源登记**(ppt / pdf / 网页 / wiki …):每篇 `source` 写成「类型 + 标识符 + 链接」结构化形式;来源互不相同但内容重叠时,只收一条知识,`source` 里列全部出处 → 详见 [SOURCE-POLICY.md](SOURCE-POLICY.md)
 6. 拿到新资料先问「这条知识是不是已在库里?」→ 是则补 source 去重,否则新开篇;不建两篇内容重叠的篇
 7. **把某领域"做厚"**(升级到专业深度、多源综合)时,按领域 index.md 定位判断 + 主动网络多源综合,写成"打开一篇能读懂、有专业深度"的深度条目(机制原理/可复现细节/数据对比/实践要点/溯源完整)。

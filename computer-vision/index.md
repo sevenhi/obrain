@@ -1,21 +1,24 @@
 ---
 title: Computer Vision
 type: domain
-tags: [computer-vision, nerf, vit, cnn, reparameterization, inference]
+tags: [computer-vision, nerf, vit, cnn, reparameterization, inference, onnx, tensorrt, deployment]
 source:
-  - "pdf: 本域 5 篇源论文(NeRF/NeRF++/TRT-ViT/OREPA/CCNN) | ~/zhanbin/library/papers/(只读存档,见各篇 frontmatter)"
+  - "pdf: 本域 5 篇源论文(NeRF/NeRF++/TRT-ViT/OREPA/CCNN) | 本地路径尚未确认(只读存档,见各篇 frontmatter)"
+  - "web: ONNX Runtime 官方文档 | https://onnxruntime.ai/docs/ | 阅读日期 2026-09-27"
+  - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/ | 阅读日期 2026-09-27"
+  - "web: NVIDIA Model Optimizer | https://nvidia.github.io/TensorRT-Model-Optimizer/ | 阅读日期 2026-09-27"
 date: 2026-09
 ---
 
 # Computer Vision
 
-> 领域索引(导航起始页)。定位:**视觉模型的两条主线——表示(NeRF 隐式场景表示、CCNN 连续卷积核)与部署效率(TRT-ViT 硬件感知架构、OREPA 重参数化)**。2026-09 新建,由 library/papers 5 篇论文提炼合并为 4 个 concept(NeRF+NeRF++ 合并一篇)。**正文在 `concepts/`,每篇可独立读懂**;本页只导航。
+> 领域索引(导航起始页)。定位:**视觉模型的两条主线——表示(NeRF 隐式场景表示、CCNN 连续卷积核)与部署效率(TRT-ViT 硬件感知架构、OREPA 重参数化)**。2026-09 新建,由 5 篇论文提炼合并为 5 个 concept/howto(NeRF+NeRF++ 合并一篇)。**正文在 `concepts/`,每篇可独立读懂**;本页只导航。
 
 ## 一句话定位
 
 从「怎么表示视觉信号」到「怎么在真实硬件上跑得快」:NeRF 用 MLP+体渲染表示场景(表示端极限),CCNN 把卷积核连续化(结构端创新),TRT-ViT 与 OREPA 则分别从架构设计与训练-部署解耦两个角度回答「精度不掉、延迟最低」。
 
-## 条目索引(4 concept)
+## 条目索引(5 concept/howto)
 
 | 篇目 | 类型 | 一句话 | 状态 |
 |---|---|---|---|
@@ -23,11 +26,12 @@ date: 2026-09
 | [TRT-ViT 推理导向架构](concepts/trt-vit-inference.md) | concept | 以 TensorRT 延迟(非 FLOPs)为设计准绳;4 条准则 + MixBlockC 混合 CNN/Transformer | ✅ 已入库 |
 | [CNN 重参数化(OREPA)](concepts/cnn-reparameterization.md) | concept | 训练多分支/推理单卷积;线性 scaling 替代 BN 使训练期 kernel 级在线合并 | ✅ 已入库 |
 | [CCNN 连续卷积核](concepts/cnn-long-range-nd.md) | concept | 核=坐标的 MLP 函数,核长与参数解耦;一个 CNN 通吃 1D/2D/任意分辨率 | ✅ 已入库 |
+| [视觉模型部署：PyTorch → ONNX → TensorRT / ONNX Runtime](frameworks/onnx-tensorrt-deployment.md) | howto | 从导出、图验证、动态 shape、量化、数值回归到 engine 兼容性和线上 benchmark 的完整部署流程 | ✅ 已入库 |
 
 ## 阅读顺序建议
 
 - 表示线:NeRF(隐式场景)→ CCNN(隐式卷积核)——两者同谱系(坐标→值的 MLP),连读能看到 implicit representation 的两个应用面。
-- 效率线:TRT-ViT(架构层:什么算子在硬件上真快)→ OREPA(训练层:复杂结构免费折叠)——同一「部署优先」哲学的两端。
+- 效率线:TRT-ViT(架构层:什么算子在硬件上真快)→ OREPA(训练层:复杂结构免费折叠)→ [ONNX/TensorRT 部署](frameworks/onnx-tensorrt-deployment.md)(工程层:导出、验证、engine 与线上观测)——同一「部署优先」哲学的三端。
 
 ## 相关条目(跨域互链)
 

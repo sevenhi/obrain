@@ -3,7 +3,7 @@ title: CCNN — 连续卷积核:一个 CNN 通吃任意长度/分辨率/维度
 type: concept
 tags: [cnn, continuous-convolution, long-range-dependency, kernel-generator, implicit-representation, s4]
 source:
-  - "pdf: CCNN workshop 论文全文 | arXiv:2206.03398 ICML 2022 Workshop on Continuous Time Methods (Romero, Knigge, Gu et al.) | ~/zhanbin/library/papers/Towards a General Purpose CNN for Long Range Dependencies in ND.pdf ↑primary"
+  - "pdf: CCNN workshop 论文全文 | arXiv:2206.03398 ICML 2022 Workshop on Continuous Time Methods (Romero, Knigge, Gu et al.) | Towards a General Purpose CNN for Long Range Dependencies in ND.pdf ↑primary"
   - "web: CCNN 正式版论文 | arXiv:2301.10540 ICLR 2023 (Modelling Long Range Dependencies in ND) (抓取 2026-09-21)"
   - "web: CCNN 官方 PyTorch 实现 | https://github.com/david-knigge/ccnn (抓取 2026-09-21)"
   - "web: FlexConv(前驱,可微 kernel 大小) | arXiv:2110.08059 ICLR 2022 (抓取 2026-09-21)"
@@ -103,6 +103,6 @@ CCNN block(S4 式):
 
 ## 溯源
 
-- 主源:workshop 版论文本地 PDF(见 frontmatter,`~/zhanbin/library/papers/`,只读存档);全部数字取自论文 Table 1-6。
+- 主源:workshop 版论文论文原文(链接见 frontmatter);全部数字取自论文 Table 1-6。
 - 网络综合:官方代码库 david-knigge/ccnn(README 指向 ICLR 2023 正式版 arXiv:2301.10540,标题 *Modelling Long Range Dependencies in ND: From Task-Specific to a General Purpose CNN*,确认 workshop→会议版扩展关系及 3D 点云新增实验);前驱 FlexConv(arXiv:2110.08059,可微核大小/高斯掩码)与对照 S4(arXiv:2111.00396,*Efficiently Modeling Long Sequences with Structured State Spaces*)arXiv abs 页核对定位。全部 URL 于 2026-09-21 curl 实测存活(200)。
 - 注意:本地 PDF 是 workshop 短版(8 页),ICLR 2023 正式版含点云 3D 实验等增量,本篇结论以 workshop 版为准、正式版仅登记链接。

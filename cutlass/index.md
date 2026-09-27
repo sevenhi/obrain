@@ -50,6 +50,7 @@ date: 2026-09
 | CuTe Layout 代数 | [concepts/cute-layout-algebra.md](concepts/cute-layout-algebra.md) | Layout 抽象、代数运算(divide/product/coalesce)、Atom/TiledMMA、TV layout | ✅ 已写 |
 | 两级 Micro-kernel 抽象 | [concepts/microkernel-abstraction.md](concepts/microkernel-abstraction.md) | BLIS 哲学如何搬到 GPU:空间级(TiledMMA/Copy)与时间级(Collective)microkernel、MMA Atom traits、dispatch policy、generalized partitioning | ✅ 已写 |
 | Hopper WGMMA 指令机制 | [concepts/hopper-wgmma.md](concepts/hopper-wgmma.md) | warpgroup 级异步 MMA、SM90 atom 命名/形状、8 种 GMMA layout atom、descriptor、同步三件套 | ✅ 已写 |
+| CUDA GPU 性能基础 | [concepts/cuda-performance-basics.md](concepts/cuda-performance-basics.md) | 从 Roofline、算术强度、存储层级、occupancy 到 Nsight profiling 的性能定位基础 | ✅ 已写 |
 
 ### 工具与上手(用)
 | 专题 | 文件 | 一句话 | 状态 |

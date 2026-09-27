@@ -5,20 +5,19 @@
 
 ## 目录规约(obrain vs library 判据)
 
-`~/workspace/` 顶层约定:
+`~/workspace/` 顶层现状(2026-09 核对实物):
 
 ```
 ~/workspace/
-├── obrain/      知识库:提炼后的知识条目(md + frontmatter + 索引,按领域组织)——本目录
-├── library/     可选的个人原始资料归档(不属于 obrain，obrain 不依赖其存在)
-├── projects/    自己写的代码 + 实验脚本:work/ patent/ scratch/
-├── archive/     一次性产物 / 旧草稿:保留期 90 天,到期清理
-├── scripts/     审查作业脚本(cron 调用)
-├── tracker/     定时 wiki 同步管线(统一管理,含 vllm/cutlass/flash-attention-tracker)
-└── repos/       只读上游克隆(vllm)
+├── obrain -> /data/cold/obrain   知识库(本目录):提炼后的知识条目,md + frontmatter + 索引,按领域组织;符号链接,实体在 /data/cold 盘
+├── xiaomi-miloco/                miloco 智能家居项目源码(backend/cli/plugins/web/knowledge 等)
+├── homeassistant/                HA 自动化配置与脚本(fetch_automations.py、yaml/json、backups/)
+├── firecrawl/                    firecrawl 网页抓取服务部署(docker-compose + systemd unit)
+├── scripts/                      日常维护脚本(clean_hermes.sh 等)
+└── sessions/                     会话记录与监控杂项(memory/、miloco_mem_monitor.py)
 ```
 
-**判据**:`obrain` = 跨设备可用的提炼知识条目(可检索、有索引、按领域、内容自足);`library` = 可选的个人原始资料归档。obrain 只通过公开原始链接溯源，不引用任何设备的本地路径或文件名，也不依赖 library/archive/tracker 才能阅读。
+**判据**:`obrain` = 跨设备可用的提炼知识条目(可检索、有索引、按领域、内容自足);`library` = 可选的个人原始资料归档(当前未建立)。obrain 只通过公开原始链接溯源,不引用任何设备的本地路径或文件名,也不依赖同机其他目录才能阅读。
 
 ## 领域列表(7 个独立领域)
 

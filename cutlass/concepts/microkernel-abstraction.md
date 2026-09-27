@@ -3,8 +3,7 @@ title: 两级 Micro-kernel 抽象:BLIS 哲学如何搬到 GPU(CUTLASS 3.x)
 type: concept
 tags: [cutlass, cute, microkernel, blis, tiledmma, collective, partitioning]
 source:
-  - "pdf: A Generalized Micro-kernel Abstraction for GPU Linear Algebra (Thakkar/Cecka/Vuduc, BLIS Retreat 2023) | A Generalized Micro kernel Abstraction for GPU Linear Algebra.pdf (primary)"
-  - "web: 同名讲稿公开 PDF (UT Austin BLIS Retreat 2023) | https://www.cs.utexas.edu/~flame/BLISRetreat2023/slides/Thakkar_BLISRetreat2023.pdf"
+  - "pdf: A Generalized Micro-kernel Abstraction for GPU Linear Algebra (Thakkar/Cecka/Vuduc, BLIS Retreat 2023, UT Austin flame 组公开镜像) | https://www.cs.utexas.edu/~flame/BLISRetreat2023/slides/Thakkar_BLISRetreat2023.pdf (primary)"
   - "web: CUTLASS 3.x: Orthogonal, Reusable, and Composable Abstractions for GEMM Kernel Design (NVIDIA Technical Blog, Thakkar et al., 2025-07) | https://developer.nvidia.com/blog/cutlass-3-x-orthogonal-reusable-and-composable-abstractions-for-gemm-kernel-design/"
   - "web: CUTLASS: Principled Abstractions for Handling Multidimensional Data Through Tensors and Spatial Microkernels | https://developer.nvidia.com/blog/cutlass-principled-abstractions-for-handling-multidimensional-data-through-tensors-and-spatial-microkernels/"
   - "web: BLIS 上游仓库 | https://github.com/flame/blis"
@@ -211,6 +210,6 @@ Hopper warp-specialized persistent 形态(原文伪码):producer warpgroup 跑 `
 
 ## 溯源
 
-- 主源:Thakkar (GaTech & NVIDIA), Cecka (NVIDIA), Vuduc (GaTech), *A Generalized Micro-kernel Abstraction for GPU Linear Algebra*, BLIS Retreat 2023-08-28 讲稿(库内 PDF,页眉标注 NVIDIA CONFIDENTIAL——只提炼观点与公开代码模式,不扩散原件);公开镜像为 UT Austin flame 组 BLISRetreat2023 slides。
+- 主源:Thakkar (GaTech & NVIDIA), Cecka (NVIDIA), Vuduc (GaTech), *A Generalized Micro-kernel Abstraction for GPU Linear Algebra*, BLIS Retreat 2023-08-28 讲稿,公开镜像(UT Austin flame 组):https://www.cs.utexas.edu/~flame/BLISRetreat2023/slides/Thakkar_BLISRetreat2023.pdf。
 - 交叉源:NVIDIA Technical Blog 两篇 CUTLASS 3.x 系列文(2025-07,五层 hierarchy/Collective 职责与本库描述一致);BLIS 上游 README(https://github.com/flame/blis)。
 - 库内互链:[gemm-tiling.md](gemm-tiling.md)(tiling 全景)、[cute-layout-algebra.md](cute-layout-algebra.md)(Layout 代数本体)、[hopper-wgmma.md](hopper-wgmma.md)(时间级在 Hopper 的同步形态)、[tile-scheduler.md](tile-scheduler.md)(外层 schedule)。

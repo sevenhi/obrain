@@ -118,3 +118,7 @@ date: 2026-09
 - [PTQ：GPTQ / AWQ / SmoothQuant](../../quantization/concepts/ptq-gptq-awq-smoothquant.md)
 - [KV Cache 量化](../../quantization/concepts/kv-cache-quantization.md)
 - [PagedAttention](../concepts/paged-attention.md)
+
+## 溯源
+
+- 主源:五家官方文档/仓库——vLLM(https://docs.vllm.ai/en/latest/)、SGLang(https://docs.sglang.ai/)、TensorRT-LLM(https://nvidia.github.io/TensorRT-LLM/)、llama.cpp(https://github.com/ggml-org/llama.cpp)、LMDeploy(https://lmdeploy.readthedocs.io/en/latest/),阅读日期 2026-09-27。

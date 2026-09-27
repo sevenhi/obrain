@@ -87,3 +87,8 @@ SmoothQuant 利用线性层的等价变换，在输入通道上使用缩放因�
 - [SpQR：稀疏+量化混合表示](spqr-sparse-quantized.md)
 - [vLLM GPTQ / AWQ / FP8](../../vllm/concepts/quantization-gptq-awq-fp8.md)
 - [FlashAttention 实现](../../attention/implementation/flash-attention-implementation.md)
+
+## 溯源
+
+- 主源:GPTQ(arXiv:2210.17323)、AWQ(arXiv:2306.00978)、SmoothQuant(arXiv:2211.10438)三篇原始论文。
+- 交叉源:vLLM Quantization 文档(https://docs.vllm.ai/en/latest/features/quantization/,引擎侧注册分派口径)。

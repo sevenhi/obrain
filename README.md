@@ -50,7 +50,7 @@
 
 - **临时查证** → 直接搜关键词(`PagedAttention`、`split-K`、`TiledMMA`、`sink token`)
 - **回顾某领域** → 打开该领域 `index.md`,按索引跳
-- **完整学习** → 打开领域 index.md,按深度篇目录(attention 域为 `algorithm/`+`implementation/`,其余域为 `concepts/`)导航顺序读(各篇 frontmatter 的 source 字段可回原始文献)
+- **完整学习** → 打开领域 index.md,按深度篇目录(attention 域为 `algorithm/`+`implementation/`,其余域为 `concepts/`)导航顺序读(各篇文末『溯源』可回原始文献)
 
 ## 收纳规范(给自己定的,写这条是为了以后不纠结)
 

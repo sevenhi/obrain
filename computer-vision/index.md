@@ -3,7 +3,6 @@ title: Computer Vision
 type: domain
 tags: [computer-vision, nerf, vit, cnn, reparameterization, inference, onnx, tensorrt, deployment]
 source:
-  - "pdf: 本域 5 篇源论文(NeRF/NeRF++/TRT-ViT/OREPA/CCNN) | 本地路径尚未确认(只读存档,见各篇 frontmatter)"
   - "web: ONNX Runtime 官方文档 | https://onnxruntime.ai/docs/ | 阅读日期 2026-09-27"
   - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/ | 阅读日期 2026-09-27"
   - "web: NVIDIA Model Optimizer | https://nvidia.github.io/TensorRT-Model-Optimizer/ | 阅读日期 2026-09-27"

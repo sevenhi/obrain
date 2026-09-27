@@ -116,3 +116,8 @@ CUTLASS 的 Layout、Copy Atom、TiledCopy 和 `partition` 抽象，本质上是
 - [CUTLASS 性能调优](../frameworks/cutlass-profiling-tuning.md)
 - [Hopper WGMMA](hopper-wgmma.md)
 - [FlashAttention 实现](../../attention/implementation/flash-attention-implementation.md)
+
+## 溯源
+
+- 主源:NVIDIA CUDA C++ Programming Guide(https://docs.nvidia.com/cuda/cuda-c-programming-guide/)与 CUDA Best Practices Guide(https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/)。
+- 交叉源:Nsight Compute 文档(https://docs.nvidia.com/nsight-compute/,profiler 口径)、CUTLASS 官方文档(https://docs.nvidia.com/cutlass/latest/)。

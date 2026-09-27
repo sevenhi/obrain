@@ -82,3 +82,8 @@ KIVI 的代表性结论是 K 和 V 的最佳量化粒度并不相同，非对称
 - [GQA / MQA / MLA](../../model-architecture/concepts/attention-heads-mha-mqa-gqa.md)
 - [PagedAttention](../../vllm/concepts/paged-attention.md)
 - [vLLM GPTQ / AWQ / FP8](../../vllm/concepts/quantization-gptq-awq-fp8.md)
+
+## 溯源
+
+- 主源:KIVI 论文(arXiv:2402.02750)。
+- 交叉源:vLLM 文档 KV cache 量化页(https://docs.vllm.ai/en/latest/features/quantization/quantized_kvcache/)。

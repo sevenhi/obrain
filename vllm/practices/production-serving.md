@@ -99,3 +99,7 @@ date: 2026-09
 - [连续批处理与统一 Token 预算](../concepts/continuous-batching.md)
 - [PagedAttention 与分页 KV Cache](../concepts/paged-attention.md)
 - [KV Cache 量化](../../quantization/concepts/kv-cache-quantization.md)
+
+## 溯源
+
+- 主源:vLLM 官方文档——Architecture Overview(https://docs.vllm.ai/en/latest/design/arch_overview/)、Production Metrics(https://docs.vllm.ai/en/latest/usage/metrics.html)、Model Runner V2 设计文档(https://docs.vllm.ai/en/latest/design/model_runner_v2/),阅读日期 2026-09-27。

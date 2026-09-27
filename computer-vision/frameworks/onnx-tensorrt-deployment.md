@@ -167,3 +167,8 @@ TensorRT serialized engine 对版本和硬件有兼容限制；不要默认一�
 - [CUDA GPU 性能基础](../../cutlass/concepts/cuda-performance-basics.md)
 - [PTQ：GPTQ / AWQ / SmoothQuant](../../quantization/concepts/ptq-gptq-awq-smoothquant.md)
 - [LLM 推理引擎选型](../../vllm/practices/inference-engine-selection.md)
+
+## 溯源
+
+- 主源:ONNX Runtime 官方文档(https://onnxruntime.ai/docs/)与 NVIDIA TensorRT 官方文档(https://docs.nvidia.com/deeplearning/tensorrt/latest/)。
+- 交叉源:TensorRT Architecture Overview(https://docs.nvidia.com/deeplearning/tensorrt/latest/architecture/architecture-overview.html)、TensorRT Model Optimizer(https://nvidia.github.io/TensorRT-Model-Optimizer/)。

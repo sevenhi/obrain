@@ -125,3 +125,8 @@ def hyquant_decode_step(q, kv_blocks):
 
 ---
 *代码:https://github.com/jerrysfls/HyQuant*
+
+## 溯源
+
+- 主源:HyQuant 论文(arXiv:2608.27875v1)。
+- 交叉源:官方代码仓库(https://github.com/jerrysfls/HyQuant)。

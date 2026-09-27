@@ -27,7 +27,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 | **V1 引擎架构** | 调度(CPU)与执行(GPU)解耦的多进程 + 异步调度 |
 | **优化注意力内核** | FlashAttention / FlashInfer / TRTLLM-GEN / FlashMLA / Triton |
 
-## 关键事实(快照)
+## 关键事实速记
 
 - 当前文档快照：官方文档已进入 v0.29+ 时代；本地源码分析基线仍是 `v0.28.1rc0-40`（commit `b74ac0bc6`），不能把基线当作当前实现版本。
 - **V1 架构(`vllm/v1/`)仍是本库的主线组织方式**；旧 `vllm/engine/` 仅作兼容背景，网上多数资料讲的是 V0，不能直接套用。
@@ -64,3 +64,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 
 - **长上下文/流式 KV cache 算法侧**:PagedAttention 解决"cache 装得下就全留"的分页管理;**装不下时逐出谁**见 [`attention/algorithm/attention-sinks-streaming.md`](../attention/algorithm/attention-sinks-streaming.md)(StreamingLLM:attention sink + 滚窗,4M token 稳定生成)。两者正交,vLLM 主线未内置 sink 逐出(TensorRT-LLM/SGLang/HF 已内置)。
 - **注意力内核与架构谱系**:[`attention/`](../attention/index.md)(算法/架构层 + FA 内核实现层,合并域)。
+
+## 溯源
+
+- 外部链接索引见 [references.md](references.md)。

@@ -26,7 +26,7 @@ date: 2026-09
 
 回答"一个现代 decoder-only LLM 长什么样、为什么长这样、有哪些变体可选":以 LLaMA 三件套(pre-RMSNorm + SwiGLU + RoPE)为定型锚点,覆盖组件演进线(归一化/激活/位置编码)、训练哲学(Kaplan→Chinchilla→LLaMA)、注意力头共享谱系(MHA→MQA→GQA→MLA)、长上下文扩展机制(PI/NTK/YaRN/LongRoPE),以及开源模型谱系与 MoE 路线(Mistral/DeepSeek/Qwen/RWKV)。
 
-## 条目
+## 条目索引
 
 | 条目 | 类型 | 一句话 | 状态 |
 |---|---|---|---|
@@ -54,6 +54,6 @@ date: 2026-09
 - **[`vllm/`](../vllm/index.md)**:GQA/MoE/长上下文的收益都在推理引擎兑现——KV cache 分页([paged-attention](../vllm/concepts/paged-attention.md))、大 batch 吞吐([continuous-batching](../vllm/concepts/continuous-batching.md))、KV/权重量化([quantization-gptq-awq-fp8](../vllm/concepts/quantization-gptq-awq-fp8.md))。
 - **[`quantization/`](../quantization/index.md)**:LLaMA 权重是 GPTQ/AWQ/SpQR 等量化的最常用测试床。
 
-## 相关论文(公开可溯源)
+## 溯源
 
-链接索引见 [references.md](references.md)。
+- 外部链接索引见 [references.md](references.md)。

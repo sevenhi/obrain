@@ -16,6 +16,8 @@ date: 2026-09
 
 # 量化与压缩
 
+## 一句话定位
+
 > 领域索引。定位:**LLM/NN 的量化与压缩**——权重/KV cache 量化的算法侧(混合精度、低比特、误差分析方法)+ 权重压缩的结构路线(稀疏+量化混合表示、低秩分解/剪枝)。2026-09 由原 `llm-inference` 域下的论文笔记目录(papers/)升级而来;同月批C扩充后定位从「量化算法」扩为「量化与压缩」(SpQR=量化+稀疏混合路线,LSTM 低秩=分解/剪枝路线)。
 
 ## 条目索引
@@ -40,3 +42,7 @@ date: 2026-09
 
 - 已补充:GPTQ / AWQ / SmoothQuant(算法侧统一篇)与 KV cache 量化(KIVI + vLLM 工程视角)。
 - 待补充:KVQuant / KVTuner / AQLM / QuIP#(2-bit 以下),以及不同 GPU 架构上的实测基准。
+
+## 溯源
+
+- 外部链接索引见 [references.md](references.md)。

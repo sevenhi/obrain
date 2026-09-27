@@ -48,7 +48,7 @@ date: 2026-09
 | FA3 | 2024.07 | NeurIPS 2024 | H100 | WGMMA async, TMA, FP8 | ~75% FP16 / ~61-66% FP8 |
 | FA4 | 2026.03 | arXiv:2603.05451 (MLSys 2026) | B200 | CuTe DSL, 异步 UMMA/tcgen05, 软 exp+软 softmax rescale, TMEM+2-CTA MMA | ~71% (BF16, up to 1613 TFLOPS) |
 
-## 领域地图(一条主线读)
+## 阅读顺序建议(一条主线读)
 
 ```
 Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 账单
@@ -97,7 +97,7 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
 - FA3(H100):异步 WGMMA + TMA + softmax/matmul/load 重叠 pipeline + FP8;论文口径 BF16 相对 FA2 加速 1.5-2×,FP16/BF16 前向最高 740 TFLOPS(≈H100 dense 峰值的 75%);
 - 显存 O(N) 的胜利来自"前向只存 LSE 统计量 + 反向重算"(约 2× 重复 FLOPs 换长序列可行)。
 
-## 相关论文(公开可溯源)
+## 相关论文(精选)
 
 - FA1: Dao et al., *FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness*, NeurIPS 2022, arXiv:2205.14135
 - FA2: Dao, *FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning*, ICLR 2024, arXiv:2307.08691

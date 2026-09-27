@@ -13,7 +13,7 @@ obrain/
 ├── SOURCE-POLICY.md      多来源登记策略
 ├── <domain>/             每个领域一个文件夹,至少含 index.md
 │   ├── index.md          领域索引/导航起始页(type: domain)
-│   ├── references.md     领域链接索引(可选,type: reference)
+│   ├── references.md     领域链接索引(每域一篇,type: reference)
 │   ├── concepts/         概念篇:机制原理(type: concept)
 │   ├── frameworks/       工具上手篇(可选,type: howto)
 │   └── practices/        实践清单/选型对比(可选,type: checklist/comparison)
@@ -59,7 +59,7 @@ obrain/
 1. 每篇知识条目用 YAML frontmatter:`title` / `type` / `tags` / `source` / `date`(豁免:notes/ 源码笔记、各域 index/references、根目录 README/SOURCE-POLICY——详见 [SOURCE-POLICY.md](SOURCE-POLICY.md) §6/§7)
 2. 每篇开头一段「TL;DR」,30 秒讲完结论
 3. 概念篇管「懂」,案例篇管「查」,清单篇管「用」——三类分开,不混在一篇里(type 全集为 concept/case/checklist/howto/reference/domain/comparison 七类,comparison 专用于选型对比)
-4. 引用外部资料只放链接索引(范式见 [attention/references.md](attention/references.md);cutlass/quantization/vllm 三域的链接索引即各篇 frontmatter 的 source 列表),不复制全文
+4. 引用外部资料只放链接索引(每域一篇 [references.md](attention/references.md) 为全量文献索引,范式见 attention;条目级溯源在 frontmatter source 与文末『溯源』),不复制全文
 5. **多来源登记**(ppt / pdf / 网页 / wiki …):每篇 `source` 写成「类型 + 标识符 + 链接」结构化形式;来源互不相同但内容重叠时,只收一条知识,`source` 里列全部出处 → 详见 [SOURCE-POLICY.md](SOURCE-POLICY.md)
 6. 拿到新资料先问「这条知识是不是已在库里?」→ 是则补 source 去重,否则新开篇;不建两篇内容重叠的篇
 7. **把某领域"做厚"**(升级到专业深度、多源综合)时,按领域 index.md 定位判断 + 主动网络多源综合,写成"打开一篇能读懂、有专业深度"的深度条目(机制原理/可复现细节/数据对比/实践要点/溯源完整)。

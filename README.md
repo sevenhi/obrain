@@ -32,6 +32,8 @@
 | vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构、生产部署、观测与引擎选型等(10 篇) | 2026-09 |
 | Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核、ONNX/TensorRT 部署(5 篇) | 2026-09 |
 
+> 注:`profiles/` 为个人与家庭档案(非技术知识条目),不参与上述领域体系,豁免收纳规范。
+
 ## 三层关系(CUTLASS → FA → vLLM)
 
 **CUTLASS(造内核的库)→ attention 实现层(FlashAttention,注意力内核)→ vLLM(整机推理引擎)**,自底向上三层:vLLM 集成 FA;FA2/FA3 基于 CUTLASS 3.x 构建,升级任一层注意链路兼容。
@@ -50,11 +52,11 @@
 
 - **临时查证** → 直接搜关键词(`PagedAttention`、`split-K`、`TiledMMA`、`sink token`)
 - **回顾某领域** → 打开该领域 `index.md`,按索引跳
-- **完整学习** → 打开领域 index.md,按深度篇目录(attention 域为 `algorithm/`+`implementation/`,其余域为 `concepts/`)导航顺序读(各篇文末『溯源』可回原始文献)
+- **完整学习** → 打开领域 index.md,按深度篇目录(attention 域为 `algorithm/`+`implementation/`,其余域深度篇为 `concepts/`,`frameworks/` 为工具上手篇)导航顺序读(各篇文末『溯源』可回原始文献)
 
 ## 收纳规范(给自己定的,写这条是为了以后不纠结)
 
-1. 每篇用 YAML frontmatter:`title` / `type` / `tags` / `source` / `date`
+1. 每篇知识条目用 YAML frontmatter:`title` / `type` / `tags` / `source` / `date`(豁免:notes/ 源码笔记、各域 index/references、根目录 README/SOURCE-POLICY——详见 [SOURCE-POLICY.md](SOURCE-POLICY.md) §6/§7)
 2. 每篇开头一段「TL;DR」,30 秒讲完结论
 3. 概念篇管「懂」,案例篇管「查」,清单篇管「用」——三类分开,不混在一篇里(type 全集为 concept/case/checklist/howto/reference/domain/comparison 七类,comparison 专用于选型对比)
 4. 引用外部资料只放链接索引(范式见 [attention/references.md](attention/references.md);cutlass/quantization/vllm 三域的链接索引即各篇 frontmatter 的 source 列表),不复制全文

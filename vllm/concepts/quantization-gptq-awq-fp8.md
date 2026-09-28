@@ -177,6 +177,11 @@ FP16_MATMUL_HEURISTIC_CONDITION = x.shape[:-1].numel() >= 256   # auto_awq.py:92
 
 ---
 
+## 相关条目
+
+- [PTQ:GPTQ / AWQ / SmoothQuant](../../quantization/concepts/ptq-gptq-awq-smoothquant.md)——算法侧视角(为什么这么量化、误差怎么控制);本篇是引擎侧(量化怎么落地到注册/分派/kernel),两者互补。
+- [KV Cache 量化](../../quantization/concepts/kv-cache-quantization.md)——本篇 §3 表中 `Fp8KVCacheMethod` 一行的 KV cache 量化展开。
+
 ## 7. 溯源
 
 - 源码一手实读: `vllm/model_executor/layers/quantization/`(`auto_gptq.py` / `auto_awq.py` / `fp8.py` / `online/` / `__init__.py`),基准 commit `b74ac0bc6`

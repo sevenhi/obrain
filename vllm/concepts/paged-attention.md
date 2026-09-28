@@ -120,9 +120,9 @@ V1 把分页分成**底层块池**与**高层管理**两层(源码 path:line 级
 
 ## 6. 实践要点(checklist)
 
-1. **先量化 KV cache 占多少显存**:`max_seq_len × 2 × num_layers × num_kv_heads × d_head × dtype_bytes` 是天花板;长上下文下它常是第一大消费者——决定 batch 容量的不是显存总量,而是 KV cache 余量。
+1. **先量化 KV cache 占多少显存**:`max_seq_len × 2 × num_layers × num_kv_heads × d_head × dtype_bytes` 是天花板;长上下文下它常是第一大消费者——决定 batch 容量的不是显存总量,而是 KV cache 余量。把 cache 元素本身压低精度(而非管理其分配)见 [KV Cache 量化](../../quantization/concepts/kv-cache-quantization.md)。
 2. **block_size 默认 16,别乱调**:更小块减少内部碎片但增加 block table 行数与 kernel 间接访存开销;默认 16 是吞吐/碎片平衡点(paper 里也测过 32/64)。
-3. **gpu_memory_utilization 默认 0.92(当前 main 源码 `config/cache.py:111` 实测;旧版曾为 0.9)**:分配 KV cache 前的显存余量由 profiling 峰值决定;调高可给 KV cache 更多空间(风险:模型峰值超了 OOM)。
+3. **gpu_memory_utilization 默认 0.92(当前 main 源码 `config/cache.py:111` 实测;旧版曾为 0.9)**:分配 KV cache 前的显存余量由 profiling 峰值决定;调高可给 KV cache 更多空间(风险:模型峰值超了 OOM)。上线前的显存水位验证步骤见 [生产部署与观测清单](../practices/production-serving.md) §2。
 4. **enable_prefix_caching 默认开**:长共享前缀(如 system prompt)收益显著;但每块要算内容哈希(CPU 开销),纯随机上下文可关。
 5. **共享前缀 = ref_cnt,不是复制**:多请求共享 prefix 块只在页表加引用;要改写的共享块走 CoW——理解这点才懂为什么 vLLM 对重复 system prompt 的预填充几乎免费。
 6. **跟分片/连续批处理联动**:块管理是调度器的命根子(allocate_slots 返回 None 触发抢占);调吞吐时优先看**有没有把 KV cache 块耗光**,而不是 batch 数字本身。

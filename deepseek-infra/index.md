@@ -2,13 +2,6 @@
 title: deepseek-infra — DeepSeek 开源算力基础设施栈(昇腾/双平台)
 type: domain
 tags: [deepseek, ascend, tilelang, deepgemm, deepep, tilekernels, flashmla, deepselect, npu, huawei, infra]
-source:
-  - "code: deepseek-ai/DeepGEMM-Ascend | https://github.com/deepseek-ai/DeepGEMM-Ascend"
-  - "code: deepseek-ai/DeepEP-Ascend | https://github.com/deepseek-ai/DeepEP-Ascend"
-  - "code: deepseek-ai/TileKernels | https://github.com/deepseek-ai/TileKernels"
-  - "code: deepseek-ai/FlashMLA | https://github.com/deepseek-ai/FlashMLA"
-  - "code: deepseek-ai/DeepSelect | https://github.com/deepseek-ai/DeepSelect"
-  - "code: tile-ai/tilelang + tile-ai/tilelang-ascend | https://github.com/tile-ai/tilelang"
 date: 2026-09
 ---
 
@@ -27,13 +20,13 @@ date: 2026-09
 
 ## 关键事实速记(快照,2026-09)
 
-- **开源时间**:2026-09-30,DeepSeek 开源昇腾推理基础设施,华为团队支持;目标平台为昇腾 950 系列 NPU 及 **128 卡超节点 UBL128**(全互联)。
+- **开源时间**:2026-09-30,DeepSeek 开源昇腾推理基础设施,华为团队支持;目标平台为昇腾 950 系列 NPU 及 **128 卡超节点 UBL128**(全互联,**待核/据昇腾官方资料**)。
 - **六件套覆盖链路**:语言层 → 矩阵库 → 通信库 → 注意力算子。
 - **三条 P0 事实(本域写作最易踩,务必按此记)**:
-  1. **TileLang 是 tile-ai 的第三方 DSL,不是 DeepSeek 的仓库**;昇腾后端拆在独立仓 `tile-ai/tilelang-ascend`(双路线:Ascend C & PTO / AscendNPU IR)。
+  1. **TileLang 是 tile-ai 的第三方 DSL,不是 DeepSeek 的仓库**;昇腾支持分三层:主仓 tile-ai/tilelang 现支持 Ascend 950 native backend(2026-09-30 起)、独立仓 tile-ai/tilelang-ascend(A2/A3 的 ascendc/pto/npuir)、tilelang-mlir-ascend(MLIR 路线)。
   2. **FlashMLA 昇腾版在独立分支 `20260930-ascend-open-source` 且是 breaking change**:移除 Hopper 支持、移除 V3/V3.2/V4.0 旧模型、改 FP8/FP4 KV cache 格式,只服务 V4.1;旧模型切旧 commit `ba89a346`。
   3. **TileKernels 昇腾支持从 PyPI v2.0.0 起**,但 main README 滞后(仍只写 NVIDIA SM90/SM100)。
-- **术语(本域核定拼写)**:fractal(分形**布局**)、MAD(matrix multiply-add 原语)、UBMEM、URMA、HCCL(集合通信)、HCOMM(控制面 API)、bisheng(毕昇编译器)、DeepJIT(运行时 JIT)、torch_npu、**CANN 9.2.0**(DeepGEMM README 原文 "9.20" 即此版本,不写 9.20)、**950PR ≠ 950DT**(同一 950 Die 两款型:PR=Prefill&Recommendation、DT=Decode&Training)。
+- **术语(本域核定拼写;标「待核」者为一手库未附链接)**:fractal(分形**布局**)、MAD(matrix multiply-add 原语)、UBMEM、URMA、HCCL(集合通信)、HCOMM(控制面 API,**待核/据昇腾官方资料**)、bisheng(毕昇编译器)、DeepJIT(运行时 JIT)、torch_npu、**CANN 9.2.0**(DeepGEMM README 原文 "9.20" 即此版本,不写 9.20)、**950PR ≠ 950DT**(同一 950 Die 两款型:PR=Prefill&Recommendation、DT=Decode&Training,**待核/据昇腾官方资料**)。
 
 ### 六件套 ↔ 上游映射表(已核实)
 
@@ -71,7 +64,7 @@ date: 2026-09
 
 | 专题 | 文件 | 一句话 | 状态 |
 |---|---|---|---|
-| TileLang 与昇腾后端 | [concepts/tilelang.md](concepts/tilelang.md) | tile 级 DSL(TVM 之上),昇腾后端独立仓双路线(Ascend C & PTO / AscendNPU IR),三层编程接口;基准 GEMM 0.98× 手写 AscendC | ✅ 已入库 |
+| TileLang 与昇腾后端 | [concepts/tilelang.md](concepts/tilelang.md) | tile 级 DSL(TVM 之上),昇腾支持分三层(主仓 Ascend 950 native / tilelang-ascend A2/A3 / tilelang-mlir-ascend);三层编程接口 | ✅ 已入库 |
 | Ascend 适配原理 | [concepts/ascend-port-principles.md](concepts/ascend-port-principles.md) | NVIDIA→昇腾关键抽象对照表(CUDA→Ascend C、TMA→稀疏加载/协程、NCCL→HCCL/HCOMM、fractal 布局等)+ 移植难点 | ✅ 已入库 |
 | DeepGEMM-Ascend | [concepts/deepgemm-ascend.md](concepts/deepgemm-ascend.md) | 昇腾 GEMM 库,MAD 原语轻量抽象,藏 fractal/对齐/地址计算;稀疏加载 + 协程流水线;scaling factor 格式与 NVIDIA 不同 | ✅ 已入库 |
 | DeepEP-Ascend | [concepts/deepep-ascend.md](concepts/deepep-ascend.md) | MoE 专家并行通信库,EP all-to-all(dispatch/combine),EP≤32 dispatch 达 90–95% 物理带宽 | ✅ 已入库 |

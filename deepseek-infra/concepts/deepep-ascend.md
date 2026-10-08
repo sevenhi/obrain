@@ -15,7 +15,7 @@ date: 2026-09
 
 **DeepEP-Ascend** 是面向华为昇腾 NPU 的高性能训练/推理**通信库**,提供 MoE 的专家并行(EP)**all-to-all** 操作(dispatch/combine),支持 **FP8 dispatch** 和**延迟 epilogue**;此外还提供 PP、CP/DP 的 Bucket 集合通信,以及 Engram 远端内存访问(开发中)。**公开 buffer API 与 NVIDIA 版 DeepEP 对齐**。
 
-底层:**Ascend C 内核** + **HCCL/HCOMM** + **UBMEM** + **URMA**,通过 **DeepJIT** 运行时编译。
+底层:**Ascend C 内核** + **HCCL/HCOMM**(待核/据昇腾官方资料)+ **UBMEM** + **URMA**,通过 **DeepJIT** 运行时编译。
 
 **关键数据(带完整口径)**:Ascend 950DT + CANN 9.2.0 + 手工配置的 PoC HDK,netlayer 1(超节点外部 Clos 网络)。16384 tok/rank、hidden 7168、top-6 routing / 256 experts、32 AI cores / 64 AIVs、expert alignment 128、无 bias;dispatch FP8(row-major scales)、combine BF16。EP≤32 时 dispatch 达物理载荷带宽 **90–95%**。
 
@@ -39,7 +39,7 @@ DeepEP-Ascend 就是这两类通信的高性能实现,支持:
 |---|---|
 | **Ascend C 内核** | 通信内核实现语言 |
 | **HCCL** | 集合通信库(对标 NCCL) |
-| **HCOMM** | 950 控制面通信 API(替代旧 HCCP RA) |
+| **HCOMM** | 950 控制面通信 API(替代旧 HCCP RA,**待核/据昇腾官方资料**) |
 | **UBMEM** | 片上统一缓冲内存 |
 | **URMA** | Unified Remote Memory Access,950 上 AIV 直驱 UB 远程内存 |
 | **DeepJIT** | 运行时 JIT 编译内核(独立仓 deepseek-ai/DeepJIT) |
@@ -68,7 +68,7 @@ DeepEP-Ascend 就是这两类通信的高性能实现,支持:
 - **⚠ PoC HDK vs 商用 HDK(P1 坑)**:README 性能用的是**手工配置的 PoC HDK,未公开分发**;**Atlas 850E 商用 HDK(约 2026-10 中旬)将含完整带宽配置**——PoC 与商用性能有差异,生产使用前建议关注官方后续更新。
 - **术语雷区**:
   - **HCCL ≠ HCOMM**:HCCL=集合通信库,HCOMM=950 控制面 API;
-  - **UBMEM/URMA ≠ UDMA**:URMA=远程内存访问语义,UDMA=SHMEM 消费 URMA 的实现;
+  - **UBMEM/URMA ≠ UDMA**:URMA=远程内存访问语义,UDMA=SHMEM 消费 URMA 的实现(**待核/据昇腾官方资料**);
   - **EP 带宽数字别漏口径**:PoC HDK、netlayer 1、dispatch 不含 final epilogue。
 
 ---

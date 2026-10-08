@@ -16,7 +16,7 @@ date: 2026-09
 
 **昇腾特有优化**:稀疏数据加载(sparse data loading)+ 协程(coroutine)流水线——对标原版 Hopper 上的 TMA/persistent 机制。支持算子:BF16/FP8/FP4 GEMM、MQA logits、MegaMoE;其中 HC prenorm kernel 依赖 tilelang(本域 [tilelang.md](tilelang.md))。
 
-**关键数据(⚠️ 出处要注意)**:密集 GEMM 利用率最高 **99.8%**(BF16×BF16,M=4096/N=7168/K=16384)、FP8×FP8 约 **99.5%**、M-Grouped GEMM(4/8 组专家)约 **850 TFLOPS**——**这些数字来自官方文档/七牛云报道,DeepGEMM-Ascend 的 README 本身只写 "near-peak hardware performance" 未给具体数字**。
+**关键数据(出自 README Performance 表)**:密集 GEMM 利用率最高 **99.8%**(BF16×BF16,M=4096/N=7168/K=16384)、FP8×FP8 约 **99.5%**、FP8×FP4 约 **99.5%**;M-Grouped GEMM(FP8×FP4,BF16 output,DeepSeek MoE 专家)4 组最高 **856** / 8 组最高 **862 TFLOPS**;FP8 inference(M=4096/N=4096/K=7168)达 **850 TFLOPS**。环境口径:**950DT + CANN 9.20 + bench_msprof(cold L2)**。
 
 ---
 
@@ -68,13 +68,15 @@ pip install . --no-build-isolation
 
 ## 3. 数据对比(带环境口径)
 
-> ⚠ **出处标注(P0)**:以下数字**来自官方文档 / 七牛云报道**,DeepGEMM-Ascend 的 README 本身只写 "near-peak hardware performance"、**未直接给出具体数字**。写作引用时必须注明这一出处差异。
+> ⚠ **出处标注(P0)**:以下数字出自 DeepGEMM-Ascend README `## Performance` 表(950DT + CANN 9.20 + bench_msprof/cold L2)。
 
 | 场景 | 数值 | 环境口径 |
 |---|---|---|
 | 密集 GEMM(最高利用率) | **99.8%** | BF16×BF16,M=4096 / N=7168 / K=16384 |
 | FP8×FP8 GEMM | ~**99.5%** | FP8×FP8 |
-| M-Grouped GEMM | ~**850 TFLOPS** | 4/8 组专家(MegaMoE 场景) |
+| FP8×FP4 GEMM | ~**99.5%** | FP8×FP4 |
+| M-Grouped GEMM(FP8×FP4,BF16 output) | **856 / 862 TFLOPS** | 4 组 / 8 组专家(DeepSeek MoE 场景) |
+| FP8 inference | **850 TFLOPS** | M=4096 / N=4096 / K=7168 |
 
 ---
 
@@ -83,7 +85,7 @@ pip install . --no-build-isolation
 - **环境要求**:昇腾 950 系列 NPU + CANN 9.20(**实为 9.2.0**,DeepGEMM README 写法不规范;需提供 `bin/bisheng`、`bin/ld.lld`)+ `torch_npu` + Python 3.10+ + C++20 编译器 + `tilelang`(HC prenorm kernel 依赖)+ `tree-sitter`/`tree-sitter-cpp`(源码构建生成 Python type stub)。
 - **scaling factor 格式与 NVIDIA 不同(易踩)**:昇腾上每对 **UE8M0** scaling factor 沿 K 维打包进一个 **`int16`**,并按 **MN-major** 顺序存储(为硬件效率)。FP8 场景传 scaling factor 时别沿用 NVIDIA 的格式。
 - **"CANN 9.20" 当独立版本的坑**:不是独立版本,就是 CANN 9.2.0,统一按 9.2.0 写。
-- **"99.8%" 的出处坑**:README 没写,是官方文档/报道口径,引用时标清来源。
+- **"850 / 856 / 862" 别混**:850 是 FP8 inference M=4096/4096/7168 行;M-Grouped(FP8×FP4)是 4 组 856 / 8 组 862 TFLOPS;99.8% 是 BF16×BF16 密集 GEMM,别张冠李戴。
 
 ---
 
@@ -91,5 +93,5 @@ pip install . --no-build-isolation
 
 - **DeepGEMM-Ascend README**(主源,MAD 抽象/fractal/稀疏加载/协程/scaling factor/CANN 9.20/支持算子):https://github.com/deepseek-ai/DeepGEMM-Ascend
 - **DeepGEMM 原版**(API 对齐基准、interfaces):https://github.com/deepseek-ai/DeepGEMM
-- **性能数字出处**(99.8% / 99.5% / 850 TFLOPS):官方文档 + 七牛云等媒体报道(README 未直接给出)。
-- **库内交叉**:[../cutlass/index.md](../cutlass/index.md)(NVIDIA 侧造 GEMM 内核方法论,昇腾侧对照)、[../../vllm/concepts/quantization-gptq-awq-fp8.md](../../vllm/concepts/quantization-gptq-awq-fp8.md)(FP8 量化背景)、[tilelang.md](tilelang.md)(HC prenorm 依赖)。
+- **性能数字出处**(99.8% / 99.5% / 856 / 862 / 850 TFLOPS):DeepGEMM-Ascend README `## Performance` 表(950DT + CANN 9.20 + bench_msprof cold L2)。
+- **库内交叉**:[../../cutlass/index.md](../../cutlass/index.md)(NVIDIA 侧造 GEMM 内核方法论,昇腾侧对照)、[../../vllm/concepts/quantization-gptq-awq-fp8.md](../../vllm/concepts/quantization-gptq-awq-fp8.md)(FP8 量化背景)、[tilelang.md](tilelang.md)(HC prenorm 依赖)。

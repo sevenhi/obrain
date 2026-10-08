@@ -29,11 +29,12 @@ date: 2026-09
 ## 技术 deep-dive 文档(一手,机制细节来源)
 
 - FlashMLA 昇腾稀疏 prefill deep-dive — https://github.com/deepseek-ai/FlashMLA/blob/20260930-ascend-open-source/docs/20260930-ascend-prefill-deep-dive.md (中文同目录 `-zh.md`)
-- FlashMLA 旧版 FP8 sparse decoding deep-dive(2025-04-22)—— https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20250422-new-kernel-deep-dive.md
+- FlashMLA FP8 sparse decoding deep-dive(2025-09-29)—— https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20250929-hopper-fp8-sparse-deep-dive.md
+- FlashMLA dense decoding deep-dive(2025-04-22)—— https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20250422-new-kernel-deep-dive.md
 - DeepSelect 算法 deep-dive — https://github.com/deepseek-ai/DeepSelect/blob/main/docs/DeepSelect-deep-dive.md (中文 `DeepSelect-deep-dive.zh.md`)
 - TileLang-Ascend Programming Guide — https://github.com/tile-ai/tilelang-ascend/blob/main/docs/TileLang-Ascend%20Programming%20Guide.md
 
-## 官方/媒体报道(DeepGEMM 性能数字、开源背景出处)
+## 官方/媒体报道(开源背景出处)
 
 - 昇腾官方文档站 — https://www.hiascend.com/
 - 华为 CANN 社区(昇腾开源成果:SuperPoD Flex / UBL128 超节点)联合公告

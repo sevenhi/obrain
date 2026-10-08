@@ -28,6 +28,8 @@ tile_kernels/
 ├── moe/        # MoE routing 相关内核(Gating / token-to-expert mapping)
 ├── quant/      # FP8/FP4/E5M6 量化(per-token/block/channel + fused SwiGLU+quant)
 ├── transpose/  # 批处理转置
+├── transform/  # Transform 算子(RoPE 等,PyPI v2.0.0 新增)
+├── rand/       # Rand 算子(PyPI v2.0.0 新增)
 ├── engram/     # Engram gating 内核(融合 RMSNorm、前后向、权重梯度归约)
 ├── mhc/        # Manifold HyperConnection(Sinkhorn 归一化 + mix 拆分/应用)
 ├── modeling/   # autograd.Function 高层封装(engram gate、mHC pipeline)

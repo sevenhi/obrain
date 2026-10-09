@@ -4,11 +4,11 @@ type: concept
 tags: [deepseek, math, grpo, rl, verifier, self-verification, data-pipeline, domain-model]
 series: deepseek-math
 source:
-  - "pdf: DeepSeekMath | arXiv:2402.03300 | 2026-10-09 | ↑primary"
-  - "pdf: DeepSeekMath-V2 | arXiv:2511.22570 | 2026-10-09 | ↑primary"
+  - "pdf: DeepSeekMath | arXiv:2402.03300 | https://arxiv.org/abs/2402.03300 | 2026-10-09 | ↑primary"
+  - "pdf: DeepSeekMath-V2 | arXiv:2511.22570 | https://arxiv.org/abs/2511.22570 | 2026-10-09 | ↑primary"
   - "code: DeepSeek-Math | https://github.com/deepseek-ai/DeepSeek-Math"
   - "code: DeepSeek-Math-V2 | https://github.com/deepseek-ai/DeepSeek-Math-V2"
-date: 2026-10-09
+date: 2026-10
 ---
 
 # DeepSeek 数学推理谱系:DeepSeekMath → DeepSeekMath-V2

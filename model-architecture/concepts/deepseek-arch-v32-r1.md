@@ -10,7 +10,7 @@ source:
   - "paper: DeepSeek-V3(arXiv:2412.19437)| https://arxiv.org/abs/2412.19437"
   - "paper: DeepSeek-R1(arXiv:2501.12948)| https://arxiv.org/abs/2501.12948"
   - "config: config.json| https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp/resolve/main/config.json"
-date: 2026-10-09
+date: 2026-10
 ---
 
 # DeepSeek-V3.2(DSA) + R1 网络结构剖析

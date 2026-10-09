@@ -4,12 +4,12 @@ type: concept
 tags: [deepseek, theorem-proving, lean4, formal-math, rlpaf, monte-carlo-tree-search, synthetic-data, subgoal-decomposition]
 series: deepseek-prover
 source:
-  - "pdf: DeepSeek-Prover V1 | arXiv:2405.14333 | 2026-10-09"
-  - "pdf: DeepSeek-Prover-V1.5 | arXiv:2408.08152 | 2026-10-09 | ↑primary"
-  - "pdf: DeepSeek-Prover-V2 | arXiv:2504.21801 | 2026-10-09 | ↑primary"
+  - "pdf: DeepSeek-Prover V1 | arXiv:2405.14333 | https://arxiv.org/abs/2405.14333 | 2026-10-09"
+  - "pdf: DeepSeek-Prover-V1.5 | arXiv:2408.08152 | https://arxiv.org/abs/2408.08152 | 2026-10-09 | ↑primary"
+  - "pdf: DeepSeek-Prover-V2 | arXiv:2504.21801 | https://arxiv.org/abs/2504.21801 | 2026-10-09 | ↑primary"
   - "code: DeepSeek-Prover-V1.5 | https://github.com/deepseek-ai/DeepSeek-Prover-V1.5"
   - "code: DeepSeek-Prover-V2 | https://github.com/deepseek-ai/DeepSeek-Prover-V2"
-date: 2026-10-09
+date: 2026-10
 ---
 
 # DeepSeek 定理证明谱系:Prover-V1 → V1.5 → V2(Lean 4 形式化)

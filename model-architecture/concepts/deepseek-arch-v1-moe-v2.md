@@ -4,12 +4,12 @@ type: concept
 tags: [deepseek, architecture, transformer, mha, gqa, mla, moe, rope, kv-cache]
 series: deepseek-model-evolution
 source:
-  - arXiv:2401.02954 (DeepSeek LLM / V1)
-  - arXiv:2401.06066 (DeepSeekMoE)
-  - arXiv:2405.04434 (DeepSeek-V2)
-  - HF modeling_deepseek.py (ds_hf_v2.py, 1906 行)
-  - HF config.json (deepseek-llm-7b/67b-base, deepseek-moe-16b-base, DeepSeek-V2)
-date: 2026-10-09
+  - "paper: DeepSeek LLM / V1(arXiv:2401.02954)| https://arxiv.org/abs/2401.02954"
+  - "paper: DeepSeekMoE(arXiv:2401.06066)| https://arxiv.org/abs/2401.06066"
+  - "paper: DeepSeek-V2(arXiv:2405.04434)| https://arxiv.org/abs/2405.04434"
+  - "code: HF modeling_deepseek.py(ds_hf_v2.py, 1906 行)| https://huggingface.co/deepseek-ai/DeepSeek-V2/blob/main/modeling_deepseek.py"
+  - "config: HF config.json(deepseek-llm-7b/67b-base, deepseek-moe-16b-base, DeepSeek-V2)| https://huggingface.co/deepseek-ai/DeepSeek-V2/raw/main/config.json"
+date: 2026-10
 ---
 
 # DeepSeek 网络结构剖析：V1(DeepSeek-LLM) → DeepSeekMoE → V2

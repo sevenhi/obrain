@@ -4,9 +4,9 @@ type: concept
 tags: [deepseek, moe, fine-grained-expert, shared-expert, efficiency, domain-model]
 series: deepseek-moe
 source:
-  - "pdf: DeepSeekMoE | arXiv:2401.06066 | 2026-10-09 | ↑primary"
+  - "pdf: DeepSeekMoE | arXiv:2401.06066 | https://arxiv.org/abs/2401.06066 | 2026-10-09 | ↑primary"
   - "code: DeepSeek-MoE | https://github.com/deepseek-ai/DeepSeek-MoE"
-date: 2026-10-09
+date: 2026-10
 ---
 
 # DeepSeekMoE — 细粒度专家 + 共享专家(数据/评测侧)

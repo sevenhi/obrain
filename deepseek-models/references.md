@@ -2,7 +2,7 @@
 title: deepseek-models 外部链接索引
 type: reference
 tags: [deepseek, math, theorem-proving, coding, grpo, rl, moe, references]
-date: 2026-10-09
+date: 2026-10
 ---
 
 # References — deepseek-models

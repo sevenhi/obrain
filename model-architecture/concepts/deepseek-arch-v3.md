@@ -3,8 +3,11 @@ title: DeepSeek-V3 网络结构剖析(MLA + DeepSeekMoE + MTP)
 type: concept
 tags: [deepseek, v3, mla, moe, mtp, architecture, llm]
 series: deepseek-model-evolution
-source: arXiv:2412.19437 + inference/model.py + HF modeling_deepseek.py
-date: 2026-10-09
+source:
+  - "paper: DeepSeek-V3(arXiv:2412.19437)| https://arxiv.org/abs/2412.19437"
+  - "code: inference/model.py| https://github.com/deepseek-ai/DeepSeek-V3/tree/main/inference"
+  - "code: HF modeling_deepseek.py| https://huggingface.co/deepseek-ai/DeepSeek-V3-0324/blob/main/modeling_deepseek.py"
+date: 2026-10
 ---
 
 # DeepSeek-V3 网络结构剖析

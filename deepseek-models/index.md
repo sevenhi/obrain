@@ -2,7 +2,7 @@
 title: deepseek-models — DeepSeek 领域模型谱系(数学/定理证明/编码)
 type: domain
 tags: [deepseek, math, theorem-proving, coding, grpo, rl, moe, lean4, fim, code-model, domain-model]
-date: 2026-10-09
+date: 2026-10
 ---
 
 # deepseek-models — DeepSeek 领域模型谱系(数学/定理证明/编码)

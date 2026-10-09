@@ -4,11 +4,11 @@ type: concept
 tags: [deepseek, code, fim, fill-in-the-middle, moe, code-model, humaneval, repo-level]
 series: deepseek-coder
 source:
-  - "pdf: DeepSeek-Coder | arXiv:2401.14196 | 2026-10-09 | ↑primary"
-  - "pdf: DeepSeek-Coder-V2 | arXiv:2406.11931 | 2026-10-09 | ↑primary"
+  - "pdf: DeepSeek-Coder | arXiv:2401.14196 | https://arxiv.org/abs/2401.14196 | 2026-10-09 | ↑primary"
+  - "pdf: DeepSeek-Coder-V2 | arXiv:2406.11931 | https://arxiv.org/abs/2406.11931 | 2026-10-09 | ↑primary"
   - "code: DeepSeek-Coder | https://github.com/deepseek-ai/DeepSeek-Coder"
   - "code: DeepSeek-Coder-V2 | https://github.com/deepseek-ai/DeepSeek-Coder-V2"
-date: 2026-10-09
+date: 2026-10
 ---
 
 # DeepSeek 代码模型谱系:Coder → Coder-V2(FIM 填充 / MoE 代码模型)

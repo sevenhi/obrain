@@ -4,14 +4,14 @@ type: concept
 tags: [deepseek, evolution, mla, moe, mtp, dsa, gqa, yarn, sparse-attention, architecture]
 series: deepseek-model-evolution
 source:
-  - arXiv:2401.02954 (DeepSeek LLM / V1)
-  - arXiv:2401.06066 (DeepSeekMoE)
-  - arXiv:2405.04434 (DeepSeek-V2)
-  - arXiv:2412.19437 (DeepSeek-V3)
-  - arXiv:2512.02556 (DeepSeek-V3.2)
-  - arXiv:2501.12948 (DeepSeek-R1)
-  - DeepSeek_V3_2.pdf (V3.2-Exp 技术报告)
-date: 2026-10-09
+  - "paper: DeepSeek LLM / V1(arXiv:2401.02954)| https://arxiv.org/abs/2401.02954"
+  - "paper: DeepSeekMoE(arXiv:2401.06066)| https://arxiv.org/abs/2401.06066"
+  - "paper: DeepSeek-V2(arXiv:2405.04434)| https://arxiv.org/abs/2405.04434"
+  - "paper: DeepSeek-V3(arXiv:2412.19437)| https://arxiv.org/abs/2412.19437"
+  - "paper: DeepSeek-V3.2(arXiv:2512.02556)| https://arxiv.org/abs/2512.02556"
+  - "paper: DeepSeek-R1(arXiv:2501.12948)| https://arxiv.org/abs/2501.12948"
+  - "pdf: DeepSeek_V3_2.pdf(V3.2-Exp 技术报告)| https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/blob/main/DeepSeek_V3_2.pdf"
+date: 2026-10
 ---
 
 # DeepSeek 网络结构演进总览(V1 → V2 → V3 → V3.2)
@@ -42,7 +42,7 @@ date: 2026-10-09
 | **V2** | MLA + 稀疏 MoE | **MLA(低秩 KV + 解耦 RoPE)** + 160+2 专家 top-6 分组路由;双主线首次合流 | 236B / 21B | 128K | [2405.04434](https://arxiv.org/abs/2405.04434) |
 | **V3** | MLA + 256 专家 MoE + MTP | **aux-loss-free 负载均衡 + MTP 多 token 预测 + FP8**;256 专家 top-8 | 671B / 37B | 128K | [2412.19437](https://arxiv.org/abs/2412.19437) |
 | V3.1-Terminus | 结构同 V3 | 长上下文 128K + RL/agent 后训练(结构不变) | 671B / 37B | 128K | — |
-| **V3.2-Exp/正式** | MLA + DSA 稀疏注意力 | **DSA 闪电索引器 + top-2048 选择**,破 O(L²)→O(L·k);MLA/MoE/MTP 不动 | 671B / 37B | 128K | [2512.02556](https://arxiv.org/abs/2512.02556) |
+| **V3.2-Exp/正式** | MLA + DSA 稀疏注意力 | **DSA 闪电索引器 + top-2048 选择**,破 O(L²)→O(L·k);MLA/MoE/MTP 不动 | 671B / 37B | 128K(训练)/163840(config) | [2512.02556](https://arxiv.org/abs/2512.02556) |
 | **R1**(旁支) | 结构 = V3 | **无新结构**;V3-Base 上 GRPO + 冷启动/蒸馏(RL 推理时扩展) | 671B / 37B | — | [2501.12948](https://arxiv.org/abs/2501.12948) |
 
 > 深挖各代:V1/DeepSeekMoE/V2 → [deepseek-arch-v1-moe-v2](deepseek-arch-v1-moe-v2.md);V3 → [deepseek-arch-v3](deepseek-arch-v3.md);V3.2+R1 → [deepseek-arch-v32-r1](deepseek-arch-v32-r1.md)。

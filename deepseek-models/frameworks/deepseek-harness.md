@@ -2,11 +2,11 @@
 title: DeepSeek Harness(dsh)— everything-is-a-plugin 的 agent 框架
 type: howto
 tags: [deepseek, agent, harness, plugin, cordis, typescript, tool]
-date: 2026-10-09
+date: 2026-10
 source:
   - "code: deepseek-harness | https://github.com/deepseek-ai/deepseek-harness | 2026-10-09 | ↑primary"
   - "web: DeepSeek Harness 文档 | https://deepseek-harness.github.io/deepseek-harness/ | 2026-10-09"
-  - "pdf: A Programming Paradigm for Spatiotemporal Composability | arXiv:2608.25512"
+  - "pdf: A Programming Paradigm for Spatiotemporal Composability | arXiv:2608.25512 | https://arxiv.org/abs/2608.25512"
 ---
 
 # DeepSeek Harness(dsh)— everything-is-a-plugin 的 agent 框架

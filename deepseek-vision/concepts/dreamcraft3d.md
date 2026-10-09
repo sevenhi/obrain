@@ -5,7 +5,7 @@ tags: [deepseek, dreamcraft3d, 3d-generation, sds, score-distillation, diffusion
 series: deepseek-vision
 source:
   - "web: DreamCraft3D GitHub README | https://github.com/deepseek-ai/DreamCraft3D | 2026-10 抓取"
-  - "arXiv: DreamCraft3D: Hierarchical 3D Generation with Bootstrapped Diffusion Prior | 2310.16818"
+  - "arXiv: DreamCraft3D: Hierarchical 3D Generation with Bootstrapped Diffusion Prior | 2310.16818 | https://arxiv.org/abs/2310.16818"
 date: 2026-10
 ---
 

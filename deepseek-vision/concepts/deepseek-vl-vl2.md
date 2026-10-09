@@ -6,10 +6,10 @@ series: deepseek-vision
 source:
   - "web: DeepSeek-VL GitHub README | https://github.com/deepseek-ai/DeepSeek-VL | 2026-10 抓取"
   - "web: DeepSeek-VL2 GitHub README | https://github.com/deepseek-ai/DeepSeek-VL2 | 2026-10 抓取"
-  - "arXiv: DeepSeek-VL: Towards Real-World Vision-Language Understanding | 2403.05525"
-  - "arXiv: DeepSeek-VL2: Mixture-of-Experts Vision-Language Models for Advanced Multimodal Understanding | 2412.10302"
-  - "code: deepseek-vl-7b-chat config.json | huggingface.co/deepseek-ai/deepseek-vl-7b-chat/raw/main/config.json"
-  - "code: deepseek-vl2(-tiny/-small) config.json | huggingface.co/deepseek-ai/deepseek-vl2*/raw/main/config.json"
+  - "arXiv: DeepSeek-VL: Towards Real-World Vision-Language Understanding | 2403.05525 | https://arxiv.org/abs/2403.05525"
+  - "arXiv: DeepSeek-VL2: Mixture-of-Experts Vision-Language Models for Advanced Multimodal Understanding | 2412.10302 | https://arxiv.org/abs/2412.10302"
+  - "code: deepseek-vl-7b-chat config.json | https://huggingface.co/deepseek-ai/deepseek-vl-7b-chat/raw/main/config.json"
+  - "code: deepseek-vl2(-tiny/-small) config.json | https://huggingface.co/deepseek-ai/deepseek-vl2*/raw/main/config.json"
 date: 2026-10
 ---
 

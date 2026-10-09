@@ -5,10 +5,10 @@ tags: [deepseek, janus, janus-pro, janusflow, unified-multimodal, decoupled-enco
 series: deepseek-vision
 source:
   - "web: Janus GitHub README | https://github.com/deepseek-ai/Janus | 2026-10 抓取"
-  - "arXiv: Janus: Decoupling Visual Encoding for Unified Multimodal Understanding and Generation | 2410.13848"
-  - "arXiv: Janus-Pro: Unified Multimodal Understanding and Generation with Data and Model Scaling | 2501.17811"
-  - "arXiv: JanusFlow: Harmonizing Autoregression and Rectified Flow for Unified Multimodal Understanding and Generation | 2411.07975"
-  - "code: Janus-1.3B / Janus-Pro-7B config.json | huggingface.co/deepseek-ai/Janus*/raw/main/config.json"
+  - "arXiv: Janus: Decoupling Visual Encoding for Unified Multimodal Understanding and Generation | 2410.13848 | https://arxiv.org/abs/2410.13848"
+  - "arXiv: Janus-Pro: Unified Multimodal Understanding and Generation with Data and Model Scaling | 2501.17811 | https://arxiv.org/abs/2501.17811"
+  - "arXiv: JanusFlow: Harmonizing Autoregression and Rectified Flow for Unified Multimodal Understanding and Generation | 2411.07975 | https://arxiv.org/abs/2411.07975"
+  - "code: Janus-1.3B / Janus-Pro-7B config.json | https://huggingface.co/deepseek-ai/Janus*/raw/main/config.json"
 date: 2026-10
 ---
 

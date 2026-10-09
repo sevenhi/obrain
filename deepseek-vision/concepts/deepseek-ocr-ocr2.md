@@ -6,9 +6,9 @@ series: deepseek-vision
 source:
   - "web: DeepSeek-OCR GitHub README | https://github.com/deepseek-ai/DeepSeek-OCR | 2026-10 抓取"
   - "web: DeepSeek-OCR-2 GitHub README | https://github.com/deepseek-ai/DeepSeek-OCR-2 | 2026-10 抓取"
-  - "arXiv: DeepSeek-OCR: Contexts Optical Compression | 2510.18234"
-  - "arXiv: DeepSeek-OCR 2: Visual Causal Flow | 2601.20552"
-  - "code: DeepSeek-OCR / DeepSeek-OCR-2 config.json | huggingface.co/deepseek-ai/DeepSeek-OCR*/raw/main/config.json"
+  - "arXiv: DeepSeek-OCR: Contexts Optical Compression | 2510.18234 | https://arxiv.org/abs/2510.18234"
+  - "arXiv: DeepSeek-OCR 2: Visual Causal Flow | 2601.20552 | https://arxiv.org/abs/2601.20552"
+  - "code: DeepSeek-OCR / DeepSeek-OCR-2 config.json | https://huggingface.co/deepseek-ai/DeepSeek-OCR*/raw/main/config.json"
 date: 2026-10
 ---
 

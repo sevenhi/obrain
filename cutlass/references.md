@@ -20,6 +20,7 @@ date: 2026-09
 - Grouped Kernel Schedulers — https://docs.nvidia.com/cutlass/latest/media/docs/cpp/grouped_scheduler.html
 - Profiler — https://docs.nvidia.com/cutlass/latest/media/docs/cpp/profiler.html
 - Custom epilogue fusions for GEMMs — https://docs.nvidia.com/cutlass/latest/media/docs/operators/tutorials/001_gemm_with_fused_epilogue.html
+- PTX ISA(tcgen05.mma 章节)— https://docs.nvidia.com/cuda/parallel-thread-execution/
 
 ## 论文 / 技术报告
 
@@ -40,6 +41,7 @@ date: 2026-09
 - CUTLASS GitHub — https://github.com/NVIDIA/cutlass
 - examples/tutorial/wgmma_sm90.cu、examples/49_hopper_gemm_with_collective_builder、examples/71_blackwell_gemm_with_collective_builder、examples 12/35/37/45(epilogue 融合示例)
 - sm90_tile_scheduler_stream_k.hpp / sm100_tile_scheduler_stream_k.hpp
+- include/cute/arch/ tcgen05/UMMA/TMEM 头文件:mma_sm100_umma.hpp、mma_sm100_desc.hpp、tmem_capacity_sm100.hpp、tmem_allocator_sm100.hpp、mma_sm107_umma.hpp、mma_sm120.hpp、mma_sm120_sparse.hpp(详见 blackwell-tcgen05.md 溯源)
 
 ## 社区教程
 

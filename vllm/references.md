@@ -7,7 +7,7 @@ date: 2026-09
 
 # References — vllm
 
-> 只放链接索引,不复制全文(库规约)。聚合自各篇 frontmatter 的 source;源码一手实读基准 commit `b74ac0bc6`(v0.28.1rc0-40)。
+> 只放链接索引,不复制全文(库规约)。聚合自各篇 frontmatter 的 source;源码实读基准:旧篇 commit `b74ac0bc6`(v0.28.1rc0-40),投机解码/注意力后端选型两篇为 2026-10 main 快照。
 
 ## 论文 / 博客
 
@@ -18,12 +18,20 @@ date: 2026-09
 - Deadline-Aware Adaptive Prefill Chunking (SLOWeave) — arXiv:2609.07883
 - zeroentropy — PagedAttention 概念解读 — https://zeroentropy.dev/concepts/paged-attention/
 - 微信 — LLM 推理优化 Chunk Pre-fill — https://mp.weixin.qq.com/s/6YUgjMfWYdvryRP-gzppMQ
+- Fast Inference from Transformers via Speculative Decoding (Leviathan et al., ICML 2023) — arXiv:2211.17192
+- Accelerating LLM Decoding with Speculative Sampling (Chen et al., DeepMind) — arXiv:2302.01318
+- EAGLE: Speculative Sampling Requires Rethinking Feature Uncertainty — arXiv:2401.15077
+- EAGLE-2: Faster Inference with Dynamic Draft Trees — arXiv:2406.16858
+- EAGLE-3: Scaling up Inference Acceleration of LLMs via Training-Time Test — arXiv:2503.01840
+- Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads — arXiv:2401.10774
+- Unlocking Efficiency in LLM Inference: A Comprehensive Survey of Speculative Decoding (Heming Xia et al.) — arXiv:2401.07851
 
 ## 官方文档
 
 - vLLM 文档首页 — https://docs.vllm.ai/en/latest/
 - Architecture Overview — https://docs.vllm.ai/en/latest/design/arch_overview/
 - V1 Guide — https://docs.vllm.ai/en/latest/usage/v1_guide/
+- Speculative Decoding(spec_decode 子页入口)— https://docs.vllm.ai/en/latest/features/spec_decode.html
 - OpenAI-Compatible Server — https://docs.vllm.ai/en/stable/serving/online_serving/openai_compatible_server/
 - Parallelism and Scaling — https://docs.vllm.ai/en/latest/serving/parallelism_scaling/
 - Quantization — https://docs.vllm.ai/en/latest/features/quantization/
@@ -38,6 +46,7 @@ date: 2026-09
 - vLLM GitHub — https://github.com/vllm-project/vllm
 - 实读路径:vllm/entrypoints/、vllm/v1/engine/、vllm/v1/executor/、vllm/distributed/、vllm/v1/sample/、vllm/model_executor/models/registry.py、vllm/model_executor/layers/quantization/
 - 相关 PR:#52131(api_server.py 移出 openai/)、#52309(入口 middleware 整合)
+- 实读路径(2026-10 main,注意力后端选型篇):vllm/v1/attention/backends/registry.py、vllm/v1/attention/backend.py、vllm/v1/attention/selector.py、vllm/platforms/cuda.py、vllm/config/attention.py
 
 ## 其他引擎(选型对照)
 

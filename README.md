@@ -23,7 +23,7 @@ obrain/
 > 例外:attention 域的深度篇分 `algorithm/`(算法层)与 `implementation/`(FA 内核实现层)两层,不用 `concepts/`。
 > 个人原始资料归档(library)等目录属于各设备本地布局,不写入本文档。
 
-## 领域列表(8 个独立领域)
+## 领域列表(10 个独立领域)
 
 | 领域 | 文件夹 | 一句话说明 | 最近更新 |
 |---|---|---|---|
@@ -34,7 +34,9 @@ obrain/
 | 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:PTQ(GPTQ/AWQ/SmoothQuant)、KV cache 量化、稀疏量化混合(SpQR)、2-bit 前沿(QuIP#/AQLM)、KV 极低比特(KVQuant/KVTuner)+ 低秩/剪枝路线(7 篇,论文来源通过公开链接追溯) | 2026-10 |
 | vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构、生产部署、观测与引擎选型、投机解码、注意力后端选型等(12 篇) | 2026-10 |
 | Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核、ONNX/TensorRT 部署(5 篇) | 2026-09 |
-| DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 昇腾基础设施栈六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ Ascend 适配专题 + 部署清单(8 篇) | 2026-10 |
+| DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 算力基础设施栈:昇腾六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ NVIDIA 原版对照(DeepGEMM/DeepEP)+ 并行/工具/存储(DeepJIT/Engram/DualPipe/EPLB+LPLB/ESFT/open-infra-index/3FS/smallpond)+ 部署清单(18 篇) | 2026-10 |
+| DeepSeek Vision | [`deepseek-vision/`](deepseek-vision/index.md) | DeepSeek 多模态/视觉家族:图文理解(VL/VL2)、视觉压缩(OCR/OCR-2)、统一理解+生成(Janus 系列)、图生 3D(DreamCraft3D)(4 篇) | 2026-10 |
+| DeepSeek Models | [`deepseek-models/`](deepseek-models/index.md) | DeepSeek 领域模型谱系:数学推理(Math/Math-V2,GRPO/自验证)、定理证明(Prover-V1/V1.5/V2,Lean 4)、代码智能(Coder/Coder-V2,FIM/MoE)、MoE 基座 + agent 工具 deepseek-harness(5 篇);与 model-architecture 网络结构篇互链 | 2026-10 |
 
 > 注:`profiles/` 为个人与家庭档案(非技术知识条目),不参与上述领域体系,豁免收纳规范。
 
@@ -46,6 +48,7 @@ obrain/
 - **硬件真实效率**:CUTLASS 的 tiling/Tensor Core 机制是理解「FLOPs≠延迟」的底层;应用侧实例见 [`computer-vision/concepts/trt-vit-inference.md`](computer-vision/concepts/trt-vit-inference.md)(以 TensorRT 实测延迟为架构设计准绳,TensorRT 内部以 CUTLASS 生成 GEMM kernel)。
 - **精确 attention 省显存谱系**:Milakov online softmax → Rabe & Staats O(1) 显存 → FlashAttention IO-aware([`attention/algorithm/exact-attention-memory-lineage.md`](attention/algorithm/exact-attention-memory-lineage.md))。
 - **FlashAttention 四代主线**:FA1 IO-aware tiling → FA2 work partitioning → FA3 Hopper 异步 → FA4 Blackwell,合成一篇 [`attention/implementation/flash-attention-implementation.md`](attention/implementation/flash-attention-implementation.md);底座机制见 [`cutlass/`](cutlass/index.md)(WGMMA/TMA/epilogue)。
+- **DeepSeek 结构↔领域模型双视角**:网络结构演进(MHA→MLA、dense→MoE)见 [`model-architecture/`](model-architecture/index.md) 的 deepseek 四篇;领域能力怎么做出来(数学 GRPO/自验证、定理证明 Lean 4、代码 FIM、MoE 数据评测)见 [`deepseek-models/`](deepseek-models/index.md),两者互链互补——结构篇管「怎么变」,领域篇管「怎么做出来」。
 
 ---
 

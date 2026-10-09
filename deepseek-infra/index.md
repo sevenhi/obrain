@@ -1,11 +1,11 @@
 ---
-title: deepseek-infra — DeepSeek 开源算力基础设施栈(昇腾/双平台)
+title: deepseek-infra — DeepSeek 开源算力基础设施栈(昇腾 + NVIDIA 双平台 + 并行/存储)
 type: domain
-tags: [deepseek, ascend, tilelang, deepgemm, deepep, tilekernels, flashmla, deepselect, npu, huawei, infra]
-date: 2026-09
+tags: [deepseek, ascend, nvidia, cuda, tilelang, deepgemm, deepep, deepjit, tilekernels, flashmla, deepselect, dualpipe, eplb, lplb, esft, engram, 3fs, smallpond, npu, huawei, infra]
+date: 2026-10
 ---
 
-# deepseek-infra — DeepSeek 开源算力基础设施栈(昇腾/双平台)
+# deepseek-infra — DeepSeek 开源算力基础设施栈(昇腾 + NVIDIA 双平台 + 并行/存储)
 
 > 本页是 deepseek-infra 领域的**导航起始页**。往下走:定位与关键事实 → 条目索引 → 更新维护。
 > **真正的可读正文在 `concepts/` 子目录**,每篇一个专题、可独立打开读懂。本页只做导航,不重复正文。
@@ -14,7 +14,13 @@ date: 2026-09
 
 ## 一句话定位
 
-**deepseek-infra** 记录 DeepSeek 于 2026-09-30 开源的**算力基础设施栈的华为昇腾(NPU)适配与双平台实现**——把「算子怎么写(TileLang)→ 矩阵怎么算(DeepGEMM-Ascend / TileKernels)→ 专家怎么通信(DeepEP-Ascend)→ 注意力怎么算(FlashMLA / DeepSelect)」这条从语言到算子的全链路,在昇腾 950 超节点上跑出接近硬件峰值的效果。它定位在**算子实现层 / 基础设施层**,与库内 model-architecture(架构)、attention(算法)、vllm(引擎)、cutlass(NVIDIA 造内核方法论)四个领域正交互补:那些域讲「模型长什么样、注意力为什么省显存、引擎怎么调度、NVIDIA 怎么造内核」,本域讲「**这些算子搬到昇腾上怎么写、怎么适配、性能到哪**」。
+**deepseek-infra** 记录 DeepSeek 开源的**算力基础设施栈**(2025-02 开源周放训练/推理/存储三件套;2026-09-30 补昇腾适配)。全景是「算子怎么写(TileLang)→ 矩阵怎么算(DeepGEMM)→ 专家怎么通信(DeepEP)→ 训练怎么并行(DualPipe/EPLB/LPLB)→ 微调怎么省(ESFT)→ 稀疏记忆怎么查(Engram)→ 数据怎么存/算(3FS/smallpond)」这条从语言、算子、通信、并行到存储的全链路,**NVIDIA 与昇腾双平台**跑出近硬件峰值。
+
+它定位在**算子实现层 / 基础设施层**,与库内 model-architecture(架构)、attention(算法)、vllm(引擎)、cutlass(NVIDIA 造内核方法论)四个领域正交互补:那些域讲「模型长什么样、注意力为什么省显存、引擎怎么调度、NVIDIA 怎么造内核」,本域讲「**这些算子/通信/并行/存储怎么实现、怎么适配、性能到哪**」。
+
+**本域两条主线**:
+1. **昇腾适配线**(2026-09-30):NVIDIA 原版 → 昇腾版的「同 API 不同后端」移植(TileLang/DeepGEMM/DeepEP/TileKernels/FlashMLA/DeepSelect),见「昇腾适配」条目组;
+2. **NVIDIA/并行/工具线**(本批入库):DeepGEMM/DeepEP 的 NVIDIA 原版对照、DeepJIT、并行负载均衡(DualPipe/EPLB/LPLB)、微调(ESFT)、稀疏记忆(Engram)、存储与数据(3FS/smallpond)、开源总索引(open-infra-index)。
 
 ---
 
@@ -73,6 +79,21 @@ date: 2026-09
 | DeepSelect | [concepts/deepselect.md](concepts/deepselect.md) | DSA/Sampler 的定制 TopK 算子,2–20× vs torch.topk(口径:有效内存带宽);昇腾仅 bfloat16 | ✅ 已入库 |
 | FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | MLA 注意力内核库(dense+sparse),昇腾版已合入 main 且 breaking change;410 TFlops 双义(平台要标清) | ✅ 已入库 |
 
+### NVIDIA 版对照 + 并行/工具/存储(NVIDIA 主线)
+
+| 专题 | 文件 | 一句话 | 状态 |
+|---|---|---|---|
+| DeepGEMM NVIDIA vs Ascend | [concepts/deepgemm-nvidia-vs-ascend.md](concepts/deepgemm-nvidia-vs-ascend.md) | NVIDIA 原版:轻量 tensor core 内核库(FP8/FP4/BF16、Mega MoE、MQA),H800 1550 TFLOPS;与昇腾版同 API 不同后端(WGMMA/TMA vs MAD/协程) | ✅ 已入库 |
+| DeepEP NVIDIA vs Ascend | [concepts/deepep-nvidia-vs-ascend.md](concepts/deepep-nvidia-vs-ascend.md) | NVIDIA 原版:EP 通信库,V2 迁 NCCL Gin 后端、EPBuffer 统一接口、SM 占用 24→4–6;与昇腾版同 API 不同后端 | ✅ 已入库 |
+| DeepJIT | [concepts/deepjit.md](concepts/deepjit.md) | xPU kernel 运行时 JIT(CUDA + 昇腾),header-only;缓存键穷尽 source/include/编译版本;支持跨节点共享缓存 | ✅ 已入库 |
+| Engram | [concepts/engram.md](concepts/engram.md) | 条件记忆:O(1) N-gram 查找,与 MoE 互补的稀疏轴;确定性寻址可 offload 到 host memory;27B 全面领先 iso-param MoE | ✅ 已入库 |
+| DualPipe | [concepts/dualpipe.md](concepts/dualpipe.md) | 双向流水线并行,V3/R1 训练;气泡减半(参数 2× 换吞吐),DualPipeV 设备数减半 | ✅ 已入库 |
+| EPLB + LPLB | [concepts/lplb-epb-load-balancing.md](concepts/lplb-epb-load-balancing.md) | 专家并行负载均衡:EPLB 静态冗余专家复制(已部署)、LPLB 动态线性规划逐 batch 分流(IPM+cuSolverDx) | ✅ 已入库 |
+| ESFT | [concepts/esft.md](concepts/esft.md) | 专家特化微调:打分→选任务相关 expert→只训相关 expert + adapter(EMNLP 2024) | ✅ 已入库 |
+| open-infra-index | [concepts/open-infra-index.md](concepts/open-infra-index.md) | DeepSeek 开源基础设施总索引:开源周一天一 repo + 论文 + V3/R1 线上数据(73.7k/14.8k tok/s) | ✅ 已入库 |
+| 3FS | [concepts/3fs.md](concepts/3fs.md) | Fire-Flyer 分布式文件系统:disaggregated + CRAQ 强一致 + FoundationDB;6.6 TiB/s 聚合读、GraySort 3.66 TiB/min | ✅ 已入库 |
+| smallpond | [concepts/smallpond.md](concepts/smallpond.md) | DuckDB + 3FS 轻量数据处理框架,无长驻服务,PB 级;GraySort 与 3FS 同口径 | ✅ 已入库 |
+
 ### 实践清单(practices)
 
 | 专题 | 文件 | 一句话 | 状态 |
@@ -93,4 +114,4 @@ date: 2026-09
 ## 溯源
 
 - 外部链接索引见 [references.md](references.md)。
-- 六件套仓库 + 昇腾官方文档 + 各 deep-dive 技术报告的完整链接清单见 [references.md](references.md)。
+- 昇腾六件套仓库 + NVIDIA 原版对照仓库 + 并行/微调/存储各仓库 + 昇腾官方文档 + 各 deep-dive 技术报告的完整链接清单见 [references.md](references.md)。

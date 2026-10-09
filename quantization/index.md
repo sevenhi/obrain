@@ -29,8 +29,10 @@ date: 2026-09
 | [LSTM 低秩压缩 — 分解 vs 剪枝](concepts/lstm-lowrank-compression.md) | concept | SVD/Semi-NMF vs 剪枝:压 W_h(天生低秩)远比压 W_i 安全,核范数是可压缩性先验(arXiv 1908.09982, PACLIC 2019) |
 | [PTQ: GPTQ / AWQ / SmoothQuant](concepts/ptq-gptq-awq-smoothquant.md) | concept | 权重/激活后训练量化的三条路线:二阶误差补偿、激活感知权重保护、平滑离群值后做 W8A8;按显存、硬件和质量目标选型 |
 | [KV Cache 量化](concepts/kv-cache-quantization.md) | concept | 把运行时 KV cache 从权重压缩问题单独拆出:按 token/channel 分组、对称/非对称量化、混合精度与长上下文权衡 |
+| [2-bit 权重量化前沿:QuIP# / AQLM](concepts/two-bit-weight-frontier.md) | concept | ≤4-bit 权重 SOTA:QuIP# 旋转消 outlier+E8 格码+fine-tune,AQLM 多码本加和;3-bit 近无损、2-bit 有可感知退化(arXiv 2402.04396 / 2401.06118) |
+| [KV cache 极低比特前沿:KVQuant / KVTuner](concepts/kvquant-kvtuner-frontier.md) | concept | KVQuant 3-bit 近无损(Pre-RoPE+NUQ+sparse,10M context);KVTuner layer-wise 精度对搜索(≈3.25-bit 近无损,+21.25% 吞吐) |
 
-**共同心法(五篇一条线)**:压缩误差不是均匀分布的——HyQuant 按 attention mass 分精度、SpQR 按敏感度分位宽、LSTM 篇按谱结构(核范数)分压缩方式、GPTQ/AWQ/SmoothQuant 与 KV cache 篇按误差补偿/激活敏感/离群迁移分预算;**都是"把预算花在杠杆点上",而非全局均匀砍**。
+**共同心法(七篇一条线)**:压缩误差不是均匀分布的——HyQuant 按 attention mass 分精度、SpQR 按敏感度分位宽、LSTM 篇按谱结构(核范数)分压缩方式、GPTQ/AWQ/SmoothQuant 与 KV cache 篇按误差补偿/激活敏感/离群迁移分预算、QuIP#/AQLM 与 KVQuant/KVTuner 用旋转消 outlier / 多码本加和 / layer-wise 精度对把 2-bit 联合压缩推进到极限;**都是"把预算花在杠杆点上",而非全局均匀砍**。
 
 ## 相关条目(跨域互链)
 
@@ -40,8 +42,8 @@ date: 2026-09
 
 ## 扩展位(待补充候选)
 
-- 已补充:GPTQ / AWQ / SmoothQuant(算法侧统一篇)与 KV cache 量化(KIVI + vLLM 工程视角)。
-- 待补充:KVQuant / KVTuner / AQLM / QuIP#(2-bit 以下),以及不同 GPU 架构上的实测基准。
+- 已补充:GPTQ / AWQ / SmoothQuant(算法侧统一篇)、KV cache 量化(KIVI + vLLM 工程视角)、2-bit 权重前沿(QuIP# / AQLM)、KV cache 极低比特前沿(KVQuant / KVTuner)。
+- 待补充:不同 GPU 架构上的实测基准,以及 BitNet b1.58 等 training-aware 低比特家族的系统对比。
 
 ## 溯源
 

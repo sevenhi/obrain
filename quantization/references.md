@@ -17,6 +17,11 @@ date: 2026-09
 - AWQ — arXiv:2306.00978
 - SmoothQuant — arXiv:2211.10438
 - KIVI — arXiv:2402.02750
+- QuIP# — arXiv:2402.04396(ICML 2024)
+- QuIP(前作)— arXiv:2307.13304
+- AQLM — arXiv:2401.06118(ICML 2024)
+- KVQuant — arXiv:2401.18079(NeurIPS 2024)
+- KVTuner — arXiv:2502.04420(ICML 2025)
 - Low-Rank Matrix Factorization for LSTM Compression — arXiv:1908.09982(PACLIC 2019)
 - LLM.int8() outlier features — arXiv:2208.07339
 - Deep Compression — arXiv:1510.00149
@@ -26,6 +31,10 @@ date: 2026-09
 
 - HyQuant — https://github.com/jerrysfls/HyQuant
 - SpQR — https://github.com/Vahe1994/SpQR
+- QuIP# — https://github.com/Cornell-RelaxML/quip-sharp
+- AQLM — https://github.com/Vahe1994/AQLM
+- KVQuant — https://github.com/SqueezeAILab/KVQuant
+- KVTuner — https://github.com/cmd2001/KVTuner
 - bitsandbytes — https://github.com/TimDettmers/bitsandbytes
 - AWD-LSTM 基线(论文实验用) — https://github.com/salesforce/awd-lstm-lm
 

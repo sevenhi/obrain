@@ -20,7 +20,7 @@ date: 2026-09
 # Model Architecture(通用 LLM 架构)
 
 > 领域索引(导航起始页)。领域知识本体在 `concepts/` 子目录,每篇一个专题、可独立打开读懂;本页放定位与导航。外部链接索引见 [references.md](references.md)。
-> 本域 2026-09 新建:原 attention 域的 `llama-architecture.md` 经 git mv 移入并扩展为**通用 LLM 架构篇**;同月补充三篇专题(注意力头结构 GQA、上下文扩展、开源模型谱系),现共 4 篇 concept。
+> 本域 2026-09 新建:原 attention 域的 `llama-architecture.md` 经 git mv 移入并扩展为**通用 LLM 架构篇**;同月补充三篇专题(注意力头结构 GQA、上下文扩展、开源模型谱系),2026-10 补开源谱系 2025-26 续篇,现共 5 篇 concept。
 
 ## 一句话定位
 
@@ -33,7 +33,8 @@ date: 2026-09
 | [llm-architecture](concepts/llm-architecture.md) | concept | 通用 LLM 架构:post/pre-norm→RMSNorm、ReLU→GeLU→SwiGLU((2/3)4d)、正弦→learned→RoPE→ALiBi 三条演进线 + Chinchilla/推理预算训练哲学 + GPT→LLaMA→Llama 2/3 演进表(GQA/θ=500k/128K vocab/15T tokens) | ✅ 已入库 |
 | [attention-heads-mha-mqa-gqa](concepts/attention-heads-mha-mqa-gqa.md) | concept | 注意力头结构谱系:KV cache 带宽账单为何驱动 K/V 头共享(MHA→MQA→GQA-g 插值,mean-pool uptrain 5% 算力),T5-XXL 质量/速度数据,GQA-8 成开源标配,延伸到 DeepSeek MLA 低秩压缩 | ✅ 已入库(2026-09) |
 | [context-extension](concepts/context-extension.md) | concept | RoPE 难外推的频率机制(陌生相位→灾难 logit,理论上界差 ~600×)+ 四代扩展法:PI 线性插值→NTK-aware 改 base→YaRN 分段插值+注意力温度→LongRoPE 逐维搜索到 2M;工业路线 θ=500k 渐进预训练;选型决策树 | ✅ 已入库(2026-09) |
-| [open-model-landscape](concepts/open-model-landscape.md) | concept | 开源谱系树:GPT→LLaMA 定型→Llama2/3、Mistral(GQA+SWA)、Qwen、DeepSeek;MoE 专讲(router/top-k、总参数 vs 激活参数、DeepSeekMoE 细粒度+共享专家、V3 671B/37B aux-loss-free+MTP);11 模型对比表 + 许可实测 + 选型准则 + RWKV 旁支 | ✅ 已入库(2026-09) |
+| [open-model-landscape](concepts/open-model-landscape.md) | concept | 开源谱系树:GPT→LLaMA 定型→Llama2/3、Mistral(GQA+SWA)、Qwen、DeepSeek;MoE 专讲(router/top-k、总参数 vs 激活参数、DeepSeekMoE 细粒度+共享专家、V3 671B/37B aux-loss-free+MTP);11 模型对比表 + 许可实测 + 选型准则 + RWKV 旁支(2024-12 快照) | ✅ 已入库(2026-09) |
+| [open-model-landscape-2025-2026](concepts/open-model-landscape-2025-2026.md) | concept | 2025-26 谱系续篇:DeepSeek R1→V3.1→V3.2(DSA 稀疏注意力)→V4/V4.1;Qwen3(Hybrid 思考)/3.5/3.6/3.8(2.4T-A95B 大 MoE);Llama 4 Scout/Maverick 原生 MoE;横向对比表 | ✅ 已入库(2026-10) |
 
 ## 关键事实速记
 

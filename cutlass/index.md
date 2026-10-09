@@ -51,6 +51,7 @@ date: 2026-09
 | 两级 Micro-kernel 抽象 | [concepts/microkernel-abstraction.md](concepts/microkernel-abstraction.md) | BLIS 哲学如何搬到 GPU:空间级(TiledMMA/Copy)与时间级(Collective)microkernel、MMA Atom traits、dispatch policy、generalized partitioning | ✅ 已写 |
 | Hopper WGMMA 指令机制 | [concepts/hopper-wgmma.md](concepts/hopper-wgmma.md) | warpgroup 级异步 MMA、SM90 atom 命名/形状、8 种 GMMA layout atom、descriptor、同步三件套 | ✅ 已写 |
 | CUDA GPU 性能基础 | [concepts/cuda-performance-basics.md](concepts/cuda-performance-basics.md) | 从 Roofline、算术强度、存储层级、occupancy 到 Nsight profiling 的性能定位基础 | ✅ 已写 |
+| Blackwell tcgen05 / UMMA | [concepts/blackwell-tcgen05.md](concepts/blackwell-tcgen05.md) | 第五代 Tensor Core 指令:CTA-group 级异步 MMA、D 在 TMEM(128×512)、SM100_MMA_* atom 命名、cta_group::2 双 CTA、延展到 SM107/SM120 | ✅ 已写 |
 
 ### 工具与上手(用)
 | 专题 | 文件 | 一句话 | 状态 |

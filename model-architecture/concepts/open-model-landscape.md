@@ -23,7 +23,7 @@ date: 2026-09
 
 开源 LLM 的架构谱系是一棵**单主干 + 两条分叉**的树:主干是 decoder-only Transformer,配方在 2023 年被 LLaMA 定型(pre-RMSNorm + SwiGLU + RoPE + GPT 式 BPE),此后 Llama 2/3、Mistral、Qwen、DeepSeek(早期)全部沿用,**架构差异收敛到四个变量:GQA 头数、上下文长度、tokenizer、以及 FFN 是否换成 MoE**。分叉一:**MoE(稀疏激活)**——Mixtral 8x7B(8 专家选 2,47B 总/13B 激活)证明「用 1/5 激活参数打平 Llama-2-70B」;DeepSeekMoE(细粒度专家+共享专家)→ DeepSeek-V2(236B/21B,MLA)→ V3(671B/37B,256 路由专家+1 共享,top-8,**aux-loss-free 负载均衡 + 多 token 预测**,2.788M H800 GPU 时,14.8T tokens)把 MoE 推到开源最强。分叉二:**线性注意力/RNN**——RWKV 用「可并行训练的 RNN」换取推理期常数显存,但生态与质量未成主流。**选型准则**:同显存下要最强质量 → 稀疏 MoE(V3/Mixtral,注意激活参数才决定速度、总参数决定显存);要稠密稳态/微调基座 → Llama 3/Qwen2.5;超长上下文 → Llama 3.1/Qwen2.5(原生 128k);极限吞吐小显存 → 小 dense(Mistral 7B/Qwen2.5-7B)。许可要看清:Llama 系是 Community License(非 OSI),Mistral/Qwen/DeepSeek 主力是 Apache 2.0。
 
-> ⚠ **快照框定(时效警示)**:本谱系截止 **2024-12**(最新收录 DeepSeek-V3、Qwen2.5、Llama 3.1)。后续的 Qwen3、DeepSeek-R1/V4 等未纳入;选型务必以 HF 当日 config 为准(见 §4「看 config 四件套」),别把本页当作当前最新清单。
+> ⚠ **快照框定(时效警示)**:本谱系截止 **2024-12**(最新收录 DeepSeek-V3、Qwen2.5、Llama 3.1)。后续的 Qwen3、DeepSeek-R1/V4 等未纳入;**2025-26 谱系(DeepSeek V3.2(DSA)/V4、Qwen3.x、Llama 4)见续篇 [open-model-landscape-2025-2026.md](open-model-landscape-2025-2026.md)**。选型务必以 HF 当日 config 为准(见 §4「看 config 四件套」),别把本页当作当前最新清单。
 
 ---
 
@@ -132,7 +132,7 @@ MoE 推理的痛点不是算力而是**权重搬运与专家分布**:47B/671B �
 
 ## 4. 实践要点(选型准则)
 
-> ⚠ **快照框定**:以下选型准则基于本谱系收录到 2024-12 的模型;Qwen3、DeepSeek-R1/V4 等未纳入,选型以 HF 当日 config 为准(见下方「看 config 四件套」)。
+> ⚠ **快照框定**:以下选型准则基于本谱系收录到 2024-12 的模型;Qwen3、DeepSeek-R1/V4 等未纳入,**2025-26 谱系见续篇 [open-model-landscape-2025-2026.md](open-model-landscape-2025-2026.md)**,选型以 HF 当日 config 为准(见下方「看 config 四件套」)。
 
 - **先定约束再选模型**:
   - 显存紧、要快 → 小 dense(Mistral 7B、Qwen2.5 7B)或量化版(见 [`quantization/`](../../quantization/index.md));

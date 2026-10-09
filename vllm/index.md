@@ -12,7 +12,7 @@ date: 2026-09
 
 # vLLM 推理引擎
 
-> 领域索引。**知识本体在 `concepts/` 深度概念篇**(8 篇,由源码一手实读 + 官方文档多源综合而成);生产部署清单在 `practices/`。原 `notes/` 源码笔记已全部提炼入概念篇并删除,内容自足,不依赖库外文件。本页放定位、关键事实与导航。
+> 领域索引。**知识本体在 `concepts/` 深度概念篇**(9 篇,由源码一手实读 + 官方文档多源综合而成);生产部署清单在 `practices/`(3 篇,含选型对比)。原 `notes/` 源码笔记已全部提炼入概念篇并删除,内容自足,不依赖库外文件。本页放定位、关键事实与导航。
 
 ## 一句话定位
 
@@ -25,7 +25,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 | **PagedAttention** | 受 OS 虚拟内存启发,KV cache 分固定 block + block table 非连续分配,消除显存碎片(SOSP 2023, arXiv:2309.06180) |
 | **连续批处理** | 迭代级调度,decode+prefill 混批,填满 `max_num_batched_tokens` |
 | **V1 引擎架构** | 调度(CPU)与执行(GPU)解耦的多进程 + 异步调度 |
-| **优化注意力内核** | FlashAttention / FlashInfer / TRTLLM-GEN / FlashMLA / Triton |
+| **优化注意力内核** | FlashAttention / FlashInfer / Triton / MLA 族(FlashMLA/FlashInfer MLA/CUTLASS MLA/Triton MLA)等,可插拔 backend(见 [attention-backend-selection](practices/attention-backend-selection.md)) |
 
 ## 关键事实速记
 
@@ -49,6 +49,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 | [分布式与 Ray 集成](concepts/distributed-ray.md) | concept | Executor 三后端选型、Ray rank 重排、通信组初始化;PP×TP 编址;非阻塞两段式执行 |
 | [模型注册 ModelRegistry](concepts/model-registry.md) | concept | 架构名→实现类懒加载映射;Transformers 兜底、后缀归一化、新增模型只改两处;注册后经 get_model_loader 注入权重 |
 | [采样参数与惩罚机制](concepts/sampling-penalties.md) | concept | Sampler 管线顺序即机制;惩罚两类数学(repetition 乘性、presence/frequency 加性)、指数竞赛免同步、to_sampling_params 三级回退 |
+| [投机解码](concepts/speculative-decoding.md) | concept | 草稿模型串行猜 γ 个 + 目标模型一次并行验证;期望每步 token = (1−α^(γ+1))/(1−α),EAGLE/MTP/Medusa/n-gram/DSpark 各后端支持状态 |
 | [API Server 与 OpenAI 兼容层](concepts/api-server-openai-compat.md) | concept | 59 行 shim + 四件套子包重构;薄路由 + app.state 注入、条件化路由注册、SO_REUSEPORT 多进程、SSE keep-alive |
 
 ## 生产实践篇(practices)
@@ -57,6 +58,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 |---|---|---|
 | [生产部署与观测清单](practices/production-serving.md) | checklist | 从模型/显存预算、启动参数、健康检查、并发与限流到 Prometheus 指标、日志、升级和安全边界的上线前后检查 |
 | [LLM 推理引擎选型](practices/inference-engine-selection.md) | comparison | vLLM、SGLang、TensorRT-LLM、llama.cpp、LMDeploy 的定位、适用场景和统一评测方法 |
+| [注意力后端选型](practices/attention-backend-selection.md) | comparison | V1 attention backend 可插拔机制(AttentionBackend + register_backend + 最小 priority 分派,无 ATTN_BACKEND 环境变量);backend 枚举无 TRT-LLM,MLA 族 FlashMLA 双平台 |
 
 > 2026-09 收尾:原 `notes/` 5 篇源码笔记(sampling-penalties / api-server / core-architecture / full-technical-report / serving-layer-analysis)已按"先迁移独有内容、后删除"提炼并入上述概念篇,`notes/` 目录随之清空;溯源以源码 commit `b74ac0bc6` 为准。
 

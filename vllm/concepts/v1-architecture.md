@@ -161,9 +161,10 @@ GPUModelRunner.execute_model()
   → _prepare_inputs()                  # 组装张量
   → _model_forward()                   # nn.Module.forward
       → 各 transformer 层
-      → Attention: FlashAttentionImpl.forward()   # 以 FA 后端为例;AttentionBackend 可插拔
+      → Attention: AttentionImpl.forward()        # AttentionBackend 可插拔(backend.py)
           → do_kv_cache_update()  # 写回 KV cache
-          → flash_attn_varlen_func # 分页注意力(默认后端依硬件/版本,亦可用 FlashInfer/TRTLLM/FlashMLA/Triton)
+          → 分页注意力内核(默认后端依硬件/版本自动选:FLASH_ATTN/FLASHINFER/TRITON_ATTN/TRITON_FLASH_ATTN/MLA 族(FLASHMLA/FLASHINFER_MLA/CUTLASS_MLA/TRITON_MLA/TOKENSPEED_MLA)/ROCM/XPU;
+            显式指定走 --attention-backend,无 ATTN_BACKEND 环境变量;选型详见 attention-backend-selection.md)
   → _sample()                         # 采样
   → ModelRunnerOutput
 ```

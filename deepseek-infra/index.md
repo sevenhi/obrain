@@ -73,6 +73,12 @@ date: 2026-09
 | DeepSelect | [concepts/deepselect.md](concepts/deepselect.md) | DSA/Sampler 的定制 TopK 算子,2–20× vs torch.topk(口径:有效内存带宽);昇腾仅 bfloat16 | ✅ 已入库 |
 | FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | MLA 注意力内核库(dense+sparse),昇腾版已合入 main 且 breaking change;410 TFlops 双义(平台要标清) | ✅ 已入库 |
 
+### 实践清单(practices)
+
+| 专题 | 文件 | 一句话 | 状态 |
+|---|---|---|---|
+| Ascend 部署检查清单 | [practices/ascend-deployment-checklist.md](practices/ascend-deployment-checklist.md) | 环境两线分开(950: CANN 9.2.0+PyTorch 2.13.0;A2/A3: CANN 8.3.RC1+);算子跑通顺序 TileLang→DeepGEMM→DeepEP→FlashMLA→DeepSelect + 各算子实操坑 | ✅ 已入库 |
+
 ---
 
 ## 相关条目(跨域互链)

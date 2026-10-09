@@ -24,7 +24,7 @@ date: 2026-09
 - **六件套覆盖链路**:语言层 → 矩阵库 → 通信库 → 注意力算子。
 - **三条 P0 事实(本域写作最易踩,务必按此记)**:
   1. **TileLang 是 tile-ai 的第三方 DSL,不是 DeepSeek 的仓库**;昇腾支持分三层:主仓 tile-ai/tilelang 现支持 Ascend 950 native backend(2026-09-30 起)、独立仓 tile-ai/tilelang-ascend(A2/A3 的 ascendc/pto/npuir)、tilelang-mlir-ascend(MLIR 路线)。
-  2. **FlashMLA 昇腾版在独立分支 `20260930-ascend-open-source` 且是 breaking change**:移除 Hopper 支持、移除 V3/V3.2/V4.0 旧模型、改 FP8/FP4 KV cache 格式,只服务 V4.1;旧模型切旧 commit `ba89a346`。
+  2. **FlashMLA 昇腾版 2026-09-30 发布、已合入 main(原开发分支 `20260930-ascend-open-source`)且是 breaking change**:移除 Hopper 支持、移除 V3/V3.2/V4.0 旧模型、改 FP8/FP4 KV cache 格式,只服务 V4.1;旧模型切旧 commit `ba89a346`。
   3. **TileKernels 昇腾支持从 PyPI v2.0.0 起**,但 main README 滞后(仍只写 NVIDIA SM90/SM100)。
 - **术语(本域核定拼写;标「待核」者为一手库未附链接)**:fractal(分形**布局**)、MAD(matrix multiply-add 原语)、UBMEM、URMA、HCCL(集合通信)、HCOMM(控制面 API,**待核/据昇腾官方资料**)、bisheng(毕昇编译器)、DeepJIT(运行时 JIT)、torch_npu、**CANN 9.2.0**(DeepGEMM README 原文 "9.20" 即此版本,不写 9.20)、**950PR ≠ 950DT**(同一 950 Die 两款型:PR=Prefill&Recommendation、DT=Decode&Training,**待核/据昇腾官方资料**)。
 
@@ -36,7 +36,7 @@ date: 2026-09
 | DeepGEMM-Ascend | DeepGEMM | 新建独立仓,API 完全兼容 | deepseek-ai/DeepGEMM-Ascend |
 | DeepEP-Ascend | DeepEP | 新建独立仓,API 完全兼容 | deepseek-ai/DeepEP-Ascend |
 | TileKernels | TileKernels 原生 | 新增昇腾后端(v2.0.0) | deepseek-ai/TileKernels |
-| FlashMLA | FlashMLA 原生 | 昇腾版在独立分支 | deepseek-ai/FlashMLA |
+| FlashMLA | FlashMLA 原生 | 昇腾版已合入 main | deepseek-ai/FlashMLA |
 | DeepSelect | DeepSelect 原生 | 新增昇腾后端 | deepseek-ai/DeepSelect |
 
 ### 技术栈分层(文字图)
@@ -70,7 +70,7 @@ date: 2026-09
 | DeepEP-Ascend | [concepts/deepep-ascend.md](concepts/deepep-ascend.md) | MoE 专家并行通信库,EP all-to-all(dispatch/combine),EP≤32 dispatch 达 90–95% 物理带宽 | ✅ 已入库 |
 | TileKernels | [concepts/tilekernels.md](concepts/tilekernels.md) | TileLang 之上的 LLM 算子库(MoE routing/量化/Engram/mHC),v2.0.0 起支持昇腾,同一 Python API 跑 NVIDIA+华为 | ✅ 已入库 |
 | DeepSelect | [concepts/deepselect.md](concepts/deepselect.md) | DSA/Sampler 的定制 TopK 算子,2–20× vs torch.topk(口径:有效内存带宽);昇腾仅 bfloat16 | ✅ 已入库 |
-| FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | MLA 注意力内核库(dense+sparse),昇腾版在独立分支且 breaking change;410 TFlops 双义(平台要标清) | ✅ 已入库 |
+| FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | MLA 注意力内核库(dense+sparse),昇腾版已合入 main 且 breaking change;410 TFlops 双义(平台要标清) | ✅ 已入库 |
 
 ---
 

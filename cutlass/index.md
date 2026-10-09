@@ -3,7 +3,7 @@ title: CUTLASS
 type: domain
 tags: [cutlass, gpu, gemm, cute, cuda]
 source:
-  - "code: github.com/NVIDIA/cutlass | 版本 4.8.0dev (2026-08-27;正式版为 v4.7.1,支持至 Rubin SM107)"
+  - "code: github.com/NVIDIA/cutlass | 版本 v4.8.0 (2026-09 发布;CHANGELOG 记 09-17 / GitHub tag 09-22;新增 Rubin SM107 初步支持)"
   - "web: NVIDIA CUTLASS 官方文档站 | https://docs.nvidia.com/cutlass/latest/"
 date: 2026-09
 ---
@@ -27,8 +27,8 @@ date: 2026-09
 
 | 项 | 值 |
 |---|---|
-| 版本 | 4.8.0dev(2026-08-27 快照;正式版为 v4.7.1,支持至 Rubin SM107)|
-| Stars / Forks / License | ~10.3k / ~2k / BSD-3-Clause(2017-11-30 创建)|
+| 版本 | v4.8.0(2026-09 发布;CHANGELOG 记 09-17 / GitHub tag 09-22;新增 Rubin SM107 初步支持)|
+| Stars / Forks / License | ~10.3k / ~2k / BSD-3-Clause(核心源码;`python/CuTeDSL` 受 NVIDIA EULA 单独许可 → GitHub 自动识别为 Other;2017-11-30 创建)|
 | 定位对比 | **WMMA**(最底层硬件接口)/ **cuBLAS**(黑盒成品)/ **CUTLASS**(开源模板+可定制)|
 | 性能 | 与 cuBLAS 同量级,部分超越;Stream-K 峰值最高 **14×**(vs CUTLASS)/ **6.7×**(vs cuBLAS)|
 | 架构 | Volta → Turing → Ampere → Ada → Hopper → Blackwell |

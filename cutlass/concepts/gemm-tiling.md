@@ -44,7 +44,7 @@ GPU 上做一次矩阵乘 `C(M×N) = A(M×K) · B(K×N)`,不是把整块矩阵�
 | shared memory (smem) | SM 内 | 快(几十 cycle,可宽带) | ~100-228KB/SM,Hopper 可更大 |
 | global memory (HBM) | 片外 | 慢(数百 cycle,带宽瓶颈) | 数十 GB |
 
-**核心张力(Tensor Core 太快、HBM 喂不饱)**:这一代 Tensor Core 算力远超 HBM 带宽。例如 H200 SXM:Tensor Core 峰值 ~3,958 TFLOPS(FP16),而 HBM 带宽仅 ~4.8 TB/s。若不 tiling、把 C/M/N 全放 HBM、算一块读一块,计算单元绝大部分时间在等数据——利用率可能只有个位数百分比。
+**核心张力(Tensor Core 太快、HBM 喂不饱)**:这一代 Tensor Core 算力远超 HBM 带宽。例如 H200 SXM:Tensor Core 峰值 ~989 TFLOPS(FP16 dense)/ ~3,958 TFLOPS(FP8 sparse),而 HBM 带宽仅 ~4.8 TB/s。若不 tiling、把 C/M/N 全放 HBM、算一块读一块,计算单元绝大部分时间在等数据——利用率可能只有个位数百分比。
 
 **tiling 的意义**就是:把输出切成小块,让**计算密集的多次循环发生在片上(smem/register 内)**,把昂贵的 HBM 访问次数压到最低,把数据流动组织成可重叠(mainloop 流水)的形态。
 
@@ -243,6 +243,6 @@ Layout colMajor = Layout<Shape<_4,_8>, Stride<_1,_4>>{};
 - 官方循环嵌套结构、mainloop/stage 定义、epilogue: NVIDIA Efficient GEMM in CUDA — https://docs.nvidia.com/cutlass/latest/media/docs/cpp/efficient_gemm.html
 - CuTe Layout 核心抽象与 Layout 代数: https://docs.nvidia.com/cutlass/latest/media/docs/cpp/cute/01_layout.html / 02_layout_algebra.html
 - Stream-K work-centric 分块与 14×/6.7× 数据: arXiv:2301.03598 (Osama / Merrill / Cecka / Garland / Owens)
-- Hopper pipelining(双缓冲、warp-spec、~65% FP16 利用率、H200 3,958 TFLOPS / 4.8 TB/s 数字): Colfax Research CUTLASS Tutorial Part 2, https://research.colfax-intl.com/cutlass-tutorial-design-of-a-gemm-kernel/
+- Hopper pipelining(双缓冲、warp-spec、~65% FP16 利用率、H200 989 TFLOPS FP16 dense / 3,958 TFLOPS FP8 sparse / 4.8 TB/s 数字): Colfax Research CUTLASS Tutorial Part 2, https://research.colfax-intl.com/cutlass-tutorial-design-of-a-gemm-kernel/
 
-*注:H200 SXM 的 Tensor Core 3,958 TFLOPS / HBM 4.8 TB/s 数值来自 Colfax 教程(2024-09),用于说明"算力≫带宽"的张力量级,具体型号规格以 NVIDIA 官网最新为准。*
+*注:H200 SXM 的 Tensor Core 峰值 ~989 TFLOPS(FP16 dense)/ ~3,958 TFLOPS(FP8 sparse)/ HBM 4.8 TB/s 数值来自 Colfax 教程(2024-09)与 NVIDIA H200 datasheet(FP16/BF16 dense 989 / sparse 1979;FP8 dense 1979 / sparse 3958),用于说明"算力≫带宽"的张力量级,具体型号规格以 NVIDIA 官网最新为准。*

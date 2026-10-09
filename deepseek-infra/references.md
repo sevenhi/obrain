@@ -17,7 +17,7 @@ date: 2026-09
 - **DeepGEMM-Ascend(昇腾 GEMM 库)** — https://github.com/deepseek-ai/DeepGEMM-Ascend
 - **DeepEP-Ascend(昇腾 MoE 通信库)** — https://github.com/deepseek-ai/DeepEP-Ascend
 - **TileKernels(TileLang 算子库)** — https://github.com/deepseek-ai/TileKernels ;PyPI v2.0.0(昇腾版) — https://pypi.org/project/tile-kernels/2.0.0/
-- **FlashMLA(注意力内核库,昇腾版在分支 20260930-ascend-open-source)** — https://github.com/deepseek-ai/FlashMLA
+- **FlashMLA(注意力内核库,昇腾版已合入 main,原开发分支 20260930-ascend-open-source)** — https://github.com/deepseek-ai/FlashMLA
 - **DeepSelect(DSA/Sampler 的 TopK 算子)** — https://github.com/deepseek-ai/DeepSelect
 - **DeepJIT(运行时 JIT,DeepEP-Ascend 依赖)** — https://github.com/deepseek-ai/DeepJIT
 
@@ -28,7 +28,7 @@ date: 2026-09
 
 ## 技术 deep-dive 文档(一手,机制细节来源)
 
-- FlashMLA 昇腾稀疏 prefill deep-dive — https://github.com/deepseek-ai/FlashMLA/blob/20260930-ascend-open-source/docs/20260930-ascend-prefill-deep-dive.md (中文同目录 `-zh.md`)
+- FlashMLA 昇腾稀疏 prefill deep-dive — https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20260930-ascend-prefill-deep-dive.md (中文同目录 `-zh.md`)
 - FlashMLA FP8 sparse decoding deep-dive(2025-09-29)—— https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20250929-hopper-fp8-sparse-deep-dive.md
 - FlashMLA dense decoding deep-dive(2025-04-22)—— https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20250422-new-kernel-deep-dive.md
 - DeepSelect 算法 deep-dive — https://github.com/deepseek-ai/DeepSelect/blob/main/docs/DeepSelect-deep-dive.md (中文 `DeepSelect-deep-dive.zh.md`)

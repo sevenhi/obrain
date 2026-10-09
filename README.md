@@ -34,7 +34,7 @@ obrain/
 | 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:PTQ(GPTQ/AWQ/SmoothQuant)、KV cache 量化、稀疏量化混合(SpQR)+ 低秩/剪枝路线(5 篇,论文来源通过公开链接追溯) | 2026-09 |
 | vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构、生产部署、观测与引擎选型等(10 篇) | 2026-09 |
 | Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核、ONNX/TensorRT 部署(5 篇) | 2026-09 |
-| DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 昇腾基础设施栈六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ Ascend 适配专题(8 篇) | 2026-09 |
+| DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 昇腾基础设施栈六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ Ascend 适配专题(7 篇) | 2026-09 |
 
 > 注:`profiles/` 为个人与家庭档案(非技术知识条目),不参与上述领域体系,豁免收纳规范。
 

@@ -17,7 +17,7 @@ date: 2026-09
 **TileLang**(tile-lang)是一种 **tile(数据块)级 DSL**:Pythonic 语法 + TVM 编译器基础设施,让你显式控制内存分配、数据移动、布局与并行,从而把「算子怎么写」翻译成「硬件怎么跑」——同时抽象掉 CUDA / Ascend C 这些硬件细节,又保留芯片特性的优化空间。**它定位是「算子编写 → 硬件执行」之间的桥**。
 
 **昇腾后端要分三层看,别混**:
-1. **上游 `tile-ai/tilelang`**(多后端:CUDA/ROCm/Metal)——注意这是 **tile-ai 组织的第三方 DSL(万星级),不是 DeepSeek 的仓库**;DeepSeek 是重度使用者兼昇腾后端贡献方。现支持 **Ascend 950 native backend**(2026-09-30 起)。
+1. **上游 `tile-ai/tilelang`**(多后端:CUDA/ROCm/Metal)——注意这是 **tile-ai 组织的第三方 DSL(8.5k+ stars),不是 DeepSeek 的仓库**;DeepSeek 是重度使用者兼昇腾后端贡献方。现支持 **Ascend 950 native backend**(2026-09-30 起)。
 2. **独立仓 `tile-ai/tilelang-ascend`**——昇腾专用后端,A2/A3 的 ascendc/pto/npuir(Ecosystem),内部走**两条技术路线**:**Ascend C & PTO**(代码生成目标)与 **AscendNPU IR / MLIR**。
 3. **tilelang-mlir-ascend**——MLIR 路线。
 

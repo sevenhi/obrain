@@ -20,7 +20,7 @@ date: 2026-09
 # Model Architecture(通用 LLM 架构)
 
 > 领域索引(导航起始页)。领域知识本体在 `concepts/` 子目录,每篇一个专题、可独立打开读懂;本页放定位与导航。外部链接索引见 [references.md](references.md)。
-> 本域 2026-09 新建:原 attention 域的 `llama-architecture.md` 经 git mv 移入并扩展为**通用 LLM 架构篇**;同月补充三篇专题(注意力头结构 GQA、上下文扩展、开源模型谱系),2026-10 补开源谱系 2025-26 续篇,现共 5 篇 concept。
+> 本域 2026-09 新建:原 attention 域的 `llama-architecture.md` 经 git mv 移入并扩展为**通用 LLM 架构篇**;同月补充三篇专题(注意力头结构 GQA、上下文扩展、开源模型谱系),2026-10 补开源谱系 2025-26 续篇;同月落 DeepSeek 网络结构演进四篇(3 子篇 + 1 主篇),现共 9 篇 concept。
 
 ## 一句话定位
 
@@ -35,6 +35,10 @@ date: 2026-09
 | [context-extension](concepts/context-extension.md) | concept | RoPE 难外推的频率机制(陌生相位→灾难 logit,理论上界差 ~600×)+ 四代扩展法:PI 线性插值→NTK-aware 改 base→YaRN 分段插值+注意力温度→LongRoPE 逐维搜索到 2M;工业路线 θ=500k 渐进预训练;选型决策树 | ✅ 已入库(2026-09) |
 | [open-model-landscape](concepts/open-model-landscape.md) | concept | 开源谱系树:GPT→LLaMA 定型→Llama2/3、Mistral(GQA+SWA)、Qwen、DeepSeek;MoE 专讲(router/top-k、总参数 vs 激活参数、DeepSeekMoE 细粒度+共享专家、V3 671B/37B aux-loss-free+MTP);11 模型对比表 + 许可实测 + 选型准则 + RWKV 旁支(2024-12 快照) | ✅ 已入库(2026-09) |
 | [open-model-landscape-2025-2026](concepts/open-model-landscape-2025-2026.md) | concept | 2025-26 谱系续篇:DeepSeek R1→V3.1→V3.2(DSA 稀疏注意力)→V4/V4.1;Qwen3(Hybrid 思考)/3.5/3.6/3.8(2.4T-A95B 大 MoE);Llama 4 Scout/Maverick 原生 MoE;横向对比表 | ✅ 已入库(2026-10) |
+| [deepseek-model-evolution](concepts/deepseek-model-evolution.md) | concept(主篇) | DeepSeek 网络结构演进总览:TL;DR + 逐代概览(V1→DeepSeekMoE→V2→V3→V3.1→V3.2)+ 代际 diff 总表(注意力 MHA→GQA→MLA→MLA+DSA;FFN dense→细粒度→256 专家;位置 RoPE→解耦→YaRN)+ 双约束演进方向分析(稀疏省算力/低秩+稀疏省显存/训练机制保质量);3 子篇导航 | ✅ 已入库(2026-10) |
+| [deepseek-arch-v1-moe-v2](concepts/deepseek-arch-v1-moe-v2.md) | concept(子篇) | 奠基段:V1(7B MHA/67B GQA)+ DeepSeekMoE(细粒度+共享专家)+ V2(MLA 低秩 KV + 解耦 RoPE + 160 专家 MoE,双主线首次合流);MPA/GQA/MLA KV cache 量化 | ✅ 已入库(2026-10) |
+| [deepseek-arch-v3](concepts/deepseek-arch-v3.md) | concept(子篇) | V3:MLA 规模化 + 256 专家 MoE(top-8,sigmoid 路由)+ MTP 多 token 预测 + aux-loss-free 负载均衡 + FP8;671B/37B、2.788M H800 小时训练 | ✅ 已入库(2026-10) |
+| [deepseek-arch-v32-r1](concepts/deepseek-arch-v32-r1.md) | concept(子篇) | V3.2(DSA 闪电索引器 + top-2048 稀疏选择,破 O(L²)→O(L·k))+ R1(无新结构,GRPO RL 推理时扩展);V3→V3.2 代码级 diff | ✅ 已入库(2026-10) |
 
 ## 关键事实速记
 
@@ -54,6 +58,7 @@ date: 2026-09
 - **[`attention/`](../attention/index.md)**:本域架构篇的 attention 机制基础(softmax 数学/O(n²) 账单/多头等)在 attention 域 algorithm 层;高效内核(FA 四代)在 [attention/implementation/flash-attention-implementation.md](../attention/implementation/flash-attention-implementation.md)——LLaMA 训练用的 xformers attention = Rabe & Staats 前向 + FA1 反向;GQA 缩小的 KV cache 由 [`vllm/`](../vllm/index.md) PagedAttention 管理([paged-attention](../vllm/concepts/paged-attention.md))。
 - **[`vllm/`](../vllm/index.md)**:GQA/MoE/长上下文的收益都在推理引擎兑现——KV cache 分页([paged-attention](../vllm/concepts/paged-attention.md))、大 batch 吞吐([continuous-batching](../vllm/concepts/continuous-batching.md))、KV/权重量化([quantization-gptq-awq-fp8](../vllm/concepts/quantization-gptq-awq-fp8.md))。
 - **[`quantization/`](../quantization/index.md)**:LLaMA 权重是 GPTQ/AWQ/SpQR 等量化的最常用测试床。
+- **[`deepseek-models/`](../deepseek-models/index.md)**:本域 DeepSeek 网络结构四篇的**领域侧互补**——结构篇讲 MHA→MLA、dense→MoE「怎么变」,领域篇讲数学(GRPO/自验证)、定理证明(Lean 4)、代码(FIM/MoE)、MoE 数据评测「怎么做出来」。DeepSeekMoE 结构在本域 [deepseek-arch-v1-moe-v2](concepts/deepseek-arch-v1-moe-v2.md),数据/评测侧在 [deepseek-models/concepts/deepseek-moe.md](../deepseek-models/concepts/deepseek-moe.md)。
 
 ## 溯源
 

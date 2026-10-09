@@ -30,7 +30,7 @@ date: 2026-09
 | [PTQ: GPTQ / AWQ / SmoothQuant](concepts/ptq-gptq-awq-smoothquant.md) | concept | 权重/激活后训练量化的三条路线:二阶误差补偿、激活感知权重保护、平滑离群值后做 W8A8;按显存、硬件和质量目标选型 |
 | [KV Cache 量化](concepts/kv-cache-quantization.md) | concept | 把运行时 KV cache 从权重压缩问题单独拆出:按 token/channel 分组、对称/非对称量化、混合精度与长上下文权衡 |
 
-**共同心法(三篇一条线)**:压缩误差不是均匀分布的——HyQuant 按 attention mass 分精度、SpQR 按敏感度分位宽、LSTM 篇按谱结构(核范数)分压缩方式;**都是"把预算花在杠杆点上",而非全局均匀砍**。
+**共同心法(五篇一条线)**:压缩误差不是均匀分布的——HyQuant 按 attention mass 分精度、SpQR 按敏感度分位宽、LSTM 篇按谱结构(核范数)分压缩方式、GPTQ/AWQ/SmoothQuant 与 KV cache 篇按误差补偿/激活敏感/离群迁移分预算;**都是"把预算花在杠杆点上",而非全局均匀砍**。
 
 ## 相关条目(跨域互链)
 

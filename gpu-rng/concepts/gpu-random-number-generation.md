@@ -122,7 +122,7 @@ __global__ void gen(curandStatePhilox4_32_10_t* s, float* out) {
 }
 ```
 
-- **XORWOW/MRG32k3a**:`curand_init(seed, sequence, offset, state)`,state 相当于"从 seed 状态走了 2⁶⁷·sequence + offset 步 curand() 之后"。周期 >2¹⁹⁰。
+- **XORWOW/MRG32k3a**:`curand_init(seed, sequence, offset, state)`,state 相当于"从 seed 状态走了 2⁶⁷·sequence + offset 步 curand() 之后"。周期 ≈2¹⁹²。
 - **Philox**:周期 2¹²⁸;subsequence 长度 2⁶⁴,一个 subsequence 用尽自动进下一个。
 - **MTGP32**:一个 state 结构对应一组参数(一个序列);单 block 内 ≤256 线程 thread-safe 协作,**两个 block 不能操作同一 state**;需 host 侧 `curandMakeMTGP32KernelState` 预置参数集。
 

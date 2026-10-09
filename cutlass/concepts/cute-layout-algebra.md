@@ -49,7 +49,8 @@ Layout colMajor = Layout<Shape<_4,_8>, Stride<_1,_4>>{};   // (m,n) → m + n*4 
 // 官方例:A = (6,2):(8,2)   (6行2列,行步长8、列步长2)
 //        B = (4,3):(3,1)
 // 结果:A∘B = ((2,2),3):((24,2),8)
-//  即 3 列,每列先序化：先列(6→拆成 (2,2)),再行(8+8=16... 领 3 个),compose 明细见官方文档
+// 读法:A∘B 的 shape 是 ((2,2),3) —— 第一维 3 列,每列是一个 2×2 子块;
+//       stride ((24,2),8) —— 列步长 8,块内行步长 24、列步长 2。
 // 手算验证:A∘B 把 B 的坐标 (i,j) 先经 B 映射到 A 的坐标,再经 A 映射到内存索引
 ```
 
@@ -113,6 +114,8 @@ LayoutC_TV: ((_4,_8),(_2,_2)):((_32,_1),(_16,_8))
 - 所以 **TN atom 要求 A、B 均 K-major(A 行主序 M×K、B 沿 K 连续)——这正是 mma 指令的原生布局**。写 kernel 时 smem/fragment 排布按"两操作数都 K-major"放,别把 T/N 和 行/列主序搞反。
 
 这些 TV layout 由 CuTe 架构师**按底层 PTX mma 的数据访问模式预先设计好**,使用者**不必自己研究 PTX mma 指令**。这正是 CuTe 的"开箱即用"价值。
+
+> ⚠ **Ampere FP16 MMA 形状口径(与 [gemm-tiling](gemm-tiling.md) 统一)**:`m16n8k16` = FP32 累加(标准 FP16 Tensor Core 路径,`SM80_16x8x16_F16F16F16F32_TN` 这类 atom),`m16n8k8` = FP16 累加(`SM80_16x8x8_F16F16F16F16_TN`,见 [cutlass-build-and-usage](../frameworks/cutlass-build-and-usage.md) §3.6 与 [microkernel-abstraction](microkernel-abstraction.md) §2.1)。两处不是同一形状:末尾数字是 **K 维 16 还是 8**,取决于累加器精度是 FP32 还是 FP16。读代码时先看 atom 名里的最后两个字母(F32/F16)判累加器类型,再看 K=16/8,别把两个 m16n8k 混为一个。
 
 > ⚠ Hopper wgmma 的 TV layout 形态与 Ampere 的线程级 2D TV layout **不同**:Hopper GMMA 的 `ThrID` 是 `Layout<_128>`(warp-group 级),配 `SM90::GmmaDescriptor`(`Major::K` / `Major::MN`)+ swizzle atom(如 `Layout_SW128_Atom`)表达数据排布——别把 §3 的 Ampere 读法直接套到 Hopper(wgmma 无 Ampere 那种 `WarpsTileMode`,该名在 CUTLASS 全库不存在)。wgmma 的 atom 命名/形状约束、8 种 GMMA layout atom、descriptor 与同步机制详见 [hopper-wgmma.md](hopper-wgmma.md)。
 

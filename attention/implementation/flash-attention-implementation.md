@@ -343,7 +343,7 @@ O      = P_fp8 @ V_fp8          # 第二个 WGMMA 也是 FP8 GEMM(不是 V 保�
 - 二者合计带来 **2.6× 的数值误差降低**。
 
 **性能口径(注意别混)**:
-- BF16:最高 **~740 TFLOPS**(论文摘要 "up to 740 TFLOPs/s";博客 620-640 常规流水),约 **~75% 利用率**(相对 H100 BF16 稠密峰值 989);
+- **FP16**:最高 ~740 TFLOPS(论文摘要 "up to 740 TFLOPs/s";博客 620-640 常规流水),约 ~75% 利用率(≈H100 FP16 dense 峰值 989 的 75%,摘要口径);
 - FP8:~**1.2-1.3 PFLOPS** 前向,相对 H100 FP8 理论峰值约 **61-66% MFU**(不是 80%);
 - **加速基线**:BF16 相对 FA2 实测 **1.5-2×(指 BF16 加速)**,不是 FP8 的收益。
 
@@ -369,6 +369,13 @@ FA4(2026,MLSys,arXiv:2603.05451)聚焦 **Blackwell(B200/GB200)**:瞄准"张量�
 - **软件模拟 exp 与条件 softmax rescale**(砍 non-matmul——延续 FA2"non-matmul 是隐藏成本"的主线);
 - **TMEM + 2-CTA MMA**:减 smem 流量与反传 atomic add;
 - 整条用 **CuTe DSL(Python)** 实现:BF16 B200 上 up to **1613 TFLOPS / 71% util**,比 cuDNN 9.13 快至 1.3×、比 Triton 至 2.7×,编译比 C++ 模板快 20-30×。
+
+**实现逻辑(论文 §3-4 + GitHub 实现,至少对齐 FA1 的信息密度)**:
+
+1. **2-CTA MMA(两个 CTA 协作算一个 tile)**:Blackwell 的 tcgen05/UMMA 允许**两个相邻 CTA 组成一对(cluster)** 协同发射同一条 MMA,各自把 M 维切成上下两半。收益:**TMEM 容量加倍**(accumulator 放在 TMEM 而非寄存器,一个 CTA 的 TMEM 有限,2-CTA 拼接把可驻留的 tile 尺寸翻倍)、smem 带宽减半(两 CTA 共享同一份 K/V tile,读一次各用一半)。这是 FA4 应对"smem 带宽没跟上张量核"的**首要结构手段**。
+2. **TMEM 布局**:accumulator(C 的部分和)不落在寄存器,而是驻留在 **TMEM**(Blackwell 新增的 Tensor Memory),tcgen05 的操作数/累加器直接读写 TMEM。好处:寄存器压力大减 → 单 CTA 能塞更大的 Q/K/V tile;代价:TMEM 容量有限、且 TMEM↔寄存器/共享的搬运要显式管理(类似 Hopper 的 smem,但更贴近 MMA 单元)。
+3. **软 exp + 软 softmax rescale(砍 non-matmul 的核心)**:Hopper 上 softmax 的 exp 由特殊函数单元算(慢,见 §3.4 的 exp≈3.9 TFLOPS),FA4 用 **软件多项式近似 exp(软 exp)** 放进普通 FP 流水线;同时把 online softmax 的 rescale 做成**条件触发**(soft rescale)——不是每块都 rescale,而是用 running max 的差值判断是否越过阈值才 rescale(类比 FlashMLA sparse 内核的 RESCALE_THRES,见 [deepseek-infra FlashMLA](../../deepseek-infra/concepts/flashmla.md))。二者把原本昂贵的 non-matmul 降到最低,让"算满"进一步逼近 GEMM。
+4. **与前代的对应关系**:FA1 的"搬得少"(tiling/online softmax)、FA2 的"算得满"(work partitioning)、FA3 的"算搬同时"(WGMMA/TMA 异步)在 FA4 上全部延续,只是载体换成 Blackwell 的 tcgen05/TMEM/2-CTA——**主线不变,硬件载体换代**。dtype 走 BF16(1613 TFLOPS)而非 FP16,因为 Blackwell 数据中心路径以 BF16 为主。
 
 > 一句话:FA1 解决"少搬数据"(IO-optimal);FA2+ 解决"算得更满"(并行/利用率/软硬件特性)。两者都在 FlashAttention 家族里层层叠加,FA4 把这条主线延伸到 Blackwell。
 

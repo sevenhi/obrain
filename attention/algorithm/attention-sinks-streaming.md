@@ -81,7 +81,7 @@ def get_slim_paged_cache(cache, sink_size=4, recent_size=1020):
 # 模型前向时 position_ids = torch.arange(cache_len)  # cache 内编号!
 ```
 
-官方仓库 `mit-han-lab/streaming-llm`(HuggingFace Transformers 接口,支持 Llama-2/MPT/Falcon/Pythia);TensorRT-LLM、HF Transformers 主线均已内置(项目页 News 记录:2023-12 HF 集成、2024-01 TensorRT-LLM 集成);SGLang 早期版本曾支持,现主线已移除(server_args 无 attention-sink 参数),以官方文档为准。
+官方仓库 `mit-han-lab/streaming-llm`(HuggingFace Transformers 接口,支持 Llama-2/MPT/Falcon/Pythia);TensorRT-LLM、HF Transformers 主线均已内置(项目页 News 记录:2023-12 HF 集成、2024-01 TensorRT-LLM 集成);SGLang 主线仍支持 attention sink(sinks kwarg / learnable sink / speculative draft sink 等多个 backend),以官方文档为准。
 
 ### 2.3 预训练侧改进:learnable sink token
 
@@ -139,7 +139,7 @@ window attention 在长流上输出接近随机;StreamingLLM 追平逐样本 one
 - **sink 数量**:默认 4 个;若模型预训练带统一 BOS(或以 sink token 训过),1 个够。
 - **位置编码**:必须按 cache 内槽位重编号;RoPE 要存旋转前的 K。用绝对位置编码的模型不适用。
 - **别把 StreamingLLM 当上下文扩展卖**:论文自己强调"efficiently generates coherent text from tokens within the KV cache without extending the LLMs' context length"。
-- **与 vLLM 的关系**(跨域,见 [`vllm/concepts/paged-attention.md`](../../vllm/concepts/paged-attention.md)):vLLM 用分页解决 KV cache 的**碎片与利用率**(能装下就全保留,支持 prefix caching),StreamingLLM 解决**装不下时逐出谁**——sink+recent 的逐出策略与 PagedAttention 的 block 管理正交,服务引擎做长会话常驻时可组合(固定 sink block 不回收 + rolling block LRU)。vLLM 主线未内置 StreamingLLM 式逐出,但 TensorRT-LLM/HF 已内置(SGLang 早期版本曾支持,现主线已移除,以官方文档为准)。
+- **与 vLLM 的关系**(跨域,见 [`vllm/concepts/paged-attention.md`](../../vllm/concepts/paged-attention.md)):vLLM 用分页解决 KV cache 的**碎片与利用率**(能装下就全保留,支持 prefix caching),StreamingLLM 解决**装不下时逐出谁**——sink+recent 的逐出策略与 PagedAttention 的 block 管理正交,服务引擎做长会话常驻时可组合(固定 sink block 不回收 + rolling block LRU)。vLLM 主线未内置 StreamingLLM 式逐出,但 TensorRT-LLM/HF 已内置(SGLang 主线仍支持 attention sink:sinks kwarg / learnable sink / speculative draft sink 等多个 backend,以官方文档为准)。
 - **量化视角的旁证**:sink 与量化 outlier 同源(SmoothQuant/AWQ 观察到的激活离群值),都指向"softmax 和为 1 的约束制造了少数极端 token"——见 [`quantization/`](../../quantization/index.md) 域;SoftMax-off-by-One 是同一根因的 softmax 侧修法,但本论文实验证明它不如显式 sink token。
 
 ## 溯源

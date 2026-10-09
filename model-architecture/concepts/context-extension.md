@@ -99,7 +99,7 @@ r_d = L / lambda_d                       # 该维度在训练窗口内转了几�
 gamma_d = clip((r_d - alpha) / (beta - alpha), 0, 1)   # alpha=1, beta=32 (Llama 系)
 theta_new_d = (1 - gamma_d) * theta_d / s + gamma_d * theta_d
 # 温度:q,k 的 RoPE 输出乘 sqrt(t);论文拟合 t ≈ 0.1·ln(s) + 1
-#    (s=16 时 √t ≈ 1.17,即 logit 放大约 17%)
+#    (s=16 时 √t ≈ 1.13,即 logit 放大约 13%)
 ```
 
 官方实现与 checkpoint:[github.com/jquesnelle/yarn](https://github.com/jquesnelle/yarn)(Llama-2 7B/13B 的 64k/128k YaRN 版权重)。HF `rope_scaling={"type": "yarn", "factor": s}`。

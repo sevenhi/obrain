@@ -73,7 +73,7 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
 ## 相关条目(跨域互链)
 
 - **[`model-architecture/`](../model-architecture/index.md)**:LLM 整体架构域(LLaMA 三件套/位置编码演进/GQA/训练哲学),自本域 llama-architecture 篇扩展而来;attention 是其中被"改进定型"的组件,机制基础仍在本域。
-- **[`vllm/`](../vllm/index.md)**:StreamingLLM(逐出谁)与 PagedAttention/KV cache 分页(装得下就全留,见 [`vllm/concepts/paged-attention.md`](../vllm/concepts/paged-attention.md))正交互补——长上下文/常驻流式服务的两个半边;vLLM 未内置 sink 逐出,TensorRT-LLM/HF 已内置(SGLang 曾支持,现主线已移除)。vLLM 集成的注意力内核即本域 FA 谱系。
+- **[`vllm/`](../vllm/index.md)**:StreamingLLM(逐出谁)与 PagedAttention/KV cache 分页(装得下就全留,见 [`vllm/concepts/paged-attention.md`](../vllm/concepts/paged-attention.md))正交互补——长上下文/常驻流式服务的两个半边;vLLM 未内置 sink 逐出,TensorRT-LLM/HF 已内置(SGLang 主线仍支持 attention sink:sinks kwarg / learnable sink / speculative draft sink 等多个 backend)。vLLM 集成的注意力内核即本域 FA 谱系。
 - **[`quantization/`](../quantization/index.md)**:SpAtten progressive quantization(attention 输入 MSB/LSB)与 LLM 权重量化(SpQR/GPTQ/AWQ)是量化谱系的两侧;FA3 的 FP8 block-quantize 是"量化进 attention kernel"的实例;attention sink 与量化 outlier 同源(softmax 和为 1 制造极端 token)。
 - **[`cutlass/`](../cutlass/index.md)**:FA 内核的底座(FA2/FA3 基于 CUTLASS 3.x 构建);本域 SpAtten 代表"绕开通用 GEMM 库造专用 attention 硬件"的对照路线。
 - **[`computer-vision/`](../computer-vision/index.md)**:NeRF/TRT-ViT 的「访存而非算力是瓶颈」判断,与本域 FA 的 IO-aware 分析同一方法论。
@@ -94,7 +94,7 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
 - 为什么慢:标准 attention 中 `S = Q@Kᵀ·scale`、`P = softmax(S)` 都是 N×N 矩阵,需写入 HBM 再读回;N=8192、d=128 时 S 占 ~128MB,远超 GPU SRAM(~192KB)。**瓶颈是内存搬运,不是计算**;
 - IO 复杂度:标准 attention Θ(Nd + N²)(元素访问)→ FlashAttention **Θ(N²d²/M)**(M=SRAM 容量),显存 O(N²)→O(N),且不损失精度(精确);
 - FA2 快 2× 的来源:减 non-matmul FLOPs、warp 按 Q 行切分免通信、序列维并行(切 Q 免归并,切 KV 才要 split-K 归并);
-- FA3(H100):异步 WGMMA + TMA + softmax/matmul/load 重叠 pipeline + FP8;论文口径 BF16 相对 FA2 加速 1.5-2×,FP16/BF16 前向最高 740 TFLOPS(≈H100 dense 峰值的 75%);
+- FA3(H100):异步 WGMMA + TMA + softmax/matmul/load 重叠 pipeline + FP8;论文口径 BF16 相对 FA2 加速 1.5-2×,FP16 前向最高 740 TFLOPS(≈H100 dense 峰值的 75%);
 - 显存 O(N) 的胜利来自"前向只存 LSE 统计量 + 反向重算"(约 2× 重复 FLOPs 换长序列可行)。
 
 ## 相关论文(精选)

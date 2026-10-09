@@ -3,7 +3,7 @@ title: CUTLASS 构建与上手:从 cmake 到第一个 kernel
 type: howto
 tags: [cutlass, build, cmake, collectivebuilder, cute-dsl, examples, profiler]
 source:
-  - "web: NVIDIA CUTLASS Quickstart | https://docs.nvidia.com/cutlass/4.7.0/media/docs/cpp/quickstart.html"
+  - "web: NVIDIA CUTLASS Quickstart | https://docs.nvidia.com/cutlass/latest/media/docs/cpp/quickstart.html"
   - "code: examples/49_hopper_gemm_with_collective_builder / 71_blackwell_gemm_with_collective_builder | github.com/NVIDIA/cutlass"
   - "web: NVIDIA Tech Blog — CUTLASS 3.x abstractions (CollectiveBuilder 用法) | https://developer.nvidia.com/blog/cutlass-3-x-orthogonal-reusable-and-composable-abstractions-for-gemm-kernel-design/ (2025-07)"
   - "web: 杨远航《CUTLASS 笔记》系列(导读 + Minimal GEMM,§0/§3.6 主源)| https://www.zhihu.com/column/c_1938664963049763058 (连载中,基于 CUTLASS 4.1.0,目录为 2025 连载快照;微信公众号为转载载体,以知乎专栏为准)"
@@ -333,9 +333,9 @@ make cutlass_profiler -j16
 
 ## 9. 溯源
 
-> 版本 pin 说明:本篇正文链接统一 pin 4.7.0 docs(快照稳定、不随 latest 漂移);需最新版时把 URL 中 `4.7.0` 换成 `latest`。
+> 版本说明:本篇官方文档链接统一用 `latest`(跟随最新版,现为 v4.8.0);需查历史版本时把 URL 中 `latest` 换成如 `4.7.0`。
 
-- Quickstart / 初始构建步骤: https://docs.nvidia.com/cutlass/4.7.0/media/docs/cpp/quickstart.html
+- Quickstart / 初始构建步骤: https://docs.nvidia.com/cutlass/latest/media/docs/cpp/quickstart.html
 - CollectiveBuilder 示例与构建: `examples/49_hopper_gemm_with_collective_builder` / `71_blackwell_gemm_with_collective_builder`
 - 3.x blog(CollectiveBuilder 代码语境): https://developer.nvidia.com/blog/cutlass-3-x-orthogonal-reusable-and-composable-abstractions-for-gemm-kernel-design/
 - §0(三条路径 / Why CUTLASS / 学习资源)与 §3.6(Minimal GEMM / binding / 精度验证 / CUDA event vs ncu 计时 / PTX-SASS): 杨远航《CUTLASS 笔记》导读 + 笔记(1),知乎专栏 https://www.zhihu.com/column/c_1938664963049763058 (基于 CUTLASS 4.1.0,2025 连载快照;微信公众号为转载载体,以知乎专栏为主源;代码仓库 cutlass-notes)

@@ -27,6 +27,7 @@ date: 2026-09
   2. **FlashMLA 昇腾版 2026-09-30 发布、已合入 main(原开发分支 `20260930-ascend-open-source`)且是 breaking change**:移除 Hopper 支持、移除 V3/V3.2/V4.0 旧模型、改 FP8/FP4 KV cache 格式,只服务 V4.1;旧模型切旧 commit `ba89a346`。
   3. **TileKernels 昇腾支持从 PyPI v2.0.0 起**,但 main README 滞后(仍只写 NVIDIA SM90/SM100)。
 - **术语(本域核定拼写;标「待核」者为一手库未附链接)**:fractal(分形**布局**)、MAD(matrix multiply-add 原语)、UBMEM、URMA、HCCL(集合通信)、HCOMM(控制面 API,**待核/据昇腾官方资料**)、bisheng(毕昇编译器)、DeepJIT(运行时 JIT)、torch_npu、**CANN 9.2.0**(DeepGEMM README 原文 "9.20" 即此版本,不写 9.20)、**950PR ≠ 950DT**(同一 950 Die 两款型:PR=Prefill&Recommendation、DT=Decode&Training,**待核/据昇腾官方资料**)。
+- **性能数字单源标注**:本域各算子性能数字(DeepGEMM 99.8%/856/862/850 TFLOPS、DeepEP 90–95% 带宽、FlashMLA 410/360、TileLang FA/mHC 比值)均出自各仓 README/deep-dive 一手源,暂无独立第三方或硬件实测复核,引用时保留原始口径、待硬件实测复核。
 
 ### 六件套 ↔ 上游映射表(已核实)
 

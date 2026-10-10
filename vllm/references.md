@@ -55,3 +55,9 @@ date: 2026-09
 - llama.cpp — https://github.com/ggml-org/llama.cpp
 - LMDeploy — https://lmdeploy.readthedocs.io/en/latest/
 - prefill-chunking-profiler — https://github.com/JohnScheuer/prefill-chunking-profiler
+
+### PD 分离(2026-10 补)
+
+- DistServe (OSDI 2024) — https://arxiv.org/abs/2401.09670
+- Splitwise (ISCA 2024) — https://arxiv.org/abs/2401.13081
+- Mooncake — https://arxiv.org/abs/2407.00079

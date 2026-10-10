@@ -63,3 +63,9 @@ date: 2026-10
 - tile-kernels(含 v2.0.0 Ascend 支持说明)—— https://pypi.org/project/tile-kernels/
 - tilelang(上游 DSL)—— https://pypi.org/project/tilelang/
 - smallpond — https://pypi.org/project/smallpond/
+
+### 训练并行(2026-10 补)
+
+- DeepSeek-V3 Technical Report — https://arxiv.org/abs/2412.19437
+- DeepSeek-V3 仓库 — https://github.com/deepseek-ai/DeepSeek-V3
+- DualPipe — https://github.com/deepseek-ai/DualPipe

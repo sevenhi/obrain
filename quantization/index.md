@@ -31,8 +31,9 @@ date: 2026-10
 | [KV Cache 量化](concepts/kv-cache-quantization.md) | concept | 把运行时 KV cache 从权重压缩问题单独拆出:按 token/channel 分组、对称/非对称量化、混合精度与长上下文权衡 |
 | [2-bit 权重量化前沿:QuIP# / AQLM](concepts/two-bit-weight-frontier.md) | concept | ≤4-bit 权重 SOTA:QuIP# 旋转消 outlier+E8 格码+fine-tune,AQLM 多码本加和;3-bit 近无损、2-bit 有可感知退化(arXiv 2402.04396 / 2401.06118) |
 | [KV cache 极低比特前沿:KVQuant / KVTuner](concepts/kvquant-kvtuner-frontier.md) | concept | KVQuant 3-bit 近无损(Pre-RoPE+NUQ+sparse,10M context);KVTuner layer-wise 精度对搜索(≈3.25-bit 近无损,+21.25% 吞吐) |
+| [FP8/FP4 硬件原生格式](concepts/fp8-fp4-formats.md) | concept | E4M3/E5M2/E2M1 位布局与 scale 粒度(per-tensor/token/block 128×128)、Delayed vs JIT scaling;NVFP4/MXFP4/MXFP8 与 Blackwell tcgen05 路径;与 QuIP#/AQLM 算法压缩分野;训练 V3 recipe vs 推理 FP8 KV |
 
-**共同心法(七篇一条线)**:压缩误差不是均匀分布的——HyQuant 按 attention mass 分精度、SpQR 按敏感度分位宽、LSTM 篇按谱结构(核范数)分压缩方式、GPTQ/AWQ/SmoothQuant 与 KV cache 篇按误差补偿/激活敏感/离群迁移分预算、QuIP#/AQLM 与 KVQuant/KVTuner 用旋转消 outlier / 多码本加和 / layer-wise 精度对把 2-bit 联合压缩推进到极限;**都是"把预算花在杠杆点上",而非全局均匀砍**。
+**共同心法(八篇一条线)**:压缩误差不是均匀分布的——HyQuant 按 attention mass 分精度、SpQR 按敏感度分位宽、LSTM 篇按谱结构(核范数)分压缩方式、GPTQ/AWQ/SmoothQuant 与 KV cache 篇按误差补偿/激活敏感/离群迁移分预算、QuIP#/AQLM 与 KVQuant/KVTuner 用旋转消 outlier / 多码本加和 / layer-wise 精度对把 2-bit 联合压缩推进到极限;**都是"把预算花在杠杆点上",而非全局均匀砍**。
 
 ## 相关条目(跨域互链)
 
@@ -43,7 +44,7 @@ date: 2026-10
 ## 扩展位(待补充候选)
 
 - 已补充:GPTQ / AWQ / SmoothQuant(算法侧统一篇)、KV cache 量化(KIVI + vLLM 工程视角)、2-bit 权重前沿(QuIP# / AQLM)、KV cache 极低比特前沿(KVQuant / KVTuner)。
-- 待补充(2026-10 全库审查):FP8/FP4/NVFP4/MXFP4 格式篇(E4M3/E5M2/block-wise/DeepSeek 128×128);BitsAndBytes/NF4/QLoRA 机制篇;GGUF/k-quant/imatrix 体系;激活量化独立篇(W4A8/LLM.int8() 离群值);QuaRot/SpinQuant/QTIP 旋转家族;W4A16 vs W8A8 kernel 成熟度(Marlin/Machete);BitNet b1.58 training-aware 对比;各 GPU 架构实测基准。
+- 已补:FP8/FP4 硬件原生格式(2026-10)。待补充:BitsAndBytes/NF4/QLoRA 机制篇;GGUF/k-quant/imatrix 体系;激活量化独立篇(W4A8/LLM.int8() 离群值);QuaRot/SpinQuant/QTIP 旋转家族;W4A16 vs W8A8 kernel 成熟度(Marlin/Machete);BitNet b1.58 training-aware 对比;各 GPU 架构实测基准。
 
 ## 溯源
 

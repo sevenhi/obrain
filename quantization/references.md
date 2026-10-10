@@ -43,3 +43,9 @@ date: 2026-09
 - vLLM Quantization — https://docs.vllm.ai/en/latest/features/quantization/
 - vLLM quantized KV cache — https://docs.vllm.ai/en/latest/features/quantization/quantized_kvcache/
 - ICLR 2024 SpQR poster(发表状态) — https://iclr.cc/virtual/2024/poster/18686
+
+### FP8/FP4 格式(2026-10 补)
+
+- DeepSeek-V3 Technical Report — https://arxiv.org/abs/2412.19437
+- OCP Microscaling Formats (MX) Specification — https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf
+- NVIDIA Transformer Engine — https://docs.nvidia.com/deeplearning/transformer-engine/

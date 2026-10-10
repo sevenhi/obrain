@@ -27,13 +27,13 @@ obrain/
 | 领域 | 文件夹 | 一句话说明 | 最近更新 |
 |---|---|---|---|
 | Attention | [`attention/`](attention/index.md) | 注意力机制两层结构:算法层 algorithm/(AIAYN/StreamingLLM/LASER+SpAtten/MEGABYTE/Rabe&Staats,5 篇)+ 实现层 implementation/(FA 四代合成篇,1 篇) | 2026-09 |
-| Model Architecture | [`model-architecture/`](model-architecture/index.md) | 通用 LLM 架构:归一化/激活/位置编码演进 + 训练哲学(Chinchilla/推理预算)+ GPT→LLaMA→Llama 2/3 定型线;MHA/MQA/GQA 注意力头谱系;RoPE 上下文扩展(PI/NTK/YaRN/LongRoPE);开源模型谱系与 MoE(Mistral/DeepSeek/Qwen/RWKV + 2025-26 续篇)+ DeepSeek 网络结构演进四篇(演进主篇 + V1/DeepSeekMoE/V2 + V3 + V3.2/R1 逐代剖析)(9 篇) | 2026-10 |
+| Model Architecture | [`model-architecture/`](model-architecture/index.md) | 通用 LLM 架构:归一化/激活/位置编码演进 + 训练哲学(Chinchilla/推理预算)+ GPT→LLaMA→Llama 2/3 定型线;MHA/MQA/GQA 注意力头谱系;RoPE 上下文扩展(PI/NTK/YaRN/LongRoPE);开源模型谱系与 MoE(Mistral/DeepSeek/Qwen/RWKV + 2025-26 续篇)+ DeepSeek 网络结构演进四篇 + 混合线性注意力/SSM(Mamba/RWKV/Qwen3-Next)(10 篇) | 2026-10 |
 | CUTLASS | [`cutlass/`](cutlass/index.md) | 高性能 GEMM 模板库与 CuTe DSL:造内核的库(concepts 8 + frameworks 2,共 10 篇) | 2026-10 |
 | GPU 随机数生成 | [`gpu-rng/`](gpu-rng/index.md) | counter-based(Philox)与 MTGP 两条 GPU PRNG 路线 + cuRAND 落地(1 篇) | 2026-09 |
-| 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:PTQ(GPTQ/AWQ/SmoothQuant)、KV cache 量化、稀疏量化混合(SpQR)、2-bit 前沿(QuIP#/AQLM)、KV 极低比特(KVQuant/KVTuner)+ HyQuant 混合精度 + 低秩/剪枝路线(7 篇,论文来源通过公开链接追溯) | 2026-10 |
-| vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构、生产部署、观测与引擎选型、投机解码、注意力后端选型等(12 篇) | 2026-10 |
+| 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:PTQ(GPTQ/AWQ/SmoothQuant)、KV cache 量化、稀疏量化混合(SpQR)、2-bit 前沿(QuIP#/AQLM)、KV 极低比特(KVQuant/KVTuner)、HyQuant 混合精度、FP8/FP4 硬件原生格式 + 低秩/剪枝路线(8 篇,论文来源通过公开链接追溯) | 2026-10 |
+| vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构、生产部署、观测与引擎选型、投机解码、注意力后端选型、PD 分离等(13 篇) | 2026-10 |
 | Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核、ONNX/TensorRT 部署(5 篇) | 2026-09 |
-| DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 算力基础设施栈:昇腾六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ 移植原则(ascend-port-principles)+ NVIDIA 原版对照(DeepGEMM/DeepEP)+ 并行/工具/存储(DeepJIT/Engram/DualPipe/EPLB+LPLB/ESFT/open-infra-index/3FS/smallpond)+ 部署清单(18 篇) | 2026-10 |
+| DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 算力基础设施栈:昇腾六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ 移植原则(ascend-port-principles)+ NVIDIA 原版对照(DeepGEMM/DeepEP)+ 并行/工具/存储(DeepJIT/Engram/DualPipe/EPLB+LPLB/ESFT/open-infra-index/3FS/smallpond)+ 训练并行编排 V3 + 部署清单(19 篇) | 2026-10 |
 | DeepSeek Vision | [`deepseek-vision/`](deepseek-vision/index.md) | DeepSeek 多模态/视觉家族:图文理解(VL/VL2)、视觉压缩(OCR/OCR-2)、统一理解+生成(Janus 系列)、图生 3D(DreamCraft3D)(4 篇) | 2026-10 |
 | DeepSeek Models | [`deepseek-models/`](deepseek-models/index.md) | DeepSeek 领域模型谱系:数学推理(Math/Math-V2,GRPO/自验证)、定理证明(Prover-V1/V1.5/V2,Lean 4)、代码智能(Coder/Coder-V2,FIM/MoE)、MoE 基座 + agent 工具 deepseek-harness(5 篇);与 model-architecture 网络结构篇互链 | 2026-10 |
 

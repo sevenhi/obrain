@@ -88,6 +88,7 @@ date: 2026-10
 | DeepJIT | [concepts/deepjit.md](concepts/deepjit.md) | xPU kernel 运行时 JIT(CUDA + 昇腾),header-only;缓存键穷尽 source/include/编译版本;支持跨节点共享缓存 | ✅ 已入库 |
 | Engram | [concepts/engram.md](concepts/engram.md) | 条件记忆:O(1) N-gram 查找,与 MoE 互补的稀疏轴;确定性寻址可 offload 到 host memory;27B 全面领先 iso-param MoE | ✅ 已入库 |
 | DualPipe | [concepts/dualpipe.md](concepts/dualpipe.md) | 双向流水线并行,V3/R1 训练;气泡减半(参数 2× 换吞吐),DualPipeV 设备数减半 | ✅ 已入库 |
+| 训练并行编排 V3 | [concepts/training-parallelism-v3.md](concepts/training-parallelism-v3.md) | 671B MoE 训练总账:PP16×EP64×ZeRO-1(不用 TP)+ DualPipe/DeepEP 重叠 + 显存预算;与 Megatron 3D 并行对照 | ✅ 已入库(2026-10) |
 | EPLB + LPLB | [concepts/lplb-epb-load-balancing.md](concepts/lplb-epb-load-balancing.md) | 专家并行负载均衡:EPLB 静态冗余专家复制(已部署)、LPLB 动态线性规划逐 batch 分流(IPM+cuSolverDx) | ✅ 已入库 |
 | ESFT | [concepts/esft.md](concepts/esft.md) | 专家特化微调:打分→选任务相关 expert→只训相关 expert + adapter(EMNLP 2024) | ✅ 已入库 |
 | open-infra-index | [concepts/open-infra-index.md](concepts/open-infra-index.md) | DeepSeek 开源基础设施总索引:开源周一天一 repo + 论文 + V3/R1 线上数据(73.7k/14.8k tok/s) | ✅ 已入库 |
@@ -113,7 +114,7 @@ date: 2026-10
 
 ## 扩展位(2026-10 全库审查待补)
 
-- training-parallelism-v3(V3 完整 3D 并行编排 PP16/EP64/ZeRO-1)
+- ~~training-parallelism-v3~~(已入库)
 - fp8-training-stack(细粒度 scaling、UE8M0、训练侧 DeepGEMM)
 - inference-system-v3-r1(PD 分离、跨节点 EP 批扩展、73.7k/14.8k 与 545% 口径)
 - profiling-overlap(profile-data 仓库、nsight/bench_msprof 方法论)

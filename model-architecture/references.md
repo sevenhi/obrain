@@ -78,3 +78,13 @@ date: 2026-09
 ## 推理引擎(跨域)
 
 见 vllm 域:[paged-attention](../vllm/concepts/paged-attention.md)(KV cache 分页)、[continuous-batching](../vllm/concepts/continuous-batching.md)、[quantization-gptq-awq-fp8](../vllm/concepts/quantization-gptq-awq-fp8.md)(KV/权重量化)。
+
+### 混合线性注意力/SSM(2026-10 补)
+
+- Mamba — https://arxiv.org/abs/2312.00752
+- Mamba-2 (SSD) — https://arxiv.org/abs/2405.21060
+- RWKV — https://arxiv.org/abs/2305.13048
+- Griffin — https://arxiv.org/abs/2402.19427
+- Jamba — https://arxiv.org/abs/2403.19887
+- Gated DeltaNet — https://arxiv.org/abs/2412.06464
+- Linear Transformer (fast weights) — https://arxiv.org/abs/2102.11174

@@ -39,6 +39,7 @@ date: 2026-10
 | [deepseek-arch-v1-moe-v2](concepts/deepseek-arch-v1-moe-v2.md) | concept(子篇) | 奠基段:V1(7B MHA/67B GQA)+ DeepSeekMoE(细粒度+共享专家)+ V2(MLA 低秩 KV + 解耦 RoPE + 160 专家 MoE,双主线首次合流);MHA/GQA/MLA KV cache 量化 | ✅ 已入库(2026-10) |
 | [deepseek-arch-v3](concepts/deepseek-arch-v3.md) | concept(子篇) | V3:MLA 规模化 + 256 专家 MoE(top-8,sigmoid 路由)+ MTP 多 token 预测 + aux-loss-free 负载均衡 + FP8;671B/37B、2.788M H800 小时训练 | ✅ 已入库(2026-10) |
 | [deepseek-arch-v32-r1](concepts/deepseek-arch-v32-r1.md) | concept(子篇) | V3.2(DSA 闪电索引器 + top-2048 稀疏选择,破 O(L²)→O(L·k))+ R1(无新结构,GRPO RL 推理时扩展);V3→V3.2 代码级 diff | ✅ 已入库(2026-10) |
+| [hybrid-linear-attention](concepts/hybrid-linear-attention.md) | concept | 混合线性注意力/SSM 第三主轴:核化线性注意力、RWKV 时间混合、Mamba/S6 选择性与 Mamba-2/SSD 对偶、Griffin/Jamba 混合层比、Gated DeltaNet→Qwen3-Next;训练并行 vs O(1) 状态两难与 hybrid 甜点 | ✅ 已入库(2026-10) |
 
 ## 关键事实速记
 
@@ -62,7 +63,7 @@ date: 2026-10
 
 ## 扩展位(2026-10 全库审查待补)
 
-- hybrid-linear-attention(Mamba-2/Griffin/Jamba/RWKV-7/Gated DeltaNet/Qwen3-Next——第三条架构主轴)
+- ~~hybrid-linear-attention~~(已入库)
 - MoE 路由对照(expert-choice/capacity/token dropping vs aux-loss-free)
 - 训练配方 2025-26(inference-aware scaling ~40+ tokens/param、WSD/muon、FP8 recipe)
 - context-extension 增量(ABF/相位重置、Llama 3.1/4 原生长上下文、10M 窗口)

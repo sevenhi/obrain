@@ -30,7 +30,7 @@ date: 2026-09
 - **激活**:ReLU(原 Transformer FFN)→ GeLU(GPT/BERT)→ SwiGLU(PaLM/LLaMA,门控乘性,经验性更优);
 - **位置编码**:正弦绝对(原 Transformer)→ learned 绝对(GPT-2/3)→ RoPE 相对旋转(LLaMA/GPT-NeoX,可外推)→ ALiBi 线性偏置(另一条外推路线,零参数);
 - **训练哲学**:Kaplan 堆参数 → Chinchilla 算力最优(~20 tokens/参数)→ LLaMA 推理预算最优(7B×1T tokens,~143 tokens/参数);
-- **演进线**:GPT-3(175B,learned PE,post-norm 混用)→ LLaMA(7-65B,三件套,公开数据)→ Llama 2(2T tokens,4k context,70B 上 GQA)→ Llama 3(15T tokens,128k context,8 KV 头 GQA,tiktoken 128K vocab,RoPE θ=500k)——架构本身几乎不变,**收益主要来自数据规模与质量**(Llama 3 论文自述)。
+- **演进线**:GPT-3(175B,learned PE,pre-LN(GPT-2 引入))→ LLaMA(7-65B,三件套,公开数据)→ Llama 2(2T tokens,4k context,70B 上 GQA)→ Llama 3(15T tokens,128k context,8 KV 头 GQA,tiktoken 128K vocab,RoPE θ=500k)——架构本身几乎不变,**收益主要来自数据规模与质量**(Llama 3 论文自述)。
 
 ---
 

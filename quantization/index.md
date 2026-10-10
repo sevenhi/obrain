@@ -11,7 +11,7 @@ source:
   - "pdf: SmoothQuant | arXiv:2211.10438"
   - "pdf: KIVI | arXiv:2402.02750"
   - "web: vLLM Quantization | https://docs.vllm.ai/en/latest/features/quantization/ | 阅读日期 2026-09-27"
-date: 2026-09
+date: 2026-10
 ---
 
 # 量化与压缩
@@ -43,7 +43,7 @@ date: 2026-09
 ## 扩展位(待补充候选)
 
 - 已补充:GPTQ / AWQ / SmoothQuant(算法侧统一篇)、KV cache 量化(KIVI + vLLM 工程视角)、2-bit 权重前沿(QuIP# / AQLM)、KV cache 极低比特前沿(KVQuant / KVTuner)。
-- 待补充:不同 GPU 架构上的实测基准,以及 BitNet b1.58 等 training-aware 低比特家族的系统对比。
+- 待补充(2026-10 全库审查):FP8/FP4/NVFP4/MXFP4 格式篇(E4M3/E5M2/block-wise/DeepSeek 128×128);BitsAndBytes/NF4/QLoRA 机制篇;GGUF/k-quant/imatrix 体系;激活量化独立篇(W4A8/LLM.int8() 离群值);QuaRot/SpinQuant/QTIP 旋转家族;W4A16 vs W8A8 kernel 成熟度(Marlin/Machete);BitNet b1.58 training-aware 对比;各 GPU 架构实测基准。
 
 ## 溯源
 

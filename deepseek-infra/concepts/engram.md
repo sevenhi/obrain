@@ -97,7 +97,7 @@ def engram_layer(x, tokens):
 - **N-gram 键由 token 序列唯一决定**:是确定性寻址,不是学出来的 router——别和 DeepSelect/MoE gating 的 soft routing 混淆。
 - **「近零推理开销」的前提是确定性寻址 + 预取**:靠 host-memory offload + 运行时预取实现;如果实现丢了这个特性,记忆表塞回 GPU 显存就失去了系统红利。
 - **仓库是演示**:生产内核见 TileKernels `engram/`(融合 RMSNorm + 梯度归约)与 DeepEP `EngramBuffer`(RDMA 多 GPU/CPU 层查找),别把 demo 当生产。
-- **论文日期/号**:arXiv **2601.07372**(2026-01 提交),ACL 2026 long(aclanthology 2026.acl-long.226);任务提示中无 Engram 论文号冲突,以 2601.07372 为准。
+- **论文日期/号**:arXiv **2601.07372**(2026-01 提交),ACL 2026 long(aclanthology 2026.acl-long.226);已排除错误候选论文号,以 2601.07372 为准。
 
 ---
 

@@ -105,7 +105,7 @@ V4-Flash(轻量,290B)与 V4-Pro(旗舰,1.6T)都是 MoE(`num_experts_per_tok=6`)+
 | **DeepSeek-V3.2** | 2025-12 | 685.4B/— | 163840 | MLA + **DSA 稀疏**(index_topk 2048) | top-8 | MIT |
 | DeepSeek-V4-Flash | 2026-04 | 290.9B/— | 1048576 | MLA(KV 头=1) | top-6 | MIT |
 | DeepSeek-V4-Pro | 2026-04 | 1.6T/— | 1048576 | MLA(KV 头=1) | top-6 | MIT |
-| Qwen3-32B | 2025-04 | 36.5B dense | — | GQA | — | Qwen 许可 |
+| Qwen3-32B | 2025-04 | 32.8B dense | — | GQA | — | apache-2.0 |
 | Qwen3.5-122B-A10B | 2026-02 | 125B/10B | — | GQA | MoE | Qwen 许可 |
 | Qwen3.8-2.4T-A95B | 2026-08 | 2.4T/95B | — | GQA | 512 专家 top-10 | Qwen 许可 |
 | Qwen3-Coder-Next | 2026-01 | — | — | GQA | — | Apache 2.0 |

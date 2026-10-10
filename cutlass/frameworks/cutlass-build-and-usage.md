@@ -316,7 +316,7 @@ make cutlass_profiler -j16
 | `47_ampere_gemm_universal_streamk` | Stream-K 调度 | Ampere |
 | `48_hopper_warp_specialized_gemm` | Warp-specialized kernel | Hopper |
 | `49_hopper_gemm_with_collective_builder` | **CollectiveBuilder 推荐用法** | Hopper |
-| `111_hopper_ssd` / `112_blackwell_ssd` | SSD(State Space Decomposition,SSM/Mamba 类算子) | Hopper/Blackwell |
+| `111_hopper_ssd` / `112_blackwell_ssd` | SSD(Structured State Space Duality,结构化状态空间对偶,Mamba-2/Dao-Gu 谱系的 GEMM 序列形式) | Hopper/Blackwell |
 | `examples/cute/` | CuTe 原语 C++ 教程(`tutorial/`,含通用 `sgemm_sm70`/`sgemm_sm80` 等,不只 Hopper/Blackwell) | 通用/Hopper/Blackwell |
 
 ---

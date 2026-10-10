@@ -119,11 +119,11 @@ worker 侧进入 `vllm/distributed/parallel_state.py` 的 `init_distributed_envi
 |---|---|---|---|
 | 进程模型 | 单进程单 GPU | 本机多进程(1127 行) | 跨节点 Ray actor |
 | uses_ray | False | False | True |
-| supports_pp | False | False | True |
+| supports_pp | False | True | True |
 | 部署范围 | 单卡 | 单节点多卡 | 多节点 |
 | 编排开销 | 无 | 低 | placement group + rank 重排 |
 
-**选型判断**:单卡 UniProc;单节点多卡优先 Multiproc(免 Ray 开销);跨节点才 Ray。**PP 只有在 Ray(或 mp)下才支持**(`supports_pp=True`);UniProc 单进程不支持 PP。
+**选型判断**:单卡 UniProc;单节点多卡优先 Multiproc(免 Ray 开销);跨节点才 Ray。**PP 在 Multiproc 与 Ray 下均支持**(`supports_pp=True`);仅 UniProc 单进程不支持 PP。
 
 ---
 

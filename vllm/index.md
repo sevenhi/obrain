@@ -7,7 +7,7 @@ source:
   - "code: vLLM flash-attention fork | commit 506341a143fc (2026-09-04 起)"
   - "web: vLLM 官方文档 | https://docs.vllm.ai/en/latest/ | 阅读日期 2026-09-27"
   - "web: vLLM Model Runner V2 Design Document | https://docs.vllm.ai/en/latest/design/model_runner_v2/ | 阅读日期 2026-09-27"
-date: 2026-09
+date: 2026-10
 ---
 
 # vLLM 推理引擎
@@ -66,6 +66,17 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 
 - **长上下文/流式 KV cache 算法侧**:PagedAttention 解决"cache 装得下就全留"的分页管理;**装不下时逐出谁**见 [`attention/algorithm/attention-sinks-streaming.md`](../attention/algorithm/attention-sinks-streaming.md)(StreamingLLM:attention sink + 滚窗,4M token 稳定生成)。两者正交,vLLM 主线未内置 sink 逐出(TensorRT-LLM/HF 已内置;SGLang 主线仍支持 attention sink:sinks kwarg / learnable sink / speculative draft sink 等多个 backend)。
 - **注意力内核与架构谱系**:[`attention/`](../attention/index.md)(算法/架构层 + FA 内核实现层,合并域)。
+
+## 扩展位(2026-10 全库审查待补)
+
+- 结构化输出/guided decoding(xgrammar/llguidance、grammar bitmask 与调度重叠)
+- multi-LoRA 服务(adapter 热插拔、base 共享、LoRARequest 链路)
+- PD 分离与 KV transfer(KVCacheConnector/NIXL/LMCache/Mooncake)
+- RL rollout 服务(sleep/wake、async scheduling、DP 负载均衡)
+- MoE EP/EPLB 服务侧(补 distributed-ray 目录空白)
+- KV cache 分层/卸载(CPU/NVMe、LMCache)
+- Model Runner V2 落地篇(index 警示已备)
+- production-serving 补指标名与 continuous-batching 对齐
 
 ## 溯源
 

@@ -263,7 +263,7 @@ class DeepseekV2Attention(nn.Module):
 
 **MLA 的三个设计精髓：**
 
-1. **KV 低秩压缩（省显存）**：`KV cache = c^KV_t(512维) + k_pe(64维) = 576 维/层/头`，而不是 MHA 的 `2 × 128头 × 128维`。这是 KV cache -93.3% 的来源。
+1. **KV 低秩压缩（省显存）**：`KV cache = c^KV_t(512维) + k_pe(64维) = 576 维/层(全头共享一份 latent)`，而不是 MHA 的 `2 × 128头 × 128维`。这是 KV cache -93.3% 的来源。
 2. **解耦 RoPE（Decoupled RoPE）**：若把 RoPE 直接作用在低秩压缩后的 K 上，位置信息会与「被所有头共享的压缩表示」纠缠，导致**解压时位置信息失效**。解耦做法是——把每头的 K/Q 拆成「不旋转部分 q_nope/k_nope」和「旋转部分 q_pe/k_pe」，RoPE 只作用在后者，且 k_pe 是**所有头共享的 1 头 MQA 式分量**（`k_pe.view(bsz, q_len, 1, 64)`）。位置信息因此绕过低秩瓶颈、独立存储。
 3. **Q 也低秩**（省训练参数/显存）：`q_a_proj(5120→1536) → q_b_proj(1536→128×192)`，1536 << 5120，降低激活显存。
 
@@ -400,7 +400,7 @@ class DeepseekV2MoE(nn.Module):
 - DeepSeek LLM (V1)：https://arxiv.org/abs/2401.02954 （注：任务简报中的 2302.09500 为错误 ID，指向一篇数学论文）
 - DeepSeekMoE：https://arxiv.org/abs/2401.06066
 - DeepSeek-V2：https://arxiv.org/abs/2405.04434
-- V2 一手源码：`/home/cambricon/zhanbin/obrain/.sources/deepseek/ds_hf_v2.py`（HF modeling_deepseek.py，1906 行）
+- V2 一手源码：`.sources/deepseek/ds_hf_v2.py`（HF modeling_deepseek.py，1906 行）
 - 一手 config：HF `deepseek-ai/deepseek-llm-7b-base`、`deepseek-ai/deepseek-llm-67b-base`、`deepseek-ai/deepseek-moe-16b-base`、`deepseek-ai/DeepSeek-V2` 的 config.json
 
 > 本文所有代码块结构均来自 V2 一手源码（ds_hf_v2.py）与各代 HF config.json 的真实结构，超参均为一手数值，无杜撰。

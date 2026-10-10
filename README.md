@@ -30,16 +30,16 @@ obrain/
 | Model Architecture | [`model-architecture/`](model-architecture/index.md) | 通用 LLM 架构:归一化/激活/位置编码演进 + 训练哲学(Chinchilla/推理预算)+ GPT→LLaMA→Llama 2/3 定型线;MHA/MQA/GQA 注意力头谱系;RoPE 上下文扩展(PI/NTK/YaRN/LongRoPE);开源模型谱系与 MoE(Mistral/DeepSeek/Qwen/RWKV + 2025-26 续篇)+ DeepSeek 网络结构演进四篇(演进主篇 + V1/DeepSeekMoE/V2 + V3 + V3.2/R1 逐代剖析)(9 篇) | 2026-10 |
 | CUTLASS | [`cutlass/`](cutlass/index.md) | 高性能 GEMM 模板库与 CuTe DSL:造内核的库(concepts 8 + frameworks 2,共 10 篇) | 2026-10 |
 | GPU 随机数生成 | [`gpu-rng/`](gpu-rng/index.md) | counter-based(Philox)与 MTGP 两条 GPU PRNG 路线 + cuRAND 落地(1 篇) | 2026-09 |
-| 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:PTQ(GPTQ/AWQ/SmoothQuant)、KV cache 量化、稀疏量化混合(SpQR)、2-bit 前沿(QuIP#/AQLM)、KV 极低比特(KVQuant/KVTuner)+ 低秩/剪枝路线(7 篇,论文来源通过公开链接追溯) | 2026-10 |
+| 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:PTQ(GPTQ/AWQ/SmoothQuant)、KV cache 量化、稀疏量化混合(SpQR)、2-bit 前沿(QuIP#/AQLM)、KV 极低比特(KVQuant/KVTuner)+ HyQuant 混合精度 + 低秩/剪枝路线(7 篇,论文来源通过公开链接追溯) | 2026-10 |
 | vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构、生产部署、观测与引擎选型、投机解码、注意力后端选型等(12 篇) | 2026-10 |
 | Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核、ONNX/TensorRT 部署(5 篇) | 2026-09 |
-| DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 算力基础设施栈:昇腾六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ NVIDIA 原版对照(DeepGEMM/DeepEP)+ 并行/工具/存储(DeepJIT/Engram/DualPipe/EPLB+LPLB/ESFT/open-infra-index/3FS/smallpond)+ 部署清单(18 篇) | 2026-10 |
+| DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 算力基础设施栈:昇腾六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ 移植原则(ascend-port-principles)+ NVIDIA 原版对照(DeepGEMM/DeepEP)+ 并行/工具/存储(DeepJIT/Engram/DualPipe/EPLB+LPLB/ESFT/open-infra-index/3FS/smallpond)+ 部署清单(18 篇) | 2026-10 |
 | DeepSeek Vision | [`deepseek-vision/`](deepseek-vision/index.md) | DeepSeek 多模态/视觉家族:图文理解(VL/VL2)、视觉压缩(OCR/OCR-2)、统一理解+生成(Janus 系列)、图生 3D(DreamCraft3D)(4 篇) | 2026-10 |
 | DeepSeek Models | [`deepseek-models/`](deepseek-models/index.md) | DeepSeek 领域模型谱系:数学推理(Math/Math-V2,GRPO/自验证)、定理证明(Prover-V1/V1.5/V2,Lean 4)、代码智能(Coder/Coder-V2,FIM/MoE)、MoE 基座 + agent 工具 deepseek-harness(5 篇);与 model-architecture 网络结构篇互链 | 2026-10 |
 
 ## 跨域速查
 
-- **三层依赖(CUTLASS → FA → vLLM)**:CUTLASS(造内核的库)→ attention 实现层(FlashAttention,注意力内核)→ vLLM(整机推理引擎),自底向上:vLLM 集成 FA;FA2/FA3 基于 CUTLASS 3.x 构建,升级任一层注意链路兼容。
+- **三层依赖(CUTLASS → FA → vLLM)**:CUTLASS(造内核的库)→ attention 实现层(FlashAttention,注意力内核)→ vLLM(整机推理引擎),自底向上:vLLM 集成 FA;FA3 基于 CUTLASS 3.x/CuTe 构建、FA4 走 CuTe DSL,FA2 为自研 CUDA 内核;升级任一层注意链路兼容。
 - **架构→内核→引擎全链**:[`model-architecture/`](model-architecture/index.md)(LLM 整体架构:RMSNorm/SwiGLU/RoPE/GQA)→ [`attention/`](attention/index.md)(注意力算法层 algorithm/ + FA 内核实现层 implementation/)→ [`vllm/`](vllm/index.md)(引擎)。O(n²) 账单的三条路线:内核精确解(FA 四代合成篇)、架构分解(MEGABYTE)、专用硬件稀疏(SpAtten);StreamingLLM(cache 逐出策略)与 vLLM PagedAttention(cache 分页管理)正交互补;Llama 3 的 GQA(8 KV 头)直接缩小 vLLM 管的 KV cache。LLaMA 训练的 xformers attention = Rabe & Staats 前向 + FA1 反向。
 - **量化双视角**:算法侧见 [`quantization/`](quantization/index.md),engine 侧(GPTQ/AWQ/FP8 注册分派)见 [`vllm/`](vllm/concepts/quantization-gptq-awq-fp8.md)。
 - **硬件真实效率**:CUTLASS 的 tiling/Tensor Core 机制是理解「FLOPs≠延迟」的底层;应用侧实例见 [`computer-vision/concepts/trt-vit-inference.md`](computer-vision/concepts/trt-vit-inference.md)(以 TensorRT 实测延迟为架构设计准绳,TensorRT 内部以 CUTLASS 生成 GEMM kernel)。

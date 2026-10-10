@@ -3,7 +3,7 @@ title: TRT-ViT — 以 TensorRT 延迟为准绳的 ViT/CNN 混合架构设计
 type: concept
 tags: [vit, cnn, tensorrt, inference, architecture-design, hardware-aware-nas]
 source:
-  - "pdf: TRT-ViT 论文全文 | arXiv:2205.09579v2 (ByteDance, preprint under review) | TRT-ViT: TensorRT-oriented Vision Transformer.pdf ↑primary"
+  - "pdf: TRT-ViT 论文全文 | arXiv:2205.09579v2 (ByteDance, 长期 preprint 未见正式发表) | TRT-ViT: TensorRT-oriented Vision Transformer.pdf ↑primary"
   - "web: TRT-ViT arXiv abs 页 | https://arxiv.org/abs/2205.09579 (抓取 2026-09-21)"
   - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/index.html (抓取 2026-09-21)"
   - "web: NVIDIA TensorRT GitHub | https://github.com/NVIDIA/TensorRT (抓取 2026-09-21)"
@@ -13,7 +13,7 @@ date: 2026-09
 
 # TRT-ViT:把「部署延迟」直接当架构设计的一等公民
 
-> 论文阅读笔记(arXiv:2205.09579v2,ByteDance)。**注意:这是 preprint,官方代码未开源**(GitHub bytedance/TRT-ViT 不存在,curl 实测 404);引用的数字以论文表格为准,别当成已发表定论。
+> 论文阅读笔记(arXiv:2205.09579v2,ByteDance)。**注意:这是长期 preprint(2022 挂出未见正式发表),官方代码未开源**(GitHub bytedance/TRT-ViT 不存在,curl 实测 404);引用的数字以论文表格为准,别当成已发表定论。
 
 ## TL;DR
 

@@ -32,7 +32,7 @@ date: 2026-09
 ### 1.1 时间线(架构视角)
 
 ```
-GPT-2 (2019, open-weight) / GPT-3 (2020, 闭源 API)          ← decoder-only + learned PE + GeLU + post/pre-LN 混用
+GPT-2 (2019, open-weight) / GPT-3 (2020, 闭源 API)          ← decoder-only + learned PE + GeLU + pre-LN(相对原 Transformer post-LN 的代际切换)
    └─ LLaMA (Meta, 2023-02, 权重公开)       ← 三件套定型: pre-RMSNorm + SwiGLU + RoPE;公开数据
         ├─ Llama 2 (2023-07)               ← 2T tokens,4k ctx,70B 首用 GQA-8,可商用许可
         │    └─ Llama 3/3.1 (2024)         ← 15T tokens,128K vocab(tiktoken),全系 GQA-8,
@@ -108,7 +108,7 @@ MoE 推理的痛点不是算力而是**权重搬运与专家分布**:47B/671B �
 
 | 模型 | 年份 | 参数(总/激活) | ctx | attention | 归一化 | 激活 | PE | tokenizer | 许可 |
 |---|---|---|---|---|---|---|---|---|---|
-| GPT-3 | 2020 | 175B dense | 2048 | MHA 96头 | pre-LN(混用) | GeLU | learned 绝对 | BPE 50k | 闭源 API |
+| GPT-3 | 2020 | 175B dense | 2048 | MHA 96头 | pre-LN | GeLU | learned 绝对 | BPE 50k | 闭源 API |
 | LLaMA-65B | 2023-02 | 65B dense | 2048 | MHA | pre-RMSNorm | SwiGLU | RoPE θ=10k | SP-BPE 32k | 研究许可 |
 | Llama 2 70B | 2023-07 | 70B dense | 4096 | **GQA-8** | pre-RMSNorm | SwiGLU | RoPE | SP-BPE 32k | Community(可商用) |
 | Mistral 7B | 2023-10 | 7B dense | 32768 | **GQA-8 + SWA 4096** | pre-RMSNorm | SwiGLU | RoPE | SP-BPE 32k | Apache 2.0 |

@@ -75,7 +75,7 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
 - **[`model-architecture/`](../model-architecture/index.md)**:LLM 整体架构域(LLaMA 三件套/位置编码演进/GQA/训练哲学),自本域 llama-architecture 篇扩展而来;attention 是其中被"改进定型"的组件,机制基础仍在本域。
 - **[`vllm/`](../vllm/index.md)**:StreamingLLM(逐出谁)与 PagedAttention/KV cache 分页(装得下就全留,见 [`vllm/concepts/paged-attention.md`](../vllm/concepts/paged-attention.md))正交互补——长上下文/常驻流式服务的两个半边;vLLM 未内置 sink 逐出,TensorRT-LLM/HF 已内置(SGLang 主线仍支持 attention sink:sinks kwarg / learnable sink / speculative draft sink 等多个 backend)。vLLM 集成的注意力内核即本域 FA 谱系。
 - **[`quantization/`](../quantization/index.md)**:SpAtten progressive quantization(attention 输入 MSB/LSB)与 LLM 权重量化(SpQR/GPTQ/AWQ)是量化谱系的两侧;FA3 的 FP8 block-quantize 是"量化进 attention kernel"的实例;attention sink 与量化 outlier 同源(softmax 和为 1 制造极端 token)。
-- **[`cutlass/`](../cutlass/index.md)**:FA 内核的底座(FA2/FA3 基于 CUTLASS 3.x 构建);本域 SpAtten 代表"绕开通用 GEMM 库造专用 attention 硬件"的对照路线。
+- **[`cutlass/`](../cutlass/index.md)**:FA 内核的底座(FA3 基于 CUTLASS 3.x(FA2 为自研内核) 构建);本域 SpAtten 代表"绕开通用 GEMM 库造专用 attention 硬件"的对照路线。
 - **[`computer-vision/`](../computer-vision/index.md)**:NeRF/TRT-ViT 的「访存而非算力是瓶颈」判断,与本域 FA 的 IO-aware 分析同一方法论。
 
 ## 关键事实速记
@@ -97,7 +97,9 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
 - FA3(H100):异步 WGMMA + TMA + softmax/matmul/load 重叠 pipeline + FP8;论文口径 BF16 相对 FA2 加速 1.5-2×,FP16 前向最高 740 TFLOPS(≈H100 dense 峰值的 75%);
 - 显存 O(N) 的胜利来自"前向只存 LSE 统计量 + 反向重算"(约 2× 重复 FLOPs 换长序列可行)。
 
-## 相关论文(精选)
+## 溯源
+
+> 外部链接索引见 [references.md](references.md);精选论文:
 
 - FA1: Dao et al., *FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness*, NeurIPS 2022, arXiv:2205.14135
 - FA2: Dao, *FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning*, ICLR 2024, arXiv:2307.08691

@@ -22,7 +22,7 @@ date: 2026-09
 
 **连续批处理 = 迭代级(iteration-level)调度**:不是"一批一起算完再换下一批",而是**每一步都重新调度整个 batch**——完成的请求立刻移出、等待中的新请求按预算补进来、运行中请求再续 1 个 token。配合 V1 的**统一 token 预算模型**,decode + prefill 在同一 step 混批(且 prefill 被 chunk;**V1 里 chunked prefill 条件允许即默认开启**,V0 是按模型特性条件启用),尽量(至多)把 GPU 每一轮填到 `max_num_batched_tokens`(默认 2048;低负载时填不满)。
 
-> 吞吐数字别挂错账:相对真正静态批处理(HF/transformers)FasterTransformer 的连续批处理本身就快 **14-24×**;SOSP 论文的 **2-4×** 是 **vLLM(含 PagedAttention + 连续批处理)整机** vs **Orca**(本身已是迭代级调度)的同延迟吞吐——而这 2-4× 的优势主要来自 **PagedAttention 的内存管理**,不是调度粒度本身(对 Orca 而言连续批处理已不是增量)。两个数字、两种归因,别混。
+> 吞吐数字别挂错账:相对 **HF/transformers 静态批处理** 的 14-24× 是全引擎收益;SOSP 论文的 **2-4×** 是 **vLLM(含 PagedAttention + 连续批处理)整机** vs **Orca 与 FasterTransformer**(两者均已是迭代级/高效基线)的同延迟吞吐——而这 2-4× 的优势主要来自 **PagedAttention 的内存管理**,不是调度粒度本身(对 Orca 而言连续批处理已不是增量)。两个数字、两种归因,别混。
 
 > **心法**:传统批处理让 GPU 在 decode 阶段(每请求每次只产 1 token)饿肚子;连续批处理把"喂满 GPU"变成每一轮的主动动作。调度器从"分派一次"变成"每一次都重排"——吞吐的钥匙在调度频率,不在单次批次大小。
 

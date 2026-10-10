@@ -422,7 +422,7 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
 16. **warp specialization 是 FA3 核心且是"1 producer + 2 consumer"的 pingpong**:producer/consumer 分工交错让 softmax 藏进 GEMM 影子——读 FA3 kernel 先看这层。
 17. **反向也讲 work partitioning / 也重叠**:FA2 backward 沿 KV 块切、只存 LSE(见 §5);FA3 反向靠 3-stage pipeline 重算 attention matrix 来 overlap——训练场景它同样重要。
 18. **精细化路线**:要更高利用率先看 **work partitioning**(FA1→FA2 的主改进:threadblock/warp 划分、层级并行),再看硬件特性(TMA/WGMMA/FP8)。
-19. **配合工具链**:FA2/FA3 基于 CUTLASS 3.x/CuTe(见 [cutlass 域](../../cutlass/index.md));FA4 走 CuTe DSL(Python)。
+19. **配合工具链**:FA3 基于 CUTLASS 3.x/CuTe(FA2 为自研内核)(见 [cutlass 域](../../cutlass/index.md));FA4 走 CuTe DSL(Python)。
 
 ---
 

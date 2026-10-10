@@ -34,7 +34,7 @@ date: 2026-10
 | JanusFlow | https://arxiv.org/abs/2411.07975 | JanusFlow: Harmonizing Autoregression and Rectified Flow for Unified Multimodal Understanding and Generation |
 | DreamCraft3D | https://arxiv.org/abs/2310.16818 | DreamCraft3D: Hierarchical 3D Generation with Bootstrapped Diffusion Prior |
 
-> 注:OCR/OCR-2 的 arXiv 号非 brief 里的 2410.06571 / 2507.03179(实测这两个 id 分别是数学群论、等离子体物理的无关论文)。正确号经 web_search 核对为 **2510.18234**(OCR)与 **2601.20552**(OCR-2)。
+> 注:OCR/OCR-2 的 arXiv 号注意 2410.06571 为无关论文号,已排除。正确号经 web_search 核对为 **2510.18234**(OCR)与 **2601.20552**(OCR-2)。
 
 ## 模型卡 / config 口径(HF raw)
 

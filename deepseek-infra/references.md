@@ -20,7 +20,7 @@ date: 2026-10
 - **FlashMLA(注意力内核库,昇腾版已合入 main,原开发分支 20260930-ascend-open-source)** — https://github.com/deepseek-ai/FlashMLA
 - **DeepSelect(DSA/Sampler 的 TopK 算子)** — https://github.com/deepseek-ai/DeepSelect
 
-## NVIDIA 原版对照 + 并行/工具/存储仓库(本批入库)
+## NVIDIA 原版对照 + 并行/工具/存储仓库(该批入库)
 
 - **DeepGEMM(NVIDIA 原版)** — https://github.com/deepseek-ai/DeepGEMM
 - **DeepEP(NVIDIA 原版)** — https://github.com/deepseek-ai/DeepEP
@@ -42,7 +42,7 @@ date: 2026-10
 - 《Insights into DeepSeek-V3》(ISCA25 Industry Track)— https://arxiv.org/abs/2505.09343
 - 《Fire-Flyer AI-HPC》(SC24)— https://arxiv.org/abs/2408.14158
 
-> ⚠ DeepEP **无独立 arXiv 论文**,公开引用是 GitHub 仓库(bibtex `deepep2025`);任务提示里的「arXiv 2609.01649」经 curl 实测是一篇无关的直播异常检测论文(cs.SI),不采用。
+> ⚠ DeepEP **无独立 arXiv 论文**,公开引用是 GitHub 仓库(bibtex `deepep2025`);勘误说明。
 
 ## 技术 deep-dive 文档(一手,机制细节来源)
 

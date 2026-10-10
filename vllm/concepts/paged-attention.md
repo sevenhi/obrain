@@ -14,7 +14,7 @@ date: 2026-09
 
 ## TL;DR
 
-**PagedAttention 把 KV cache 当成 OS 的虚拟内存来管**:物理块固定(默认 16 token/层),每个序列一张 **block table** 把逻辑位置映射到物理块,按需从全局块池懒分配。这一层"间接寻址"把 KV cache 的利用率从 naive 连续分配的 **~33% 提到 ~84%**(zeroentropy 玩具演示,对应 ~2.5× 并发),并构成 vLLM **相对 Orca(同为迭代级调度的整机)拿到 2-4× 同延迟吞吐提升**(论文实测)的**主要来源**(相比真正静态批处理 HF/FasterTransformer 的 14-24× 是另一口径全引擎收益,见 [continuous-batching.md](continuous-batching.md))。这层"间接寻址"还把跨请求前缀共享变成页表上的一个引用计数而不是架构改动。它同时是 vLLM 吞吐神话的**地基**(连续批处理、prefix caching、抢占全建立在"块可独立分配/释放"之上)。
+**PagedAttention 把 KV cache 当成 OS 的虚拟内存来管**:物理块固定(默认 16 token/层),每个序列一张 **block table** 把逻辑位置映射到物理块,按需从全局块池懒分配。这一层"间接寻址"把 KV cache 的利用率从 naive 连续分配的 **~33% 提到 ~84%**(zeroentropy 玩具演示,对应 ~2.5× 并发),并构成 vLLM **相对 Orca(同为迭代级调度的整机)拿到 2-4× 同延迟吞吐提升**(论文实测)的**主要来源**(相比 HF 静态批处理的 14-24× 是另一口径全引擎收益(vs FasterTransformer/Orca 则是 2-4×),见 [continuous-batching.md](continuous-batching.md))。这层"间接寻址"还把跨请求前缀共享变成页表上的一个引用计数而不是架构改动。它同时是 vLLM 吞吐神话的**地基**(连续批处理、prefix caching、抢占全建立在"块可独立分配/释放"之上)。
 
 > **先记住一个反转直觉**:注意力计算谁都会,真正决定 LLM serving 吞吐上限的,是**怎么在显存里安放 KV cache**。PagedAttention 的核心不是新的数学,而是一个**内存管理思想(分页)**。
 
@@ -92,7 +92,7 @@ Paged: K/V 按 (block, slot) 散在多个物理块,block table 索引
 
 - 分页注意力的**计算语义与标准注意力完全等价**(不是近似),只是**访存走 block table**;
 - 每个物理块独立计算局部注意力 + 累积 softmax rescale。**rescale 机制**正是 FlashAttention online softmax 的直接延伸:每块维护局部 max 和 sum,块间用 `exp(old_max − new_max)` 做 rescale 累积——这正是"分页 + 分块不损失数值精度"的关键;
-- 论文还区分 **V1 / V2 两套 kernel**:V1 针对 decode(单 token query,块内 K/Q 点积 + V 加权)、V2 针对 prefill(多 token query,paged K 与连续 Q 的块状 matmul)——这解释了 vLLM 在 prefill 与 decode 阶段性能特征不同的根源;
+- 论文还区分 **V1 / V2 两套 decode kernel**(注意:两者都服务 decode,不是 prefill vs decode):V1 是单 token query 的基础版(块内 K/Q 点积 + V 加权);V2 面向长上下文/大 block 数,改为多 warp 两段式 reduce(跨块局部结果先在 warp 组内归约再跨组归约),降低同步开销。prefill 走的是标准/FlashAttention 路径(见下方 ⚠ 落地差异),不是 paged_attention kernel;
 
 > ⚠ **V0→V1 的落地差异(读代码必看)**:上面是论文原始 / V0 手写 `paged_attention` kernel 的行为(遍历 block table 做局部 matmul+softmax)。**V1 主路径已改用 `flash_attn_varlen_func`**——它原生支持"变长序列 + block table"形式的分页 K/V,**不再用旧版手写 paged_attention kernel**(后者仅保留在 `csrc/attention/` 非主路径)。V1 里"PagedAttention 的体现" = 分页物理存储(BlockPool)+ block table 索引 + flash_attn_varlen 的变长分页注意力。别按 §4 现在时去源码里找旧的 paged_attention kernel 会踩坑。
 

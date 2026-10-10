@@ -13,7 +13,7 @@ date: 2026-10
 
 ## TL;DR
 
-**DeepEP(DeepEveryParallel)** 是 DeepSeek 的 MoE **专家并行(EP)通信库**,提供 EP all-to-all 的 **dispatch**(token → 负责其 expert 的 rank)与 **combine**(expert 结果 → token 原 rank)两类高性能 GPU kernel,支持 FP8 dispatch、冗余专家(load balancing)的 NVLink 权重/梯度交换,以及 PP/CP/DP/Engram 的试验性原语。**2026-09-30 起有 NVIDIA 版(deepseek-ai/DeepEP)与昇腾版(deepseek-ai/DeepEP-Ascend),同一 API 跑两套后端**。
+**DeepEP(Deep Expert Parallelism,专家并行通信库)** 是 DeepSeek 的 MoE **专家并行(EP)通信库**,提供 EP all-to-all 的 **dispatch**(token → 负责其 expert 的 rank)与 **combine**(expert 结果 → token 原 rank)两类高性能 GPU kernel,支持 FP8 dispatch、冗余专家(load balancing)的 NVLink 权重/梯度交换,以及 PP/CP/DP/Engram 的试验性原语。**2026-09-30 起有 NVIDIA 版(deepseek-ai/DeepEP)与昇腾版(deepseek-ai/DeepEP-Ascend),同一 API 跑两套后端**。
 
 **关键机制结论**:
 1. **通信内核运行时 JIT 编译**(DeepJIT),安装时零 CUDA 编译;
@@ -109,6 +109,6 @@ DeepEP 暴露 `EPBuffer.lb_prefetch_weights` / `lb_reduce_grads`,支撑动态冗
 - **DeepEP 原版 README**(主源:V2/NCCL Gin/EPBuffer/负载均衡原语/Bucket/Engram/PP/环境变量/性能表):https://github.com/deepseek-ai/DeepEP
 - **DeepEP-Ascend README**(昇腾版对照,HCCL/HCOMM/UBMEM/URMA/PoC HDK):https://github.com/deepseek-ai/DeepEP-Ascend
 - **DeepJIT**(运行时 JIT):https://github.com/deepseek-ai/DeepJIT
-- **⚠ DeepEP 无独立 arXiv 论文**:公开引用是 GitHub 仓库(bibtex `deepep2025`);任务提示里的「arXiv 2609.01649」经 curl 实测是一篇**无关的直播异常检测论文**(cs.SI),不采用。
+- **⚠ DeepEP 无独立 arXiv 论文**:公开引用是 GitHub 仓库(bibtex `deepep2025`);候选号 arXiv 2609.01649 经核为**无关的直播异常检测论文**(cs.SI),不采用。
 - **开源周 Day 2 公告**:https://github.com/deepseek-ai/open-infra-index
 - **库内交叉**:[deepep-ascend.md](deepep-ascend.md)(昇腾版机制全文)、[deepgemm-nvidia-vs-ascend.md](deepgemm-nvidia-vs-ascend.md)(Mega MoE 计算侧)、[lplb-epb-load-balancing.md](lplb-epb-load-balancing.md)(冗余专家复制的规划侧)、[engram.md](engram.md)(Engram 稀疏记忆)、[../../model-architecture/concepts/open-model-landscape.md](../../model-architecture/concepts/open-model-landscape.md)(MoE 架构背景)。

@@ -20,13 +20,13 @@ date: 2026-10
 
 **本域两条主线**:
 1. **昇腾适配线**(2026-09-30):NVIDIA 原版 → 昇腾版的「同 API 不同后端」移植(TileLang/DeepGEMM/DeepEP/TileKernels/FlashMLA/DeepSelect),见「昇腾适配」条目组;
-2. **NVIDIA/并行/工具线**(本批入库):DeepGEMM/DeepEP 的 NVIDIA 原版对照、DeepJIT、并行负载均衡(DualPipe/EPLB/LPLB)、微调(ESFT)、稀疏记忆(Engram)、存储与数据(3FS/smallpond)、开源总索引(open-infra-index)。
+2. **NVIDIA/并行/工具线**(该批入库):DeepGEMM/DeepEP 的 NVIDIA 原版对照、DeepJIT、并行负载均衡(DualPipe/EPLB/LPLB)、微调(ESFT)、稀疏记忆(Engram)、存储与数据(3FS/smallpond)、开源总索引(open-infra-index)。
 
 ---
 
-## 关键事实速记(快照,2026-09)
+## 关键事实速记(快照,2026-10)
 
-- **开源时间**:2026-09-30,DeepSeek 开源昇腾推理基础设施,华为团队支持;目标平台为昇腾 950 系列 NPU 及 **128 卡超节点 UBL128**(全互联,**待核/据昇腾官方资料**)。
+- **开源时间**:2026-09-30,DeepSeek 开源昇腾算力基础设施(训练+推理),华为团队支持;目标平台为昇腾 950 系列 NPU 及 **128 卡超节点 UBL128**(全互联,**待核/据昇腾官方资料**)。
 - **六件套覆盖链路**:语言层 → 矩阵库 → 通信库 → 注意力算子。
 - **三条 P0 事实(本域写作最易踩,务必按此记)**:
   1. **TileLang 是 tile-ai 的第三方 DSL,不是 DeepSeek 的仓库**;昇腾支持分三层:主仓 tile-ai/tilelang 现支持 Ascend 950 native backend(2026-09-30 起)、独立仓 tile-ai/tilelang-ascend(A2/A3 的 ascendc/pto/npuir)、tilelang-mlir-ascend(MLIR 路线)。
@@ -110,6 +110,16 @@ date: 2026-10
 - **[`vllm/`](../vllm/index.md)**:这些算子最终集成进推理引擎兑现吞吐;FP8 量化见 [quantization-gptq-awq-fp8.md](../vllm/concepts/quantization-gptq-awq-fp8.md),采样见 [sampling-penalties.md](../vllm/concepts/sampling-penalties.md)。
 
 ---
+
+## 扩展位(2026-10 全库审查待补)
+
+- training-parallelism-v3(V3 完整 3D 并行编排 PP16/EP64/ZeRO-1)
+- fp8-training-stack(细粒度 scaling、UE8M0、训练侧 DeepGEMM)
+- inference-system-v3-r1(PD 分离、跨节点 EP 批扩展、73.7k/14.8k 与 545% 口径)
+- profiling-overlap(profile-data 仓库、nsight/bench_msprof 方法论)
+- fire-flyer-hardware(SC24 集群/网络/成本协同设计)
+- 3fs-internals(USRBIO/CRAQ/FoundationDB/EC)
+- deepep 低延迟解码路径、DreamCraft3D++ 增量、OCR 数据合成管线
 
 ## 溯源
 

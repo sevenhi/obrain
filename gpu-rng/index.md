@@ -33,7 +33,10 @@ date: 2026-09
 
 ## 相关条目(跨域互链)
 
-- [cutlass](../cutlass/index.md):同属 GPU kernel 工程域——Philox 融合进自定义 kernel 时的性能考量同"计算 vs 搬运"权衡
+- [quantization](../quantization/index.md)——随机舍入(Stochastic Rounding)是低比特量化的常见稳态技巧;Philox 流独立性可用于量化噪声注入。
+- [vllm/sampling-penalties](../vllm/concepts/sampling-penalties.md)——LLM 推理采样(top-k/top-p/惩罚)是 cuRAND/Philox 的直接落地面。
+- [deepseek-infra/deepselect](../deepseek-infra/concepts/deepselect.md)——Sampler TopK 的随机块扫描可接 GPU RNG 落地。
+- [cutlass](../cutlass/index.md)——同属 GPU kernel 工程域,Philox 融合进自定义 kernel 时的性能考量同"计算 vs 搬运"权衡。
 
 ## 溯源
 

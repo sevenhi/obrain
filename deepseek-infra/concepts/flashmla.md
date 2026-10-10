@@ -16,7 +16,7 @@ date: 2026-09
 
 **FlashMLA** 是 DeepSeek 的**注意力内核库**,支撑 DeepSeek-V4.1 在 NVIDIA GPU 与华为昇腾 NPU 上的推理。它含**两套内核**:
 
-- **dense 内核**:普通 MLA 的 **prefill + backward**(无 decoding);
+- **dense 内核**:普通 MLA 的 **prefill + decoding + backward**(开源周 Day 1 定位即 MLA 高效解码;2025-04 deep-dive 的 dense decoding 660 TFLOPS 属此内核);
 - **sparse 内核**:token 级稀疏注意力的 prefill + decoding(**decoding 用 FP8/FP4 KV cache**),**服务 DSA(DeepSeek Sparse Attention)**;另有融合 Q-norm、Q-RoPE、attention、O-RoPE(共轭)、FP8 cast 的 fused kernel。
 
 **三层关系务必分清(本域 P0)**:DSA(稀疏注意力**机制/架构层**)→ 由 **DeepSelect**(TopK)选出每个 token 该 attend 哪些 KV 的 **indices** → 再由 **FlashMLA sparse** 按 indices 算稀疏注意力。**FlashMLA 是实现 DSA 的内核库,不是 DSA 本身**。
@@ -82,6 +82,8 @@ flash_mla_with_kvcache(..., is_fp8_kvcache=True, indices=...)
 > ⚠ **"410" 出现两次,必须标平台**:NVIDIA sparse decode 与昇腾 sparse prefill 都是 410,平台不同。
 
 ### NVIDIA 侧(Hopper / B200)
+
+> **版本锚点**:下表 NVIDIA 数字来自 2025 开源周/2025-04 deep-dive 时代(旧 commit `ba89a346` 及更早)。2026-09-30 合并后 main 已移除 Hopper 支持,这些数字无法在当前 main 复现,引用时须标注「旧 commit 时代」。
 
 | 场景 | 数值 | 环境口径 |
 |---|---|---|

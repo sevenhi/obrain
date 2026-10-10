@@ -5,7 +5,7 @@ tags: [cutlass, gpu, gemm, cute, cuda]
 source:
   - "code: github.com/NVIDIA/cutlass | 版本 v4.8.0 (2026-09 发布;CHANGELOG 记 09-17 / GitHub tag 09-22;新增 Rubin SM107 初步支持)"
   - "web: NVIDIA CUTLASS 官方文档站 | https://docs.nvidia.com/cutlass/latest/"
-date: 2026-09
+date: 2026-10
 ---
 
 # CUTLASS

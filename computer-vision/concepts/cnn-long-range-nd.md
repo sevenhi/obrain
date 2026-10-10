@@ -48,7 +48,7 @@ CCNN block = S4 式 modernized residual block(pre-norm、GELU 类非线性,Xiong
 
 ### 5. 与 S4 的路线对比
 
-S4(结构化状态空间)同样每层全局感受野,但把序列**展平成 1D** 处理(多维数据丢失空间结构;定义多维状态空间困难)。CCNN 保留数据的原生维度(2D PathFinder 直接用 2D 核)。实验证明维度信息值钱:LRA PathFinder 当 1D 序列做,S4 86.05 / CCNN 91.36;当 2D 图像做,CCNN 96.00(且 2D 训练收敛更快)。而小核+pooling 的 ResNet-18 做不了 PathFinder(中间 pooling 毁掉细粒度全局连接)。
+S4(结构化状态空间)同样每层全局感受野,但把序列**展平成 1D** 处理(多维数据丢失空间结构;定义多维状态空间困难)。CCNN 保留数据的原生维度(2D PathFinder 直接用 2D 核)。实验证明维度信息值钱:LRA PathFinder 当 1D 序列做,S4 86.05 / CCNN 91.51;当 2D 图像做,CCNN 96.00(且 2D 训练收敛更快)。而小核+pooling 的 ResNet-18 做不了 PathFinder(中间 pooling 毁掉细粒度全局连接)。
 
 ## 可复现细节
 

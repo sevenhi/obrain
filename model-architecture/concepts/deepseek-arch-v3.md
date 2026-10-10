@@ -42,7 +42,7 @@ DeepSeek-V3 仍是标准 decoder-only Transformer,顶层结构为 `Embedding →
                     └─────────┬──────────┘
                               │
                     ┌─────────▼──────────┐
-                    │  LM Head (7168,128K)│  (weight tied with Embedding)
+                    │  LM Head (7168,128K)│  (独立 lm_head(tie_word_embeddings=false))
                     └────────────────────┘
                               │
                          logits [B, T, 128K]
@@ -73,7 +73,7 @@ class Block(nn.Module):
 
 要点:
 - **Pre-Norm(RMSNorm)+ 双残差**;归一化 eps=1e-6。
-- 每层归一化后、进 MLA/FFN 前的残差分支,即 standard post-norm residual 结构(V3 未用 parallel attention/FFN)。
+- 每层归一化后、进 MLA/FFN 前的残差分支,即 standard pre-Norm residual 结构(x = x + attn(attn_norm(x)))(V3 未用 parallel attention/FFN)。
 - **dense 层:前 3 层** FFN 是普通 MLP(`SwiGLU` 门控: `down(silu(gate(x)) * up(x))`,inter_dim=18432),后 58 层是 MoE。
 - MoE 层的每个专家是一个 `SwiGLU` MLP(moe_inter_dim=2048),共享专家是合并为一个大的 MLP。
 

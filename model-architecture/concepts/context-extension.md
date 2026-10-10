@@ -58,7 +58,7 @@ YaRN 额外:   q,k 嵌入乘 √t(t>1)  # 注意力温度补偿:插值拉长上�
                                   # softmax 分布熵下降(过度尖锐),放大 logit 恢复熵;
                                   # 用「RoPE 嵌入长度缩放 √t」实现,免改 attention 代码
 LongRoPE:    h(θ_d) = 逐维搜索出的 rescale 因子  # 进化搜索,不再用解析式
-             + 保留前 ~5% 维不插值(利用「前 128 维内插值反而伤短窗口性能」的非均匀性①)
+             + 前 n̂ 个 token 位置不做插值(n̂∈{0,1,2,4,…,256},Finding 2)(利用「前 n̂ 个 token 位置不插值可保护短窗口性能(Finding 2)」的非均匀性①)
              + 渐进:先 256k 微调,再二次搜索因子外推到 2048k(非均匀性②:免微调可扩 8×)
              + 8k 回调:再搜一组因子恢复短窗口性能,推理按序列长度选因子
 ```
@@ -168,7 +168,7 @@ context: 8192(初始预训练)→ 六阶段渐进拉到 131072
 
 - **PI 主源**(arXiv:2306.15595,2026-09-21 ar5iv 全文核对):线性下缩放定义、1000 步微调、32768 上限、外推崩坏表述(catastrophically high attention scores)、理论上界 ~600×、朴素微调 10000+ batch 仅 2048→2560(Table 4)、7B~65B passkey/摘要实验范围;
 - **YaRN 主源**(arXiv:2309.00071 HTML v1 全文核对):NTK-aware/NTK-by-parts/动态 NTK 三节结构、波长 λ_d 与 r=L/λ_d 定义、ramp 函数 γ_d、α=1/β=32(Llama 系)、温度 √t 缩放技巧与「免改 attention 代码」、10× tokens/2.5× 步数、Table 1 全部 PPL 数字(Together PI 32k / Code Llama NTK / YaRN s=16,32)、64k/128k checkpoint 发布;
-- **LongRoPE 主源**(arXiv:2402.13753 HTML v1 全文核对):2048k、≤1k 微调步、两种非均匀性(前段维度不插值/免微调 8×)、渐进 256k→2048k 两阶段、8k 回调恢复短窗口、LLaMA2+Mistral 实验对象;
+- **LongRoPE 主源**(arXiv:2402.13753 HTML v1 全文核对):2048k、≤1k 微调步、两种非均匀性(前 n̂ 个 token 位置不插值/免微调 8×)、渐进 256k→2048k 两阶段、8k 回调恢复短窗口、LLaMA2+Mistral 实验对象;
 - **RoPE 定义**(arXiv:2104.09864)与 **Llama 3 工业实践**(arXiv:2407.21783:θ=500k、8k→128k 六阶段、长上下文档 ~800B tokens)与 [llm-architecture](llm-architecture.md) 共享来源,细节已交叉核对;
 - **Mistral SWA 数字**(arXiv:2310.06825 HTML v1 核对):W=4096、32 层理论感受野 ~131k、rolling buffer 32k 序列省 8× cache、FA/xFormers 改造 2× 提速(16k 序列);
 - 代码仓库 yarn/LongRoPE curl 200 实测(2026-09-21);NTK-aware 插值原始出处为社区(Reddit /u/bloc97,YaRN 论文引用 [4][5] 记录在案,无独立论文,故不单列 source)。

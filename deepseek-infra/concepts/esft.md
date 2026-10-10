@@ -80,7 +80,7 @@ MoE 的稀疏激活意味着**一个任务只激活一小撮 expert**。既然�
 
 - **会议**:EMNLP 2024 Main Conference(2024-09-20 接收);
 - **论文**:arXiv:2407.01906 《Let the Expert Stick to His Last: Expert-Specialized Fine-Tuning for Sparse Architectural Large Language Models》;
-- **定位**:这是本批 11 仓里**唯一的「训练方法/论文仓库」**(其余多为算子/通信/存储/调度库),时间也最早(2024),是 DeepSeek 早期 MoE 高效微调方向的沉淀。
+- **定位**:这是NVIDIA/工具线 11 仓里**唯一的「训练方法/论文仓库」**(其余多为算子/通信/存储/调度库),时间也最早(2024),是 DeepSeek 早期 MoE 高效微调方向的沉淀。
 
 ---
 

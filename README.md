@@ -11,13 +11,12 @@ obrain 是自包含的知识库:只描述本文件夹内部结构;不引用任�
 obrain/
 ├── README.md             根入口(本文件)
 ├── SOURCE-POLICY.md      多来源登记策略
-├── <domain>/             每个领域一个文件夹,至少含 index.md
-│   ├── index.md          领域索引/导航起始页(type: domain)
-│   ├── references.md     领域链接索引(每域一篇,type: reference)
-│   ├── concepts/         概念篇:机制原理(type: concept)
-│   ├── frameworks/       工具上手篇(可选,type: howto)
-│   └── practices/        实践清单/选型对比(可选,type: checklist/comparison)
-└── profiles/             个人与家庭档案(非知识条目,豁免收纳规范)
+└── <domain>/             每个领域一个文件夹,至少含 index.md
+    ├── index.md          领域索引/导航起始页(type: domain)
+    ├── references.md     领域链接索引(每域一篇,type: reference)
+    ├── concepts/         概念篇:机制原理(type: concept)
+    ├── frameworks/       工具上手篇(可选,type: howto)
+    └── practices/        实践清单/选型对比(可选,type: checklist/comparison)
 ```
 
 > 例外:attention 域的深度篇分 `algorithm/`(算法层)与 `implementation/`(FA 内核实现层)两层,不用 `concepts/`。
@@ -37,8 +36,6 @@ obrain/
 | DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 算力基础设施栈:昇腾六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ NVIDIA 原版对照(DeepGEMM/DeepEP)+ 并行/工具/存储(DeepJIT/Engram/DualPipe/EPLB+LPLB/ESFT/open-infra-index/3FS/smallpond)+ 部署清单(18 篇) | 2026-10 |
 | DeepSeek Vision | [`deepseek-vision/`](deepseek-vision/index.md) | DeepSeek 多模态/视觉家族:图文理解(VL/VL2)、视觉压缩(OCR/OCR-2)、统一理解+生成(Janus 系列)、图生 3D(DreamCraft3D)(4 篇) | 2026-10 |
 | DeepSeek Models | [`deepseek-models/`](deepseek-models/index.md) | DeepSeek 领域模型谱系:数学推理(Math/Math-V2,GRPO/自验证)、定理证明(Prover-V1/V1.5/V2,Lean 4)、代码智能(Coder/Coder-V2,FIM/MoE)、MoE 基座 + agent 工具 deepseek-harness(5 篇);与 model-architecture 网络结构篇互链 | 2026-10 |
-
-> 注:`profiles/` 为个人与家庭档案(非技术知识条目),不参与上述领域体系,豁免收纳规范。
 
 ## 跨域速查
 

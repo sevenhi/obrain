@@ -61,3 +61,21 @@ date: 2026-09
 - DistServe (OSDI 2024) — https://arxiv.org/abs/2401.09670
 - Splitwise (ISCA 2024) — https://arxiv.org/abs/2401.13081
 - Mooncake — https://arxiv.org/abs/2407.00079
+
+## 生态仓库(原 vllm-project 域并入,2026-10)
+
+- vLLM-Omni — https://github.com/vllm-project/vllm-omni | arXiv:2610.09307 / arXiv:2602.02204
+- Semantic Router — https://github.com/vllm-project/semantic-router | arXiv:2510.08731 / arXiv:2510.26835
+- AIBrix — https://github.com/vllm-project/aibrix | arXiv:2504.03648
+- Production Stack — https://github.com/vllm-project/production-stack
+- vLLM Router — https://github.com/vllm-project/router
+- LLM Compressor — https://github.com/vllm-project/llm-compressor
+- compressed-tensors — https://github.com/vllm-project/compressed-tensors
+- Speculators — https://github.com/vllm-project/speculators
+- Vime — https://github.com/vllm-project/vime
+- GuideLLM — https://github.com/vllm-project/guidellm
+- recipes — https://github.com/vllm-project/recipes
+- vllm-ascend — https://github.com/vllm-project/vllm-ascend
+- vllm-metal — https://github.com/vllm-project/vllm-metal
+- vllm-gaudi / vllm-neuron / tpu-inference / vllm-xpu-kernels / vllm-openvino — https://github.com/vllm-project
+- agentic-api / humming / afd-plugin / dllm-plugin / gguf-plugin / bnb-plugin — https://github.com/vllm-project

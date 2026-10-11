@@ -86,7 +86,7 @@ sequenceDiagram
     D-->>C: 流式返回 token
 ```
 
-PD 路由的原理、传输层与监控口径见库内 [PD 分离清单](../../vllm/practices/pd-disaggregation.md)。
+PD 路由的原理、传输层与监控口径见库内 [PD 分离清单](../practices/pd-disaggregation.md)。
 
 ---
 
@@ -322,7 +322,7 @@ Prometheus 默认在 `127.0.0.1:29000` 暴露。
 
 ## 相关条目(库内互链)
 
-- **[PD 分离清单](../../vllm/practices/pd-disaggregation.md)**:Router 的 PD 模式(prefill/decode 分池、`kv_transfer_params`、双侧指标)是该清单「配对路由 / 传输层监控」的具体实现层。
+- **[PD 分离清单](../practices/pd-disaggregation.md)**:Router 的 PD 模式(prefill/decode 分池、`kv_transfer_params`、双侧指标)是该清单「配对路由 / 传输层监控」的具体实现层。
 - **[vLLM Production Stack 参考部署](production-stack.md)**:Router 在 Helm 栈中的集成形态(`routerSpec`、`lmcache/lmstack-router` 镜像)。
 - **[AIBrix:K8s 原生 GenAI 推理基础设施](aibrix.md)**:Gateway 侧有更宽的算法谱系(least-kv-cache、prefix-cache、vtc 等)与限流/鉴权;Router 更轻、可嵌入。
-- **[连续批处理](../../vllm/concepts/continuous-batching.md)** / **[PagedAttention](../../vllm/concepts/paged-attention.md)**:路由要「送对地方」的最终目的,是让这些引擎内机制(前缀复用、KV block 复用)真正吃到命中。
+- **[连续批处理](../concepts/continuous-batching.md)** / **[PagedAttention](../concepts/paged-attention.md)**:路由要「送对地方」的最终目的,是让这些引擎内机制(前缀复用、KV block 复用)真正吃到命中。

@@ -244,7 +244,7 @@ spec:
           # …结构同 prefill,KV 传输配置对侧
 ```
 
-PD 路由与传输语义的通用背景,见库内 [PD 分离清单](../../vllm/practices/pd-disaggregation.md)。
+PD 路由与传输语义的通用背景,见库内 [PD 分离清单](../practices/pd-disaggregation.md)。
 
 ---
 
@@ -341,5 +341,5 @@ kubectl apply -f samples/autoscaling/kpa.yaml
 
 - **[vLLM Production Stack 参考部署](production-stack.md)**:同一问题域的「Helm 一键参考栈」切面;AIBrix 侧重控制面与 CRD,Production Stack 侧重可复制的部署拓扑与 LMCache。
 - **[vLLM Router 高性能请求路由](router.md)**:纯路由组件;AIBrix Gateway 的算法谱系与之有重叠(`power_of_two`、prefix/pd),但 Router 更轻、可嵌入。
-- **[PD 分离清单](../../vllm/practices/pd-disaggregation.md)**:StormService 的 prefill/decode 角色与 KV 传输语义,落在该清单的「拓扑与缓冲 / 监控指标」框架内。
-- **[连续批处理](../../vllm/concepts/continuous-batching.md)** / **[PagedAttention](../../vllm/concepts/paged-attention.md)**:引擎内层;AIBrix 的 `gpu_cache_usage_perc` 扩缩容直接依赖这些引擎行为的可观测性。
+- **[PD 分离清单](../practices/pd-disaggregation.md)**:StormService 的 prefill/decode 角色与 KV 传输语义,落在该清单的「拓扑与缓冲 / 监控指标」框架内。
+- **[连续批处理](../concepts/continuous-batching.md)** / **[PagedAttention](../concepts/paged-attention.md)**:引擎内层;AIBrix 的 `gpu_cache_usage_perc` 扩缩容直接依赖这些引擎行为的可观测性。

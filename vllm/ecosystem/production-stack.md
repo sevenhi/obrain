@@ -177,7 +177,7 @@ servingEngineSpec:
         enablePD: true
 ```
 
-PD 分离的原理与监控口径见库内 [PD 分离清单](../../vllm/practices/pd-disaggregation.md)。
+PD 分离的原理与监控口径见库内 [PD 分离清单](../practices/pd-disaggregation.md)。
 
 ### 3.4 routerSpec 与 cacheserverSpec
 
@@ -294,7 +294,7 @@ Grafana 面板直接回答「服务健不健康、卡在哪」:
 | **GPU KV Usage Percent** | 显存里的 KV 是不是快满 |
 | **GPU KV Cache Hit Rate** | 前缀/LMCache 复用是否有效 |
 
-> **读数心法**:Running 高 + Pending 高 = 引擎饱和,该扩副本;Pending 低 + KV Usage 高 = 显存瓶颈,该看 offload / `max_model_len`;Hit Rate 低 = 前缀路由或 LMCache 配置没吃到复用。指标命名随 vLLM 版本漂移,以当前 metrics 文档为准(同 [PD 清单](../../vllm/practices/pd-disaggregation.md) §4.3)。
+> **读数心法**:Running 高 + Pending 高 = 引擎饱和,该扩副本;Pending 低 + KV Usage 高 = 显存瓶颈,该看 offload / `max_model_len`;Hit Rate 低 = 前缀路由或 LMCache 配置没吃到复用。指标命名随 vLLM 版本漂移,以当前 metrics 文档为准(同 [PD 清单](../practices/pd-disaggregation.md) §4.3)。
 
 ---
 
@@ -337,5 +337,5 @@ Grafana 面板直接回答「服务健不健康、卡在哪」:
 
 - **[AIBrix:K8s 原生 GenAI 推理基础设施](aibrix.md)**:同一问题域的控制面切面;Production Stack 给拓扑模板,AIBrix 给 CRD/Operator 与 GPU 感知扩缩容。
 - **[vLLM Router 高性能请求路由](router.md)**:栈内 router 的「本体」;负载均衡算法、K8s 服务发现、PD 路由的细节在那里展开。
-- **[PD 分离清单](../../vllm/practices/pd-disaggregation.md)**:`values-16-disagg-prefill.yaml` 的 NIXL 传输与双侧指标,按该清单核对。
-- **[连续批处理](../../vllm/concepts/continuous-batching.md)** / **[PagedAttention](../../vllm/concepts/paged-attention.md)**:引擎内吞吐与 KV 内存管理;LMCache offload 是在它们之上再加一层「跨实例/跨层」复用。
+- **[PD 分离清单](../practices/pd-disaggregation.md)**:`values-16-disagg-prefill.yaml` 的 NIXL 传输与双侧指标,按该清单核对。
+- **[连续批处理](../concepts/continuous-batching.md)** / **[PagedAttention](../concepts/paged-attention.md)**:引擎内吞吐与 KV 内存管理;LMCache offload 是在它们之上再加一层「跨实例/跨层」复用。

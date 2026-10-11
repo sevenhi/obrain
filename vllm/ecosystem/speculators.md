@@ -17,7 +17,7 @@ date: 2026-10
 
 投机解码（speculative decoding）用小而快的草稿模型先猜 γ 个候选 token，大模型一次前向并行验证，接受多少用多少、拒绝处回退。因为大模型 decode 访存受限、算力闲置，「一次验证 γ 个」几乎不额外花时间，却一步产出多个 token——**不改输出分布、不重训目标模型**。
 
-投机解码的机制、期望 token 数公式 `E = (1−α^(γ+1))/(1−α)`、无偏性（拒绝采样）在库内条目 [投机解码](../../vllm/concepts/speculative-decoding.md) 已展开，**此处不重复**。本条目只强调训练侧要用到的三个结论：
+投机解码的机制、期望 token 数公式 `E = (1−α^(γ+1))/(1−α)`、无偏性（拒绝采样）在库内条目 [投机解码](../concepts/speculative-decoding.md) 已展开，**此处不重复**。本条目只强调训练侧要用到的三个结论：
 
 1. **接受率 α 是第一驱动**：草稿再快，接受率低就是负优化；训练目标应直接对齐「目标模型会接受哪些 token」。
 2. **草稿模型吃的是 verifier 的中间表示**：EAGLE 类方法用目标模型多层 hidden states 而不是只用 token id，因此训练数据必须包含 hidden states。
@@ -92,7 +92,7 @@ class Eagle3DraftModel(DraftVocabMixin, SpeculatorModel):
 - **步权重复合权重**（MTP 的 `step_weight_beta`）：第 k 步 loss 权重 ∝ β^k，靠前位置更重要；
 - **confidence / Markov 辅助头**（DSpark）：显式预测接受概率，训练时对齐接受率形态。
 
-期望接受长度与接受率的关系（与 [投机解码](../../vllm/concepts/speculative-decoding.md) 同一公式）：
+期望接受长度与接受率的关系（与 [投机解码](../concepts/speculative-decoding.md) 同一公式）：
 
 ```
 E[每步 token 数] = (1 − α^(γ+1)) / (1 − α)     # γ = 草稿长度, α = 每位置接受率(独立近似)
@@ -290,7 +290,7 @@ d2t: draft token → verifier token     （验证前把草稿 id 换回 verifier
 
 ## 相关条目
 
-- [投机解码](../../vllm/concepts/speculative-decoding.md)（机制、无偏性、期望 token 数）
+- [投机解码](../concepts/speculative-decoding.md)（机制、无偏性、期望 token 数）
 - [LSTM 低秩压缩](../../quantization/concepts/lstm-lowrank-compression.md)（轻量草稿/压缩结构的另一条线）
 - [PTQ：GPTQ / AWQ / SmoothQuant](../../quantization/concepts/ptq-gptq-awq-smoothquant.md)（目标模型也可先量化再挂草稿，需一起测接受率）
 

@@ -240,7 +240,7 @@ flowchart LR
 
 ## 相关条目
 
-- **引擎本体与 V1 架构**:[`vllm/index.md`](../../vllm/index.md)
+- **引擎本体与 V1 架构**:[`vllm/index.md`](../index.md)
 - **昇腾算子/通信适配原理**:[`deepseek-infra/concepts/ascend-port-principles.md`](../../deepseek-infra/concepts/ascend-port-principles.md)
 - **量化与格式插件**(GGUF/bitsandbytes/compressed-tensors)见 [quantization/](../../quantization/index.md)
 - **评测这些后端**:[`guidellm-bench.md`](guidellm-bench.md)

@@ -50,7 +50,7 @@ vLLM 官方对 omni-modality 的定义是 **Text / image / audio / video / actio
 vLLM-Omni **不是另起炉灶的推理引擎**,而是「vLLM + 全模态 stage 运行时」:
 
 - **版本对齐**:从 0.14.0 起,每个**偶数小版本**对齐上游 vLLM(0.16/0.18/.../0.26/0.28/**0.30.0**)。0.30.0 即 **rebase 到 vLLM 0.30.0**,并带出全双工框架、Mooncake AR-to-DiT、NIXL connector 等能力。
-- **复用原语**:AR 阶段直接用 vLLM 的**连续批处理、PagedAttention/KV cache、TP/PP/DP/EP、CUDA Graph、量化**(见库内 [`v1-architecture.md`](../../vllm/concepts/v1-architecture.md)、[`paged-attention.md`](../../vllm/concepts/paged-attention.md))。
+- **复用原语**:AR 阶段直接用 vLLM 的**连续批处理、PagedAttention/KV cache、TP/PP/DP/EP、CUDA Graph、量化**(见库内 [`v1-architecture.md`](../concepts/v1-architecture.md)、[`paged-attention.md`](../concepts/paged-attention.md))。
 - **扩展面**:非 AR、非文本的部分由 `vllm_omni/` 包补上——`core/sched`(Omni AR 调度)、`model_executor/models/**`(各模型实现)、`engine/**`(stage 运行时/编排)、`experimental/fullduplex|ar_diffusion|world_models`、`platforms/**`(CUDA/ROCm/NPU/XPU/MUSA)。
 
 **心法**:理解 vLLM-Omni 的钥匙是「**哪些仍走 vLLM,哪些是 Omni 自己的**」——凡属单个 AR 阶段内部的调度/KV/并行,大体是 vLLM;凡属**跨阶段的生命周期、传输、会话、DiT/扩散执行**,是 Omni 的增量。
@@ -184,7 +184,7 @@ omni.close_session(...)
 
 | 路径 | 管什么 | 谁持有 | 文档 |
 |---|---|---|---|
-| **AR paged KV** | 自回归注意力的 K/V | vLLM Scheduler/Worker(与文本引擎同源) | [`paged-attention.md`](../../vllm/concepts/paged-attention.md) |
+| **AR paged KV** | 自回归注意力的 K/V | vLLM Scheduler/Worker(与文本引擎同源) | [`paged-attention.md`](../concepts/paged-attention.md) |
 | **DiT paged KV** | 扩散去噪中稳定 prompt/reference 前缀的 K/V | Worker 独有页,`diffusion_kv_mode: paged_scheduler` | `docs/user_guide/diffusion/paged_kv_cache.md` |
 | **ar_diffusion KV** | DreamZero/LingBot 从 AR 阶段**导入**的 KV | AR-Diffusion 引擎的 paged KV pool | `docs/design/feature/...` |
 
@@ -216,7 +216,7 @@ stages:
 
 ### 5.4 PD 分离(实验性)
 
-`docs/features/pd_disaggregation.md` 把 Qwen3-Omni Thinker 拆成 prefill(max_tokens=1,导出 KV)与 decode(导入 KV 续写),Talker/Code2Wav 仍在下游。**控制面**(请求 ID、transfer_id、bootstrap)归 Orchestrator,**数据面**(注意力 KV 块)归 vLLM KV connector——两层不可混用。这与库内 [`pd-disaggregation.md`](../../vllm/practices/pd-disaggregation.md) 的文本 PD 分离同构,只是 payload 从纯文本 KV 扩展到多模态 conditioning。
+`docs/features/pd_disaggregation.md` 把 Qwen3-Omni Thinker 拆成 prefill(max_tokens=1,导出 KV)与 decode(导入 KV 续写),Talker/Code2Wav 仍在下游。**控制面**(请求 ID、transfer_id、bootstrap)归 Orchestrator,**数据面**(注意力 KV 块)归 vLLM KV connector——两层不可混用。这与库内 [`pd-disaggregation.md`](../practices/pd-disaggregation.md) 的文本 PD 分离同构,只是 payload 从纯文本 KV 扩展到多模态 conditioning。
 
 ---
 
@@ -282,11 +282,11 @@ curl http://127.0.0.1:8091/v1/images/generations -H 'Content-Type: application/j
 
 ## 8. 与库内条目的关系
 
-- [`v1-architecture.md`](../../vllm/concepts/v1-architecture.md):AR 阶段内部的 **调度/Worker/异步下发** 仍是 V1 心智模型;Omni 的 Orchestrator 是**更上层**的 stage 编排,不替代 EngineCore。
-- [`paged-attention.md`](../../vllm/concepts/paged-attention.md):AR KV 的块池/引用计数/前缀共享原语被直接复用;DiT paged KV 是「同一思想、另一持有者(Scheduler-managed diffusion pages)」。
-- [`pd-disaggregation.md`](../../vllm/practices/pd-disaggregation.md):文本 P/D 分离的 KV connector 机制是 Omni PD 分离与 Mooncake AR-to-DiT 的**同族先例**;Omni 额外要传多模态 payload 与 conditioning。
-- [`continuous-batching.md`](../../vllm/concepts/continuous-batching.md):单 stage 内的批处理策略;stage 之间则是**流水线重叠(async chunk)**,两个粒度别混。
-- [`api-server-openai-compat.md`](../../vllm/concepts/api-server-openai-compat.md):对外 `/v1/chat/completions` 契约兼容;Omni 增补 `/v1/videos`、`/v1/realtime`、图像编辑等路由。
+- [`v1-architecture.md`](../concepts/v1-architecture.md):AR 阶段内部的 **调度/Worker/异步下发** 仍是 V1 心智模型;Omni 的 Orchestrator 是**更上层**的 stage 编排,不替代 EngineCore。
+- [`paged-attention.md`](../concepts/paged-attention.md):AR KV 的块池/引用计数/前缀共享原语被直接复用;DiT paged KV 是「同一思想、另一持有者(Scheduler-managed diffusion pages)」。
+- [`pd-disaggregation.md`](../practices/pd-disaggregation.md):文本 P/D 分离的 KV connector 机制是 Omni PD 分离与 Mooncake AR-to-DiT 的**同族先例**;Omni 额外要传多模态 payload 与 conditioning。
+- [`continuous-batching.md`](../concepts/continuous-batching.md):单 stage 内的批处理策略;stage 之间则是**流水线重叠(async chunk)**,两个粒度别混。
+- [`api-server-openai-compat.md`](../concepts/api-server-openai-compat.md):对外 `/v1/chat/completions` 契约兼容;Omni 增补 `/v1/videos`、`/v1/realtime`、图像编辑等路由。
 - [`production-stack.md`](production-stack.md) / [`router.md`](router.md):集群部署与请求路由是 Omni 多 stage 部署的**算力侧邻居**;Omni 自己管 stage 编排与跨阶段传输。
 - [`semantic-router.md`](semantic-router.md):按模态/成本/安全把请求**选进**不同后端(含 omni/diffusion 池);Omni 负责被选中之后怎么跑。
 

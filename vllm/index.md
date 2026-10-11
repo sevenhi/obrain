@@ -12,7 +12,7 @@ date: 2026-10
 
 # vLLM 推理引擎
 
-> 领域索引。**知识本体在 `concepts/` 深度概念篇**(9 篇,由源码一手实读 + 官方文档多源综合而成);生产部署清单在 `practices/`(4 篇,含选型对比)。原 `notes/` 源码笔记已全部提炼入概念篇并删除,内容自足,不依赖库外文件。本页放定位、关键事实与导航。
+> 领域索引。**知识本体在 `concepts/` 深度概念篇**(9 篇,由源码一手实读 + 官方文档多源综合而成);生产部署清单在 `practices/`(4 篇,含选型对比);生态构件在 `ecosystem/`(10 篇,含 vllm-project 组织 47 仓源码实读)。原 `notes/` 源码笔记已全部提炼入概念篇并删除,内容自足,不依赖库外文件。本页放定位、关键事实与导航。
 
 ## 一句话定位
 
@@ -63,9 +63,41 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 
 > 2026-09 收尾:原 `notes/` 5 篇源码笔记(sampling-penalties / api-server / core-architecture / full-technical-report / serving-layer-analysis)已按"先迁移独有内容、后删除"提炼并入上述概念篇,`notes/` 目录随之清空;溯源以源码 commit `b74ac0bc6` 为准。
 
+## 生态构件篇(ecosystem/,源码实读 vllm-project 组织)
+
+> 引擎之外那一圈仓库:全模态、路由决策、集群部署、压缩工具、投机与 RL、硬件插件、评测。每篇含 mermaid 图与真实代码示例。
+
+| 条目 | 类型 | 一句话 |
+|---|---|---|
+| [vllm-omni](ecosystem/vllm-omni.md) | concept | 全模态服务:text/audio/image/video/action 统一流水线,AR/DiT 统一 paged KV,全双工 session,MiniCPM-o/H3 案例 |
+| [semantic-router](ecosystem/semantic-router.md) | concept | 可编程决策层:信号→布尔规则树→选模/安全/成本,Go+YAML,Decision/Vela 模型族 |
+| [aibrix](ecosystem/aibrix.md) | concept | K8s 原生 GenAI 推理基础设施:gateway/controller/autoscaler/ModelAdapter,CRD 与路由算法 |
+| [production-stack](ecosystem/production-stack.md) | concept | 参考部署栈:单机→集群不改应用代码,LMCache 分层缓存,Helm values 拓扑 |
+| [router](ecosystem/router.md) | concept | 高性能请求路由:五种负载均衡、PD 分离、K8s 服务发现,`docs/load_balancing/` 策略速查 |
+| [llm-compressor](ecosystem/llm-compressor.md) | concept | 压缩工具链:GPTQ/FP8/SmoothQuant recipe 有序流水线,compressed-tensors 格式落地 |
+| [speculators](ecosystem/speculators.md) | concept | 草稿模型训练/评测/导出:EAGLE-3/MTP/DFlash/DSpark,训练→vLLM 部署全流程 |
+| [vime](ecosystem/vime.md) | concept | vLLM rollout 的 RL 后训练:Megatron+vLLM 同步/异步,权重同步四路径 |
+| [hardware-plugins](ecosystem/hardware-plugins.md) | concept | 七后端插件体系:platform_plugins/general_plugins entry points,Ascend/Metal/Gaudi/Neuron/TPU/XPU/OpenVINO |
+| [guidellm-bench](ecosystem/guidellm-bench.md) | howto | SLO-aware 基准评测:Profile 负载模拟、TTFT/ITL/Goodput、容量规划六步 |
+
+**生态全景**:核心引擎与内核 → 硬件后端/压缩格式/插件注入 → 路由决策 → 集群部署 → 投机与 RL → 评测。47 仓九分组地图见原 `vllm-project/index.md` 简表(下)。
+
+| 分组 | 代表仓库 |
+|---|---|
+| 核心引擎与内核 | vllm, flash-attention, tml-fa4, FlashKDA, MSA, humming, vllm-nccl, dllm-plugin |
+| 全模态 | vllm-omni, bart-plugin |
+| 路由与决策 | router, agentic-api, semantic-router |
+| 集群与部署 | production-stack, aibrix, afd-plugin, recipes, vmon, vvm |
+| 压缩与格式 | compressed-tensors, llm-compressor, vllm-gguf-plugin, vllm-bnb-plugin |
+| 投机与 RL | speculators, vime |
+| 硬件后端 | vllm-ascend, vllm-metal, vllm-gaudi, vllm-neuron, tpu-inference, vllm-xpu-kernels, vllm-openvino |
+| 评测与工具 | guidellm, perf-eval, vllm-bench, lm-evaluation-harness, perf-dashboard, vllm-dashboard, ci-infra, vllm-skills |
+| 文档与 RFC | vllm-docs, rfcs, vllm-project.github.io, vllm-daily, media-kit |
+
+**扩展位(生态待补)**:agentic-api、compressed-tensors 格式规范、afd-plugin、humming JIT、MSA/FlashKDA/tml-fa4 内核专篇、production-stack 监控清单。
+
 ## 相关条目(跨域互链)
 
-- **[`vllm-project/`](../vllm-project/index.md)**:引擎之外的生态构件——全模态(vllm-omni)、语义路由(semantic-router)、集群部署(aibrix/production-stack/router)、压缩工具链(llm-compressor)、投机与 RL(speculators/vime)、硬件插件、GuideLLM 评测。本域讲引擎内部,生态见该域。
 
 - **长上下文/流式 KV cache 算法侧**:PagedAttention 解决"cache 装得下就全留"的分页管理;**装不下时逐出谁**见 [`attention/algorithm/attention-sinks-streaming.md`](../attention/algorithm/attention-sinks-streaming.md)(StreamingLLM:attention sink + 滚窗,4M token 稳定生成)。两者正交,vLLM 主线未内置 sink 逐出(TensorRT-LLM/HF 已内置;SGLang 主线仍支持 attention sink:sinks kwarg / learnable sink / speculative draft sink 等多个 backend)。
 - **注意力内核与架构谱系**:[`attention/`](../attention/index.md)(算法/架构层 + FA 内核实现层,合并域)。

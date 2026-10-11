@@ -249,8 +249,8 @@ from guidellm.benchmark import benchmark_generative_text
 ## 相关条目
 
 - **硬件后端换卡后怎么评**:[`hardware-plugins.md`](hardware-plugins.md)
-- **引擎原理(V1/连续批处理)**:[`vllm/index.md`](../../vllm/index.md)
-- **生产部署清单**:[`vllm/practices/production-serving.md`](../../vllm/practices/production-serving.md)
+- **引擎原理(V1/连续批处理)**:[`vllm/index.md`](../index.md)
+- **生产部署清单**:[`vllm/practices/production-serving.md`](../practices/production-serving.md)
 - **Router 与负载均衡**:[`router.md`](router.md)
 
 ## 溯源

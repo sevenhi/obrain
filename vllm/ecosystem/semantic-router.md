@@ -289,7 +289,7 @@ SR 作为**可编程决策层**,部署形态灵活:
 - [`router.md`](router.md) — vLLM Router 做**负载均衡/缓存亲和/PD 分流**(怎么把请求摊到实例);SR 做**语义选模/安全/成本**(该由谁答)。一个偏 L4/L7 流量,一个偏策略决策,可串联。
 - [`aibrix.md`](aibrix.md) — K8s 原生 GenAI 基础设施(自动扩缩、gateway 插件、LoRA adapter);与 SR 同属「推理平台层」,AIBrix 更偏编排与弹性。
 - [`vllm-omni.md`](vllm-omni.md) — 全模态后端池的 serving 运行时;SR 的 `modality` 信号与 modelCards 可把请求路由到 omni/diffusion 模型。
-- [`../../vllm/concepts/api-server-openai-compat.md`](../../vllm/concepts/api-server-openai-compat.md) — SR 对外保持 OpenAI 兼容契约,便于 agent harness 无感接入。
+- [`../concepts/api-server-openai-compat.md`](../concepts/api-server-openai-compat.md) — SR 对外保持 OpenAI 兼容契约,便于 agent harness 无感接入。
 
 ---
 

@@ -15,7 +15,7 @@ date: 2026-10
 
 ## 1. 为什么 RL 后训练要用 vLLM 做 rollout
 
-RL 后训练（PPO/GRPO/RLOO 等）每一步都要**采样大量轨迹 → 算 reward/advantage → 更新策略 → 再采样**。采样阶段就是推理：如果用训练框架自己的 generate 逐步跑，decode 是访存受限的（见 [投机解码](../../vllm/concepts/speculative-decoding.md) 的同一背景），吞吐远低于专用推理引擎。
+RL 后训练（PPO/GRPO/RLOO 等）每一步都要**采样大量轨迹 → 算 reward/advantage → 更新策略 → 再采样**。采样阶段就是推理：如果用训练框架自己的 generate 逐步跑，decode 是访存受限的（见 [投机解码](../concepts/speculative-decoding.md) 的同一背景），吞吐远低于专用推理引擎。
 
 分工因此变得自然：
 
@@ -298,7 +298,7 @@ RL 后训练产出的是「更好的策略权重」；推理加速（投机解�
 
 ## 相关条目
 
-- [投机解码](../../vllm/concepts/speculative-decoding.md)（decode 访存受限背景，为什么 rollout 值得用 vLLM）
+- [投机解码](../concepts/speculative-decoding.md)（decode 访存受限背景，为什么 rollout 值得用 vLLM）
 - [PTQ：GPTQ / AWQ / SmoothQuant](../../quantization/concepts/ptq-gptq-awq-smoothquant.md)（rollout 引擎可加载量化模型降显存，但要测 reward 一致性）
 - [Speculators 草稿模型训练与评测](speculators.md)（推理加速侧；与 RL 后训练正交，可叠加）
 

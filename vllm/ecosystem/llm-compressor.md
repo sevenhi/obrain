@@ -305,7 +305,7 @@ README 明确支持 DDP 与 disk offloading，`examples/` 下有对应目录：
 - [PTQ：GPTQ / AWQ / SmoothQuant](../../quantization/concepts/ptq-gptq-awq-smoothquant.md)（算法原理与误差补偿）
 - [KV Cache 量化](../../quantization/concepts/kv-cache-quantization.md)（LLM Compressor 也支持 KV/attention 量化 recipe）
 - [SpQR：稀疏+量化混合表示](../../quantization/concepts/spqr-sparse-quantized.md)
-- [vLLM GPTQ / AWQ / FP8](../../vllm/concepts/quantization-gptq-awq-fp8.md)（部署侧 kernel 与支持矩阵）
+- [vLLM GPTQ / AWQ / FP8](../concepts/quantization-gptq-awq-fp8.md)（部署侧 kernel 与支持矩阵）
 
 ## 溯源
 

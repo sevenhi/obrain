@@ -22,7 +22,7 @@ obrain/
 > 例外:attention 域的深度篇分 `algorithm/`(算法层)与 `implementation/`(FA 内核实现层)两层,不用 `concepts/`。
 > 个人原始资料归档(library)等目录属于各设备本地布局,不写入本文档。
 
-## 领域列表(10 个独立领域)
+## 领域列表(11 个独立领域)
 
 | 领域 | 文件夹 | 一句话说明 | 最近更新 |
 |---|---|---|---|
@@ -32,6 +32,7 @@ obrain/
 | GPU 随机数生成 | [`gpu-rng/`](gpu-rng/index.md) | counter-based(Philox)与 MTGP 两条 GPU PRNG 路线 + cuRAND 落地(1 篇) | 2026-10 |
 | 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:PTQ(GPTQ/AWQ/SmoothQuant)、KV cache 量化、稀疏量化混合(SpQR)、2-bit 前沿(QuIP#/AQLM)、KV 极低比特(KVQuant/KVTuner)、HyQuant 混合精度、FP8/FP4 硬件原生格式 + 低秩/剪枝路线(8 篇,论文来源通过公开链接追溯) | 2026-10 |
 | vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构、生产部署、观测与引擎选型、投机解码、注意力后端选型、PD 分离等(13 篇) | 2026-10 |
+| vLLM Project 生态 | [`vllm-project/`](vllm-project/index.md) | 引擎之外的生产生态:全模态 vllm-omni、语义路由 semantic-router、集群 aibrix/production-stack/router、压缩 llm-compressor、投机与 RL(speculators/vime)、硬件插件、GuideLLM 评测(10 篇) | 2026-10 |
 | Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核、ONNX/TensorRT 部署(5 篇) | 2026-10 |
 | DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 算力基础设施栈:昇腾六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ 移植原则(ascend-port-principles)+ NVIDIA 原版对照(DeepGEMM/DeepEP)+ 并行/工具/存储(DeepJIT/Engram/DualPipe/EPLB+LPLB/ESFT/open-infra-index/3FS/smallpond)+ 训练并行编排 V3 + deepseek-recipe API 编解码 + 部署清单(20 篇) | 2026-10 |
 | DeepSeek Vision | [`deepseek-vision/`](deepseek-vision/index.md) | DeepSeek 多模态/视觉家族:图文理解(VL/VL2)、视觉压缩(OCR/OCR-2)、统一理解+生成(Janus 系列)、图生 3D(DreamCraft3D)(4 篇) | 2026-10 |
@@ -46,6 +47,7 @@ obrain/
 - **精确 attention 省显存谱系**:Milakov online softmax → Rabe & Staats O(1) 显存 → FlashAttention IO-aware([`attention/algorithm/exact-attention-memory-lineage.md`](attention/algorithm/exact-attention-memory-lineage.md))。
 - **FlashAttention 四代主线**:FA1 IO-aware tiling → FA2 work partitioning → FA3 Hopper 异步 → FA4 Blackwell,合成一篇 [`attention/implementation/flash-attention-implementation.md`](attention/implementation/flash-attention-implementation.md);底座机制见 [`cutlass/`](cutlass/index.md)(WGMMA/TMA/epilogue)。
 - **架构第三主轴(混合线性注意力)**:softmax attention 之外,Mamba/RWKV/Gated DeltaNet→Qwen3-Next 的 hybrid 路线(少量 full attention + 多数线性/SSM 层)见 [`hybrid-linear-attention`](model-architecture/concepts/hybrid-linear-attention.md);与 FA/KV cache 杠杆正交——一个消灭序列状态,一个压缩/分页 KV。
+- **vLLM 生态一圈**:引擎内部原理在 [`vllm/`](vllm/index.md),外部构件(全模态/路由/集群/压缩/插件/评测)在 [`vllm-project/`](vllm-project/index.md)——读「怎么把 vLLM 用起来、扩起来」去后者。
 - **低精度双路线**:硬件原生 FP8/FP4(见 [`fp8-fp4-formats`](quantization/concepts/fp8-fp4-formats.md))vs 算法压缩 2-bit(QuIP#/AQLM);训练侧 V3 FP8 recipe 与推理侧 FP8/FP4 KV 分别在 deepseek-infra/flashmla。
 - **DeepSeek 结构↔领域模型双视角**:网络结构演进(MHA→MLA、dense→MoE)见 [`model-architecture/`](model-architecture/index.md) 的 deepseek 四篇;领域能力怎么做出来(数学 GRPO/自验证、定理证明 Lean 4、代码 FIM、MoE 数据评测)见 [`deepseek-models/`](deepseek-models/index.md),两者互链互补——结构篇管「怎么变」,领域篇管「怎么做出来」。
 

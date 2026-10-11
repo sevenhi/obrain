@@ -65,6 +65,8 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 
 ## 相关条目(跨域互链)
 
+- **[`vllm-project/`](../vllm-project/index.md)**:引擎之外的生态构件——全模态(vllm-omni)、语义路由(semantic-router)、集群部署(aibrix/production-stack/router)、压缩工具链(llm-compressor)、投机与 RL(speculators/vime)、硬件插件、GuideLLM 评测。本域讲引擎内部,生态见该域。
+
 - **长上下文/流式 KV cache 算法侧**:PagedAttention 解决"cache 装得下就全留"的分页管理;**装不下时逐出谁**见 [`attention/algorithm/attention-sinks-streaming.md`](../attention/algorithm/attention-sinks-streaming.md)(StreamingLLM:attention sink + 滚窗,4M token 稳定生成)。两者正交,vLLM 主线未内置 sink 逐出(TensorRT-LLM/HF 已内置;SGLang 主线仍支持 attention sink:sinks kwarg / learnable sink / speculative draft sink 等多个 backend)。
 - **注意力内核与架构谱系**:[`attention/`](../attention/index.md)(算法/架构层 + FA 内核实现层,合并域)。
 

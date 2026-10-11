@@ -69,3 +69,7 @@ date: 2026-10
 - DeepSeek-V3 Technical Report — https://arxiv.org/abs/2412.19437
 - DeepSeek-V3 仓库 — https://github.com/deepseek-ai/DeepSeek-V3
 - DualPipe — https://github.com/deepseek-ai/DualPipe
+
+### API 编解码(2026-10 补)
+
+- deepseek-recipe — https://github.com/deepseek-ai/deepseek-recipe

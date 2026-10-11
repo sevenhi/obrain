@@ -49,3 +49,10 @@ date: 2026-10
 ## 相关领域(跨域)
 
 - DeepSeek 网络结构演进(本域模型的结构底座)— 见 [model-architecture/references.md](../model-architecture/references.md)
+
+### 投机解码草稿训练(2026-10 补)
+
+- DeepSpec — https://github.com/deepseek-ai/DeepSpec
+- DSpark — https://arxiv.org/abs/2607.05147
+- DFlash — https://arxiv.org/abs/2602.06036
+- EAGLE-3 — https://arxiv.org/abs/2503.01840

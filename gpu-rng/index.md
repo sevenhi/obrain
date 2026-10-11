@@ -5,7 +5,7 @@ tags: [gpu, rng, prng, philox, mtgp, curand]
 source:
   - "pdf: Parallel Random Numbers: As Easy as 1, 2, 3 (SC11 Best Paper) | DOI 10.1145/2063384.2063405"
   - "pdf: Variants of Mersenne Twister Suitable for Graphic Processors | arXiv:1005.4973"
-date: 2026-09
+date: 2026-10
 ---
 
 # GPU 随机数生成 (gpu-rng)

@@ -26,16 +26,16 @@ obrain/
 
 | 领域 | 文件夹 | 一句话说明 | 最近更新 |
 |---|---|---|---|
-| Attention | [`attention/`](attention/index.md) | 注意力机制两层结构:算法层 algorithm/(AIAYN/StreamingLLM/LASER+SpAtten/MEGABYTE/Rabe&Staats,5 篇)+ 实现层 implementation/(FA 四代合成篇,1 篇) | 2026-09 |
+| Attention | [`attention/`](attention/index.md) | 注意力机制两层结构:算法层 algorithm/(AIAYN/StreamingLLM/LASER+SpAtten/MEGABYTE/Rabe&Staats,5 篇)+ 实现层 implementation/(FA 四代合成篇,1 篇) | 2026-10 |
 | Model Architecture | [`model-architecture/`](model-architecture/index.md) | 通用 LLM 架构:归一化/激活/位置编码演进 + 训练哲学(Chinchilla/推理预算)+ GPT→LLaMA→Llama 2/3 定型线;MHA/MQA/GQA 注意力头谱系;RoPE 上下文扩展(PI/NTK/YaRN/LongRoPE);开源模型谱系与 MoE(Mistral/DeepSeek/Qwen/RWKV + 2025-26 续篇)+ DeepSeek 网络结构演进四篇 + 混合线性注意力/SSM(Mamba/RWKV/Qwen3-Next)(10 篇) | 2026-10 |
 | CUTLASS | [`cutlass/`](cutlass/index.md) | 高性能 GEMM 模板库与 CuTe DSL:造内核的库(concepts 8 + frameworks 2,共 10 篇) | 2026-10 |
-| GPU 随机数生成 | [`gpu-rng/`](gpu-rng/index.md) | counter-based(Philox)与 MTGP 两条 GPU PRNG 路线 + cuRAND 落地(1 篇) | 2026-09 |
+| GPU 随机数生成 | [`gpu-rng/`](gpu-rng/index.md) | counter-based(Philox)与 MTGP 两条 GPU PRNG 路线 + cuRAND 落地(1 篇) | 2026-10 |
 | 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:PTQ(GPTQ/AWQ/SmoothQuant)、KV cache 量化、稀疏量化混合(SpQR)、2-bit 前沿(QuIP#/AQLM)、KV 极低比特(KVQuant/KVTuner)、HyQuant 混合精度、FP8/FP4 硬件原生格式 + 低秩/剪枝路线(8 篇,论文来源通过公开链接追溯) | 2026-10 |
 | vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构、生产部署、观测与引擎选型、投机解码、注意力后端选型、PD 分离等(13 篇) | 2026-10 |
-| Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核、ONNX/TensorRT 部署(5 篇) | 2026-09 |
-| DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 算力基础设施栈:昇腾六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ 移植原则(ascend-port-principles)+ NVIDIA 原版对照(DeepGEMM/DeepEP)+ 并行/工具/存储(DeepJIT/Engram/DualPipe/EPLB+LPLB/ESFT/open-infra-index/3FS/smallpond)+ 训练并行编排 V3 + 部署清单(19 篇) | 2026-10 |
+| Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核、ONNX/TensorRT 部署(5 篇) | 2026-10 |
+| DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 算力基础设施栈:昇腾六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ 移植原则(ascend-port-principles)+ NVIDIA 原版对照(DeepGEMM/DeepEP)+ 并行/工具/存储(DeepJIT/Engram/DualPipe/EPLB+LPLB/ESFT/open-infra-index/3FS/smallpond)+ 训练并行编排 V3 + deepseek-recipe API 编解码 + 部署清单(20 篇) | 2026-10 |
 | DeepSeek Vision | [`deepseek-vision/`](deepseek-vision/index.md) | DeepSeek 多模态/视觉家族:图文理解(VL/VL2)、视觉压缩(OCR/OCR-2)、统一理解+生成(Janus 系列)、图生 3D(DreamCraft3D)(4 篇) | 2026-10 |
-| DeepSeek Models | [`deepseek-models/`](deepseek-models/index.md) | DeepSeek 领域模型谱系:数学推理(Math/Math-V2,GRPO/自验证)、定理证明(Prover-V1/V1.5/V2,Lean 4)、代码智能(Coder/Coder-V2,FIM/MoE)、MoE 基座 + agent 工具 deepseek-harness(5 篇);与 model-architecture 网络结构篇互链 | 2026-10 |
+| DeepSeek Models | [`deepseek-models/`](deepseek-models/index.md) | DeepSeek 领域模型谱系:数学推理(Math/Math-V2,GRPO/自验证)、定理证明(Prover-V1/V1.5/V2,Lean 4)、代码智能(Coder/Coder-V2,FIM/MoE)、MoE 基座 + agent 工具 deepseek-harness + DeepSpec 草稿训练(6 篇);与 model-architecture 网络结构篇互链 | 2026-10 |
 
 ## 跨域速查
 
@@ -45,6 +45,8 @@ obrain/
 - **硬件真实效率**:CUTLASS 的 tiling/Tensor Core 机制是理解「FLOPs≠延迟」的底层;应用侧实例见 [`computer-vision/concepts/trt-vit-inference.md`](computer-vision/concepts/trt-vit-inference.md)(以 TensorRT 实测延迟为架构设计准绳,TensorRT 内部以 CUTLASS 生成 GEMM kernel)。
 - **精确 attention 省显存谱系**:Milakov online softmax → Rabe & Staats O(1) 显存 → FlashAttention IO-aware([`attention/algorithm/exact-attention-memory-lineage.md`](attention/algorithm/exact-attention-memory-lineage.md))。
 - **FlashAttention 四代主线**:FA1 IO-aware tiling → FA2 work partitioning → FA3 Hopper 异步 → FA4 Blackwell,合成一篇 [`attention/implementation/flash-attention-implementation.md`](attention/implementation/flash-attention-implementation.md);底座机制见 [`cutlass/`](cutlass/index.md)(WGMMA/TMA/epilogue)。
+- **架构第三主轴(混合线性注意力)**:softmax attention 之外,Mamba/RWKV/Gated DeltaNet→Qwen3-Next 的 hybrid 路线(少量 full attention + 多数线性/SSM 层)见 [`hybrid-linear-attention`](model-architecture/concepts/hybrid-linear-attention.md);与 FA/KV cache 杠杆正交——一个消灭序列状态,一个压缩/分页 KV。
+- **低精度双路线**:硬件原生 FP8/FP4(见 [`fp8-fp4-formats`](quantization/concepts/fp8-fp4-formats.md))vs 算法压缩 2-bit(QuIP#/AQLM);训练侧 V3 FP8 recipe 与推理侧 FP8/FP4 KV 分别在 deepseek-infra/flashmla。
 - **DeepSeek 结构↔领域模型双视角**:网络结构演进(MHA→MLA、dense→MoE)见 [`model-architecture/`](model-architecture/index.md) 的 deepseek 四篇;领域能力怎么做出来(数学 GRPO/自验证、定理证明 Lean 4、代码 FIM、MoE 数据评测)见 [`deepseek-models/`](deepseek-models/index.md),两者互链互补——结构篇管「怎么变」,领域篇管「怎么做出来」。
 
 ---
@@ -64,3 +66,4 @@ obrain/
 5. **多来源登记**(ppt / pdf / 网页 / wiki …):每篇 `source` 写成「类型 + 标识符 + 链接」结构化形式;来源互不相同但内容重叠时,只收一条知识,`source` 里列全部出处 → 详见 [SOURCE-POLICY.md](SOURCE-POLICY.md)
 6. 拿到新资料先问「这条知识是不是已在库里?」→ 是则补 source 去重,否则新开篇;不建两篇内容重叠的篇
 7. **把某领域"做厚"**(升级到专业深度、多源综合)时,按领域 index.md 定位判断 + 主动网络多源综合,写成"打开一篇能读懂、有专业深度"的深度条目(机制原理/可复现细节/数据对比/实践要点/溯源完整)。
+8. **内容更新后必须同步检查**(用户明确要求):增/删/改任何知识条目后,同一轮内核对——(a) 所属域 `index.md` 条目索引与篇数、(b) 所属域 `references.md` 来源聚合、(c) 根 README 领域表「篇数/一句话说明/最近更新」、(d) 相关「扩展位」缺口是否该划掉、(e) 全库内链 0 断链。禁止只写正文不改索引。

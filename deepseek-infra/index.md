@@ -89,6 +89,7 @@ date: 2026-10
 | Engram | [concepts/engram.md](concepts/engram.md) | 条件记忆:O(1) N-gram 查找,与 MoE 互补的稀疏轴;确定性寻址可 offload 到 host memory;27B 全面领先 iso-param MoE | ✅ 已入库 |
 | DualPipe | [concepts/dualpipe.md](concepts/dualpipe.md) | 双向流水线并行,V3/R1 训练;气泡减半(参数 2× 换吞吐),DualPipeV 设备数减半 | ✅ 已入库 |
 | 训练并行编排 V3 | [concepts/training-parallelism-v3.md](concepts/training-parallelism-v3.md) | 671B MoE 训练总账:PP16×EP64×ZeRO-1(不用 TP)+ DualPipe/DeepEP 重叠 + 显存预算;与 Megatron 3D 并行对照 | ✅ 已入库(2026-10) |
+| deepseek-recipe | [concepts/deepseek-recipe.md](concepts/deepseek-recipe.md) | V4/V4.1 多格式 API 与 prompt 编解码库(Rust+Python bindings):Messages/Chat Completions/Responses↔Conversation↔token IDs | ✅ 已入库(2026-10) |
 | EPLB + LPLB | [concepts/lplb-epb-load-balancing.md](concepts/lplb-epb-load-balancing.md) | 专家并行负载均衡:EPLB 静态冗余专家复制(已部署)、LPLB 动态线性规划逐 batch 分流(IPM+cuSolverDx) | ✅ 已入库 |
 | ESFT | [concepts/esft.md](concepts/esft.md) | 专家特化微调:打分→选任务相关 expert→只训相关 expert + adapter(EMNLP 2024) | ✅ 已入库 |
 | open-infra-index | [concepts/open-infra-index.md](concepts/open-infra-index.md) | DeepSeek 开源基础设施总索引:开源周一天一 repo + 论文 + V3/R1 线上数据(73.7k/14.8k tok/s) | ✅ 已入库 |

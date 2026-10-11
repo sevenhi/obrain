@@ -6,7 +6,7 @@ source:
   - "web: ONNX Runtime 官方文档 | https://onnxruntime.ai/docs/ | 阅读日期 2026-09-27"
   - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/ | 阅读日期 2026-09-27"
   - "web: NVIDIA Model Optimizer | https://nvidia.github.io/TensorRT-Model-Optimizer/ | 阅读日期 2026-09-27"
-date: 2026-09
+date: 2026-10
 ---
 
 # Computer Vision

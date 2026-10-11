@@ -94,6 +94,7 @@ date: 2026-10
 | open-infra-index | [concepts/open-infra-index.md](concepts/open-infra-index.md) | DeepSeek 开源基础设施总索引:开源周一天一 repo + 论文 + V3/R1 线上数据(73.7k/14.8k tok/s) | ✅ 已入库 |
 | 3FS | [concepts/3fs.md](concepts/3fs.md) | Fire-Flyer 分布式文件系统:disaggregated + CRAQ 强一致 + FoundationDB;6.6 TiB/s 聚合读、GraySort 3.66 TiB/min | ✅ 已入库 |
 | smallpond | [concepts/smallpond.md](concepts/smallpond.md) | DuckDB + 3FS 轻量数据处理框架,无长驻服务,PB 级;GraySort 与 3FS 同口径 | ✅ 已入库 |
+| deepseek-recipe | [concepts/deepseek-recipe.md](concepts/deepseek-recipe.md) | Rust+Python:Messages/Chat Completions/Responses → DeepSeek V4/V4.1 prompt 编解码;不含推理/HTTP | ✅ 已入库 |
 
 ### 实践清单(practices)
 

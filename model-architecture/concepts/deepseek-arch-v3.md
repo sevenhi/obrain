@@ -23,10 +23,10 @@ date: 2026-10
 DeepSeek-V3 仍是标准 decoder-only Transformer,顶层结构为 `Embedding → N×DecoderBlock → RMSNorm → LM Head`。
 
 ```
-                    tokens [B, T]  (Byte-level BPE, vocab=128K)
+                    tokens [B, T]  (Byte-level BPE, vocab=129280)
                               │
                    ┌──────────▼──────────┐
-                   │  Embedding (128K,7168)│
+                   │  Embedding (129280,7168)│
                    └──────────┬──────────┘
                               │  h ∈ R^7168
               ┌───────────────▼────────────────┐
@@ -42,10 +42,10 @@ DeepSeek-V3 仍是标准 decoder-only Transformer,顶层结构为 `Embedding →
                     └─────────┬──────────┘
                               │
                     ┌─────────▼──────────┐
-                    │  LM Head (7168,128K)│  (独立 lm_head(tie_word_embeddings=false))
+                    │  LM Head (7168,129280)│  (独立 lm_head(tie_word_embeddings=false))
                     └────────────────────┘
                               │
-                         logits [B, T, 128K]
+                         logits [B, T, 129280]
 ```
 
 与 V2 结构完全一致的地方:MLA + DeepSeekMoE、RMSNorm、RoPE、YaRN 长上下文扩展。V3 的两处结构级增量:(a) MoE 路由改用 **sigmoid 亲和度 + top-k 归一化**,并引入 **aux-loss-free 负载均衡**;(b) 训练时挂 **MTP 模块**(预测额外 1 个 token),推理时可整体丢弃。
@@ -178,7 +178,7 @@ g'_{i,t} = { s_{i,t}, 若 s_{i,t} ∈ Topk({s_{j,t}}, K_r); 否则 0 }   (14)
 g_{i,t}  = g'_{i,t} / Σ_j g'_{j,t}               (13)  归一化(softmax 变体)
 ```
 
-源码对应 `Gate.forward`:`scores=sigmoid(...) → topk 选 8 个 → weights = 原始分 / Σ(选中分) → 乘 route_scale`。
+源码对应 `Gate.forward`:`scores=sigmoid(...) → topk 选 8 个 → weights = 原始分 / Σ(选中分) → 乘 route_scale`。真实配置 `config_671B.json`:`score_func="sigmoid"`、`route_scale=2.5`、`n_expert_groups=8`、`n_limited_groups=4`。
 
 ### 4.3 aux-loss-free 负载均衡(核心创新)
 
@@ -280,9 +280,10 @@ L_MTP = (λ / D) Σ_{k=1}^D L_MTP^k                              (25)
 | 共享专家 `N_s` | **1** | |
 | 路由专家 `N_r` | **256** | 每专家 intermediate=2048 |
 | 激活专家 `K_r` | **8** | top-8 |
+| 路由打分/缩放 | sigmoid / **2.5** | `score_func` / `route_scale` |
 | 节点受限 `M` | 4 | 每 token 最多路由到 4 节点 |
 | dense MLP inter_dim | 18432 | 前 3 层 |
-| 词表 | 128K | Byte-level BPE |
+| 词表 | **129280** | Byte-level BPE(V2 为 102400;`config_671B.json` 实证) |
 | RoPE θ | 10000 | YaRN scale s=40,β_fast=32,β_slow=1 |
 
 > ⚠ 注意:`inference/model.py` 里 `ModelArgs` 的默认值(27 层、dim 2048、64 专家等)是**可运行的小型示例**(`__main__` 自测用),不是 671B 真实配置。真实值见上表与 `config.json`/论文 §4.2。一个佐证:`Gate.__init__` 里 `self.bias = ... if self.dim == 7168 else None`,即只有 dim=7168(真实 V3)才启用 aux-loss-free 的 bias 项。

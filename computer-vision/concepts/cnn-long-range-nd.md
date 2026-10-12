@@ -105,4 +105,4 @@ CCNN block(S4 式):
 
 - 主源:workshop 版论文论文原文(链接见 frontmatter);全部数字取自论文 Table 1-6。
 - 网络综合:官方代码库 david-knigge/ccnn(README 指向 ICLR 2023 正式版 arXiv:2301.10540,标题 *Modelling Long Range Dependencies in ND: From Task-Specific to a General Purpose CNN*,确认 workshop→会议版扩展关系及 3D 点云新增实验);前驱 FlexConv(arXiv:2110.08059,可微核大小/高斯掩码)与对照 S4(arXiv:2111.00396,*Efficiently Modeling Long Sequences with Structured State Spaces*)arXiv abs 页核对定位。全部 URL 于 2026-09-21 curl 实测存活(200)。
-- 注意:本地 PDF 是 workshop 短版(8 页),ICLR 2023 正式版含点云 3D 实验等增量,本篇结论以 workshop 版为准、正式版仅登记链接。
+- 注意:主源是 workshop 短版(8 页),ICLR 2023 正式版含点云 3D 实验等增量,本篇结论以 workshop 版为准、正式版仅登记链接。

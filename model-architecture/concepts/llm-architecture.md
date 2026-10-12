@@ -229,7 +229,7 @@ softmax( q·kᵀ − m·|i−j| )      # m 为每个 head 预设的固定斜率(
 
 ## 溯源
 
-- **LLaMA 主源**:本地 PDF(arXiv v1,2023-02-27),Table 2-6/§2 配方数字直接核对原文;§3.5 MMLU 63.4 为 Table 6 值(论文 v1)。交叉源:Meta AI 官方博客(发布口径/democratize 叙事,2023-02-24,URL 大小写敏感——小写 llama 路径 curl 000 失败,官方 `Llama` 大写路径 200)、facebookresearch/llama 官方仓库、RoPE/RMSNorm/SwiGLU 三篇原始论文(组件出处核对)。全部 URL curl 验证存活(2026-09-21)。
+- **LLaMA 主源**:arXiv:2302.13971 v1(2023-02-27) https://arxiv.org/abs/2302.13971,Table 2-6/§2 配方数字直接核对原文;§3.5 MMLU 63.4 为 Table 6 值(论文 v1)。交叉源:Meta AI 官方博客(发布口径/democratize 叙事,2023-02-24,URL 大小写敏感——小写 llama 路径 curl 000 失败,官方 `Llama` 大写路径 200)、facebookresearch/llama 官方仓库、RoPE/RMSNorm/SwiGLU 三篇原始论文(组件出处核对)。全部 URL curl 验证存活(2026-09-21)。
 - **Llama 2**(arXiv:2307.09288,2026-09-21 web 核对):2T tokens(+40%)、context 2k→4k、70B GQA、pre-RMSNorm+SwiGLU+RoPE 沿用、"2T tokens 后训练 loss 无饱和"、SentencePiece 同 LLaMA 1。
 - **Llama 3**(arXiv:2407.21783v3 HTML 版,2026-09-21 web 核对):~15T tokens、GQA 8 KV 头、128K vocab(tiktoken 100K+28K,压缩率 3.17→3.94)、RoPE θ=500,000、Table 3 超参(8B/70B/405B:层数 32/80/126、维度 4096/8192/16384、FFN 14336/28672/53248、头 32/64/128、KV 头均 8)、三阶段训练(8k→128K 六阶段渐进,长上下文档 ~800B tokens;退火 40M tokens)、文档间 attention mask、405B 训练算力 3.8×10²⁵ FLOPs(~50× Llama 2)。
 - **Chinchilla**(arXiv:2203.15556):400+ 模型(70M~16B)× 5~500B tokens;算力最优=参数与数据同倍率翻倍(~20 tokens/参数);Chinchilla-70B 4× Gopher 数据,MMLU 67.5%。

@@ -138,6 +138,6 @@ remained_head  = top-k(s_h, h×(1−p_h))    # 级联: 一次剪除, 层间继�
 
 ## 溯源
 
-- 主源:两篇本地 PDF,公式/表格数字直接核对原文(LASER Table 1-3、Fig.4 幂律;SpAtten Alg.2、Table I/II、Fig.13/14)。
+- 主源:LASER arXiv:2411.03493 https://arxiv.org/abs/2411.03493 与 SpAtten arXiv:2012.09852 https://arxiv.org/abs/2012.09852,公式/表格数字直接核对原文(LASER Table 1-3、Fig.4 幂律;SpAtten Alg.2、Table I/II、Fig.13/14)。
 - 交叉源:PMLR v267 官方页(确认 ICML 2025 / PMLR 267:14902-14917)、mit-han-lab/spatten 仓库(SpinalHDL RTL + PyTorch 算法参考)。URL 均已 curl 验证存活(2026-09-21);SpAtten 的 IEEE Xplore 页(9407256)对 curl 返回 202 反爬,不列为源,以 arXiv 版为准。
 - 关联条目:[attention-is-all-you-need](attention-is-all-you-need.md)(√d_k 缩放与 QK-Norm 等"防尖锐"补丁的谱系)、[attention-sinks-streaming](attention-sinks-streaming.md)(长尾分布的 KV cache 侧推论)、[flash-attention-implementation](../implementation/flash-attention-implementation.md)(访存受限诊断的通用内核解)、[`quantization/`](../../quantization/index.md)(量化侧对照)。

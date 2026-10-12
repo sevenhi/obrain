@@ -9,7 +9,7 @@ date: 2026-09
 
 > 链接索引,不复制全文(URL 均于 2026-09 实测存活)。原始论文链接见下方，不复制全文。
 
-## 论文(库内 PDF 的权威在线版)
+## 论文(权威在线版)
 
 - Parallel Random Numbers: As Easy as 1, 2, 3 (SC11 Best Paper) — https://www.thesalmons.org/john/random123/papers/random123sc11.pdf (ACM DL 版 DOI 10.1145/2063384.2063405,需订阅)
 - Variants of Mersenne Twister Suitable for Graphic Processors — https://arxiv.org/abs/1005.4973

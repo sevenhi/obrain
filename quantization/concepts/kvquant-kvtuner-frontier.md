@@ -63,7 +63,7 @@ K̃_n(旋转后,进 attention)
 
 ### 1.4 与 KIVI 的关系(写明并行)
 
-KIVI(2402.02750)与 KVQuant(2401.18079)几乎同期提交,是**独立并行**工作:两者都发现「K 用 per-channel、V 用 per-token」以及「非对称量化」对 KV 有效;KVQuant 独有的是 **Pre-RoPE 量化 + NUQ 非均匀 datatype + per-vector sparse**,KIVI 独有的是免调参的运行时分组与残差保留。不要把「Pre-RoPE」误记到 KIVI 头上。
+KIVI(2402.02750)与 KVQuant(2401.18079)几乎同期提交,是**独立并行**工作:两者都发现「K 用 per-channel、V 用 per-token」以及「非对称量化」对 KV 有效;KVQuant 独有的是 **Pre-RoPE 量化 + NUQ 非均匀 datatype + per-vector sparse**,KIVI 独有的是免调参的运行时分组与 recent-token 全精度窗口(two-part cache)。不要把「Pre-RoPE」误记到 KIVI 头上。
 
 ## 2. KVTuner:layer-wise 混合精度搜索(独立工作)
 

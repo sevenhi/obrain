@@ -52,7 +52,7 @@ KIVI 的代表性结论是 K 和 V 的最佳量化粒度并不相同，非对称
   - **V 的离群值出现在少数 token（序列维）**：value 的幅度是“token-wise”尖峰（少数 token 的 value 幅度极大），因此按 token 分组量化、per-token scale，才能精确框住这些尖峰 token。
   - 换句话说：**K 的离群沿 channel 方向，V 的离群沿 token 方向**——这是 K/V 各自参与的计算（K 进 logits、V 进加权和）与其数据布局共同决定的分组选择。
 - **非对称量化（有 zero-point）**：K/V 分布不是以 0 为中心对称，用非对称量化（scale + zero-point）比对称量化（仅 scale）更贴分布，2-bit 下误差更小。
-- **per-token ON/OFF 离群保留**：对 V 里那些极端的离群 token，量化后再额外保留一份高精度（FP16）残差或原值，仅在命中时取用——用极小的高精度存储换取离群 token 的精度，其余 token 压低到 2-bit。
+- **recent-token 全精度窗口(two-part cache)**:最近的 token 保持 FP16 不量化,更早的 token 压到 2-bit——用极小的高精度窗口保护近期 KV,其余按分组低比特存储。(残差式离群保留——per-vector 保留离群分量——属 KVQuant 的 Dense-and-Sparse,见 kvquant 篇;KIVI 无此机制。)
 - **scale 布局与 group 说明**：per-channel 的 K 每个 channel 一个 (scale, zero-point)，per-token 的 V 每个 token 一个；group size 决定 scale 的存储密度（group 越小越精细、scale 本身存储开销越大），部署时要与 attention kernel 的 layout 约定对齐（scale 布局是 KIVI 类方法最容易踩的坑）。
 
 ## 3. 与权重量化的关系

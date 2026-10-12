@@ -102,7 +102,7 @@ OCR-2 的动机是一个认知观察:**传统 VLM 把 visual token 按光栅顺�
 // 解码器与 OCR 一代相同:DeepSeek3B-MoE-A570M(64 专家 top-6,use_mla=false)
 ```
 
-关键差异:**DeepEncoder V2 在 SAM-B 之外引入了 Qwen2-0.5B(dim 896)**——用一个小型因果语言模型作为重排 token 的「因果底座」,这正是「Visual Causal Flow」在权重层的落点。相比一代的 CLIP-L,二代改用 Qwen2-0.5B 来提供因果/顺序推理能力。
+关键差异:**DeepEncoder V2 在 SAM-B 之外引入了 Qwen2-0.5B(dim 896)**——用一个小型因果语言模型作为重排 token 的「因果底座」,这正是「Visual Causal Flow」在权重层的落点。相比一代的 CLIP-L,二代改用 Qwen2-0.5B 来提供因果/顺序推理能力。projector 相应适配:config 实测 `input_dim=896`(一代为 2048),把 Qwen2-0.5B 的 896 维因果特征线性投影进 MoE 解码器。
 
 ### 支持模式(README)
 

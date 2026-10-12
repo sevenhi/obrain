@@ -40,7 +40,7 @@ date: 2026-10
 | V3.1 | 2025-08-21 | MoE,`num_experts_per_tok=8` | — |
 | **V3.2-Exp** | 2025-09-29 | **DSA 首次亮相**,`index_topk=2048`/`index_n_heads=64`/`index_head_dim=128` | 685.4B |
 | **V3.2** | 2025-12-01 | **DSA 正式版**,61 层/hidden 7168/128 Q 头,`max_position_embeddings=163840`,top-8 MoE | 685.4B |
-| V4-Flash | 2026-04-22 | 43 层/hidden 4096/64 头/**KV 头=1(MLA)**/vocab 129280/1M ctx/top-6 | 290.9B |
+| V4-Flash | 2026-04-22 | 43 层/hidden 4096/64 头/**KV 头=1(MLA)**/vocab 129280/1M ctx/top-6;config 另有 `index_topk=512`(indexer top-k)、无 `kv_lora_rank` 字段(MLA 以 KV 头=1 形状呈现) | 290.9B |
 | V4-Pro | 2026-04-22 | 61 层/hidden 7168/128 头/KV 头=1(MLA)/1M ctx/top-6 | ~1598.8B(1.6T) |
 | V4.1-Flash | 2026-09-10 | FlashMLA 昇腾版唯一服务对象 | 763.2B |
 

@@ -3,8 +3,8 @@ title: FlashMLA — MLA 注意力内核库(dense + sparse)
 type: concept
 tags: [flashmla, mla, dsa, sparse-attention, dense-attention, kv-cache, fp8, fp4, ascend, npu, hopper]
 source:
-  - "code: deepseek-ai/FlashMLA(main;昇腾版已合入 main,原开发分支 20260930-ascend-open-source)| https://github.com/deepseek-ai/FlashMLA ↑primary"
-  - "code: deepseek-ai/FlashMLA/docs/20260930-ascend-prefill-deep-dive.md(昇腾稀疏 prefill 机制)| https://github.com/deepseek-ai/FlashMLA"
+  - "code: deepseek-ai/FlashMLA(main;昇腾版发布于分支 20260930-ascend-open-source,合入状态以仓库当前 main 为准)| https://github.com/deepseek-ai/FlashMLA ↑primary"
+  - "code: deepseek-ai/FlashMLA/docs/20260930-ascend-prefill-deep-dive.md(昇腾稀疏 prefill 机制;待核实)| https://github.com/deepseek-ai/FlashMLA"
   - "code: deepseek-ai/FlashMLA/docs/20250929-hopper-fp8-sparse-deep-dive.md(FP8 sparse decoding)| https://github.com/deepseek-ai/FlashMLA"
   - "code: deepseek-ai/FlashMLA/docs/20250422-new-kernel-deep-dive.md(dense decoding)| https://github.com/deepseek-ai/FlashMLA"
 date: 2026-09
@@ -21,7 +21,7 @@ date: 2026-09
 
 **三层关系务必分清(本域 P0)**:DSA(稀疏注意力**机制/架构层**)→ 由 **DeepSelect**(TopK)选出每个 token 该 attend 哪些 KV 的 **indices** → 再由 **FlashMLA sparse** 按 indices 算稀疏注意力。**FlashMLA 是实现 DSA 的内核库,不是 DSA 本身**。
 
-**⚠ 昇腾版 breaking change(P0 硬事实)**:昇腾版 **2026-09-30 发布,已合入 main**(原开发分支 `20260930-ascend-open-source`),该版本**移除了 Hopper 架构支持、移除了 V3/V3.2/V4.0 旧模型、改了 FP8/FP4 KV cache 格式**,只服务 DeepSeek-V4.1(含 NVIDIA + 昇腾)。**旧模型/旧 KV cache 需切旧 commit `ba89a346`**。
+**⚠ 昇腾版 breaking change(待核实)**:昇腾版 **2026-09-30 发布于分支 `20260930-ascend-open-source`**,合入状态以仓库当前 main 为准(2026-10-12 核对时 main README 仍为 V3/V3.2-Exp 口径、News 最新 2025.09.29,无昇腾合入痕迹)。分支口径称该版本**移除 Hopper 架构支持、移除 V3/V3.2/V4.0 旧模型、改 FP8/FP4 KV cache 格式**,只服务 DeepSeek-V4.1(含 NVIDIA + 昇腾);**旧模型/旧 KV cache 切旧 commit `ba89a346`**——三条 breaking change、旧 commit 号与昇腾 deep-dive 文档均**待核实**。
 
 **⚠ "410 TFLOPS" 双义(必须标平台)**:NVIDIA sparse decoding 是 410 TFLOPS(H800),昇腾 sparse prefill 也是 410 TFlops(950)——同名数字,平台完全不同,引用时必须标注。
 
@@ -120,15 +120,15 @@ flash_mla_with_kvcache(..., is_fp8_kvcache=True, indices=...)
 - **别把 FlashMLA 当 DSA 本身**:FlashMLA 是实现 DSA 的内核库;DSA 是机制(见 §1.2)。
 - **"410" 混平台的坑**:NVIDIA sparse decode(410,H800)与昇腾 sparse prefill(410,950)同名,标注平台再引用。
 - **dense vs sparse 别混表**:660 是 dense、410 是 sparse(decode 场景)。
-- **漏写 breaking change 的坑**:移除 Hopper/旧模型、改 KV cache 格式,旧用户要切 `ba89a346`。
+- **漏写 breaking change 的坑**:分支口径称移除 Hopper/旧模型、改 KV cache 格式,旧用户要切 `ba89a346`(均待核实)。
 - **多 batch 的 sparse prefill**:内核无 batch 维,多 batch 需 reshape + 调 indices。
 
 ---
 
 ## 溯源
 
-- **FlashMLA 仓库(昇腾版已合入 main;原开发分支 20260930-ascend-open-source)**:dense/sparse 内核、breaking change 声明、昇腾 410/360 + 10–15% fused kernel 优化 —— https://github.com/deepseek-ai/FlashMLA
-- **昇腾 sparse prefill deep-dive**(在线 softmax + rescale、B_TOPK、RESCALE_THRES、410/360 峰值占比):https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20260930-ascend-prefill-deep-dive.md (中文 `-zh.md`)
+- **FlashMLA 仓库(昇腾版发布于分支 20260930-ascend-open-source;合入状态以仓库当前 main 为准)**:dense/sparse 内核、昇腾 410/360 + 10–15% fused kernel 优化 —— https://github.com/deepseek-ai/FlashMLA
+- **昇腾 sparse prefill deep-dive(待核实)**(在线 softmax + rescale、B_TOPK、RESCALE_THRES、410/360 峰值占比):https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20260930-ascend-prefill-deep-dive.md (中文 `-zh.md`)
 - **旧 FP8 sparse decoding deep-dive**(2025-09-29,410 TFLOPS):https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20250929-hopper-fp8-sparse-deep-dive.md
 - **dense decoding deep-dive**(2025-04-22,660 TFLOPS):https://github.com/deepseek-ai/FlashMLA/blob/main/docs/20250422-new-kernel-deep-dive.md
 - **库内交叉**:[../../model-architecture/concepts/attention-heads-mha-mqa-gqa.md](../../model-architecture/concepts/attention-heads-mha-mqa-gqa.md)(MLA 低秩压缩)、[../../attention/implementation/flash-attention-implementation.md](../../attention/implementation/flash-attention-implementation.md)(FA 内核,online softmax 前身)、[../../vllm/index.md](../../vllm/index.md)(集成)、[deepselect.md](deepselect.md)(同域 DSA 链路)。

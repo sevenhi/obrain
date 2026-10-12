@@ -35,7 +35,7 @@ date: 2026-10
 | MoE 路由专家 | — | — | 64 | 128 | 160 |
 | MoE 共享专家 | — | — | 2 | 4 | 2 |
 | 每 token 激活路由专家 | — | — | 6 | 12 | 6 |
-| 专家相对 FFN 大小 | — | — | 0.25× | 0.125× | ~0.125×(moe_inter=1536) |
+| 专家相对 FFN 大小 | — | — | 0.25×(相对标准专家,论文 Table 口径) | 0.125× | ~0.125×(moe_inter=1536) |
 | 总参数 | 7B | 67B | 16.4B | 144.6B | 236B |
 | 激活参数 | 7B | 67B | 2.8B | 22.2B | 21B |
 | 词表 | 102400 | 102400 | 102400 | 102400 | 102400 |
@@ -138,14 +138,14 @@ h^l_t = u^l_t + Σ_{i=1}^{Ks} FFN^l_i(u^l_t)                 # 共享专家(恒�
              + Σ_{i=1}^{mK} g_{i,t} · FFN^l_i(u^l_t)         # 路由专家(top-mK,加权)
 g_{i,t} = softmax 后的 top-k 分数(或 s_{i,t})
 ```
-论文里每个专家相对于标准 FFN 的缩放系数：16B 用 0.25×，145B 用 0.125×。
+论文里每个专家相对于标准 FFN 的缩放系数：16B 用 0.25×，145B 用 0.125×（口径注：该 0.25× 相对「标准专家」即论文 Table 口径，非相对 dense FFN——16B 的 moe_intermediate_size=1408 对 10944 的 dense FFN 约 0.129）。
 
 ### 2.5 三代规模超参
 
 | 规模 | 层数 | hidden | 头数 | 共享专家 | 路由专家 | 激活路由 | 专家大小 | 总参 | 激活参 |
 |---|---|---|---|---|---|---|---|---|---|
-| 2B | — | — | — | 1 | 63 | 6 | 0.25× | 2B | ~0.2B |
-| 16B | 28 | 2048 | 16 | 2 | 64 | 6 | 0.25× | 16.4B | 2.8B |
+| 2B | — | — | — | 1 | 63 | 6 | 0.25×(相对标准专家) | 2B | ~0.2B |
+| 16B | 28 | 2048 | 16 | 2 | 64 | 6 | 0.25×(相对标准专家) | 16.4B | 2.8B |
 | 145B | 62 | 4096 | 32 | 4 | 128 | 12 | 0.125× | 144.6B | 22.2B |
 
 关键结论（论文实测）：
@@ -400,10 +400,10 @@ class DeepseekV2MoE(nn.Module):
 - DeepSeek LLM (V1)：https://arxiv.org/abs/2401.02954 （注：任务简报中的 2302.09500 为错误 ID，指向一篇数学论文）
 - DeepSeekMoE：https://arxiv.org/abs/2401.06066
 - DeepSeek-V2：https://arxiv.org/abs/2405.04434
-- V2 一手源码：`.sources/deepseek/ds_hf_v2.py`（HF modeling_deepseek.py，1906 行）
+- V2 一手源码：HF modeling_deepseek.py 在线版（约 1900 行）— https://github.com/deepseek-ai/DeepSeek-V2/blob/main/modeling_deepseek.py
 - 一手 config：HF `deepseek-ai/deepseek-llm-7b-base`、`deepseek-ai/deepseek-llm-67b-base`、`deepseek-ai/deepseek-moe-16b-base`、`deepseek-ai/DeepSeek-V2` 的 config.json
 
-> 本文所有代码块结构均来自 V2 一手源码（ds_hf_v2.py）与各代 HF config.json 的真实结构，超参均为一手数值，无杜撰。
+> 本文所有代码块结构均来自 V2 一手源码（HF modeling_deepseek.py 在线版，见上溯源链接）与各代 HF config.json 的真实结构，超参均为一手数值，无杜撰。
 
 ## 相关条目(库内互链)
 

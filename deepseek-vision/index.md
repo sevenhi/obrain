@@ -57,7 +57,7 @@ date: 2026-10
 
 ## 相关条目(跨域互链)
 
-- **[`model-architecture/`](../model-architecture/index.md)**:VL2/OCR 的语言骨干是 DeepSeekMoE/MLA,见 [deepseek-arch-v1-moe-v2](../model-architecture/concepts/deepseek-arch-v1-moe-v2.md)(细粒度+共享专家)与 [open-model-landscape](../model-architecture/concepts/open-model-landscape.md)。DeepSeek 网络结构主线(V1→V3.2)见 [deepseek-model-evolution](../model-architecture/concepts/deepseek-model-evolution.md)。
+- **[`model-architecture/`](../model-architecture/index.md)**:VL2 的语言骨干是 DeepSeekMoE(MHA,config 实测;论文口径 MLA 与 config 不一致),见 [deepseek-arch-v1-moe-v2](../model-architecture/concepts/deepseek-arch-v1-moe-v2.md)(细粒度+共享专家)与 [open-model-landscape](../model-architecture/concepts/open-model-landscape.md)。DeepSeek 网络结构主线(V1→V3.2)见 [deepseek-model-evolution](../model-architecture/concepts/deepseek-model-evolution.md)。
 - **[`computer-vision/`](../computer-vision/index.md)**:本域的视觉编码器(SigLIP/SAM/VQ)与 computer-vision 的表示(NeRF)/部署(TRT-ViT)是「理解内容」与「跑得高效」两件事;CCNN 连续卷积核([cnn-long-range-nd](../computer-vision/concepts/cnn-long-range-nd.md))与 VL 的 hybrid encoder 同为「怎么高效表示视觉信号」的两个答案。
 - **[`vllm/`](../vllm/index.md)**:DeepSeek-OCR 已被上游 vLLM 官方支持([model-registry](../vllm/concepts/model-registry.md) 同属推理侧)。
 

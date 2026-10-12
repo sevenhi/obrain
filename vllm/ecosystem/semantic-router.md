@@ -7,7 +7,7 @@ source:
   - "pdf: When to Reason: Semantic Router for vLLM | arXiv:2510.08731 (2025-10)"
   - "pdf: Category-Aware Semantic Caching for Heterogeneous LLM Workloads | arXiv:2510.26835 (2025-11)"
   - "web: vLLM SR Blog — Signal Decision Driven Architecture / Decision 1.0 / Vela 2.0 | https://vllm-sr.ai/blog/"
-  - "code: src/semantic-router/pkg/{decision,selection,routing,extproc} 与 paper/ 一手实读 (mint:/data/cold/repo/semantic-router/)"
+  - "code: src/semantic-router/pkg/{decision,selection,routing,extproc} 与 paper/ 一手实读 (https://github.com/vllm-project/semantic-router,仓库内 src/semantic-router/pkg/ 与 paper/)"
 date: 2026-10
 ---
 
@@ -307,7 +307,7 @@ SR 作为**可编程决策层**,部署形态灵活:
 
 ## 9. 溯源
 
-- **README(定位、Decision/Vela 新闻、production-stack 协作)**: `mint:/data/cold/repo/semantic-router/README.md`
+- **README(定位、Decision/Vela 新闻、production-stack 协作)**: https://github.com/vllm-project/semantic-router (仓库根 README.md)
 - **Paper 章节(三层架构、信号模型、Decision 布尔树、DSL)**: `paper/sections/{abstract,architecture,signal_engine,decision_engine}.tex`
 - **决策引擎实现**: `src/semantic-router/pkg/decision/engine.go`;选模 `src/semantic-router/pkg/selection/decision_model.go`
 - **extproc 旁路**: `src/semantic-router/pkg/extproc/`

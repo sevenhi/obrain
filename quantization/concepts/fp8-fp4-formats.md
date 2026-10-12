@@ -65,7 +65,7 @@ INT8:  [s | d d d d d d d]        定点,均匀网格,scale 外置
 | FP16 | 16 | 65504 | ≈6e-5 | 2⁻¹¹ | 推理/混合精度 |
 | **E4M3** | 8 | **448** | **2⁻⁶ ≈ 0.0156** | 2⁻⁴ | FP8 前向、权重、激活 |
 | **E5M2** | 8 | **57344** | **2⁻¹⁴ ≈ 6.1e-5** | 2⁻³ | FP8 反向梯度 |
-| **E2M1(FP4)** | 4 | **6** | **0.5**(子正规) | 2⁻¹ | Blackwell 4-bit 权重/激活 |
+| **E2M1(FP4)** | 4 | **6** | **1.0**(最小正规数;0.5 为最小子正规) | 2⁻¹ | Blackwell 4-bit 权重/激活 |
 | INT8 + scale | 8 | 由 scale 决定 | 由 scale 决定 | 2⁻⁷(均匀) | W8A8、KV8 |
 
 要点:E4M3 的 448 听起来「够大」,但**没有 scale 时** LLM 激活的 outlier 动辄上百,普通值会被压到 2⁻⁶ 以下的下溢区。这就是 scale 粒度成为一等公民的原因。
@@ -92,23 +92,25 @@ INT8:  [s | d d d d d d d]        定点,均匀网格,scale 外置
 | per-tensor | 1 | 开销最低,易融合 | 一个 outlier 决定全张量 | 早期 TE delayed scaling |
 | per-channel / per-row | C 或 K | 适配权重通道差异 | 激活的 token 维 outlier 管不到 | 权重量化常用 |
 | per-token | T(每个 token 一个) | 激活 outlier 逐 token 隔离 | 需要 row-wise reduce | 推理激活量化 |
-| block-wise / tile-wise | M/128 × N/128 之类 | 细粒度,抗 outlier | scale 元数据、GEMM 需专用 kernel | **DeepSeek-V3 128×128 tile scaling** |
+| block-wise / tile-wise | M/128 × N/128 之类 | 细粒度,抗 outlier | scale 元数据、GEMM 需专用 kernel | **DeepSeek-V3:权重 per-block 128×128 + 激活 per-token-per-group 1×128** |
 | microscaling(MX) | 每 32 个元素共享 | 标准化、带硬件 scale 表示 | 粒度固定,依赖配套硬件 | OCP MXFP8/MXFP4 |
 
-**块量化的显式形式**(以 tile 为单位,DeepSeek-V3 用 128×128):
+**块量化的显式形式**(以 tile 为单位;DeepSeek-V3 权重用 128×128 block,激活按 per-token-per-group 1×128 分组):
 
 ```
 对权重 W 的每个 tile  T_ij ∈ R^{128×128}:
     s_ij = amax(T_ij) / 448                 # E4M3 上限 448,amax 归一
     Ŵ_ij = s_ij · cast_fp8( T_ij / s_ij )
+激活 X 则按 per-token-per-group(1×128,即每 token 每 128 channels)分组:
+    s_t  = amax(X 的每个 1×128 组) / 448
 GEMM 在 FP8 上计算,输出用高精度累加器承接:
     Y ≈ Σ_ij  Ŵ_ij · X̂_ij   (accum 精度 FP16/FP32)
 ```
 
 - per-tensor 相当于「整网只有一个 s_ij」;block-wise 则是把上式里 `(i,j)` 的覆盖范围缩小到 tile。**scale 越细,单个 outlier 污染的元素越少**,但 scale 元数据与计算也越多。
-- 元数据开销可估:每 128×128=16384 个 FP8 元素配 1 个 FP32 scale,开销约 0.02%,可忽略;真正的代价在 kernel 要按 tile 读 scale 并在寄存器里完成还原。
+- 元数据开销可估:权重侧每 128×128=16384 个 FP8 元素配 1 个 FP32 scale(激活侧每 1×128 组 1 个),开销约 0.02%,可忽略;真正的代价在 kernel 要按 tile 读 scale 并在寄存器里完成还原。
 
-**DeepSeek-V3 的细粒度方案**(tile-wise / block-wise):对 GEMM 的两个操作数按 **128×128 tile** 分块各自求 scale,配合在线量化(online quantization,不缓存过期 amax)与更高精度累加。其工程实现见 DeepGEMM(库内见 [DeepGEMM(NVIDIA)](../../deepseek-infra/concepts/deepgemm-nvidia-vs-ascend.md))。这是「精度不够,粒度来凑」的典型:用更多 scale 元数据 + 定制 GEMM,换回 FP8 的硬件吞吐。
+**DeepSeek-V3 的细粒度方案**:对 GEMM 的两个操作数分设粒度——**权重按 128×128 block、激活按 1×128 tile(per token per 128 channels)**——各自求 scale,配合在线量化(online quantization,不缓存过期 amax)与更高精度累加。其工程实现见 DeepGEMM(库内见 [DeepGEMM(NVIDIA)](../../deepseek-infra/concepts/deepgemm-nvidia-vs-ascend.md))。这是「精度不够,粒度来凑」的典型:用更多 scale 元数据 + 定制 GEMM,换回 FP8 的硬件吞吐。
 
 ### 3.1 Delayed scaling vs Just-in-time scaling
 
@@ -138,7 +140,7 @@ Transformer Engine 的浮点类型接口(`Float8CurrentScaling` / delayed scalin
 |---|---|---|---|---|
 | **MXFP4 / MXFP8** | E2M1 / E4M3 | 共享指数(E8M0,2 的幂) | **32** elements | OCP Microscaling 规范 |
 | **NVFP4** | E2M1 | 块内 FP8(E4M3)scale + per-tensor 双层 scale | **16** elements | NVIDIA Blackwell 推理格式 |
-| DeepSeek 细粒度 FP8 | E4M3 | 每 tile FP32 scale | 128×128 tile | DeepSeek-V3 训练 |
+| DeepSeek 细粒度 FP8 | E4M3 | 权重每 block FP32 scale;激活 per-token-per-group | 权重 128×128 / 激活 1×128 | DeepSeek-V3 训练 |
 
 - **OCP MX** 是开放规范:同一层里「共享 scale」被显式写入格式定义,便于跨厂商硬件对齐。scale 用 E8M0(纯指数)意味着缩放只能是 2 的幂,硬件只需移位。
 - **NVFP4** 是 NVIDIA 实现取向的变体:块更细(16),scale 本身是 FP8,能更贴合实际分布;外层再放一个 per-tensor scale 解决 FP8 scale 动态范围不足。落地时以 Blackwell 的 kernel/文档为准,不要把 MXFP4 与 NVFP4 的 layout 混用。
@@ -170,7 +172,7 @@ Blackwell 的 Tensor Core(架构代号 tcgen05)把 FP4 纳入 dense GEMM 指令�
 
 DeepSeek-V3(arXiv:2412.19437)是「大规模 FP8 训练可行」的标志性公开 recipe,可概括为四条互相咬合的设计:
 
-1. **细粒度量化**(tile/block-wise,如 128×128):避免 per-tensor scale 被 outlier 击穿;
+1. **细粒度量化**(权重 block 128×128、激活 per-token-per-group 1×128):避免 per-tensor scale 被 outlier 击穿;
 2. **在线量化**(online quantization):每个 GEMM 当场从 BF16 激活 cast 到 FP8,不依赖陈旧的离线 scale;
 3. **提高累加精度**:Tensor Core 低比特累加容易在长 K 维上丢精度,通过更高精度累加/更细的累加分段缓解;
 4. **调度与格式分工**:不同张量(权重、激活、梯度、KV)按敏感度选格式与粒度,而不是全局一刀切。
@@ -228,7 +230,7 @@ MS-AMP 的贡献在另一侧:把 FP8 从 GEMM 延伸到 optimizer state(动量�
 
 ## 8. 实践要点
 
-1. **先测 scale,再测 bit**:同为 FP8,per-tensor 与 128×128 tile 的质量差距可能大于 E4M3/E5M2 的格式差距。
+1. **先测 scale,再测 bit**:同为 FP8,per-tensor 与权重 128×128 block + 激活 1×128 分组的质量差距可能大于 E4M3/E5M2 的格式差距。
 2. **amax 统计是隐蔽的正确性来源**:delayed scaling 的历史长度、是否在序列边界刷新、是否用 FP32 记录 amax,都要写进实验记录。
 3. **格式与 kernel 必须成对出现**:checkpoint 是 FP8 不等于服务走了 FP8 Tensor Core;用 profiler 确认 GEMM 真的走低精度指令。
 4. **溢出/下溢监控**:E4M3 上限 448、下限 2⁻⁶,日志里保留 scale 与被 clip 元素比例,比事后看 PPL 更早发现问题。
@@ -249,7 +251,7 @@ MS-AMP 的贡献在另一侧:把 FP8 从 GEMM 延伸到 optimizer state(动量�
 
 ## 溯源
 
-- 主源 ↑primary:DeepSeek-V3 Technical Report(arXiv:2412.19437),细粒度 FP8 训练 recipe 与 128×128 tile scaling 口径。
+- 主源 ↑primary:DeepSeek-V3 Technical Report(arXiv:2412.19437)§5.3 实际表述:激活按 1×128 tile(per token per 128 channels)分组缩放、权重按 128×128 block 分组缩放,KV cache scale 块 128×128——细粒度 FP8 训练 recipe 依此展开。
 - 格式规范:OCP Microscaling Formats (MX) Specification v1.0(2024-02),MXFP8/MXFP4/MXINT8 的共享指数与块定义。
 - 官方文档:NVIDIA Transformer Engine(docs.nvidia.com/deeplearning/transformer-engine/),E4M3/E5M2 分工、delayed/JIT scaling、FP8 训练接口。
 - 代码:DeepGEMM(github.com/deepseek-ai/DeepGEMM)、MS-AMP(github.com/Azure/MS-AMP)——细粒度 FP8 GEMM 与 FP8 optimizer state 的工程实现。

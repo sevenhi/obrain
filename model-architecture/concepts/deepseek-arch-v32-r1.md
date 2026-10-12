@@ -44,7 +44,7 @@ date: 2026-10
 
 ## 2. V3.2 相对 V3 的结构 diff(代码级逐项对照)
 
-对照 `.sources/deepseek/` 下 `v3_model.py`(808 行)与 `v32_model.py`(922 行),`v32_model.py` 新增/改动的全部条目:
+对照 DeepSeek-V3 仓库 `inference/model.py`（808 行，https://github.com/deepseek-ai/DeepSeek-V3/blob/main/inference/model.py）与 DeepSeek-V3.2-Exp 仓库 `inference/model.py`（https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/blob/main/inference/model.py），V3.2 版新增/改动的全部条目:
 
 ### 2.1 新增类/函数(全为 DSA 服务)
 
@@ -385,9 +385,9 @@ DeepSeek 网络结构演进的主线约束是**算力(FLOPs)与显存(KV cache)�
 - **V3.2-Exp 技术报告(一手)**:DeepSeek-V3.2-Exp: Boosting Long-Context Efficiency with DeepSeek Sparse Attention — https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/blob/main/DeepSeek_V3_2.pdf (公式 (1)(2)、Figure 1 DSA 架构、两阶段训练、O(L·k) 复杂度)
 - **V3.2 正式版论文**:arXiv:2512.02556 — https://arxiv.org/abs/2512.02556
 - **V3.2 官方开源公告**:https://api-docs.deepseek.com/news/news250929 (API 降价 50%+、checkpoint 地址)
-- **V3.2 一手源码**:inference/model.py(v32_model.py,922 行,含 Indexer/LayerNorm/rotate_activation/weight_dequant/fp8_index)— https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/tree/main/inference ;本地 `.sources/deepseek/v32_model.py`
+- **V3.2 一手源码**:inference/model.py(含 Indexer/LayerNorm/rotate_activation/weight_dequant/fp8_index)— https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/tree/main/inference
 - **V3.2 真实超参**:config.json — https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp/resolve/main/config.json
-- **V3 对照源码**:本地 `.sources/deepseek/v3_model.py`(808 行);V3 论文 arXiv:2412.19437
+- **V3 对照源码**:inference/model.py — https://github.com/deepseek-ai/DeepSeek-V3/blob/main/inference/model.py (808 行);V3 论文 arXiv:2412.19437
 - **R1**:arXiv:2501.12948 — https://arxiv.org/abs/2501.12948 (V3-Base + GRPO + 冷启动/蒸馏)
 - **库内交叉**:deepseek-infra/concepts/deepselect.md(DSA 链路前置 TopK 算子)、deepseek-infra/concepts/flashmla.md(FlashMLA sparse 消费 indices 的后端)
 

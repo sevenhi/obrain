@@ -19,7 +19,7 @@ date: 2026-10
 
 ## TL;DR(30 秒结论)
 
-**DeepSeek-VL 到 VL2,是「视觉编码器怎么高效产出 LLM 能消费的 token」这条主线的第一步演进:VL 用「冻结的 SigLIP + SAM 双塔(Hybrid)」各自编码、MLP 投影拼接进 LLM;VL2 把视觉侧收敛成「单个可训的 SigLIP SO400M」+「动态分块 tiling」处理任意分辨率,把语言侧换成「DeepSeekMoE + MLA」的稀疏骨干。** 一句话:**VL 解决「高分辨率图怎么在固定 token 预算下编码」,VL2 解决「怎么用稀疏算力 + 动态分辨率同时吃掉性能与效率」。**
+**DeepSeek-VL 到 VL2,是「视觉编码器怎么高效产出 LLM 能消费的 token」这条主线的第一步演进:VL 用「冻结的 SigLIP + SAM 双塔(Hybrid)」各自编码、MLP 投影拼接进 LLM;VL2 把视觉侧收敛成「单个可训的 SigLIP SO400M」+「动态分块 tiling」处理任意分辨率,把语言侧换成「DeepSeekMoE(MHA,config 实测)」的稀疏骨干。** 一句话:**VL 解决「高分辨率图怎么在固定 token 预算下编码」,VL2 解决「怎么用稀疏算力 + 动态分辨率同时吃掉性能与效率」。**
 
 两代共享同一个融合范式:**vision tower → projector(MLP)→ LLM**。区别只在 vision tower 的构造(双塔冻结 vs 单塔可训+分块)与 LLM 的稀疏化(dense vs MoE)。
 
@@ -89,7 +89,7 @@ VL2 相对 VL 有两大(论文原文)到三大升级:
 
 1. **视觉侧:动态分块(dynamic tiling)视觉编码**——处理不同宽高比的高分辨率图。不是固定 384²/1024²,而是把图切成**候选分辨率网格里的多个 tile**,每个 tile 单独过 encoder,再拼成 token 序列。config.json 里的 `candidate_resolutions` 有 23 种(384² → 384×3456、1152² 等),`global_view_pos="head"` 表示在序列头部放一个全局视图(整图下采样的缩略图)token,实现「全局 + 局部」联合编码。`tile_tag="2D"` 表示 2D 分块(带行列位置)。
 2. **视觉塔收敛成单个 SigLIP SO400M**:`model_name="siglip_so400m_patch14_384"`,`width=1152`,`layers=27`——比 VL 的 SigLIP-L 更大,而且**可训**(不再是冻结双塔)。「多图联合编码」的「多图」即多个 tile + 全局视图,统一由这一个塔编码,不再需要 SAM 高塔。
-3. **语言侧:DeepSeekMoE + MLA**——把 dense LLM 换成 DeepSeek 自家的 MoE 稀疏骨干,并带 **MLA(Multi-head Latent Attention,低秩 KV 压缩)**。这是 VL2 能把激活参数压到 1.0/2.8/4.5B 却性能更强的原因。
+3. **语言侧:DeepSeekMoE(MHA)**——把 dense LLM 换成 DeepSeek 自家的 MoE 稀疏骨干。注意口径:论文写 MLA,但开源 checkpoint config 实测 `use_mla=false`(tiny 显式 false,small 缺省即 false)、`num_key_value_heads=num_attention_heads`(MHA),论文与 config 两口径不一;按 config 部署勿套 MLA 假设(KV cache 估算会失真)。稀疏激活(1.0/2.8/4.5B)来自 MoE 细粒度专家,与注意力形式无关。
 
 ### 三个变体(总参 / 激活参数,README + config 实测)
 
@@ -99,7 +99,7 @@ VL2 相对 VL 有两大(论文原文)到三大升级:
 | VL2-Small | 2.8B | 2048 | 64 | 6 | 2 |
 | VL2(full) | 4.5B | 2560 | 72 | 6 | 2 |
 
-> MoE 路由 `scoring_func="sigmoid"`、`topk_method="noaux_tc"`——与 DeepSeek-V3 的 aux-loss-free + sigmoid 路由同源(见 model-architecture 域)。full 版 72 专家 + 2 共享,激活 6。
+> MoE 路由分变体:full 版 `scoring_func="sigmoid"`、`topk_method="noaux_tc"`(与 DeepSeek-V3 的 aux-loss-free + sigmoid 路由同源,见 model-architecture 域);Tiny/Small 实测 `topk_method="greedy"`。full 版 72 专家 + 2 共享,激活 6。
 
 ### 融合方式总结
 
@@ -113,7 +113,7 @@ VL2 相对 VL 有两大(论文原文)到三大升级:
           MLP projector(n_embed=2560)
                 │
                 ▼
-     DeepSeekMoE + MLA 骨干(Tiny/Small/full)→ 文本
+     DeepSeekMoE 骨干(MHA,见上文注;Tiny/Small/full)→ 文本
 ```
 
 ### 数据与规模
@@ -131,14 +131,14 @@ VL2 相对 VL 有两大(论文原文)到三大升级:
 | 视觉塔 | SigLIP-L@384 + SAM-B@1024(双塔,冻结) | SigLIP SO400M@384(单塔,可训) |
 | 高分辨率处理 | 固定双塔分别出低/高特征 | 动态分块 tiling + 全局视图 |
 | 投影 | split MLP(低高两路分投再融) | 单 MLP projector |
-| 语言骨干 | dense LLM 1.3B/7B | DeepSeekMoE(1.0/2.8/4.5B 激活)+ MLA |
+| 语言骨干 | dense LLM 1.3B/7B | DeepSeekMoE(1.0/2.8/4.5B 激活,MHA,见注) |
 | 设计主线 | 冻结强编码器 + 保护语言能力 | 稀疏算力 + 动态分辨率同时吃性能/效率 |
 
 **演进逻辑三句话**:
 
 1. **「双塔冻结」→「单塔可训」**:VL 借 SAM 高塔补细节、借 SigLIP 出语义,靠「冻结现成强编码器」省成本;VL2 发现单个更大的 SO400M + 分块就能同时满足语义与细节,于是把「用两个冻结塔」简化成「一个可训塔 + 分块」——**复杂度下降,表达力反而更强**。
 2. **「固定分辨率」→「动态分块」**:VL 的 1024² 是写死的;VL2 的 23 种候选分辨率 + 全局视图让 encoder 适应任意宽高比文档,这是「多图联合编码」的实质——不是多张图,是**一张图切多块联合编码**。
-3. **「dense」→「MoE」**:语言侧承接 DeepSeek 主线的稀疏化(细粒度专家 + MLA 低秩 KV),把图文模型的「性能/激活参数」比拉到开源第一梯队——与库内 model-architecture 域的 DeepSeekMoE/MLA 完全同源。
+3. **「dense」→「MoE」**:语言侧承接 DeepSeek 主线的稀疏化(细粒度专家 + 共享专家;注意力按 config 实测为 MHA,未沿用主线 MLA),把图文模型的「性能/激活参数」比拉到开源第一梯队——与库内 model-architecture 域的 DeepSeekMoE 同源。
 
 ---
 
@@ -161,5 +161,5 @@ VL2 相对 VL 有两大(论文原文)到三大升级:
 
 ## 相关条目(库内互链)
 
-- DeepSeekMoE/MLA 机制:../model-architecture/concepts/deepseek-arch-v1-moe-v2.md、../model-architecture/concepts/attention-heads-mha-mqa-gqa.md
+- DeepSeekMoE 机制与注意力形式(MHA/MQA/GQA/MLA 主线):../model-architecture/concepts/deepseek-arch-v1-moe-v2.md、../model-architecture/concepts/attention-heads-mha-mqa-gqa.md
 - 视觉编码器后续谱系(OCR/Janus):deepseek-ocr-ocr2.md、janus.md

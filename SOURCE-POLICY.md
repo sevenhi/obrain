@@ -51,7 +51,7 @@ date: 2026-09
 1. 提炼出「知识条目」,不复制原文
 2. 查重:该条是否已在库里?→ 已在 → 补写 `source` 并标日期,不新开篇
 3. 不在 → 判断归属领域与 type(concept/case/checklist/howto/reference/domain/comparison,实际七类;目录↔type 默认映射与已知例外见 §5)
-4. 落篇 + 更新该领域 index.md 索引 + 若新领域则登记进全局 INDEX
+4. 落篇 + 更新该领域 index.md 索引 + 若新领域则登记进全局 INDEX(README.md 域表)
 
 ## 5. 目录 ↔ type 默认映射(惯例 + 已知例外)
 
@@ -61,7 +61,10 @@ date: 2026-09
 |---|---|---|
 | `concepts/` | concept(机制原理) | 强约定 |
 | `cases/` | case(事故复盘) | 强约定 |
-| `practices/` | checklist(清单) | 强约定;例外:vllm/practices/inference-engine-selection.md 为 comparison(选型对比) |
+| `practices/` | checklist(清单) | 强约定;例外:vllm/practices/inference-engine-selection.md 为 comparison(选型对比);vllm/practices/attention-backend-selection.md 为 comparison(选型对比) |
+|| `implementation/`(attention 域) | implementation | 弱约定;目录独有 |
+|| `algorithm/`(attention 域) | algorithm | 弱约定;目录独有 |
+|| `ecosystem/`(vllm 域) | concept(生态构件深读) | 弱约定;2026-10 合入 vllm-project 域后沿用 concepts 同款 |
 | `notes/` | 源码一手实读笔记(**豁免** TL;DR/frontmatter 要求,见 §6) | 强约定(豁免) |
 | `frameworks/` | howto(工具上手) | 弱约定 |
 | `references.md`(领域根) | reference(链接索引) | 补充映射 |
@@ -84,4 +87,4 @@ date: 2026-09
 
 ## 对现有库的说明
 
-本库的多来源合并已示范在多个领域(如 FlashAttention 篇的 source 同时含 arXiv 论文多个来源、quantization 篇含论文 + 库内 PDF)。后续每接一个新来源,按本策略补 `source` 即可。
+本库的多来源合并已示范在多个领域(如 FlashAttention 篇的 source 同时含 arXiv 论文多个来源、quantization 篇含论文来源)。后续每接一个新来源,按本策略补 `source` 即可。

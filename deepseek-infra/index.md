@@ -30,7 +30,7 @@ date: 2026-10
 - **六件套覆盖链路**:语言层 → 矩阵库 → 通信库 → 注意力算子。
 - **三条 P0 事实(本域写作最易踩,务必按此记)**:
   1. **TileLang 是 tile-ai 的第三方 DSL,不是 DeepSeek 的仓库**;昇腾支持分三层:主仓 tile-ai/tilelang 现支持 Ascend 950 native backend(2026-09-30 起)、独立仓 tile-ai/tilelang-ascend(A2/A3 的 ascendc/pto/npuir)、tilelang-mlir-ascend(MLIR 路线)。
-  2. **FlashMLA 昇腾版 2026-09-30 发布、已合入 main(原开发分支 `20260930-ascend-open-source`)且是 breaking change**:移除 Hopper 支持、移除 V3/V3.2/V4.0 旧模型、改 FP8/FP4 KV cache 格式,只服务 V4.1;旧模型切旧 commit `ba89a346`。
+  2. **FlashMLA 昇腾版 2026-09-30 发布于分支 `20260930-ascend-open-source`,合入状态以仓库当前 main 为准**(2026-10-12 核对时 main README 仍为 V3/V3.2-Exp 口径、News 最新 2025.09.29,无昇腾合入痕迹);分支口径称是 breaking change:移除 Hopper 支持、移除 V3/V3.2/V4.0 旧模型、改 FP8/FP4 KV cache 格式,只服务 V4.1,旧模型切旧 commit `ba89a346`——以上分支口径**待核实**。
   3. **TileKernels 昇腾支持从 PyPI v2.0.0 起**,但 main README 滞后(仍只写 NVIDIA SM90/SM100)。
 - **术语(本域核定拼写;标「待核」者为一手库未附链接)**:fractal(分形**布局**)、MAD(matrix multiply-add 原语)、UBMEM、URMA、HCCL(集合通信)、HCOMM(控制面 API,**待核/据昇腾官方资料**)、bisheng(毕昇编译器)、DeepJIT(运行时 JIT)、torch_npu、**CANN 9.2.0**(DeepGEMM README 原文 "9.20" 即此版本,不写 9.20)、**950PR ≠ 950DT**(同一 950 Die 两款型:PR=Prefill&Recommendation、DT=Decode&Training,**待核/据昇腾官方资料**)。
 - **性能数字单源标注**:本域各算子性能数字(DeepGEMM 99.8%/856/862/850 TFLOPS、DeepEP 90–95% 带宽、FlashMLA 410/360、TileLang FA/mHC 比值)均出自各仓 README/deep-dive 一手源,暂无独立第三方或硬件实测复核,引用时保留原始口径、待硬件实测复核。
@@ -43,7 +43,7 @@ date: 2026-10
 | DeepGEMM-Ascend | DeepGEMM | 新建独立仓,API 完全兼容 | deepseek-ai/DeepGEMM-Ascend |
 | DeepEP-Ascend | DeepEP | 新建独立仓,API 完全兼容 | deepseek-ai/DeepEP-Ascend |
 | TileKernels | TileKernels 原生 | 新增昇腾后端(v2.0.0) | deepseek-ai/TileKernels |
-| FlashMLA | FlashMLA 原生 | 昇腾版已合入 main | deepseek-ai/FlashMLA |
+| FlashMLA | FlashMLA 原生 | 昇腾版发布于分支 20260930-ascend-open-source,合入状态以 main 为准 | deepseek-ai/FlashMLA |
 | DeepSelect | DeepSelect 原生 | 新增昇腾后端 | deepseek-ai/DeepSelect |
 
 ### 技术栈分层(文字图)
@@ -77,7 +77,7 @@ date: 2026-10
 | DeepEP-Ascend | [concepts/deepep-ascend.md](concepts/deepep-ascend.md) | MoE 专家并行通信库,EP all-to-all(dispatch/combine),EP≤32 dispatch 达 90–95% 物理带宽 | ✅ 已入库 |
 | TileKernels | [concepts/tilekernels.md](concepts/tilekernels.md) | TileLang 之上的 LLM 算子库(MoE routing/量化/Engram/mHC),v2.0.0 起支持昇腾,同一 Python API 跑 NVIDIA+华为 | ✅ 已入库 |
 | DeepSelect | [concepts/deepselect.md](concepts/deepselect.md) | DSA/Sampler 的定制 TopK 算子,2–20× vs torch.topk(口径:有效内存带宽);昇腾仅 bfloat16 | ✅ 已入库 |
-| FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | MLA 注意力内核库(dense+sparse),昇腾版已合入 main 且 breaking change;410 TFlops 双义(平台要标清) | ✅ 已入库 |
+| FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | MLA 注意力内核库(dense+sparse),昇腾版发布于分支 20260930-ascend-open-source、合入状态以 main 为准(分支称 breaking change,待核实);410 TFlops 双义(平台要标清) | ✅ 已入库 |
 
 ### NVIDIA 版对照 + 并行/工具/存储(NVIDIA 主线)
 
@@ -95,7 +95,6 @@ date: 2026-10
 | open-infra-index | [concepts/open-infra-index.md](concepts/open-infra-index.md) | DeepSeek 开源基础设施总索引:开源周一天一 repo + 论文 + V3/R1 线上数据(73.7k/14.8k tok/s) | ✅ 已入库 |
 | 3FS | [concepts/3fs.md](concepts/3fs.md) | Fire-Flyer 分布式文件系统:disaggregated + CRAQ 强一致 + FoundationDB;6.6 TiB/s 聚合读、GraySort 3.66 TiB/min | ✅ 已入库 |
 | smallpond | [concepts/smallpond.md](concepts/smallpond.md) | DuckDB + 3FS 轻量数据处理框架,无长驻服务,PB 级;GraySort 与 3FS 同口径 | ✅ 已入库 |
-| deepseek-recipe | [concepts/deepseek-recipe.md](concepts/deepseek-recipe.md) | Rust+Python:Messages/Chat Completions/Responses → DeepSeek V4/V4.1 prompt 编解码;不含推理/HTTP | ✅ 已入库 |
 
 ### 实践清单(practices)
 

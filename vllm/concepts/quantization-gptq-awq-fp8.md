@@ -145,7 +145,7 @@ FP16_MATMUL_HEURISTIC_CONDITION = x.shape[:-1].numel() >= 256   # auto_awq.py:92
 ### 5.1 FP8 的 QuantKey 与硬件适配(最值得精读)
 
 `Fp8LinearMethod.init`(`fp8.py:251-290`)构造 weight/activation 的 `QuantKey`:
-- **块量化**(DeepSeek 128×128)→ `kFp8Static128BlockSym` + `kFp8Dynamic128Sym`,且 **`assert not act_q_static`(块量化强制动态激活)**;scale 参数名**特意用 `weight_scale_inv`**(`:348-349`,注释明确 "intentional for deepseekv3")。
+- **块量化**(DeepSeek:权重 128×128;激活动态 per-token-group)→ `kFp8Static128BlockSym` + `kFp8Dynamic128Sym`,且 **`assert not act_q_static`(块量化强制动态激活)**;scale 参数名**特意用 `weight_scale_inv`**(`:348-349`,注释明确 "intentional for deepseekv3")。
 - **per-tensor** → `kFp8StaticTensorSym`;**动态激活**在 `cutlass_fp8_supported()` 时**升级 per-token**(`kFp8DynamicTokenSym`),否则退回 per-tensor(`:283-290`)。
 - **无 FP8 硬件的 GPU** → `init_fp8_linear_kernel()` 选 `MarlinFP8ScaledMMLinearKernel` → `use_marlin=True`(`:366`)——**FP8 weight-only 降级到 Marlin**。
 - `process_weights_after_loading()`(`:368`):per-tensor 融合层(如 QKV)Marlin 路径先转 `(K,N)`(`:372`);非 Marlin 用 `process_fp8_weight_tensor_strategy` 取 max scale 重化为单一 scale(`torch._scaled_mm` 要求)。

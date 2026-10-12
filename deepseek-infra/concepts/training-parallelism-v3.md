@@ -103,7 +103,7 @@ date: 2026-10
 2. **显存已被别处省出来了**:RMSNorm + MLA up-projection 全量重计算、激活 FP8 缓存、EMA 甩到 CPU、MTP 共享 embedding/output-head、DualPipe 的 2× 参数被 EP64 摊薄——不需要再靠 TP 切权重来装下模型。
 3. **MoE 专家用 EP 更自然**:256 个独立专家按 expert 整体切走(EP),比把每个 expert 的矩阵再竖着切(TP)更少同步点、更贴合 grouped expert GEMM 的计算形态。
 
-> 对照:V3 **推理**侧反而是 TP4+SP(注意力)+ EP32(MoE)+ DP8 的组合——训练要吞吐与稳定性故砍掉 TP;推理要单卡/单副本延迟与显存故把 TP 加回来。别把两套拓扑混着抄。
+> 对照:V3 **推理**侧拓扑分阶段——prefill 用 EP32(MoE 大批量吞吐优先);decode 用 TP4+SP(注意力)+ EP40(MoE)+ DP 组合(单卡延迟与显存优先)。训练要吞吐与稳定性故砍掉 TP;推理 prefill/decode 两阶段取舍不同,分别选 EP 与 TP+SP。别把两套拓扑混着抄。
 
 ### 2.4 MTP 对训练编排的影响
 

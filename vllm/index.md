@@ -59,7 +59,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 | [生产部署与观测清单](practices/production-serving.md) | checklist | 从模型/显存预算、启动参数、健康检查、并发与限流到 Prometheus 指标、日志、升级和安全边界的上线前后检查 |
 | [LLM 推理引擎选型](practices/inference-engine-selection.md) | comparison | vLLM、SGLang、TensorRT-LLM、llama.cpp、LMDeploy 的定位、适用场景和统一评测方法 |
 | [注意力后端选型](practices/attention-backend-selection.md) | comparison | V1 attention backend 可插拔机制(AttentionBackend + register_backend + 最小 priority 分派,无 ATTN_BACKEND 环境变量);backend 枚举无 TRT-LLM,MLA 族 FlashMLA 双平台 |
-| [PD 分离部署清单](practices/pd-disaggregation.md) | checklist | Prefill/Decode 解耦:TTFT/TPOT 分离优化、KV 传输(DistServe/Splitwise/Mooncake、KVCacheConnector/NIXL/LMCache)、何时用/不用、vLLM 落地与监控坑 | ✅ 已入库(2026-10) |
+| [PD 分离部署清单](practices/pd-disaggregation.md) | checklist | Prefill/Decode 解耦:TTFT/TPOT 分离优化、KV 传输(DistServe/Splitwise/Mooncake、KVCacheConnector/NIXL/LMCache)、何时用/不用、vLLM 落地与监控坑;2026-10 已入库 |
 
 > 2026-09 收尾:原 `notes/` 5 篇源码笔记(sampling-penalties / api-server / core-architecture / full-technical-report / serving-layer-analysis)已按"先迁移独有内容、后删除"提炼并入上述概念篇,`notes/` 目录随之清空;溯源以源码 commit `b74ac0bc6` 为准。
 

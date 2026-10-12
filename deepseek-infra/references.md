@@ -17,7 +17,7 @@ date: 2026-10
 - **DeepGEMM-Ascend(昇腾 GEMM 库)** — https://github.com/deepseek-ai/DeepGEMM-Ascend
 - **DeepEP-Ascend(昇腾 MoE 通信库)** — https://github.com/deepseek-ai/DeepEP-Ascend
 - **TileKernels(TileLang 算子库)** — https://github.com/deepseek-ai/TileKernels ;PyPI v2.0.0(昇腾版) — https://pypi.org/project/tile-kernels/2.0.0/
-- **FlashMLA(注意力内核库,昇腾版已合入 main,原开发分支 20260930-ascend-open-source)** — https://github.com/deepseek-ai/FlashMLA
+- **FlashMLA(注意力内核库,昇腾版发布于分支 20260930-ascend-open-source,合入状态以仓库当前 main 为准)** — https://github.com/deepseek-ai/FlashMLA
 - **DeepSelect(DSA/Sampler 的 TopK 算子)** — https://github.com/deepseek-ai/DeepSelect
 
 ## NVIDIA 原版对照 + 并行/工具/存储仓库(该批入库)
@@ -55,8 +55,6 @@ date: 2026-10
 ## 官方/媒体报道(开源背景出处)
 
 - 昇腾官方文档站 — https://www.hiascend.com/
-- 华为 CANN 社区(昇腾开源成果:SuperPoD Flex / UBL128 超节点)联合公告
-- DeepSeek 官方开源公告(凤凰网 / 网易 / 七牛云等转载报道)
 
 ## PyPI 版本页
 
@@ -64,12 +62,9 @@ date: 2026-10
 - tilelang(上游 DSL)—— https://pypi.org/project/tilelang/
 - smallpond — https://pypi.org/project/smallpond/
 
-### 训练并行(2026-10 补)
+### 训练并行/API 编解码(2026-10 补)
 
-- DeepSeek-V3 Technical Report — https://arxiv.org/abs/2412.19437
 - DeepSeek-V3 仓库 — https://github.com/deepseek-ai/DeepSeek-V3
-- DualPipe — https://github.com/deepseek-ai/DualPipe
-
-### API 编解码(2026-10 补)
-
 - deepseek-recipe — https://github.com/deepseek-ai/deepseek-recipe
+
+(Technical Report 与 DualPipe 链接已在上方「论文」「NVIDIA 原版对照」两节,不重复列。)

@@ -71,7 +71,7 @@ date: 2026-09
 - CPU、RAM、共享内存和进程数
 - OOM、CUDA/NCCL 错误、模型加载失败和重启次数
 
-指标命名和版本随 vLLM 演进，使用当前版本官方 metrics 文档核对，不要永久依赖旧 dashboard 的字段名。
+指标命名和版本随 vLLM 演进，使用当前版本官方 metrics 文档核对，不要永久依赖旧 dashboard 的字段名。指标名示例(以当前版本实测为准,勿硬编码进告警):`vllm:num_requests_waiting` / `vllm:gpu_cache_usage_perc` / `vllm:time_to_first_token_seconds` / `vllm:e2e_request_latency_seconds`(Histogram);基线与告警阈值的设定方法见 [引擎选型篇](inference-engine-selection.md) 的统一评测一节,启动参数与健康检查项见本文 §2-§4,三者口径保持联动。
 
 ## 6. 日志、升级和回滚
 

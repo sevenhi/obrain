@@ -25,7 +25,7 @@ source:
 | 算法 | 论文 | 要点 | 备注 |
 |---|---|---|---|
 | **DSpark** | [arXiv:2607.05147](https://arxiv.org/abs/2607.05147) | Confidence-Scheduled Speculative Decoding + 半自回归生成 | DeepSeek 自研,配置在 `config/dspark/` |
-| **DFlash** | [arXiv:2602.06036](https://arxiv.org/abs/2602.06036) | 草稿模型设计与训练配方 | 配置在 `config/dflash/` |
+| **DFlash** | [arXiv:2602.06036](https://arxiv.org/abs/2602.06036) | 块扩散式草稿模型(block diffusion)+ 训练配方 | 配置在 `config/dflash/` |
 | **Eagle3** | [arXiv:2503.01840](https://arxiv.org/abs/2503.01840) | 特征层对齐的自回归草稿 | 实现部分改编自 [SpecForge](https://github.com/sgl-project/SpecForge)(Apache-2.0,见 `NOTICE`) |
 
 已发布的 checkpoint 覆盖目标模型:`Qwen/Qwen3-4B` / `8B` / `14B`、`google/gemma-4-12B-it`;HF 命名如 `deepseek-ai/dspark_qwen3_4b_block7`、`deepseek-ai/eagle3_qwen3_4b_ttt7`。

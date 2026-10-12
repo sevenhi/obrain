@@ -261,4 +261,4 @@ from guidellm.benchmark import benchmark_generative_text
 - SLO 场景示例(聊天 TTFT≤200ms@P99 等):`docs/en/guides/service_level_objectives.md`;
 - 报告重载:`docs/en/guides/outputs.md` 的 `GenerativeBenchmarksReport`;
 - vllm-bench 归档声明与其 README;perf-eval 的 YAML recipe 机制与其 README;
-- ⚠ 本地 `/data/cold/repo/guidellm` 为浅克隆快照(2026-10);CLI 参数以官方文档当前版为准。
+- ⚠ CLI 参数以官方文档当前版为准。

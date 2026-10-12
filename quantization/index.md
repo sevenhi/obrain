@@ -31,7 +31,7 @@ date: 2026-10
 | [KV Cache 量化](concepts/kv-cache-quantization.md) | concept | 把运行时 KV cache 从权重压缩问题单独拆出:按 token/channel 分组、对称/非对称量化、混合精度与长上下文权衡 |
 | [2-bit 权重量化前沿:QuIP# / AQLM](concepts/two-bit-weight-frontier.md) | concept | ≤4-bit 权重 SOTA:QuIP# 旋转消 outlier+E8 格码+fine-tune,AQLM 多码本加和;3-bit 近无损、2-bit 有可感知退化(arXiv 2402.04396 / 2401.06118) |
 | [KV cache 极低比特前沿:KVQuant / KVTuner](concepts/kvquant-kvtuner-frontier.md) | concept | KVQuant 3-bit 近无损(Pre-RoPE+NUQ+sparse,10M context);KVTuner layer-wise 精度对搜索(≈3.25-bit 近无损,+21.25% 吞吐) |
-| [FP8/FP4 硬件原生格式](concepts/fp8-fp4-formats.md) | concept | E4M3/E5M2/E2M1 位布局与 scale 粒度(per-tensor/token/block 128×128)、Delayed vs JIT scaling;NVFP4/MXFP4/MXFP8 与 Blackwell tcgen05 路径;与 QuIP#/AQLM 算法压缩分野;训练 V3 recipe vs 推理 FP8 KV |
+| [FP8/FP4 硬件原生格式](concepts/fp8-fp4-formats.md) | concept | E4M3/E5M2/E2M1 位布局与 scale 粒度(per-tensor/token;DeepSeek-V3:权重 block 128×128、激活 1×128)、Delayed vs JIT scaling;NVFP4/MXFP4/MXFP8 与 Blackwell tcgen05 路径;与 QuIP#/AQLM 算法压缩分野;训练 V3 recipe vs 推理 FP8 KV |
 
 **共同心法(八篇一条线)**:压缩误差不是均匀分布的——HyQuant 按 attention mass 分精度、SpQR 按敏感度分位宽、LSTM 篇按谱结构(核范数)分压缩方式、GPTQ/AWQ/SmoothQuant 与 KV cache 篇按误差补偿/激活敏感/离群迁移分预算、QuIP#/AQLM 与 KVQuant/KVTuner 用旋转消 outlier / 多码本加和 / layer-wise 精度对把 2-bit 联合压缩推进到极限;**都是"把预算花在杠杆点上",而非全局均匀砍**。
 

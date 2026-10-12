@@ -184,6 +184,6 @@ __global__ void gen(curandStatePhilox4_32_10_t* s, float* out) {
 
 ## 溯源
 
-- counter-based 主源:Salmon, Moraes, Dror, Shaw, *Parallel Random Numbers: As Easy as 1, 2, 3*, SC11(Best Paper)。库内 PDF + 官方站 https://www.thesalmons.org/john/random123/ (Random123 库,含 ARS/Threefry/Philox 的 C/C++/CUDA/OpenCL 实现)。
-- MTGP 主源:Saito, Matsumoto, *Variants of Mersenne Twister Suitable for Graphic Processors*, arXiv:1005.4973。库内 PDF + 官方站 https://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/MTGP/ (MTGP/MTGPDC 源码与参数集)。
+- counter-based 主源:Salmon, Moraes, Dror, Shaw, *Parallel Random Numbers: As Easy as 1, 2, 3*, SC11(Best Paper)。官方站 https://www.thesalmons.org/john/random123/ (Random123 库,含 ARS/Threefry/Philox 的 C/C++/CUDA/OpenCL 实现)。
+- MTGP 主源:Saito, Matsumoto, *Variants of Mersenne Twister Suitable for Graphic Processors*, arXiv:1005.4973。权威在线版 https://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/MTGP/ (MTGP/MTGPDC 源码与参数集)。
 - 工程交叉源:NVIDIA cuRAND 文档(Host/Device API、Performance Notes、生成器类型与周期口径),用于把论文的算法结论对齐到 `curandStatePhilox4_32_10_t`/`MTGP32`/`XORWOW` 的实际 API 与推荐用法。

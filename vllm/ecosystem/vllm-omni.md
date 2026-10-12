@@ -6,7 +6,7 @@ source:
   - "code: github.com/vllm-project/vllm-omni | https://github.com/vllm-project/vllm-omni"
   - "pdf: vLLM-Omni Technical Report: A Unified Serving Runtime for Omni-Modality Generation | arXiv:2610.09307 (2026-10)"
   - "pdf: vLLM-Omni: Fully Disaggregated Serving for Any-to-Any Multimodal Models | arXiv:2602.02204 (Yin et al., 2026)"
-  - "code: vllm_omni/ 包结构与 docs/design 一手实读 (mint:/data/cold/repo/vllm-omni/)"
+  - "code: vllm_omni/ 包结构与 docs/design 一手实读 (https://github.com/vllm-project/vllm-omni,仓库内 vllm_omni/ 与 docs/design/)"
 date: 2026-10
 ---
 
@@ -306,7 +306,7 @@ curl http://127.0.0.1:8091/v1/images/generations -H 'Content-Type: application/j
 
 ## 10. 溯源
 
-- **README / News(版本对齐、能力清单、arXiv:2610.09307 / 2602.02204)**: `mint:/data/cold/repo/vllm-omni/README.md`
+- **README / News(版本对齐、能力清单、arXiv:2610.09307 / 2602.02204)**: https://github.com/vllm-project/vllm-omni (仓库根 README.md)
 - **架构总览与 stage 模型映射**: `docs/design/architecture_overview.md`
 - **全双工框架与 engine-owned session**: `docs/design/fullduplex.md`;会话状态 `docs/features/session_state_manager.md`
 - **AR/DiT paged KV**: `docs/user_guide/diffusion/paged_kv_cache.md`

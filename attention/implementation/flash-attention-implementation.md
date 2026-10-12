@@ -357,7 +357,7 @@ O      = P_fp8 @ V_fp8          # 第二个 WGMMA 也是 FP8 GEMM(不是 V 保�
 - 配合 `setmaxnreg` 寄存器重分配(producer 少寄存器、consumer 多);WGMMA 用 `fence/commit_group/wait_group` 显式指令流;
 - 特性:FP16/BF16 前后向、**FP8(E4M3)前向**、varlen、**paged KV cache**、**SplitKV**(长序列把 KV 维 split,最后 reduce)。
 
-> **当前状态(2026 时效)**:FA3 的 `hopper/` 目录长期停留在 **beta**(至 beta25);**Blackwell SM100 不支持 WGMMA,改用第五代 Tensor Core 指令 tcgen05(其异步矩阵乘指令 UMMA,Unordered Multi-precision Matrix Multiply),故 FA3 无法上 B200**——由 FA4(CuTe DSL)接管(B200 用户走 FA4)。
+> **当前状态(2026 时效)**:FA3 的 `hopper/` 目录长期停留在 **beta**(至 beta25);**Blackwell SM100 不支持 WGMMA,改用第五代 Tensor Core 指令 tcgen05(其异步矩阵乘指令 UMMA——CUTLASS 对 tcgen05.mma 的称呼,官方未展开全称),故 FA3 无法上 B200**——由 FA4(CuTe DSL)接管(B200 用户走 FA4)。
 
 ---
 

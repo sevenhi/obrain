@@ -9,7 +9,7 @@ date: 2026-10
 
 > 只放链接索引,不复制全文(库规约)。全部 URL 于 2026-10-09 curl 实测存活(仓库返回 200,arXiv 返回 200)。论文结论以 arXiv 摘要为准;README 与摘要数字冲突处已在各概念篇标注。
 
-## 仓库(8 个,均 deepseek-ai 官方,2026-10-09 实测 200)
+## 仓库(9 个,均 deepseek-ai 官方,2026-10-09 实测 200)
 
 - DeepSeek-Math — https://github.com/deepseek-ai/DeepSeek-Math
 - DeepSeek-Math-V2 — https://github.com/deepseek-ai/DeepSeek-Math-V2
@@ -19,6 +19,7 @@ date: 2026-10
 - DeepSeek-Coder-V2 — https://github.com/deepseek-ai/DeepSeek-Coder-V2
 - deepseek-harness — https://github.com/deepseek-ai/deepseek-harness
 - DeepSeek-MoE — https://github.com/deepseek-ai/DeepSeek-MoE
+- dsh-node-addon-require-builtin(dsh 内部 Node 插件,2026-10-12 实测 200)— https://github.com/deepseek-ai/dsh-node-addon-require-builtin
 
 ## 原论文(arXiv)
 

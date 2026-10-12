@@ -32,6 +32,7 @@ date: 2026-10
 | [deepseek-moe](concepts/deepseek-moe.md) | concept | DeepSeekMoE 16B:细粒度专家+共享专家,40% 算力打平 DeepSeek 7B/LLaMA2 7B;数据/评测侧重(结构细节引网络结构篇) | ✅ 已入库(2026-10) |
 | [deepseek-harness](frameworks/deepseek-harness.md) | howto | DeepSeek Harness(dsh):everything-is-a-plugin 架构的 agent 框架,基于 Cordis,TS/npm,developer preview | ✅ 已入库(2026-10) |
 | [deepspec](frameworks/deepspec.md) | howto | DeepSpec:投机解码草稿模型训练/评测全栈(DSpark/DFlash/Eagle3),数据→训练→评测,可为 Qwen3/Gemma 等目标模型练 draft(arXiv:2607.05147) | ✅ 已入库(2026-10) |
+| [dsh-node-addon-require-builtin](frameworks/dsh-node-addon-require-builtin.md) | howto | dsh 的内部 Node 原生插件:不亮 `--expose-internals` 拿到私有 requireBuiltin(探 Realm 指针/机器码偏移)、internal-loader 白名单 vs require-builtin 无限制、fail-closed,Node 20/22/24/26+Electron(2026-10-12 新仓) | ✅ 已入库(2026-10-12) |
 
 ## 关键事实速记
 

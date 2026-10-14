@@ -4,7 +4,7 @@ type: howto
 tags: [deepseek, agent, harness, plugin, cordis, typescript, tool]
 date: 2026-10
 source:
-  - "code: deepseek-harness | https://github.com/deepseek-ai/deepseek-harness | 2026-10-09 | ↑primary"
+  - "code: deepseek-harness | https://github.com/deepseek-ai/deepseek-harness | 2026-10-14 | ↑primary"
   - "web: DeepSeek Harness 文档 | https://deepseek-harness.github.io/deepseek-harness/ | 2026-10-09"
   - "pdf: A Programming Paradigm for Spatiotemporal Composability | arXiv:2608.25512 | https://arxiv.org/abs/2608.25512"
 ---
@@ -41,6 +41,30 @@ pnpm dsh web
 ```
 
 开发热更:`pnpm run dev:web`(单终端 build+serve+rebuild);`make help` 列出 Web/Desktop 的 Make target。
+
+## 3b. 增量:0.2.1-alpha.3(2026-10-14)
+
+> 版本演进:`0.2.0-rc.2`(09-29)→ `0.2.1-alpha.1/2/3`(10-03/10-09/10-14)。仍为 alpha,迭代很快,破坏性变更常态。本节收录 v0.2.1-alpha.3 相对既有笔记的新观察点。
+
+**新增能力(本次值得记的):**
+
+- **账号登录与密钥脱敏**:Web 端支持本机 HTTP 访问时登录 DeepSeek 账号;自动识别已发送消息中的密钥/令牌并**默认脱敏、按需查看**。API Key 读取优先级调整:`Web/桌面端`优先用已保存凭据,**headless 默认改用环境变量与 .env、不读已保存密钥**。
+- **/compact 手动压缩上下文**:极简模式可读图 + 自动压缩长对话;Web 与桌面端随时 `/compact` 手动压缩,缓解长上下文成本。
+- **子智能体 Agent Preset**:子智能体可配置独立 Agent Preset 统一角色/工具;delegation 达到层数上限会提前提示、等待子任务期间不再消耗新的目标执行轮次(委派/等待指引细化)。
+- **PTC Mode in-memory 执行**:Node 执行环境新增可选 in-memory 模式,多次运行代码可复用变量/函数/已导入模块(类比 REPL 持久状态)。
+- **SDK resume**:TypeScript 与 Python SDK 支持 `resume` 恢复已保存会话,沿用原会话 ID 与工作目录。
+- **热重载插件生效**:插件更新/重装后不再跑旧代码——可替换插件启用热重载即时生效,否则提示重启。
+
+**需注意的破坏性/迁移点:**
+
+- **Azure 提供方名称统一为 `azure`**;旧名 `azure-openai-responses` 的配置需迁移。
+- `--from-default-profile` 重建已有自定义配置时会**替换该配置及其插件与设置**(不是合并)。
+- Python SDK 的 Office 引擎与完整创作环境改为**按需下载**。
+
+**文档 URL 实测存活**(2026-10-14 复核):仓库 `https://github.com/deepseek-ai/deepseek-harness`、文档站 `https://deepseek-harness.github.io/deepseek-harness/` 均可访问;release tag 走 `dsh-v*`(如 `dsh-v0.2.1-alpha.3`)。
+
+## 增量溯源
+- 版本/功能点以仓库 release body(2026-10-14)为准;本次仅增量更新已有篇,机制/上手不变。
 
 ## 3. 关键点/坑
 

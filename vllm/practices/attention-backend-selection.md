@@ -54,7 +54,7 @@ get_attn_backend(head_size, dtype, kv_cache_dtype, use_mla, ...)   # selector.py
 
 **要点**:
 
-1. **优先级由 `_get_backend_priorities` 决定**(cuda.py:83),不是全局固定一张表——它按 `use_mla` / `device_capability.major`(10=Blackwell、12=Rubin SM120、9=Hopper)/ `kv_cache_dtype`(量化 KV)/ `num_heads` 分叉出不同顺序。
+1. **优先级由 `_get_backend_priorities` 决定**(cuda.py:83),不是全局固定一张表——它按 `use_mla` / `device_capability.major`(10=Blackwell 数据中心、12=Blackwell GeForce/RTX50(SM120)、9=Hopper;Rubin 是 SM107=11)/ `kv_cache_dtype`(量化 KV)/ `num_heads` 分叉出不同顺序。
 2. **量化 KV cache 会影响优先级**:例如 SM100 MLA + FP8 KV 时,`FLASHINFER_MLA_SPARSE` 排在 `FLASHMLA_SPARSE` 前(FlashInfer 对 FP8 KV 更好);BF16 KV 且 head 数 ≤16 时也优先 FlashInfer(FlashMLA 有 padding)。
 3. **显式指定无效会硬报错**:选定的 backend `validate_configuration` 不过 → 抛 `ValueError`,不会静默回退。
 4. **`--block-size` 会排挤高优先级 backend**:若用户指定了 block size 导致某些 backend 因「block_size not supported」被排除,vLLM 会打 warning 提示可去掉 `--block-size` 让自动选。

@@ -373,7 +373,7 @@ Triton 的局限(FA4 博客引 Gluon 文档原话):「Triton 编译器对广泛�
 | 抽象层次 | 中高(编译器隐藏 tile/线程细节) | 中低(能碰 TMEM/TMA/tcgen05/warp 特化) |
 | 易用性 | 高,Python 味浓 | 低一些,要懂 CUTLASS 概念 |
 | 性能上限 | 高,但 Blackwell 级异步编排表达不出来 | 最高(FA4 = 手工级流水线,但用 Python 写) |
-| 硬件覆盖 | 广(NVIDIA 多代 + AMD ROCm 等) | NVIDIA Hopper(SM90)/Blackwell(SM100/110)为主;另见 Ampere 前向(FlashAttentionForwardSm80)与 SM120(Rubin)前向/反向源码已出现 |
+| 硬件覆盖 | 广(NVIDIA 多代 + AMD ROCm 等) | NVIDIA Hopper(SM90)/Blackwell(SM100/110)为主;另见 Ampere 前向(FlashAttentionForwardSm80)与 SM120(Blackwell GeForce/DGX Spark)前向/反向源码已出现;Rubin 为 SM107 |
 | 在 FlexAttention 中的角色 | 默认后端(`BACKEND="AUTO"/"TRITON"`) | FA4 后端(`BACKEND="FLASH"`) |
 
 *(表为多源综合:FA4 博客 Blackwell 节 + Gluon 引文 + Colfax 指南 + 本地 AGENTS.md;「易用性/抽象层次」为定性判断)*

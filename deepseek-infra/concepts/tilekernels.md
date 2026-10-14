@@ -6,10 +6,14 @@ source:
   - "code: deepseek-ai/TileKernels | https://github.com/deepseek-ai/TileKernels ↑primary"
   - "code: pypi.org/project/tile-kernels(v2.0.0,昇腾支持说明)| https://pypi.org/project/tile-kernels/2.0.0/"
   - "code: tile-ai/tilelang(底层 DSL)| https://github.com/tile-ai/tilelang"
-date: 2026-09
+date: 2026-10
 ---
 
 # TileKernels — TileLang 算子库合集
+
+## 版本更新(2026-10)
+
+- **v2.1.0(2026-10-14,HEAD c1cf914a)**:量化(norm_forward/backward、SwiGLU、cast)、Engram gate 前后向的**内核/测试 bug 修复与再优化**(含昇腾 Asc 后端同步),无新算子族、无公开 API 变更;昇腾支持延续 v2.0.0 口径。
 
 ## TL;DR
 

@@ -14,7 +14,7 @@ date: 2026-10
 
 ## 一句话定位
 
-**deepseek-infra** 记录 DeepSeek 开源的**算力基础设施栈**(2025-02 开源周放训练/推理/存储三件套;2026-09-30 补昇腾适配)。全景是「算子怎么写(TileLang)→ 矩阵怎么算(DeepGEMM)→ 专家怎么通信(DeepEP)→ 训练怎么并行(DualPipe/EPLB/LPLB)→ 微调怎么省(ESFT)→ 稀疏记忆怎么查(Engram)→ 数据怎么存/算(3FS/smallpond)」这条从语言、算子、通信、并行到存储的全链路,**NVIDIA 与昇腾双平台**跑出近硬件峰值。
+**deepseek-infra** 记录 DeepSeek 开源的**算力基础设施栈**(2025-02 开源周放训练/推理/存储三件套;2026-09-30 补昇腾适配,2026-10-14 随 DeepGEMM v2.8.2/Ascend 2026-10 同步稀疏 MQA 打分内核)。全景是「算子怎么写(TileLang)→ 矩阵怎么算(DeepGEMM)→ 专家怎么通信(DeepEP)→ 训练怎么并行(DualPipe/EPLB/LPLB)→ 微调怎么省(ESFT)→ 稀疏记忆怎么查(Engram)→ 数据怎么存/算(3FS/smallpond)」这条从语言、算子、通信、并行到存储的全链路,**NVIDIA 与昇腾双平台**跑出近硬件峰值。
 
 它定位在**算子实现层 / 基础设施层**,与库内 model-architecture(架构)、attention(算法)、vllm(引擎)、cutlass(NVIDIA 造内核方法论)四个领域正交互补:那些域讲「模型长什么样、注意力为什么省显存、引擎怎么调度、NVIDIA 怎么造内核」,本域讲「**这些算子/通信/并行/存储怎么实现、怎么适配、性能到哪**」。
 
@@ -73,9 +73,9 @@ date: 2026-10
 |---|---|---|---|
 | TileLang 与昇腾后端 | [concepts/tilelang.md](concepts/tilelang.md) | tile 级 DSL(TVM 之上),昇腾支持分三层(主仓 Ascend 950 native / tilelang-ascend A2/A3 / tilelang-mlir-ascend);三层编程接口 | ✅ 已入库 |
 | Ascend 适配原理 | [concepts/ascend-port-principles.md](concepts/ascend-port-principles.md) | NVIDIA→昇腾关键抽象对照表(CUDA→Ascend C、TMA→稀疏加载/协程、NCCL→HCCL/HCOMM、fractal 布局等)+ 移植难点 | ✅ 已入库 |
-| DeepGEMM-Ascend | [concepts/deepgemm-ascend.md](concepts/deepgemm-ascend.md) | 昇腾 GEMM 库,MAD 原语轻量抽象,藏 fractal/对齐/地址计算;稀疏加载 + 协程流水线;scaling factor 格式与 NVIDIA 不同 | ✅ 已入库 |
+| DeepGEMM-Ascend | [concepts/deepgemm-ascend.md](concepts/deepgemm-ascend.md) | 昇腾 GEMM 库,MAD 原语轻量抽象,藏 fractal/对齐/地址计算;稀疏加载 + 协程流水线;scaling factor 格式与 NVIDIA 不同;2026/10 新增稀疏 MQA logits | ✅ 已入库 |
 | DeepEP-Ascend | [concepts/deepep-ascend.md](concepts/deepep-ascend.md) | MoE 专家并行通信库,EP all-to-all(dispatch/combine),EP≤32 dispatch 达 90–95% 物理带宽 | ✅ 已入库 |
-| TileKernels | [concepts/tilekernels.md](concepts/tilekernels.md) | TileLang 之上的 LLM 算子库(MoE routing/量化/Engram/mHC),v2.0.0 起支持昇腾(已合入 main),同一 Python API 跑 NVIDIA+华为 | ✅ 已入库 |
+| TileKernels | [concepts/tilekernels.md](concepts/tilekernels.md) | TileLang 之上的 LLM 算子库(MoE routing/量化/Engram/mHC),v2.0.0 起支持昇腾(已合入 main),v2.1.0(2026-10)量化/Engram bug 修复,同一 Python API 跑 NVIDIA+华为 | ✅ 已入库 |
 | DeepSelect | [concepts/deepselect.md](concepts/deepselect.md) | DSA/Sampler 的定制 TopK 算子,2–20× vs torch.topk(口径:有效内存带宽);昇腾仅 bfloat16 | ✅ 已入库 |
 | FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | MLA 注意力内核库(dense+sparse),昇腾版 2026-09-30 已合入 main(commit 2e5429f,breaking change 三条已由 README 明写);410 TFlops 双义(平台要标清) | ✅ 已入库 |
 
@@ -83,7 +83,7 @@ date: 2026-10
 
 | 专题 | 文件 | 一句话 | 状态 |
 |---|---|---|---|
-| DeepGEMM NVIDIA vs Ascend | [concepts/deepgemm-nvidia-vs-ascend.md](concepts/deepgemm-nvidia-vs-ascend.md) | NVIDIA 原版:轻量 tensor core 内核库(FP8/FP4/BF16、Mega MoE、MQA),H800 1550 TFLOPS;与昇腾版同 API 不同后端(WGMMA/TMA vs MAD/协程) | ✅ 已入库 |
+| DeepGEMM NVIDIA vs Ascend | [concepts/deepgemm-nvidia-vs-ascend.md](concepts/deepgemm-nvidia-vs-ascend.md) | NVIDIA 原版:轻量 tensor core 内核库(FP8/FP4/BF16、Mega MoE、MQA),H800 1550 TFLOPS;与昇腾版同 API 不同后端(WGMMA/TMA vs MAD/协程);2026-10 v2.8.2 新增稀疏 MQA logits | ✅ 已入库 |
 | DeepEP NVIDIA vs Ascend | [concepts/deepep-nvidia-vs-ascend.md](concepts/deepep-nvidia-vs-ascend.md) | NVIDIA 原版:EP 通信库,V2 迁 NCCL Gin 后端、EPBuffer 统一接口、SM 占用 24→4–6(旧 V2 公告口径);与昇腾版同 API 不同后端 | ✅ 已入库 |
 | DeepJIT | [concepts/deepjit.md](concepts/deepjit.md) | xPU kernel 运行时 JIT(CUDA + 昇腾),header-only;缓存键穷尽 source/include/编译版本;支持跨节点共享缓存 | ✅ 已入库 |
 | Engram | [concepts/engram.md](concepts/engram.md) | 条件记忆:O(1) N-gram 查找,与 MoE 互补的稀疏轴;确定性寻址可 offload 到 host memory;27B 全面领先 iso-param MoE | ✅ 已入库 |

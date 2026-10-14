@@ -96,6 +96,8 @@ deep_gemm.fp8_fp4_mega_moe(y, transformed_l1, transformed_l2, buffer)
 | 支持算子 | BF16/FP8/FP4、Mega MoE、MQA logits、HC | BF16/FP8/FP4、MQA logits、MegaMoE、HC prenorm(依赖 tilelang) |
 | 环境 | SM90/SM100 + CUDA 12.9+ | 昇腾 950 + CANN 9.2.0(README 写作「9.20」)+ torch_npu |
 
+> **支持算子补注(2026 新增)**:README News 2026-09-10 起新增 **Sparse Indexer / Mega Gate / Mega mHC** 算子族(同批含 DeepJIT、MoE/Indexer 优化,PR #432);**PDL**(Programmatic Dependent Launch,`set_pdl`/`get_pdl`)为 2026-04-16 批次引入(PR #304);2026-09-30 另增 locality domain 特性(PR #462,与 DeepGEMM-Ascend 同日发布)。
+
 **两条 P0 结论**:
 1. **「API 兼容」是移植的锚**:开发者按 NVIDIA 版写 kernel 调用,换昇腾只改环境不改代码——这是 DeepSeek 把算子生态从「NVIDIA 单一后端」变成「双平台」的核心手段(与 DeepEP-Ascend、TileKernels v2.0.0 同一策略)。
 2. **scaling factor 格式两边不通用**:昇腾用 `int16` 打包且 MN-major,FP8 场景传 SF 时别沿用 NVIDIA 的 FP32/UE8M0 格式——这是最容易踩的坑。

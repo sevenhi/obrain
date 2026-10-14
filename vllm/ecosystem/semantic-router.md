@@ -315,4 +315,4 @@ SR 作为**可编程决策层**,部署形态灵活:
 - **公开论文**: arXiv:2510.08731(*When to Reason: Semantic Router for vLLM*)、arXiv:2510.26835(*Category-Aware Semantic Caching*);Vision paper / White paper 见 https://vllm-sr.ai/vision-paper 、https://vllm-sr.ai/white-paper/
 - **Decision 2.0 / Vela 2.0**: https://huggingface.co/collections/vllm-sr/decision-20 、https://vllm-sr.ai/blog/vela-2-0-open-foundation-routing-models/
 
-> **路径基准**:仓库内相对路径均相对 `semantic-router/` 仓库根;库内相对路径相对本领域 `vllm-project/concepts/`。
+> **路径基准**:仓库内相对路径均相对 `semantic-router/` 仓库根;库内相对路径相对本领域 `vllm/concepts/`。

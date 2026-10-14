@@ -1,14 +1,14 @@
 ---
 title: Computer Vision - 参考资料索引
 type: reference
-tags: [nerf, vit, cnn, reparameterization, tensorrt]
+tags: [nerf, vit, cnn, reparameterization, tensorrt, object-detection, segmentation, detr, yolo, sam]
 source: "web: 本域论文来源索引 | 见下方 arXiv/官方链接"
-date: 2026-09
+date: 2026-10
 ---
 
 # 参考资料索引
 
-> 溯源用。只放链接与「看什么」,不复制全文。**全部 URL 于 2026-09-21 curl 实测存活(HTTP 200)**;paperswithcode 的 TRT-ViT 页为软 404(重定向 HF trending),弃用;bytedance/TRT-ViT 官方仓库不存在(404),论文未开源。
+> 溯源用。只放链接与「看什么」,不复制全文。**全部 URL 于 2026-09-21 curl 实测存活(HTTP 200);2026-10-14 新增 ViT/DeiT/Faster R-CNN/Mask R-CNN/DETR/YOLOv1/SAM 相关条目经 web_extract/curl 重新实测存活**;paperswithcode 的 TRT-ViT 页为软 404(重定向 HF trending),弃用;bytedance/TRT-ViT 官方仓库不存在(404),论文未开源。
 
 ## 论文(arXiv)
 
@@ -27,6 +27,13 @@ date: 2026-09
 | FlexConv | https://arxiv.org/abs/2110.08059 | 前驱:可微 kernel 大小(高斯掩码) |
 | S4 | https://arxiv.org/abs/2111.00396 | 对照路线:结构化状态空间,长序列 1D 处理 |
 | RepLKNet(大核设计) | https://arxiv.org/abs/2203.06717 | TRT-ViT 引用的 TeraFLOPS 度量出处;大核 CNN 与重参数化交汇 |
+| ViT(An Image is Worth 16x16 Words) | https://arxiv.org/abs/2010.11929 | ICLR 2021;patchify/CLS/1D 位置编码 §3.1-3.2、模型变体 Table 1、JFT vs IN21k vs IN1k 数据敏感性 Fig.4/Table 2&5、训练算力对比 Table 2 |
+| DeiT | https://arxiv.org/abs/2012.12877 | ICML 2021;ImageNet-1k only 训练配方、蒸馏 token、83.1%/85.2% 结果 |
+| Faster R-CNN | https://arxiv.org/abs/1506.01497 | NIPS 2015;RPN 共享特征、anchor、5fps/300 proposals |
+| Mask R-CNN | https://arxiv.org/abs/1703.06870 | ICCV 2017;并行掩码分支、RoIAlign、mask AP 35.7/5fps、COCO 三冠 |
+| DETR | https://arxiv.org/abs/2005.12872 | ECCV 2020;set prediction、object query+匈牙利匹配、无 NMS/anchor;R50 42 AP,FLOPs 减半 |
+| YOLOv1 | https://arxiv.org/abs/1506.02640 | CVPR 2016;单阶段回归范式源头、45fps/155fps |
+| SAM(Segment Anything) | https://arxiv.org/abs/2304.02643 | ICCV 2023;可提示分割、三段架构、SA-1B 数据引擎、~50ms 交互延迟 |
 
 ## 官方项目页 / 代码
 
@@ -42,7 +49,12 @@ date: 2026-09
 | TensorRT 文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/index.html | TRT-ViT 延迟测量的推理框架 |
 | TensorRT GitHub | https://github.com/NVIDIA/TensorRT | 开源组件 |
 | TRT-ViT 社区复现(非官方) | https://github.com/Phoenix8215/TRT-ViT | 论文官方未开源时的参考实现 |
+| ViT 官方代码(google-research) | https://github.com/google-research/vision_transformer | 论文 abstract 注明的微调代码与预训练权重发布处(JAX/TF) |
+| DETR 官方代码(facebookresearch) | https://github.com/facebookresearch/detr | Model Zoo(R50/R101,DC5 变体)、torch.hub 用法、全景分割权重 |
+| SAM 官方代码(facebookresearch) | https://github.com/facebookresearch/segment-anything | vit_b/l/h checkpoint、SamPredictor/SamAutomaticMaskGenerator API、ONNX 导出脚本 |
+| SAM 2 官方代码(facebookresearch) | https://github.com/facebookresearch/segment-anything-2 | 视频扩展(arXiv:2408.00714)、流式 memory |
+| Ultralytics YOLO 官方仓库/文档 | https://github.com/ultralytics/ultralytics | YOLO11 检测/分割/分类/姿态/OBB 五任务、COCO 性能表、导出部署 |
 
 ## 阅读顺序建议
 
-入门:先读本域 index.md → 表示线(nerf-view-synthesis → cnn-long-range-nd)→ 效率线(trt-vit-inference → cnn-reparameterization);每篇文末「溯源」可回原始文献。
+入门:先读本域 index.md → 基础线(vision-transformer-basics → object-detection-segmentation)→ 表示线(nerf-view-synthesis → cnn-long-range-nd)→ 效率线(trt-vit-inference → cnn-reparameterization);每篇文末「溯源」可回原始文献。

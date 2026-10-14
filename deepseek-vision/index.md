@@ -38,7 +38,7 @@ date: 2026-10
 | DeepSeek-OCR | 2510.18234 | 文档 OCR/视觉压缩 | DeepEncoder(CLIP-L + SAM-B) | DeepSeek3B-MoE-A570M | Contextual Optical Compression,100 token 超 GOT-OCR2.0 |
 | DeepSeek-OCR-2 | 2601.20552 | 文档 OCR(升级) | DeepEncoder V2(Qwen2-0.5B + SAM-B) | 同上 3B-MoE | Visual Causal Flow,编码器因果重排 token |
 | Janus(+Pro/Flow) | 2410.13848 / 2501.17811 / 2411.07975 | 统一理解+生成 | 理解 SigLIP-L / 生成 VQ-16 | dense LLM 1.3B/7B | 双编码解耦,单 transformer 通吃理解与生成 |
-| DreamCraft3D(++) | 2310.16818 | 图生 3D | (扩散先验,非 VL 编码器) | — | 分层 3D 生成 + 引导式分数蒸馏(BSD) |
+| DreamCraft3D(++) | 2310.16818 / 2410.12928(++) | 图生 3D | (扩散先验,非 VL 编码器) | — | 分层 3D 生成 + 引导式分数蒸馏(BSD);++ 版独立 arXiv 2410.12928 |
 
 ---
 
@@ -58,7 +58,7 @@ date: 2026-10
 ## 相关条目(跨域互链)
 
 - **[`model-architecture/`](../model-architecture/index.md)**:VL2 的语言骨干是 DeepSeekMoE(MHA,config 实测;论文口径 MLA 与 config 不一致),见 [deepseek-arch-v1-moe-v2](../model-architecture/concepts/deepseek-arch-v1-moe-v2.md)(细粒度+共享专家)与 [open-model-landscape](../model-architecture/concepts/open-model-landscape.md)。DeepSeek 网络结构主线(V1→V3.2)见 [deepseek-model-evolution](../model-architecture/concepts/deepseek-model-evolution.md)。
-- **[`computer-vision/`](../computer-vision/index.md)**:本域的视觉编码器(SigLIP/SAM/VQ)与 computer-vision 的表示(NeRF)/部署(TRT-ViT)是「理解内容」与「跑得高效」两件事;CCNN 连续卷积核([cnn-long-range-nd](../computer-vision/concepts/cnn-long-range-nd.md))与 VL 的 hybrid encoder 同为「怎么高效表示视觉信号」的两个答案。
+- **[`computer-vision/`](../computer-vision/index.md)**:本域的视觉编码器(SigLIP/SAM/VQ)与 computer-vision 的表示(NeRF)/部署(TRT-ViT)是「理解内容」与「跑得高效」两件事;CCNN 连续卷积核([cnn-long-range-nd](../computer-vision/concepts/cnn-long-range-nd.md))与 VL 的 hybrid encoder 同为「怎么高效表示视觉信号」的两个答案。VL 用的 SAM-B 编码器机制见 [object-detection-segmentation](../computer-vision/concepts/object-detection-segmentation.md) §SAM,SigLIP/Janus 的 ViT patchify/CLS/视觉 token 机制底座见 [vision-transformer-basics](../computer-vision/concepts/vision-transformer-basics.md)。
 - **[`vllm/`](../vllm/index.md)**:DeepSeek-OCR 已被上游 vLLM 官方支持([model-registry](../vllm/concepts/model-registry.md) 同属推理侧)。
 
 ---

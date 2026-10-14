@@ -101,6 +101,8 @@ VL2 相对 VL 有两大(论文原文)到三大升级:
 
 > ⚠ **VL2 full 激活参数上游自相矛盾**:README intro 写 **4.5B**,但同一 README 的 web_demo 段写 `activated 4.2B`——保留 4.5B 口径并标注这一矛盾(以 README intro 为准)。
 
+> 📌 **激活参数字段两口径辨析(README vs 论文 Table)**:README intro 的 **1.0B/2.8B/4.5B** 是「总激活」(LLM + 视觉塔);论文 Table 另列「仅 LLM 侧激活」**0.57B/2.4B/4.1B**(总参 3B/16B/27B;README web_demo 同口径精确写 total 3.37B/16.1B/27.5B)。两者不冲突——分别指「含视觉塔的整模型激活」与「语言骨干激活」。
+
 > MoE 路由分变体:full 版 `scoring_func="sigmoid"`、`topk_method="noaux_tc"`(与 DeepSeek-V3 的 aux-loss-free + sigmoid 路由同源,见 model-architecture 域);Tiny/Small 实测 `topk_method="greedy"`。full 版 72 专家 + 2 共享,激活 6。
 
 ### 融合方式总结

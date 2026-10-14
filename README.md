@@ -32,10 +32,10 @@ obrain/
 | GPU 随机数生成 | [`gpu-rng/`](gpu-rng/index.md) | counter-based(Philox)与 MTGP 两条 GPU PRNG 路线 + cuRAND 落地(1 篇) | 2026-10 |
 | 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:PTQ(GPTQ/AWQ/SmoothQuant)、KV cache 量化、稀疏量化混合(SpQR)、2-bit 前沿(QuIP#/AQLM)、KV 极低比特(KVQuant/KVTuner)、HyQuant 混合精度、FP8/FP4 硬件原生格式 + 低秩/剪枝路线(8 篇,论文来源通过公开链接追溯) | 2026-10 |
 | vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构、生产部署、观测与引擎选型、投机解码、注意力后端选型、PD 分离;生态构件:全模态/路由集群/压缩/投机RL/硬件插件/评测(23 篇) | 2026-10 |
-| Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型表示与部署效率:NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核、ONNX/TensorRT 部署(5 篇) | 2026-10 |
+| Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型基础/表示与部署效率:ViT 基础机制、目标检测与实例分割(Faster/Mask R-CNN、DETR、YOLO、SAM)、NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核、ONNX/TensorRT 部署(7 篇) | 2026-10 |
 | DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 算力基础设施栈:昇腾六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ 移植原则(ascend-port-principles)+ NVIDIA 原版对照(DeepGEMM/DeepEP)+ 并行/工具/存储(DeepJIT/Engram/DualPipe/EPLB+LPLB/ESFT/open-infra-index/3FS/smallpond)+ 训练并行编排 V3 + deepseek-recipe API 编解码 + 部署清单(20 篇) | 2026-10 |
 | DeepSeek Vision | [`deepseek-vision/`](deepseek-vision/index.md) | DeepSeek 多模态/视觉家族:图文理解(VL/VL2)、视觉压缩(OCR/OCR-2)、统一理解+生成(Janus 系列)、图生 3D(DreamCraft3D)(4 篇) | 2026-10 |
-| DeepSeek Models | [`deepseek-models/`](deepseek-models/index.md) | DeepSeek 领域模型谱系:数学推理(Math/Math-V2,GRPO/自验证)、定理证明(Prover-V1/V1.5/V2,Lean 4)、代码智能(Coder/Coder-V2,FIM/MoE)、MoE 基座 + agent 工具 deepseek-harness + DeepSpec 草稿训练 + dsh 内部 Node 插件(7 篇);与 model-architecture 网络结构篇互链 | 2026-10 |
+| DeepSeek Models | [`deepseek-models/`](deepseek-models/index.md) | DeepSeek 领域模型谱系:数学推理(Math/Math-V2,GRPO/自验证)、定理证明(Prover-V1/V1.5/V2,Lean 4)、代码智能(Coder/Coder-V2,FIM/MoE)、MoE 基座、推理 RL(R1-Zero→R1→Distill,GRPO 规模化/冷启动四阶段/蒸馏)、ESFT 专家专精微调(机制视角)+ agent 工具 deepseek-harness + DeepSpec 草稿训练 + dsh 内部 Node 插件(9 篇);与 model-architecture 网络结构篇互链 | 2026-10 |
 
 ## 跨域速查
 
@@ -48,7 +48,7 @@ obrain/
 - **架构第三主轴(混合线性注意力)**:softmax attention 之外,Mamba/RWKV/Gated DeltaNet→Qwen3-Next 的 hybrid 路线(少量 full attention + 多数线性/SSM 层)见 [`hybrid-linear-attention`](model-architecture/concepts/hybrid-linear-attention.md);与 FA/KV cache 杠杆正交——一个消灭序列状态,一个压缩/分页 KV。
 - **vLLM 引擎↔生态**:引擎内部原理在 [`vllm/`](vllm/index.md) 的 concepts/,生态构件(全模态/路由/集群/压缩/插件/评测)在同域 `ecosystem/`——一个域读完引擎与围绕它的整圈。
 - **低精度双路线**:硬件原生 FP8/FP4(见 [`fp8-fp4-formats`](quantization/concepts/fp8-fp4-formats.md))vs 算法压缩 2-bit(QuIP#/AQLM);训练侧 V3 FP8 recipe 与推理侧 FP8/FP4 KV 分别在 deepseek-infra/flashmla。
-- **DeepSeek 结构↔领域模型双视角**:网络结构演进(MHA→MLA、dense→MoE)见 [`model-architecture/`](model-architecture/index.md) 的 deepseek 四篇;领域能力怎么做出来(数学 GRPO/自验证、定理证明 Lean 4、代码 FIM、MoE 数据评测)见 [`deepseek-models/`](deepseek-models/index.md),两者互链互补——结构篇管「怎么变」,领域篇管「怎么做出来」。
+- **DeepSeek 结构↔领域模型双视角**:网络结构演进(MHA→MLA、dense→MoE)见 [`model-architecture/`](model-architecture/index.md) 的 deepseek 四篇;领域能力怎么做出来(数学 GRPO/自验证、定理证明 Lean 4、代码 FIM、MoE 数据评测、R1 推理 RL、ESFT 专家微调)见 [`deepseek-models/`](deepseek-models/index.md),两者互链互补——结构篇管「怎么变」,领域篇管「怎么做出来」。R1 是双视角的典型:结构侧(无新结构、V3-Base 底座)在 [deepseek-arch-v32-r1](model-architecture/concepts/deepseek-arch-v32-r1.md),训练策略侧(GRPO/冷启动/蒸馏)在 [deepseek-r1-reasoning](deepseek-models/concepts/deepseek-r1-reasoning.md)。ESFT 是跨 infra/领域双登记:操作流程在 deepseek-infra,机制/谱系在 [deepseek-esft](deepseek-models/concepts/deepseek-esft.md)。
 
 ---
 

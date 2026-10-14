@@ -100,7 +100,7 @@ V1/V1.5 都让 7B 模型**端到端**证整题。难题一步证不出来。V2 �
 ### 3.3 底座与结果(有据数字)
 
 - 两个规格:**V2-7B**(基于 Prover-V1.5-Base,上下文扩到 32K)和 **V2-671B**(基于 DeepSeek-V3-Base)。
-- **miniF2F-test 88.9%**(SOTA);PutnamBench 658 题解出 49(arXiv:2504.21801 v2 摘要原文 "solving 49 out of 658",与 README 一致)。
+- **miniF2F-test 88.9%**(SOTA);PutnamBench 658 题解出 **49**(arXiv:2504.21801 v2 摘要原文 "solving 49 out of 658",与 README 一致)。版本差:论文 **v1 摘要/正文为 47/658**,v2 摘要与 README 更新为 **49/658**。
 - 新增 **ProverBench** 基准:325 道形式化题(含 AIME 24/25 的 15 题,其余来自教材),覆盖代数/数论/微积分/实变/复变/泛函/概率。
 - 那 15 道 AIME 题 V2 解出 6 题;对比 DeepSeek-V3 用多数投票解 8 题——**形式化与自然语言推理的差距在大幅收窄**。
 

@@ -80,7 +80,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 | [hardware-plugins](ecosystem/hardware-plugins.md) | concept | 七后端插件体系:platform_plugins/general_plugins entry points,Ascend/Metal/Gaudi/Neuron/TPU/XPU/OpenVINO |
 | [guidellm-bench](ecosystem/guidellm-bench.md) | howto | SLO-aware 基准评测:Profile 负载模拟、TTFT/ITL/Goodput、容量规划六步 |
 
-**生态全景**:核心引擎与内核 → 硬件后端/压缩格式/插件注入 → 路由决策 → 集群部署 → 投机与 RL → 评测。47 仓九分组地图见原 `vllm-project/index.md` 简表(下)。
+**生态全景**:核心引擎与内核 → 硬件后端/压缩格式/插件注入 → 路由决策 → 集群部署 → 投机与 RL → 评测。47 仓九分组地图见下表(原 `vllm-project/index.md` 简表已并入此处)。
 
 | 分组 | 代表仓库 |
 |---|---|
@@ -94,16 +94,15 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 | 评测与工具 | guidellm, perf-eval, vllm-bench, lm-evaluation-harness, perf-dashboard, vllm-dashboard, ci-infra, vllm-skills |
 | 文档与 RFC | vllm-docs, rfcs, vllm-project.github.io, vllm-daily, media-kit |
 
-**扩展位(生态待补)**:agentic-api、compressed-tensors 格式规范、afd-plugin、humming JIT、MSA/FlashKDA/tml-fa4 内核专篇、production-stack 监控清单。
-
 ## 相关条目(跨域互链)
-
 
 - **长上下文/流式 KV cache 算法侧**:PagedAttention 解决"cache 装得下就全留"的分页管理;**装不下时逐出谁**见 [`attention/algorithm/attention-sinks-streaming.md`](../attention/algorithm/attention-sinks-streaming.md)(StreamingLLM:attention sink + 滚窗,4M token 稳定生成)。两者正交,vLLM 主线未内置 sink 逐出(TensorRT-LLM/HF 已内置;SGLang 主线仍支持 attention sink:sinks kwarg / learnable sink / speculative draft sink 等多个 backend)。
 - **注意力内核与架构谱系**:[`attention/`](../attention/index.md)(算法/架构层 + FA 内核实现层,合并域)。
+- **内核底座**:[`cutlass/`](../cutlass/index.md)——本域优化注意力内核的 FA 族与 `CUTLASS_MLA` backend 均构建于 CUTLASS/CuTe 之上(自底向上依赖);CUTLASS tiling/Tensor Core 机制见其概念篇。
 
 ## 扩展位(2026-10 全库审查待补)
 
+- **生态待补**:agentic-api、compressed-tensors 格式规范、afd-plugin、humming JIT、MSA/FlashKDA/tml-fa4 内核专篇、production-stack 监控清单。
 - 结构化输出/guided decoding(xgrammar/llguidance、grammar bitmask 与调度重叠)
 - multi-LoRA 服务(adapter 热插拔、base 共享、LoRARequest 链路)
 - ~~PD 分离与 KV transfer~~(已入库)

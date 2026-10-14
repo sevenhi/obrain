@@ -33,6 +33,7 @@ date: 2026-10
 | Janus-Pro | https://arxiv.org/abs/2501.17811 | Janus-Pro: Unified Multimodal Understanding and Generation with Data and Model Scaling |
 | JanusFlow | https://arxiv.org/abs/2411.07975 | JanusFlow: Harmonizing Autoregression and Rectified Flow for Unified Multimodal Understanding and Generation |
 | DreamCraft3D | https://arxiv.org/abs/2310.16818 | DreamCraft3D: Hierarchical 3D Generation with Bootstrapped Diffusion Prior |
+| DreamCraft3D++ | https://arxiv.org/abs/2410.12928 | DreamCraft3D++: Efficient Hierarchical 3D Generation with Multi-Plane Reconstruction Model |
 
 > 注:OCR/OCR-2 的 arXiv 号注意 2410.06571 为无关论文号,已排除。正确号经 web_search 核对为 **2510.18234**(OCR)与 **2601.20552**(OCR-2)。
 

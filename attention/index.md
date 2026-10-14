@@ -84,11 +84,11 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
 
 ## 相关条目(跨域互链)
 
-- **[`model-architecture/`](../model-architecture/index.md)**:LLM 整体架构域(LLaMA 三件套/位置编码演进/GQA/训练哲学),自本域 llama-architecture 篇扩展而来;attention 是其中被"改进定型"的组件,机制基础仍在本域。
+- **[`model-architecture/`](../model-architecture/index.md)**:LLM 整体架构域(LLaMA 三件套/位置编码演进/GQA/训练哲学),自本域 llama-architecture 篇扩展而来;attention 是其中被"改进定型"的组件,机制基础仍在本域。线性注意力主线(softmax attention 之外的第三条架构主轴:Mamba/RWKV/Gated DeltaNet/Qwen3-Next)见 [hybrid-linear-attention](../model-architecture/concepts/hybrid-linear-attention.md)。
 - **[`vllm/`](../vllm/index.md)**:StreamingLLM(逐出谁)与 PagedAttention/KV cache 分页(装得下就全留,见 [`vllm/concepts/paged-attention.md`](../vllm/concepts/paged-attention.md))正交互补——长上下文/常驻流式服务的两个半边;vLLM 未内置 sink 逐出,TensorRT-LLM/HF 已内置(SGLang 主线仍支持 attention sink:sinks kwarg / learnable sink / speculative draft sink 等多个 backend)。vLLM 集成的注意力内核即本域 FA 谱系。
 - **[`quantization/`](../quantization/index.md)**:SpAtten progressive quantization(attention 输入 MSB/LSB)与 LLM 权重量化(SpQR/GPTQ/AWQ)是量化谱系的两侧;FA3 的 FP8 block-quantize 是"量化进 attention kernel"的实例;attention sink 与量化 outlier 同源(softmax 和为 1 制造极端 token)。
 - **[`cutlass/`](../cutlass/index.md)**:FA 内核的底座(FA2 用 CuTe 原语写 tiling、FA3 基于 CUTLASS 3.x collective 抽象构建);本域 SpAtten 代表"绕开通用 GEMM 库造专用 attention 硬件"的对照路线。
-- **[`computer-vision/`](../computer-vision/index.md)**:NeRF/TRT-ViT 的「访存而非算力是瓶颈」判断,与本域 FA 的 IO-aware 分析同一方法论。
+- **[`computer-vision/`](../computer-vision/index.md)**:NeRF/TRT-ViT 的「访存而非算力是瓶颈」判断,与本域 FA 的 IO-aware 分析同一方法论;ViT 基础机制(patchify/CLS,[vision-transformer-basics](../computer-vision/concepts/vision-transformer-basics.md))与 DETR 交叉注意力([object-detection-segmentation](../computer-vision/concepts/object-detection-segmentation.md))的 encoder/decoder attention 均以本域 AIANY 为机制源头。
 
 ## 关键事实速记
 

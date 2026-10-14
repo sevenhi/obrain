@@ -39,7 +39,7 @@ date: 2026-10
 
 ## 条目索引
 
-> 每个专题一篇,按「先原理、后工具」排。带 🔒 的是规划中未写,带 ✅ 是已入库。
+> 每个专题一篇,按「先原理、后工具」排;✅ 表示已入库。
 
 ### 核心概念(懂)
 | 专题 | 文件 | 一句话 | 状态 |
@@ -80,3 +80,5 @@ date: 2026-10
 ## 相关条目(跨域互链)
 
 - [computer-vision/concepts/trt-vit-inference.md](../computer-vision/concepts/trt-vit-inference.md)——TRT-ViT 以 TensorRT 实测延迟(而非 FLOPs)为架构设计准绳,其效率分析的硬件根因(GEMM/attention 真实利用率、访存瓶颈)正是本域 tiling/Tensor Core 机制的应用侧实例;TensorRT 内部大量用 CUTLASS 生成 GEMM kernel。
+- [attention/](../attention/index.md)——FA 内核底座:FA2 用 CuTe 原语写 tiling、FA3 基于 CUTLASS 3.x collective 抽象构建(见其 index 互链)。
+- [vllm/](../vllm/index.md)——vLLM V1 attention backend 族含 `CUTLASS_MLA`(见 [attention-backend-selection](../vllm/practices/attention-backend-selection.md)),其内核实现构建于本域 tiling/Tensor Core 机制之上。

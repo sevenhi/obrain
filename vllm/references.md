@@ -72,6 +72,7 @@ date: 2026-09
 - LLM Compressor — https://github.com/vllm-project/llm-compressor
 - compressed-tensors — https://github.com/vllm-project/compressed-tensors
 - Speculators — https://github.com/vllm-project/speculators
+- DeepSpec(deepseek-ai 草稿模型训练/评测全栈,speculators 篇对照源)— https://github.com/deepseek-ai/DeepSpec | arXiv:2607.05147
 - Vime — https://github.com/vllm-project/vime
 - GuideLLM — https://github.com/vllm-project/guidellm
 - recipes — https://github.com/vllm-project/recipes

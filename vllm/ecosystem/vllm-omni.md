@@ -316,4 +316,4 @@ curl http://127.0.0.1:8091/v1/images/generations -H 'Content-Type: application/j
 - **示例代码**: `examples/offline_inference/qwen3_omni/end2end.py`、`examples/offline_inference/text_to_image/text_to_image.py`
 - **Technical Report**: arXiv:2610.09307;**Paper**: arXiv:2602.02204(Yin et al., *vLLM-Omni: Fully Disaggregated Serving for Any-to-Any Multimodal Models*)
 
-> **路径基准**:仓库内相对路径均相对 `vllm-omni/` 仓库根;库内相对路径相对本领域 `vllm-project/concepts/`。
+> **路径基准**:仓库内相对路径均相对 `vllm-omni/` 仓库根;库内相对路径相对本领域 `vllm/concepts/`。

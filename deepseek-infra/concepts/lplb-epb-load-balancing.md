@@ -1,5 +1,5 @@
 ---
-title: EPLB + LPLB — 专家并行负载均衡(静态复制 vs 动态线性规划)
+title: LPLB + EPLB — 专家并行负载均衡(动态线性规划 vs 静态复制)
 type: concept
 tags: [eplb, lplb, expert-parallel, load-balancing, moe, linear-programming, redundant-expert, deepseek, v3]
 source:
@@ -9,7 +9,7 @@ source:
 date: 2026-10
 ---
 
-# EPLB + LPLB — 专家并行负载均衡(静态复制 vs 动态线性规划)
+# LPLB + EPLB — 专家并行负载均衡(动态线性规划 vs 静态复制)
 
 ## TL;DR
 

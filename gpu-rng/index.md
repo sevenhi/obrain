@@ -31,6 +31,11 @@ date: 2026-10
 3. **XORWOW 只配当 baseline**:BigCrush 系统性 reject,勿用于严肃蒙特卡洛
 4. F2-linear(MT/MTGP/WELL)在 LinearComp/MatrixRank 测试上失败是共性,常规实数模拟一般无碍;密码学或线性结构敏感场景必须 counter-based
 
+## 扩展位(登记待补,不扩域)
+
+- 随机舍入(Stochastic Rounding)落地——低比特量化稳态技巧(见 [quantization](../quantization/index.md)),Philox 流独立性可注入量化噪声,本篇不展开。
+- 采样器落地——LLM 推理 top-k/top-p/惩罚采样是 cuRAND/Philox 的直接消费方(见 [vllm/sampling-penalties](../vllm/concepts/sampling-penalties.md)),本篇不展开。
+
 ## 相关条目(跨域互链)
 
 - [quantization](../quantization/index.md)——随机舍入(Stochastic Rounding)是低比特量化的常见稳态技巧;Philox 流独立性可用于量化噪声注入。

@@ -49,3 +49,5 @@ date: 2026-09
 - DeepSeek-V3 Technical Report — https://arxiv.org/abs/2412.19437
 - OCP Microscaling Formats (MX) Specification — https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf
 - NVIDIA Transformer Engine — https://docs.nvidia.com/deeplearning/transformer-engine/
+- DeepGEMM(细粒度 FP8 GEMM 实现)— https://github.com/deepseek-ai/DeepGEMM
+- MS-AMP(微软 FP8 训练框架,optimizer state 下放)— https://github.com/Azure/MS-AMP

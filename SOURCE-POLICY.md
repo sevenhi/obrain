@@ -66,7 +66,7 @@ date: 2026-09
 || `algorithm/`(attention 域) | algorithm | 弱约定;目录独有 |
 || `ecosystem/`(vllm 域) | concept(生态构件深读) | 弱约定;2026-10 合入 vllm-project 域后沿用 concepts 同款 |
 | `notes/` | 源码一手实读笔记(**豁免** TL;DR/frontmatter 要求,见 §6) | 强约定(豁免) |
-| `frameworks/` | howto(工具上手) | 弱约定 |
+| `frameworks/` | howto(工具上手) | 弱约定;例外:attention/frameworks/flexattention.md 为 concept(编程模型+编译器机制深读,2026-10 登记) |
 | `references.md`(领域根) | reference(链接索引) | 补充映射 |
 | `index.md`(领域根) | domain(领域导航页) | 补充映射 |
 

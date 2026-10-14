@@ -1,7 +1,7 @@
 ---
-title: Attention(算法层 algorithm/ + 实现层 implementation/)
+title: Attention(算法层 algorithm/ + 实现层 implementation/ + 框架层 frameworks/)
 type: domain
-tags: [transformer, attention, self-attention, streamingllm, megabyte, laser, spatten, flashattention, gpu, cuda]
+tags: [transformer, attention, self-attention, streamingllm, megabyte, laser, spatten, flashattention, flexattention, gpu, cuda]
 source:
   - "pdf: Attention Is All You Need | arXiv:1706.03762 NIPS 2017"
   - "pdf: Efficient Streaming Language Models with Attention Sinks | arXiv:2309.17453 ICLR 2024"
@@ -14,14 +14,14 @@ source:
 date: 2026-10
 ---
 
-# Attention(算法层 algorithm/ + 实现层 implementation/)
+# Attention(算法层 algorithm/ + 实现层 implementation/ + 框架层 frameworks/)
 
-> 领域索引(导航起始页)。**领域知识本体分两层目录:`algorithm/`(理论/算法)与 `implementation/`(GPU 内核/工程)**,每篇一个专题、可独立打开读懂;本页放定位、关键事实与导航,不重复正文。外部链接索引见 [references.md](references.md)。
+> 领域索引(导航起始页)。**领域知识本体分三层目录:`algorithm/`(理论/算法)、`implementation/`(GPU 内核/工程)与 `frameworks/`(用户编程接口/编译器后端)**,每篇一个专题、可独立打开读懂;本页放定位、关键事实与导航,不重复正文。外部链接索引见 [references.md](references.md)。
 > 沿革:2026-09 由原 `attention-and-transformers` 与 `flash-attention` 两域合并;同月二次整合——concepts 平铺改为 algorithm/implementation 两层,三篇 FA 内核篇(io-aware-tiling/work-partitioning/fa3-hopper-async)合成为一篇 `implementation/flash-attention-implementation.md`,LLaMA 架构篇移出为独立域 [`model-architecture/`](../model-architecture/index.md)(扩展为通用 LLM 架构篇)。
 
 ## 一句话定位
 
-以 Attention Is All You Need(2017)为根,覆盖注意力机制的两个层次:**算法层 `algorithm/`**(为什么这样设计、softmax 的数学性质与推论、长序列架构分解、省显存谱系)与 **实现层 `implementation/`**(IO-aware tiling、online softmax、FlashAttention 四代高效内核——不改数学的精确解)。模型整体架构(RMSNorm/SwiGLU/RoPE/GQA、训练配比)见 [`model-architecture/`](../model-architecture/index.md) 域。
+以 Attention Is All You Need(2017)为根,覆盖注意力机制的三个层次:**算法层 `algorithm/`**(为什么这样设计、softmax 的数学性质与推论、长序列架构分解、省显存谱系)、**实现层 `implementation/`**(IO-aware tiling、online softmax、FlashAttention 四代高效内核——不改数学的精确解)与 **框架层 `frameworks/`**(用户编程接口+编译器后端:FlexAttention 如何用几行 Python 声明变体、自动落到 Triton 或 FA4/CuTeDSL)。模型整体架构(RMSNorm/SwiGLU/RoPE/GQA、训练配比)见 [`model-architecture/`](../model-architecture/index.md) 域。
 
 ## 算法层 algorithm/(5 篇)
 
@@ -38,6 +38,14 @@ date: 2026-10
 | 条目 | 类型 | 一句话 | 状态 |
 |---|---|---|---|
 | [flash-attention-implementation](implementation/flash-attention-implementation.md) | concept | FA 四代主线合成篇:FA1 IO-aware tiling + online softmax(算法伪代码、Θ(N²d²/M) 推导、4d 块大小)→ FA2 work partitioning(减 non-matmul、warp 按 Q 行切、序列维并行)→ FA3 Hopper 异步(WGMMA/TMA/overlap/pingpong/FP8)→ FA4 Blackwell(CuTe DSL/UMMA/TMEM);反向重算、实践 checklist、全部溯源 | ✅ 已入库 |
+
+## 框架层 frameworks/(1 篇)
+
+| 条目 | 类型 | 一句话 | 状态 |
+|---|---|---|---|
+| [flexattention](frameworks/flexattention.md) | concept | FlexAttention 用户编程接口篇:score_mod/mask_mod 几行 Python 声明注意力变体(ALiBi/滑窗/document masking/softcap…),torch.compile 自动融合下降+自动反向;BlockMask 三类 block(full/partial/empty)吃稀疏;底层两条 codegen 路线 Triton vs CuTeDSL 对比;2026-03 新增 FA4(FLASH)后端(compute-bound 比 Triton 快 1.2–3.2×、~95% FA3)与全部限制清单 | ✅ 已入库 |
+
+> 分层边界:`implementation/` 讲 FA 内核**怎么写**(四代机制),`frameworks/` 讲用户**怎么用接口声明变体、编译器怎么自动选/落后端**。两篇互补互链。
 
 ### FlashAttention 四代演进(速览,详见合成篇)
 
@@ -63,11 +71,15 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
         ├── 架构改进定型: LLaMA (2023)  ← 移出为独立域 model-architecture/
         │     (RMSNorm/SwiGLU/RoPE + 多数据小模型 + Llama 2/3 演进)
         │
-        └── O(n²) 账单的内核精确解  [algorithm/ 谱系 + implementation/ 主线]
+        ├── O(n²) 账单的内核精确解  [algorithm/ 谱系 + implementation/ 主线]
               Rabe & Staats (2021, O(1) 显存前驱)
                 → FA1 (2022, IO-aware tiling + online softmax)
                 → FA2 (2023, work partitioning)
                 → FA3 (2024, Hopper 异步 + FP8) → FA4 (2026, Blackwell)
+
+        └── 变体爆炸的用户侧解法: FlexAttention (2024→2026)  [frameworks/]
+              score_mod/mask_mod 声明变体 → torch.compile 融合下降
+                → Triton 后端(默认) / FA4 CuTeDSL 后端(FLASH, 2026-03)
 ```
 
 ## 相关条目(跨域互链)
@@ -96,6 +108,12 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
 - FA2 快 2× 的来源:减 non-matmul FLOPs、warp 按 Q 行切分免通信、序列维并行(切 Q 免归并,切 KV 才要 split-K 归并);
 - FA3(H100):异步 WGMMA + TMA + softmax/matmul/load 重叠 pipeline + FP8;论文口径 BF16 相对 FA2 加速 1.5-2×,FP16 前向最高 740 TFLOPS(≈H100 dense 峰值的 75%);
 - 显存 O(N) 的胜利来自"前向只存 LSE 统计量 + 反向重算"(约 2× 重复 FLOPs 换长序列可行)。
+
+**框架层**
+
+- FlexAttention = 两个扩展(score_mod 逐点改分 + BlockMask 块稀疏迭代)+ torch.compile 融合下降 + 自动反向;"软件彩票"问题的解法;
+- mask 每元素应用有 15-20% 退化 → BlockMask 区分 full(免 mask)/partial(需 mask)/empty(整块跳过);causal ~50% 稀疏,不吃稀疏白慢 2×;
+- FLASH(FA4 CuTeDSL)后端 2026-03 上线:compute-bound 比 Triton 快 1.2-3.2×、前向 ~95% FA3;代价是实验性+限制(SM100 BLOCK_SIZE=(256,128)、捕获标量须 dynamic=False、捕获 buffer 不支持求梯度)。
 
 ## 溯源
 

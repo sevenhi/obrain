@@ -43,6 +43,17 @@ date: 2026-09
 - The Illustrated Transformer(Jay Alammar,图解)— https://jalammar.github.io/illustrated-transformer/
 - The Annotated Transformer(Harvard NLP,PyTorch 逐段复现)— https://nlp.seas.harvard.edu/annotated-transformer/
 
+## FlexAttention(框架层,2026-10 收录,URL 于 2026-10-14 实测存活)
+
+- FlexAttention: The Flexibility of PyTorch with the Performance of FlashAttention(官方博客,2024-08-07 发布 / 2025-05-30 更新)— https://pytorch.org/blog/flexattention/
+- FlexAttention + FlashAttention-4: Fast and Flexible(官方博客,2026-03,FLASH 后端)— https://pytorch.org/blog/flexattention-flashattention-4-fast-and-flexible/
+- Flex Attention: A Programming Model for Generating Optimized Attention Kernels(论文)— https://arxiv.org/abs/2412.05496
+- Colfax Research — A User's Guide to FlexAttention in FlashAttention CuTe DSL(FA4 CuTeDSL 侧一手指南)— https://research.colfax-intl.com/a-users-guide-to-flexattention-in-flash-attention-cute-dsl/
+- PyTorch 官方文档 torch.nn.attention.flex_attention(API 签名)— https://docs.pytorch.org/docs/stable/nn.attention.flex_attention.html
+- PyTorch 源码:torch/nn/attention/flex_attention.py — https://github.com/pytorch/pytorch/blob/main/torch/nn/attention/flex_attention.py;Inductor Flex 内核目录(flex_attention.py / flex_flash_attention.py / flex_decoding.py)— https://github.com/pytorch/pytorch/tree/main/torch/_inductor/kernel/flex
+- attention-gym(官方示例库:FLASH vs TRITON 对比、paged/ring attention、mask/mod 库)— https://github.com/meta-pytorch/attention-gym
+- FA4 CuTeDSL 实现(flash_attn/cute/,含 FlexAttention 扩展点)— https://github.com/Dao-AILab/flash-attention/tree/main/flash_attn/cute
+
 ## attention sink 后续研究(延伸,均 curl 200)
 
 - When Attention Sink Emerges in Language Models(ICLR 2025)— https://openreview.net/forum?id=78Nn4QJTEN

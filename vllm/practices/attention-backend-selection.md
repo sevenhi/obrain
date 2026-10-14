@@ -17,7 +17,7 @@ date: 2026-10
 
 **vLLM V1 的注意力内核是「可插拔 backend」**:同一套调度/执行骨架下,具体 attention 前向由不同 backend 实现,启动时按硬件 + 配置自动选一个。**分派链路(无 `ATTN_BACKEND` 环境变量)**:`get_attn_backend()` → `current_platform.get_attn_backend_cls()` → `get_valid_backends()`(按 priority 排序逐个 `validate_configuration()` 过滤)→ 选**最小 priority** 的合法 backend;显式指定走 **`--attention-backend` CLI**(等价 `AttentionConfig.backend`)。
 
-**backend 枚举没有 TRT-LLM**。真实 main 枚举是:`FLASH_ATTN` / `FLASHINFER` / `TRITON_ATTN` / `TRITON_FLASH_ATTN` / `FLEX_ATTENTION` / ROCM 系列 / **MLA 族(FLASHMLA / FLASHINFER_MLA / CUTLASS_MLA / TRITON_MLA / TOKENSPEED_MLA / FLASH_ATTN_MLA 及各自 *_SPARSE 变体)** / XPU / CPU 等。**TRT-LLM 是独立推理引擎,不是 vLLM 的 attention backend**(它只作为 FlashInfer 内部一个可选内核路径出现,见 §4)。
+**backend 枚举没有 TRT-LLM**。真实 main 枚举是:`FLASH_ATTN` / `FLASH_ATTN_DIFFKV` / `TRITON_ATTN` / `TRITON_ATTN_DIFFKV` / `FLASHINFER` / `FLEX_ATTENTION` / ROCM 系列 / **MLA 族(FLASHMLA / FLASHINFER_MLA / CUTLASS_MLA / TRITON_MLA / TOKENSPEED_MLA / FLASH_ATTN_MLA 及各自 *_SPARSE 变体)** / MiniMax M3 稀疏族(CUTLASS_MSA / TRITON_MSA)/ XPU / CPU / TURBOQUANT / HPC_ATTN / CUSTOM 等。**TRT-LLM 是独立推理引擎,不是 vLLM 的 attention backend**(它只作为 FlashInfer 内部一个可选内核路径出现,见 §4)。
 
 本篇是「注意力内核 backend」层;引擎级选型(vLLM vs SGLang vs TRT-LLM)见 [inference-engine-selection.md](inference-engine-selection.md)。
 
@@ -31,7 +31,7 @@ V1 的 attention 抽象(backend.py)由三个类构成:
 - **`CommonAttentionMetadata`(backend.py:389)**:所有 backend 共享的注意力元数据(序列长、block table、slot 等)。
 - **`AttentionMetadataBuilder`(backend.py:593)**:从调度输出构造各 backend 所需 metadata 的构造器。
 
-**注册机制(registry.py)**:`AttentionBackendEnum`(registry.py:34)枚举所有 backend,值为默认类路径;`AttentionBackendEnum.register(name, value)` 动态加新成员;`register_backend()`(registry.py:340)装饰器/函数把某个 backend 名**覆盖/绑定**到自定义实现。**这是 V1 的新机制,不是 V0 的 `registerAttentionBackend`/`BackendMetadata`**(V0 概念已弃用)。
+**注册机制(registry.py)**:`AttentionBackendEnum`(registry.py:34)枚举所有 backend,值为默认类路径;模块级函数 `register_backend()`(registry.py:243)通过 `_ATTN_OVERRIDES` 字典(registry.py:239)把某个 backend 名**覆盖/绑定**到自定义实现;`CUSTOM`(registry.py:130,value=None)是第三方/custom backend 的占位枚举,使用前须先 register。**枚举本身没有 `.register()` 方法**。**这是 V1 的新机制,不是 V0 的 `registerAttentionBackend`/`BackendMetadata`**(V0 概念已弃用)。
 
 ---
 
@@ -70,13 +70,14 @@ get_attn_backend(head_size, dtype, kv_cache_dtype, use_mla, ...)   # selector.py
 | `FLASH_ATTN` | `flash_attn.FlashAttentionBackend` | FA2/FA3/FA4(`--flash-attn-version 2/3/4` 可选代次) |
 | `FLASH_ATTN_DIFFKV` | `flash_attn_diffkv.FlashAttentionDiffKVBackend` | 差异化 KV 缓存场景 |
 | `TRITON_ATTN` | `triton_attn.TritonAttentionBackend` | Triton 实现 |
-| `TRITON_FLASH_ATTN` | `triton_flash_attn.TritonFlashAttentionBackend` | Triton 版 FlashAttention |
+| `TRITON_ATTN_DIFFKV` | `triton_attn_diffkv.TritonAttentionDiffKVBackend` | 差异化 KV 缓存场景(Triton) |
 | `FLASHINFER` | `flashinfer.FlashInferBackend` | FlashInfer 内核 |
-| `TRITON_FLASHINFER` | `triton_flashinfer.TritonFlashInferBackend` | |
 | `FLEX_ATTENTION` | `flex_attention.FlexAttentionBackend` | PyTorch flex attention |
-| `ROCM_ATTN` / `ROCM_SEGMENTED_ATTN` / `ROCM_AITER_FA` / `ROCM_AITER_UNIFIED_ATTN` | rocm_*.py | AMD ROCm 系列 |
+| `ROCM_ATTN` / `ROCM_AITER_FA` / `ROCM_AITER_UNIFIED_ATTN` | rocm_*.py | AMD ROCm 系列 |
 | `XPU_MLA_SPARSE` | `mla.xpu_mla_sparse` | Intel XPU |
-| `CPU_ATTN` / `TORCH_SDPA` / `NO_ATTENTION` / `TURBOQUANT` / `ULTRAQUANT` / `HPC_ATTN` / `B12X` | 各自模块 | 各平台/量化专用 |
+| `TORCH_SDPA` | — | 仅 ViT 用 tag |
+| `CPU_ATTN` / `NO_ATTENTION` / `TURBOQUANT` / `HPC_ATTN` | 各自模块 | 各平台/量化专用 |
+| `CUSTOM` | value=None | 第三方/custom backend 占位,须 `register_backend()` 先注册 |
 
 MLA 族(DeepSeek MLA / sparse MLA,`vllm/v1/attention/backends/mla/` 子包):
 
@@ -85,14 +86,15 @@ MLA 族(DeepSeek MLA / sparse MLA,`vllm/v1/attention/backends/mla/` 子包):
 | `FLASHMLA` | `mla.flashmla.FlashMLABackend` |
 | `FLASHMLA_SPARSE` | `mla.flashmla_sparse.FlashMLASparseBackend` |
 | `FLASHINFER_MLA` | `mla.flashinfer_mla.FlashInferMLABackend` |
-| `FLASHINFER_MLA_SPARSE`(含 `_SM90`/`_SM120` 变体) | `mla.flashinfer_mla_sparse.*` |
+| `FLASHINFER_MLA_SPARSE`(含 `_SM120` 变体) | `mla.flashinfer_mla_sparse.*` |
 | `CUTLASS_MLA` | `mla.cutlass_mla.CutlassMLABackend` |
 | `TRITON_MLA` | `mla.triton_mla.TritonMLABackend` |
 | `TOKENSPEED_MLA` | `mla.tokenspeed_mla.TokenspeedMLABackend` |
 | `FLASH_ATTN_MLA` / `FLASH_ATTN_MLA_SPARSE` | `mla.flashattn_mla.*` |
 | `ROCM_AITER_MLA` / `ROCM_AITER_TRITON_MLA` / `ROCM_AITER_MLA_SPARSE` | `mla.rocm_aiter_mla.*` |
 | `AMX_MLA` / `CPU_MLA` | `mla.amx_mla` / `mla.cpu_mla` |
-| `FLASHMLA_SPARSE_DSV4` / `_DSV41` / `FLASHINFER_MLA_SPARSE_DSV4/_DSV41` / `FLASHMLA_MEGA_ATTN_DSV41` | `vllm.models.deepseek_v4*` 模型驱动 backend(V4/V4.1 专用) |
+| `FLASHMLA_SPARSE_DSV4` / `FLASHINFER_MLA_SPARSE_DSV4` / `ROCM_FLASHMLA_SPARSE_DSV4` | `vllm.models.deepseek_v4*` 模型驱动 backend(V4 专用) |
+| `MINIMAX_M3_SPARSE` / `CUTLASS_MSA` / `TRITON_MSA` | `vllm.models.minimax_m3.*` | MiniMax M3 稀疏 MLA |
 
 **关键结论**:
 
@@ -108,7 +110,7 @@ MLA 族(DeepSeek MLA / sparse MLA,`vllm/v1/attention/backends/mla/` 子包):
 |---|---|---|---|
 | FLASH_ATTN | NVIDIA(Ampere+)、部分其他 | 默认高优先级;head_size 匹配;`--flash-attn-version` 可选 2/3/4 | 通用 dense attention 主力;FA3 仅 Hopper、FA4 仅 Blackwell(见 attention/implementation) |
 | FLASHINFER | NVIDIA | SM100 上非 MLA 时优先级高于 FLASH_ATTN | 稀疏/长上下文/Paged 内核强 |
-| TRITON_ATTN / TRITON_FLASH_ATTN | 各平台(Triton) | 无专用内核时兜底 | 可移植、易读,性能中 |
+| TRITON_ATTN | 各平台(Triton) | 无专用内核时兜底 | 可移植、易读,性能中 |
 | MLA 族(FLASHMLA/FLASHINFER_MLA/CUTLASS_MLA/TRITON_MLA/TOKENSPEED_MLA) | NVIDIA + 昇腾(FlashMLA 双平台) | `use_mla=True`(DeepSeek V2/V3/V4 系);量化 KV 或 head 数改变优先级 | 服务 MLA 低秩压缩;FP8 KV 优先 FlashInfer MLA,BF16 低 head 也偏 FlashInfer,否则偏 FlashMLA |
 | ROCM 系列 | AMD | ROCm + aiter | AMD 专用内核 |
 | XPU | Intel | XPU | |
@@ -136,7 +138,7 @@ MLA 族(DeepSeek MLA / sparse MLA,`vllm/v1/attention/backends/mla/` 子包):
 
 ## 6. 溯源
 
-- **registry.py**(main):`AttentionBackendEnum` 全枚举(行 34-158)、`AttentionBackendEnum.register()`(161)、`register_backend()`(340)—— https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/registry.py
+- **registry.py**(main):`AttentionBackendEnum` 全枚举(行 34-130)、模块级 `register_backend()`(243)+ `_ATTN_OVERRIDES`(239)、`CUSTOM` 占位(130)—— https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backends/registry.py
 - **backend.py**(main):`AttentionBackend`(61)、`CommonAttentionMetadata`(389)、`AttentionMetadataBuilder`(593)—— https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/backend.py
 - **selector.py**(main):`get_attn_backend`(105)、`_cached_get_attn_backend`(204)—— https://github.com/vllm-project/vllm/blob/main/vllm/v1/attention/selector.py
 - **cuda.py**(main):`_get_backend_priorities`(83)、`get_valid_backends`(375)、`get_attn_backend_cls`(438)—— https://github.com/vllm-project/vllm/blob/main/vllm/platforms/cuda.py

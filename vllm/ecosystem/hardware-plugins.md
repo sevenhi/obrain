@@ -188,7 +188,7 @@ export VLLM_USE_V1=1
 vllm serve Qwen/Qwen3-8B \
   --device npu \
   --tensor-parallel-size 2 \
-  --additional-config '{"ascend_scheduler_config":{}}'
+  --additional-config '{"ascend_scheduler_config":{}}'   # 部署示意;ascend_scheduler_config 为 vllm-ascend 运行时解析配置项,以 vllm-ascend 最新 README/--help 为准
 ```
 
 ```yaml

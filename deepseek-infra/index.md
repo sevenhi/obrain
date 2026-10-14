@@ -30,8 +30,8 @@ date: 2026-10
 - **六件套覆盖链路**:语言层 → 矩阵库 → 通信库 → 注意力算子。
 - **三条 P0 事实(本域写作最易踩,务必按此记)**:
   1. **TileLang 是 tile-ai 的第三方 DSL,不是 DeepSeek 的仓库**;昇腾支持分三层:主仓 tile-ai/tilelang 现支持 Ascend 950 native backend(2026-09-30 起)、独立仓 tile-ai/tilelang-ascend(A2/A3 的 ascendc/pto/npuir)、tilelang-mlir-ascend(MLIR 路线)。
-  2. **FlashMLA 昇腾版 2026-09-30 发布于分支 `20260930-ascend-open-source`,合入状态以仓库当前 main 为准**(2026-10-12 核对时 main README 仍为 V3/V3.2-Exp 口径、News 最新 2025.09.29,无昇腾合入痕迹);分支口径称是 breaking change:移除 Hopper 支持、移除 V3/V3.2/V4.0 旧模型、改 FP8/FP4 KV cache 格式,只服务 V4.1,旧模型切旧 commit `ba89a346`——以上分支口径**待核实**。
-  3. **TileKernels 昇腾支持从 PyPI v2.0.0 起**,但 main README 滞后(仍只写 NVIDIA SM90/SM100)。
+  2. **FlashMLA 昇腾版 2026-09-30 已合入 main(commit 2e5429f)**;该版是 breaking change:移除 Hopper 支持、移除 V3/V3.2/V4.0 旧模型、改 FP8/FP4 KV cache 格式,只服务 V4.1,旧模型切旧 commit `ba89a346`——以上均已由 README 明写,无需待核。
+  3. **TileKernels 昇腾支持从 PyPI v2.0.0 起**,main 已合入 v2.0.0(HEAD 66258df,含 Ascend 950 + CANN 9.2.0 双平台)。
 - **术语(本域核定拼写;标「待核」者为一手库未附链接)**:fractal(分形**布局**)、MAD(matrix multiply-add 原语)、UBMEM、URMA、HCCL(集合通信)、HCOMM(控制面 API,**待核/据昇腾官方资料**)、bisheng(毕昇编译器)、DeepJIT(运行时 JIT)、torch_npu、**CANN 9.2.0**(DeepGEMM README 原文 "9.20" 即此版本,不写 9.20)、**950PR ≠ 950DT**(同一 950 Die 两款型:PR=Prefill&Recommendation、DT=Decode&Training,**待核/据昇腾官方资料**)。
 - **性能数字单源标注**:本域各算子性能数字(DeepGEMM 99.8%/856/862/850 TFLOPS、DeepEP 90–95% 带宽、FlashMLA 410/360、TileLang FA/mHC 比值)均出自各仓 README/deep-dive 一手源,暂无独立第三方或硬件实测复核,引用时保留原始口径、待硬件实测复核。
 
@@ -43,7 +43,7 @@ date: 2026-10
 | DeepGEMM-Ascend | DeepGEMM | 新建独立仓,API 完全兼容 | deepseek-ai/DeepGEMM-Ascend |
 | DeepEP-Ascend | DeepEP | 新建独立仓,API 完全兼容 | deepseek-ai/DeepEP-Ascend |
 | TileKernels | TileKernels 原生 | 新增昇腾后端(v2.0.0) | deepseek-ai/TileKernels |
-| FlashMLA | FlashMLA 原生 | 昇腾版发布于分支 20260930-ascend-open-source,合入状态以 main 为准 | deepseek-ai/FlashMLA |
+| FlashMLA | FlashMLA 原生 | 昇腾版 2026-09-30 已合入 main(commit 2e5429f) | deepseek-ai/FlashMLA |
 | DeepSelect | DeepSelect 原生 | 新增昇腾后端 | deepseek-ai/DeepSelect |
 
 ### 技术栈分层(文字图)
@@ -75,16 +75,16 @@ date: 2026-10
 | Ascend 适配原理 | [concepts/ascend-port-principles.md](concepts/ascend-port-principles.md) | NVIDIA→昇腾关键抽象对照表(CUDA→Ascend C、TMA→稀疏加载/协程、NCCL→HCCL/HCOMM、fractal 布局等)+ 移植难点 | ✅ 已入库 |
 | DeepGEMM-Ascend | [concepts/deepgemm-ascend.md](concepts/deepgemm-ascend.md) | 昇腾 GEMM 库,MAD 原语轻量抽象,藏 fractal/对齐/地址计算;稀疏加载 + 协程流水线;scaling factor 格式与 NVIDIA 不同 | ✅ 已入库 |
 | DeepEP-Ascend | [concepts/deepep-ascend.md](concepts/deepep-ascend.md) | MoE 专家并行通信库,EP all-to-all(dispatch/combine),EP≤32 dispatch 达 90–95% 物理带宽 | ✅ 已入库 |
-| TileKernels | [concepts/tilekernels.md](concepts/tilekernels.md) | TileLang 之上的 LLM 算子库(MoE routing/量化/Engram/mHC),v2.0.0 起支持昇腾,同一 Python API 跑 NVIDIA+华为 | ✅ 已入库 |
+| TileKernels | [concepts/tilekernels.md](concepts/tilekernels.md) | TileLang 之上的 LLM 算子库(MoE routing/量化/Engram/mHC),v2.0.0 起支持昇腾(已合入 main),同一 Python API 跑 NVIDIA+华为 | ✅ 已入库 |
 | DeepSelect | [concepts/deepselect.md](concepts/deepselect.md) | DSA/Sampler 的定制 TopK 算子,2–20× vs torch.topk(口径:有效内存带宽);昇腾仅 bfloat16 | ✅ 已入库 |
-| FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | MLA 注意力内核库(dense+sparse),昇腾版发布于分支 20260930-ascend-open-source、合入状态以 main 为准(分支称 breaking change,待核实);410 TFlops 双义(平台要标清) | ✅ 已入库 |
+| FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | MLA 注意力内核库(dense+sparse),昇腾版 2026-09-30 已合入 main(commit 2e5429f,breaking change 三条已由 README 明写);410 TFlops 双义(平台要标清) | ✅ 已入库 |
 
 ### NVIDIA 版对照 + 并行/工具/存储(NVIDIA 主线)
 
 | 专题 | 文件 | 一句话 | 状态 |
 |---|---|---|---|
 | DeepGEMM NVIDIA vs Ascend | [concepts/deepgemm-nvidia-vs-ascend.md](concepts/deepgemm-nvidia-vs-ascend.md) | NVIDIA 原版:轻量 tensor core 内核库(FP8/FP4/BF16、Mega MoE、MQA),H800 1550 TFLOPS;与昇腾版同 API 不同后端(WGMMA/TMA vs MAD/协程) | ✅ 已入库 |
-| DeepEP NVIDIA vs Ascend | [concepts/deepep-nvidia-vs-ascend.md](concepts/deepep-nvidia-vs-ascend.md) | NVIDIA 原版:EP 通信库,V2 迁 NCCL Gin 后端、EPBuffer 统一接口、SM 占用 24→4–6;与昇腾版同 API 不同后端 | ✅ 已入库 |
+| DeepEP NVIDIA vs Ascend | [concepts/deepep-nvidia-vs-ascend.md](concepts/deepep-nvidia-vs-ascend.md) | NVIDIA 原版:EP 通信库,V2 迁 NCCL Gin 后端、EPBuffer 统一接口、SM 占用 24→4–6(旧 V2 公告口径);与昇腾版同 API 不同后端 | ✅ 已入库 |
 | DeepJIT | [concepts/deepjit.md](concepts/deepjit.md) | xPU kernel 运行时 JIT(CUDA + 昇腾),header-only;缓存键穷尽 source/include/编译版本;支持跨节点共享缓存 | ✅ 已入库 |
 | Engram | [concepts/engram.md](concepts/engram.md) | 条件记忆:O(1) N-gram 查找,与 MoE 互补的稀疏轴;确定性寻址可 offload 到 host memory;27B 全面领先 iso-param MoE | ✅ 已入库 |
 | DualPipe | [concepts/dualpipe.md](concepts/dualpipe.md) | 双向流水线并行,V3/R1 训练;气泡减半(参数 2× 换吞吐),DualPipeV 设备数减半 | ✅ 已入库 |

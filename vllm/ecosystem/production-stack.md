@@ -141,7 +141,7 @@ servingEngineSpec:
     requestGPU: 1
     pvcStorage: "50Gi"
     vllmConfig:
-      maxModelLen: 16384
+      maxModelLen: 32000
     lmcacheConfig:
       enabled: true
       cpuOffloadingBufferSize: "20"       # 20GB CPU 缓冲

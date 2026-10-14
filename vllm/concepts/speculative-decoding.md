@@ -10,7 +10,7 @@ source:
   - "pdf: EAGLE-3: Scaling up Inference Acceleration of LLMs via Training-Time Test | arXiv:2503.01840"
   - "pdf: Medusa: Simple LLM Inference Acceleration Framework with Multiple Decoding Heads | arXiv:2401.10774"
   - "pdf: Unlocking Efficiency in LLM Inference: A Comprehensive Survey of Speculative Decoding | arXiv:2401.07851"
-  - "code: vllm/model_executor/models/registry.py `_SPECULATIVE_DECODING_MODELS`(main, 行 618) | https://github.com/vllm-project/vllm"
+  - "code: vllm/model_executor/models/registry.py `_SPECULATIVE_DECODING_MODELS`(main, 行 596) | https://github.com/vllm-project/vllm"
   - "web: vLLM 官方文档 speculative_decoding/ 子页 | https://docs.vllm.ai/en/latest/features/spec_decode.html | 阅读日期 2026-10-09"
 date: 2026-10
 ---
@@ -81,20 +81,20 @@ E[每步 token 数] = (1 − α^(γ+1)) / (1 − α)
 
 ## 3. vLLM 落地:注册表 + 后端支持状态
 
-### 3.1 `_SPECULATIVE_DECODING_MODELS`(registry.py 当前 main,行 618)
+### 3.1 `_SPECULATIVE_DECODING_MODELS`(registry.py 当前 main,行 596)
 
-vLLM 把投机草稿模型登记在 `vllm/model_executor/models/registry.py` 的 `_SPECULATIVE_DECODING_MODELS` 字典(架构名 → (模块, 类)),**当前 main 行号 ~618**(别用库内旧快照的 596)。真实条目(2026-10 抓取)覆盖:
+vLLM 把投机草稿模型登记在 `vllm/model_executor/models/registry.py` 的 `_SPECULATIVE_DECODING_MODELS` 字典(架构名 → (模块, 类)),**当前 main 行号 ~596**。真实条目(2026-10 抓取)覆盖:
 
 - **EAGLE 族**:`EagleLlamaForCausalLM` / `EagleCohereForCausalLM` / `EagleMistralForCausalLM` / `EagleLlama4ForCausalLM`、`Eagle3{...}ForCausalLM`(Llama/Qwen3/MiniMax/DeepSeek 等)、`PEagleDraftModel`(= Eagle3 Llama);
 - **MTP 族**:`DeepSeekMTPModel`、`DeepseekV32MTPModel`、`DeepSeekV4MTPModel`、`Gemma4MTPModel`、`Qwen3_5MTP`、`MiniMaxM3MTP`、`Glm4MoeMTPModel`、`ErnieMTPModel`、`ExaoneMoeMTP` 等一长串模型原生 MTP;
-- **DSpark / DFlash**:`DSparkDraftModel`(deepseek_v4)、`DSparkV41DraftModel`、`Qwen3DSparkModel`、`DFlashDraftModel` / `DFlash2DraftModel`(qwen3_dflash)、`Gemma4DSparkModel`、`K3DSparkModel` 等;
+- **DSpark / DFlash**:`DSparkDraftModel`(deepseek_v4)、`Qwen3DSparkModel`、`DFlashDraftModel` / `DFlash2DraftModel`(qwen3_dflash)、`Gemma4DSparkModel`、`K3DSparkModel` 等;
 - **Medusa**:`MedusaModel`;
 - **n-gram / suffix**:走独立 proposer(`ngram_proposer.py` / `suffix_decoding.py`),不进这个字典。
 
 ### 3.2 关键支持状态(如实标注)
 
 - ✅ **EAGLE / EAGLE-3 / MTP / Medusa / n-gram / suffix / draft model / DSpark / DFlash** 均可用,各有独立文档页。
-- ⚠️ **MLP Speculator 在 V1 已被注释禁用**:`_SPECULATIVE_DECODING_MODELS` 末尾(行 697-699)原条目 `MLPSpeculatorPreTrainedModel` 被注释,注释原文 `# Temporarily disabled. # TODO(woosuk): Re-enable this once the MLP Speculator is supported in V1.` —— 别当成 V1 可用。
+- ⚠️ **MLP Speculator 在 V1 已被注释禁用**:`_SPECULATIVE_DECODING_MODELS` 末尾(行 667-669)原条目 `MLPSpeculatorPreTrainedModel` 被注释,注释原文 `# Temporarily disabled. # TODO(woosuk): Re-enable this once the MLP Speculator is supported in V1.` —— 别当成 V1 可用。
 - **adaptive verification 目前只支持 DSpark**(带 confidence head),且需 full cudagraph、不支持 LoRA/PP(§3.4)。
 - **dynamic SD 实测覆盖 Eagle/Eagle-3/DFlash**,其他方法「可能不 out of the box」。
 
@@ -163,5 +163,5 @@ speculative_config={"method": "ngram", "num_speculative_tokens": 5, "prompt_look
 - **Medusa** — https://arxiv.org/abs/2401.10774
 - **Survey**(Heming Xia et al.) — https://arxiv.org/abs/2401.07851
 - **vLLM 官方文档 speculative_decoding/**(README 方法速选表、draft_model / eagle / mtp / n_gram / dynamic_speculative_decoding / adaptive_verification / acceptance_metrics / speculators 各子页):https://docs.vllm.ai/en/latest/features/spec_decode.html
-- **源码一手实读**:`vllm/model_executor/models/registry.py`(main, `_SPECULATIVE_DECODING_MODELS` 行 618;MLP Speculator 行 697-699 注释禁用)—— https://github.com/vllm-project/vllm
+- **源码一手实读**:`vllm/model_executor/models/registry.py`(main, `_SPECULATIVE_DECODING_MODELS` 行 596;MLP Speculator 行 667-669 注释禁用)—— https://github.com/vllm-project/vllm
 - **库内交叉**:[continuous-batching.md](continuous-batching.md)(decode 访存受限背景)、[paged-attention.md](paged-attention.md)(KV cache 分页,验证阶段增量 KV 的底座)、[v1-architecture.md](v1-architecture.md)(batch queue 异步调度与 SD 的交互)、[attention-backend-selection.md](../practices/attention-backend-selection.md)(adaptive verification 要求 backend 容忍 device 决定的 query 长度)。

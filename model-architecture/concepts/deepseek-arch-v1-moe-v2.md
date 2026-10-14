@@ -138,7 +138,7 @@ h^l_t = u^l_t + Σ_{i=1}^{Ks} FFN^l_i(u^l_t)                 # 共享专家(恒�
              + Σ_{i=1}^{mK} g_{i,t} · FFN^l_i(u^l_t)         # 路由专家(top-mK,加权)
 g_{i,t} = softmax 后的 top-k 分数(或 s_{i,t})
 ```
-论文里每个专家相对于标准 FFN 的缩放系数：16B 用 0.25×，145B 用 0.125×（口径注：该 0.25× 相对「标准专家」即论文 Table 口径，非相对 dense FFN——16B 的 moe_intermediate_size=1408 对 10944 的 dense FFN 约 0.129）。
+论文里每个专家相对于标准 FFN 的缩放系数：16B 用 0.25×，145B 用 0.125×（口径注：该 0.25× 相对「标准专家」即论文 Table 口径，非相对 dense FFN——16B 的 moe_intermediate_size=1408 对 10944 的 dense FFN 约 0.129，1408 数值引自 DeepSeekMoE 论文 Table 口径，非 V3 推理 demo config）。
 
 ### 2.5 三代规模超参
 

@@ -128,7 +128,7 @@ FP16_MATMUL_HEURISTIC_CONDITION = x.shape[:-1].numel() >= 256   # auto_awq.py:92
 
 ### 4.3 Marlin:为什么 int4/int8 常落在它
 
-本版 Marlin 不再是独立 Config,而是 **kernel 后端**:`get_quant_method()` 对 Linear 返回 `AutoGPTQLinearMethod`/`AutoAWQLinearMethod`,其内部再经 `choose_mp_linear_kernel()` 选中 **Marlin/AWQ-Marlin kernel**(见 §5)。`marlin_input_dtype`/`input_dtype` 在 `auto_gptq.py:261-269` 一并设置。
+本版 Marlin 不再是独立 Config,而是 **kernel 后端**:`get_quant_method()` 对 Linear 返回 `AutoGPTQLinearMethod`/`AutoAWQLinearMethod`,其内部再经 `choose_mp_linear_kernel()` 选中 **Marlin/AWQ-Marlin kernel**(见 §5)。`marlin_input_dtype`/`use_marlin` 在 `fp8.py:259-260`(FP8 无硬件时的 Marlin 兜底路径)设置,GPTQ/AWQ 的 `marlin_input_dtype` 归 `auto_gptq.py` 的 `get_marlin_input_dtype` 逻辑。
 
 ---
 

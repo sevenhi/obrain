@@ -4,7 +4,7 @@ type: concept
 tags: [cutlass, hopper, sm90, wgmma, tensor-core, gmma, swizzle, descriptor, cute]
 source:
   - "web: Colfax Research — CUTLASS Tutorial: Fast Matrix-Multiplication with WGMMA on NVIDIA Hopper GPUs (Part 1, 2024-08-06) | https://research.colfax-intl.com/cutlass-tutorial-wgmma-hopper/ ↑primary"
-  - "code: CUTLASS examples/cute/tutorial/wgmma_sm90.cu(3.5.1 起,Pradeep Ramani 贡献)| github.com/NVIDIA/cutlass"
+  - "code: CUTLASS examples/cute/tutorial/hopper/wgmma_sm90.cu(3.5.1 起,Pradeep Ramani 贡献)| github.com/NVIDIA/cutlass"
   - "web: PTX ISA — Asynchronous Multiply-Accumulate Instructions (wgmma.mma_async / core matrix / descriptor) | https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-mma-async"
   - "web: NVIDIA H100 GPU Datasheet(FP16 TC 2,000 TFLOPS* 稀疏 / 1,000 dense)| https://resources.nvidia.com/en-us-data-center-overview/nvidia-tensor-core-gpu-datasheet"
   - "web: NVIDIA A100 Datasheet(FP16 TC 312 TFLOPS dense / 624* 稀疏)| https://www.nvidia.com/content/dam/en-zz/Solutions/Data-Center/a100/pdf/nvidia-a100-datasheet-us-nvidia-1758950-r4-web.pdf"
@@ -31,7 +31,7 @@ date: 2026-09
 - **warpgroup** = 4 个连续 warp = **128 连续线程**,且第一个 warp 的 warp-rank 是 4 的倍数(对齐要求)。
 - `wgmma.mma_async` 由这 128 线程**共同执行**,形式为 `C = A*B + C` 或 `C = A*B`(禁用累加器输入,对应 PTX 里 `scale_D=0`)。
 - **异步**:wgmma 在 **async proxy** 中执行,可与其他操作并发,因此必须显式同步(§5)。
-- CUTLASS 代码参考:`examples/cute/tutorial/wgmma_sm90.cu`(3.5.1 版本加入)。
+- CUTLASS 代码参考:`examples/cute/tutorial/hopper/wgmma_sm90.cu`(3.5.1 版本加入)。
 
 ### 操作数位置(雷区级硬约束)
 
@@ -252,7 +252,7 @@ dim3 dimBlock(cute::size(tiled_mma));            // 128 = 1 warpgroup
 
 `cute::gemm` 的重载先循环外层 MMA_M/MMA_N、MMA_K 模,归约到 `(V)x(V)=>(V)` 的 atom 级 dispatch,最终落到 §4 的 `fma` 内联 PTX。
 
-**动手路径**:编译 `examples/cute/tutorial/wgmma_sm90.cu`(需 `-arch=sm_90a`,构建注意见 [../frameworks/cutlass-build-and-usage.md](../frameworks/cutlass-build-and-usage.md) §2),用 `print`/`print_tensor` 对照 §4 的布局打印。
+**动手路径**:编译 `examples/cute/tutorial/hopper/wgmma_sm90.cu`(需 `-arch=sm_90a`,构建注意见 [../frameworks/cutlass-build-and-usage.md](../frameworks/cutlass-build-and-usage.md) §2),用 `print`/`print_tensor` 对照 §4 的布局打印。
 
 ---
 
@@ -301,7 +301,7 @@ Colfax Part 1 本身无性能数字(评论区作者也确认:量化收益看 FA3
 
 - **主源**:Colfax Research — *CUTLASS Tutorial: Fast Matrix-Multiplication with WGMMA on NVIDIA Hopper GPUs*(GEMM 三部曲 Part 1,**2024-08-06** 发布):https://research.colfax-intl.com/cutlass-tutorial-wgmma-hopper/
   - Part 2(TMA + warp-specialization + ping-pong,GEMM kernel 整体设计):https://research.colfax-intl.com/cutlass-tutorial-design-of-a-gemm-kernel/
-- **代码参考**:`examples/cute/tutorial/wgmma_sm90.cu`(Pradeep Ramani 贡献,CUTLASS 3.5.1 加入):https://github.com/NVIDIA/cutlass
+- **代码参考**:`examples/cute/tutorial/hopper/wgmma_sm90.cu`(Pradeep Ramani 贡献,CUTLASS 3.5.1 加入):https://github.com/NVIDIA/cutlass
 - **PTX ISA**(wgmma.mma_async 语法、core matrix 图、descriptor 字段、imm-trans 仅 f16/bf16、Table 37 swizzle 与 majorness 独立):https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#asynchronous-multiply-and-accumulate-instruction-wgmma-mma-async
 - **性能数据**:H100 datasheet https://resources.nvidia.com/en-us-data-center-overview/nvidia-tensor-core-gpu-datasheet ;A100 datasheet https://www.nvidia.com/content/dam/en-zz/Solutions/Data-Center/a100/pdf/nvidia-a100-datasheet-us-nvidia-1758950-r4-web.pdf ;FA3 数字见库内 [flash-attention-implementation.md](../../attention/implementation/flash-attention-implementation.md);TC 代际 FLOPs/cycle 口径见杨远航 CUTLASS 笔记导读(知乎专栏 https://www.zhihu.com/column/c_1938664963049763058 )
 - **库内交叉**:[cute-layout-algebra.md](cute-layout-algebra.md)(Atom/TiledMMA/TV layout 通识 + Hopper GMMA 注记)、[gemm-tiling.md](gemm-tiling.md)(三层 tiling / warp 特化 / pipelining)、[../frameworks/cutlass-build-and-usage.md](../frameworks/cutlass-build-and-usage.md)(sm_90a 构建)、[../frameworks/cutlass-profiling-tuning.md](../frameworks/cutlass-profiling-tuning.md)(调优)

@@ -129,7 +129,7 @@ CUDA → FlashInfer(受 `VLLM_USE_FLASHINFER_SAMPLER` 与算力门控 `flashinfe
 
 请求参数到引擎参数的完整归一链(OpenAI 兼容层的字段拆解见 [api-server-openai-compat.md](api-server-openai-compat.md) §6):
 
-**三级回退**(`chat_completion/protocol.py:661` `ChatCompletionRequest.to_sampling_params`):每个参数为 `None` 时依次取 ① 请求字段 → ② 服务器默认 `default_sampling_params`(模型 `generation_config.json`)→ ③ 协议内建 `_DEFAULT_SAMPLING_PARAMS`(如 `"repetition_penalty": 1.0`,protocol.py:629)。另有:`stop_token_ids` 与服务端默认(如 gpt-oss 的 `</call>`)`dict.fromkeys` 去重合并;`echo=True` 时继承 `prompt_logprobs=top_logprobs`;最终统一 `SamplingParams.from_optional(...)`(sampling_params.py:447-456)把可选项归一成具体值。
+**三级回退**(`chat_completion/protocol.py:661` `ChatCompletionRequest.to_sampling_params`):每个参数为 `None` 时依次取 ① 请求字段 → ② 服务器默认 `default_sampling_params`(模型 `generation_config.json`)→ ③ 协议内建 `_DEFAULT_SAMPLING_PARAMS`(如 `"repetition_penalty": 1.0`,protocol.py:629)。另有:`stop_token_ids` 与服务端默认(如 gpt-oss 的 `</call>`)`dict.fromkeys` 去重合并;`echo=True` 时继承 `prompt_logprobs=top_logprobs`;最终统一 `SamplingParams.from_optional(...)`(sampling_params.py:382-391)把可选项归一成具体值。
 
 **校验**(`vllm/sampling_params.py:215`,`__post_init__` 483-545 + `_verify_args` 545-560):
 

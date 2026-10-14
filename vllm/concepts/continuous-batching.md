@@ -104,7 +104,7 @@ step 3: [decode A][decode B][prefill C 尾 200 tok]
 ```
 
 - **收益**：decode 和 prefill 同 batch 混合,GPU 每步都填满;
-- **代价**：单个 prefill 的延迟略增(拆开做)。配套旋钮:`long_prefill_token_threshold` 只是"多长算长 prompt"的**分类阈值**,真正限制超长 prefill 每步可调度 token 数的是 `max_long_partial_prefills`(见 §7 第 3 条)。
+- **代价**：单个 prefill 的延迟略增(拆开做)。配套旋钮:`long_prefill_token_threshold` 是"多长算长 prompt"的**分类阈值**(prompt 超过它才被当作 long prefill 施加上限;0 表示禁用,默认),真正限制超长 prefill 每步可调度 token 数的就是它(见 §7 第 3 条)。
 
 > 取舍心法:chunked prefill 是在 **吞吐(填满 GPU) vs prefill 延迟(一次做完)** 之间做权衡。服务场景默认要吞吐,所以翻成"拆开缝进空隙"。
 
@@ -168,7 +168,7 @@ EngineCore.step()                        # core.py:597(行号以 597 为准,v1-a
 
 1. **吞吐瓶颈看调度频率,不是 batch 大小**:服务器频繁新请求时,谁能每步重排谁就赢——这解释了 vLLM 相对静态 batching 的倍增。
 2. **decode 阶段算术强度极低**:它是 memory-bound;连续批处理的核心价值就是**不让 decode 阶段 GPU 空转**(用混进来的 prefill 填满)。
-3. **chunked prefill 默认开但要懂取舍**:V1 里默认开启、**不需要手动设 `enable_chunked_prefill`**(V0 是按模型特性条件启用,老教程的开关经验别照搬);要吞吐混批 → 保持默认;要单请求 prefill 低延迟(如交互式) → 调小 `max_long_partial_prefills`(限制超长 prompt 每步可调度的 partial prefill token 数),配合 `long_prefill_token_threshold` 调整"多长算长 prompt"的分类线,或直接关。长 prompt 会顺序阻塞 prefill 队列、推高后续请求 TTFT(见 §4.3),高 QPS + 长短混合流量场景尤其注意 chunk 大小。
+3. **chunked prefill 默认开但要懂取舍**:V1 里默认开启、**不需要手动设 `enable_chunked_prefill`**(V0 是按模型特性条件启用,老教程的开关经验别照搬);要吞吐混批 → 保持默认;要单请求 prefill 低延迟(如交互式) → 调小 `long_prefill_token_threshold`(限制超长 prompt 每步可调度的 partial prefill token 数),配合它调整"多长算长 prompt"的分类线,或直接关。长 prompt 会顺序阻塞 prefill 队列、推高后续请求 TTFT(见 §4.3),高 QPS + 长短混合流量场景尤其注意 chunk 大小。
 4. **max_num_batched_tokens 是"每步喂多少"的旋钮**:示例默认 2048 但源码注释明确说它\"mainly for convenience when testing\"——**实际部署会被 EngineArgs 按模型/长度自动调整,别拿 2048 当线上真值**,查启动日志里的生效值再调。
 5. **注意 V0/V1 资料差异**:网上大量调度文章讲的是旧版(V0 里 waiting 只 prefill、running 只 decode 两条路径);当前主线 `vllm/v1/` 是统一 token 预算模型(以 `vllm/v1/` 源码为准,不是老教程)。
 6. **抢占(块不足)是连续批处理的兜底**:`allocate_slots` 失败触发抢占(默认抢 running 队尾),释放块进 LRU、被抢占请求重排靠 prefix cache 减重算——调参时看 **KV cache 余量比看 batch 数字更本质**(可观测指标:`vllm:num_preemptions_total` 看抢占次数、scheduler 指标看每步 batch 填充,别凭感觉)。

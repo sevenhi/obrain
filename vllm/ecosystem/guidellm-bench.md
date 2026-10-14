@@ -65,7 +65,8 @@ GuideLLM 官方对比表里,inference-perf / genai-bench / llm-perf 等都缺「
 | `throughput` | 追求最大吞吐,可限 max_concurrency | 找峰值吞吐、压满 GPU |
 | `constant` | 恒定请求速率 rate | 模拟定长入口流量 |
 | `poisson` | 泊松到达过程 | 更接近真实随机流量 |
-| `sweep` | **扫参**(默认),逐步加压找拐点 | **容量规划主力** |
+| `sweep` | **扫参**(默认),逐步加压找最优工作点 | **容量规划主力** |
+| `knee` | **拐点检测**专司 | 找「吞吐不再涨、延迟开始飞」的拐点(见 §8 步骤 3) |
 
 ### 数据形态
 
@@ -146,7 +147,7 @@ guidellm run \
   --constraint kind=max_duration,seconds=60
 ```
 
-默认就是 `sweep` profile:自动加压找最优工作点;每种策略最长 60s。
+默认就是 `sweep` profile:自动加压找最优工作点;每种策略最长 60s。(独立的 `knee` profile 专做拐点检测,`sweep` 内部由 synchronous+throughput 子策略组合;默认 profile 取决于 CLI 默认配置,以 benchmark.md 为准。)
 
 ### 5.3 带 SLO 的定速率评测
 

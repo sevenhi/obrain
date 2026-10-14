@@ -17,7 +17,7 @@ date: 2026-10
 - **DeepGEMM-Ascend(昇腾 GEMM 库)** — https://github.com/deepseek-ai/DeepGEMM-Ascend
 - **DeepEP-Ascend(昇腾 MoE 通信库)** — https://github.com/deepseek-ai/DeepEP-Ascend
 - **TileKernels(TileLang 算子库)** — https://github.com/deepseek-ai/TileKernels ;PyPI v2.0.0(昇腾版) — https://pypi.org/project/tile-kernels/2.0.0/
-- **FlashMLA(注意力内核库,昇腾版发布于分支 20260930-ascend-open-source,合入状态以仓库当前 main 为准)** — https://github.com/deepseek-ai/FlashMLA
+- **FlashMLA(注意力内核库,昇腾版 2026-09-30 已合入 main,commit 2e5429f)** — https://github.com/deepseek-ai/FlashMLA
 - **DeepSelect(DSA/Sampler 的 TopK 算子)** — https://github.com/deepseek-ai/DeepSelect
 
 ## NVIDIA 原版对照 + 并行/工具/存储仓库(该批入库)

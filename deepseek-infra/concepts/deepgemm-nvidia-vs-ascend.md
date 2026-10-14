@@ -33,7 +33,7 @@ date: 2026-10
 
 ### 1.1 设计哲学
 
-DeepGEMM 的设计目标是一条:**单一 kernel、极致性能、代码可读**(开源周公告原话「core logic at ~300 lines」)。它借鉴 CUTLASS/CuTe 的 **tiling / layout / MMA atom** 概念,但**刻意不依赖它们的模板与代数**(avoid heavy reliance on their templates or algebras),只用有限几个核心 kernel 函数,是学习 NVIDIA GPU kernel 优化的干净读本。性能却匹配甚至超过专家调优库(如 cuBLAS/CUTLASS)在多种矩阵形状上的表现。
+DeepGEMM 的设计目标是一条:**单一 kernel、极致性能、代码可读**(开源周公告原话「core logic at ~300 lines」,来自 open-infra-index,本地未核)。它借鉴 CUTLASS/CuTe 的 **tiling / layout / MMA atom** 概念,但**刻意不依赖它们的模板与代数**(avoid heavy reliance on their templates or algebras),只用有限几个核心 kernel 函数,是学习 NVIDIA GPU kernel 优化的干净读本。性能却匹配甚至超过专家调优库(如 cuBLAS/CUTLASS)在多种矩阵形状上的表现。
 
 ### 1.2 JIT:安装时零 CUDA 编译
 
@@ -107,7 +107,7 @@ deep_gemm.fp8_fp4_mega_moe(y, transformed_l1, transformed_l2, buffer)
 | 场景 | 数值 | 环境口径 |
 |---|---|---|
 | FP8 GEMM(H800) | **1550 TFLOPS** | NVIDIA H800,2025-04 PR #74/#78/#81/#86,内部形状 |
-| FP8 GEMM(Hopper) | 1350+ TFLOPS | 2025-02 开源周 Day 3 公告,Hopper |
+| FP8 GEMM(Hopper) | 1350+ TFLOPS | 2025-02 开源周 Day 3 公告,Hopper(来自 open-infra-index,本地未核) |
 | 密集 GEMM 利用率(Ascend) | 99.8% | 950DT,BF16×BF16,M=4096/N=7168/K=16384 |
 | M-Grouped MoE(Ascend) | 856 / 862 TFLOPS | 950DT,FP8×FP4,4/8 组专家 |
 | FP8 inference(Ascend) | 850 TFLOPS | 950DT,M=4096/N=4096/K=7168 |
@@ -132,5 +132,5 @@ deep_gemm.fp8_fp4_mega_moe(y, transformed_l1, transformed_l2, buffer)
 - **DeepGEMM 原版 README**(主源:接口命名/scaling factor 分代/grouped GEMM/Mega MoE/MQA/1550 TFLOPS/JIT 环境变量):https://github.com/deepseek-ai/DeepGEMM
 - **DeepGEMM-Ascend README**(昇腾版对照,MAD/fractal/协程/scaling factor int16/CANN 9.20):https://github.com/deepseek-ai/DeepGEMM-Ascend
 - **DeepJIT**(运行时 JIT):https://github.com/deepseek-ai/DeepJIT
-- **开源周 Day 3 公告**(1350+ TFLOPS、~300 行核心逻辑):https://github.com/deepseek-ai/open-infra-index
+- **开源周 Day 3 公告**(1350+ TFLOPS、~300 行核心逻辑;来自 open-infra-index,本地未核):https://github.com/deepseek-ai/open-infra-index
 - **库内交叉**:[deepgemm-ascend.md](deepgemm-ascend.md)(昇腾版机制全文)、[ascend-port-principles.md](ascend-port-principles.md)(NVIDIA→昇腾抽象对照)、[deepjit.md](deepjit.md)(JIT 机制)、[../../cutlass/index.md](../../cutlass/index.md)(CUTLASS 造内核方法论)、[deepep-nvidia-vs-ascend.md](deepep-nvidia-vs-ascend.md)(Mega MoE 的通信侧)。

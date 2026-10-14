@@ -17,7 +17,7 @@ date: 2026-10
 
 **关键机制结论**:
 1. **通信内核运行时 JIT 编译**(DeepJIT),安装时零 CUDA 编译;
-2. **V2 从 NVSHMEM 迁到轻量 NCCL Gin 后端**,统一 `EPBuffer` 接口 + 解析式 SM/QP 估计(不再 autotune),支持更大 scale-up/scale-out 域,SM 占用从 24 降到 4–6 且峰值反升 1.3×;
+2. **V2 从 NVSHMEM 迁到轻量 NCCL Gin 后端**,统一 `EPBuffer` 接口 + 解析式 SM/QP 估计(不再 autotune),支持更大 scale-up/scale-out 域,SM 占用从 24 降到 4–6 且峰值反升 1.3×;(⚠ 该 1.3×/24→4–6 为**旧 V2 公告口径,当前 README 已移除性能表**,见 §3)
 3. **EP 通信要吃 GPU SM**(zero-SM RDMA EP 已不支持),靠「通信+计算重叠」(deferred epilogue、`EventOverlap`)把通信藏进专家 GEMM 的间隙;
 4. **同 API 不同后端**:NVIDIA 侧 = NCCL Gin + IBGDA(GPUDirect Async)+ NVLink/RDMA;昇腾侧 = Ascend C + HCCL/HCOMM + UBMEM/URMA(见 [deepep-ascend.md](deepep-ascend.md))。
 
@@ -82,11 +82,13 @@ DeepEP 暴露 `EPBuffer.lb_prefetch_weights` / `lb_reduce_grads`,支撑动态冗
 
 ## 3. 数据(⚠ 口径不同)
 
+> ⚠ **NVIDIA 侧数字时效标注**:下表 1.3×/4×、90/643/675 GB/s 均出自**旧 V2 公告 README 性能表**,当前 main README 已移除该性能表(V2.5 news 仅描述「Analytical SM & QP calculation」)。引用时按「旧 V2 公告口径」标注,勿当现行 main 一手数字。
+
 | 场景 | 数值 | 口径 |
 |---|---|---|
-| dispatch/combine 峰值(V2 vs V1) | 峰值 up to **1.3×**、SM 省 up to **4×** | NVIDIA,README V2 公告 |
-| dispatch(FP8,CX7,EP 8×2) | 90 GB/s(RDMA)/ 643 GB/s(NVLink,SM100 EP8) | NVIDIA,README 性能表 |
-| combine(NVLink,SM100 EP8) | 675 GB/s | NVIDIA,README 性能表 |
+| dispatch/combine 峰值(V2 vs V1) | 峰值 up to **1.3×**、SM 省 up to **4×** | NVIDIA,旧 V2 公告口径(现行 README 已移除性能表) |
+| dispatch(FP8,CX7,EP 8×2) | 90 GB/s(RDMA)/ 643 GB/s(NVLink,SM100 EP8) | NVIDIA,旧 V2 公告口径(现行 README 已移除性能表) |
+| combine(NVLink,SM100 EP8) | 675 GB/s | NVIDIA,旧 V2 公告口径(现行 README 已移除性能表) |
 | dispatch(昇腾,EP≤32) | 物理载荷带宽 **90–95%** | Ascend 950DT + CANN 9.2.0 + PoC HDK,netlayer 1(见 [deepep-ascend.md](deepep-ascend.md)) |
 
 > ⚠ NVIDIA 侧 90/643 GB/s 是特定 CX7/NVLink 拓扑的 bottleneck 带宽;昇腾侧 90–95% 是「达物理载荷带宽的百分比」,两者口径不同,不横向 PK。

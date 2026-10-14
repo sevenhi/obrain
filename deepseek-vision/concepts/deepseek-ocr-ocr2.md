@@ -43,8 +43,7 @@ DeepSeek-OCR 的结构只有两个组件(论文原话):**DeepEncoder + DeepSeek3
   "model_name": "deeplip_b_l",          // DeepEncoder 容器名
   "width": {
     "clip-l-14-224": { "layers": 24, "width": 1024, "patch_size": 14 },
-    "sam_vit_b":     { "layers": 12, "width": 768, "global_attn_indexes": [2,5,8,11],
-                        "downsample_channels": [512, 1024] }
+    "sam_vit_b":     { "layers": 12, "width": 768, "global_attn_indexes": [2,5,8,11] }
   }
 },
 "projector_config": { "input_dim": 2048, "model_type": "mlp_projector",
@@ -95,8 +94,7 @@ OCR-2 的动机是一个认知观察:**传统 VLM 把 visual token 按光栅顺�
   "model_name": "deepencoderv2",        // 二代编码器
   "width": {
     "qwen2-0-5b": { "dim": 896 },        // 新增:Qwen2-0.5B 做因果重排底座
-    "sam_vit_b":  { "downsample_channels": [512, 1024],
-                     "global_attn_indexes": [2,5,8,11], "layers": 12, "width": 768 }
+    "sam_vit_b":  { "global_attn_indexes": [2,5,8,11], "layers": 12, "width": 768 }
   }
 }
 // 解码器与 OCR 一代相同:DeepSeek3B-MoE-A570M(64 专家 top-6,use_mla=false)

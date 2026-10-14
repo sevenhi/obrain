@@ -95,7 +95,7 @@ D = alpha * accumulator + beta * C
 - **2.x 的主机制是 thread-level fusion functor**:`cutlass::epilogue::thread::LinearCombination*` 系列(如 `LinearCombinationReLU`)。经典示例 `12_gemm_bias_relu` / `35_gemm_softmax` / `37_gemm_layernorm` 都是这一路——已对照源码确认它们用老式 thread epilogue(如 `cutlass::epilogue::thread::ScaleType::NoBetaScaling`)。所以这些示例**不是用 EVT**。
 - **3.x(SM90/Hopper 起)的主机制才是 EVT**(`cutlass::epilogue::fusion` 命名空间、`Sm90EVT`)。
 
-**3.x 的 EVT**:是一棵由 **Load / Compute / Store 节点组成的"逐元素计算图"**,Load 节点取 **accumulator(寄存器累加结果)/ C / bias 等**(注意:mainloop 的输入矩阵 A 不是 epilogue 输入,A 在 mainloop 阶段已消费),Compute 节点做算术(内建 `LinCombEltAct` / `DeEltAct` 等),Store 节点写回输出。**价值在于用组合子表达任意 DAG**(多 Load、多 Store、per-column broadcast)——这是手写 `LinearCombination` 时代做不到的。
+**3.x 的 EVT**:是一棵由 **Load / Compute / Store 节点组成的"逐元素计算图"**,Load 节点取 **accumulator(寄存器累加结果)/ C / bias 等**(注意:mainloop 的输入矩阵 A 不是 epilogue 输入,A 在 mainloop 阶段已消费),Compute 节点做算术(内建 `LinCombEltAct` / `LinCombDeEltAct` 等),Store 节点写回输出。**价值在于用组合子表达任意 DAG**(多 Load、多 Store、per-column broadcast)——这是手写 `LinearCombination` 时代做不到的。
 
 > ⚠ **EVT fusion op 的注入位置(易搞错)**:要由 **`cutlass::epilogue::collective::CollectiveBuilder`** 显式作为模板参数传入(不是"gemm builder 有 epilogue 参数")。参照 `113_hopper_gemm_activation_fusion`(Hopper EVT 激活融合,含 gated activation = LLM 的 SwiGLU 类融合):
 > ```cpp
@@ -107,7 +107,7 @@ D = alpha * accumulator + beta * C
 
 **3.x(尤其 Hopper)epilogue 真实数据通路**:registers 累加结果 → 经 SMEM 分块暂存(方便跨 warp 处理 EPILOGUE tile)→ TMA store 写回。不是单纯"registers 写完就出去",中间可能过 SMEM;写回排布(swizzle)也因此重要。Blackwell(SM100)的 EVT 还要叠 TMEM 累加器路径。
 
-> 一段能读懂 EVT 的最小指引:定位 `cutlass/epilogue/fusion/` 下的 Operation(如 `LinCombEltAct` / `DeEltAct`),再按上面 113 示例把它作为 `cutlass::epilogue::collective::CollectiveBuilder` 的显式模板参数拼进 epilogue(不是走 gemm builder)。想了解 EVT 的现代用例,直接看 `113_hopper_gemm_activation_fusion`;想快速上手老式 thread functor,看 `12_gemm_bias_relu` 即可。
+> 一段能读懂 EVT 的最小指引:定位 `cutlass/epilogue/fusion/` 下的 Operation(如 `LinCombEltAct` / `LinCombDeEltAct`),再按上面 113 示例把它作为 `cutlass::epilogue::collective::CollectiveBuilder` 的显式模板参数拼进 epilogue(不是走 gemm builder)。想了解 EVT 的现代用例,直接看 `113_hopper_gemm_activation_fusion`;想快速上手老式 thread functor,看 `12_gemm_bias_relu` 即可。
 
 ### 4.2 4.x Operator API(Python):把 epilogue 当函数传
 

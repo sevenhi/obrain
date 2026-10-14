@@ -95,7 +95,7 @@ async def create_chat_completion(request: ChatCompletionRequest, raw_request: Re
 - `with_cancellation`(api_utils.py:51):不用 `request.is_disconnected()`(与中间件不兼容),用 starlette 同款双任务模式——同时 await 断连与业务,客户端断开即取消;
 - `load_aware_call`(api_utils.py:100):`--enable-server-load-tracking` 时计数并回带响应头。
 
-**业务层(OpenAIServingChat,serving.py:244)**:`_with_kv_transfer_rejection_cleanup`(基类 `GenerateBaseServing`)包住核心 → `_create_chat_completion` 五步:① `parser_cls`(vllm/parser/,工具调用 + reasoning 增量解析)→ ② `render_chat_request`(renderer 渲染出 conversation 与 engine_inputs)→ ③ request_id(`chatcmpl-...`)→ ④ 逐 engine_input:解析 max_tokens、`to_sampling_params(...)`(参数映射,**数学与回退链见 [sampling-penalties.md](sampling-penalties.md) §4,本篇不重复**)、`engine_client.generate(engine_input, sampling_params, ...)`(serving.py:370)→ ⑤ 按 `stream` 分流:stream_generator(逐 RequestOutput 转 SSE chunk)或 full_generator(聚合单响应)。
+**业务层(OpenAIServingChat,serving.py:116)**:`_with_kv_transfer_rejection_cleanup`(基类 `GenerateBaseServing`)包住核心 → `_create_chat_completion` 五步:① `parser_cls`(vllm/parser/,工具调用 + reasoning 增量解析)→ ② `render_chat_request`(renderer 渲染出 conversation 与 engine_inputs)→ ③ request_id(`chatcmpl-...`)→ ④ 逐 engine_input:解析 max_tokens、`to_sampling_params(...)`(参数映射,**数学与回退链见 [sampling-penalties.md](sampling-penalties.md) §4,本篇不重复**)、`engine_client.generate(engine_input, sampling_params, ...)`(serving.py:370)→ ⑤ 按 `stream` 分流:stream_generator(逐 RequestOutput 转 SSE chunk)或 full_generator(聚合单响应)。
 
 ### 3.3 协议模型(pydantic 两趟修复)
 
@@ -107,7 +107,7 @@ async def create_chat_completion(request: ChatCompletionRequest, raw_request: Re
 
 ## 4. SSE keep-alive:抗代理断流
 
-`openai/sse_keep_alive.py:19` `with_sse_keep_alive(generator, interval)`:流空闲超过 `interval` 秒就吐一行 SSE 注释 `": keep-alive\n\n"`(SSE 客户端忽略注释,但 Cloudflare Tunnel/NGINX `proxy_read_timeout`/AWS ALB 视为字节活动,不掐连接)。
+`openai/sse_keep_alive.py:21` `with_sse_keep_alive(generator, interval)`:流空闲超过 `interval` 秒就吐一行 SSE 注释 `": keep-alive\n\n"`(SSE 客户端忽略注释,但 Cloudflare Tunnel/NGINX `proxy_read_timeout`/AWS ALB 视为字节活动,不掐连接)。
 
 实现要点:**用 `asyncio.wait({next_task}, timeout=interval)` 而非 `wait_for`**——后者超时会**取消**正在推进的 `anext()` 任务,`asyncio.wait` 只观察不取消;单保留 next_task 避免并发 `__anext__`;`interval <= 0` 零开销直接返回原 generator。
 

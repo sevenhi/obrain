@@ -99,6 +99,8 @@ VL2 相对 VL 有两大(论文原文)到三大升级:
 | VL2-Small | 2.8B | 2048 | 64 | 6 | 2 |
 | VL2(full) | 4.5B | 2560 | 72 | 6 | 2 |
 
+> ⚠ **VL2 full 激活参数上游自相矛盾**:README intro 写 **4.5B**,但同一 README 的 web_demo 段写 `activated 4.2B`——保留 4.5B 口径并标注这一矛盾(以 README intro 为准)。
+
 > MoE 路由分变体:full 版 `scoring_func="sigmoid"`、`topk_method="noaux_tc"`(与 DeepSeek-V3 的 aux-loss-free + sigmoid 路由同源,见 model-architecture 域);Tiny/Small 实测 `topk_method="greedy"`。full 版 72 专家 + 2 共享,激活 6。
 
 ### 融合方式总结

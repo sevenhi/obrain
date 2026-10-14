@@ -15,7 +15,7 @@ date: 2026-09
 
 **TileKernels** 是构建在 TileLang 之上的 **LLM 算子库**(Python),封装了一批训练/推理高频算子:MoE routing、量化(FP8/FP4/E5M6 + fused SwiGLU+quant)、Transpose、Engram(融合 RMSNorm 前后向 + 权重梯度归约)、Manifold HyperConnection(mHC,Sinkhorn 归一化 + mix 拆分)、Modeling(autograd.Function 高层封装)。多数算子接近硬件算力/带宽极限,部分已用于内部训练与推理。
 
-**⚠ 昇腾支持(本域 P0 坑)**:main 分支 README **滞后**,仍只写 NVIDIA SM90/SM100 + CUDA 13.1,**未提 Ascend**;但 **PyPI `tile-kernels` v2.0.0(2026-09-30)明确 "Added Huawei Ascend support… same Python APIs run on both NVIDIA GPUs and Huawei NPUs"**。写作按「v2.0.0 起支持昇腾」记,并注明 main README 滞后。昇腾后端运行时自动选择,同一 Python API 跑 NVIDIA GPU + 华为 NPU。
+**⚠ 昇腾支持(本域 P0 坑)**:main 分支已合入 v2.0.0(HEAD 66258df),README 现含 Ascend 950 + CANN 9.2.0 + Python 3.12/PyTorch 2.13/TileLang 0.1.15 双平台版本;PyPI `tile-kernels` v2.0.0(2026-09-30)同样明确 "Added Huawei Ascend support… same Python APIs run on both NVIDIA GPUs and Huawei NPUs"。写作按「v2.0.0 起支持昇腾」记。昇腾后端运行时自动选择,同一 Python API 跑 NVIDIA GPU + 华为 NPU。
 
 ---
 
@@ -27,9 +27,8 @@ TileKernels 用 TileLang 描述每个算子的 tile 级内核,再包成 PyTorch 
 tile_kernels/
 ├── moe/        # MoE routing 相关内核(Gating / token-to-expert mapping)
 ├── quant/      # FP8/FP4/E5M6 量化(per-token/block/channel + fused SwiGLU+quant)
-├── transpose/  # 批处理转置
-├── transform/  # Transform 算子(RoPE 等,PyPI v2.0.0 新增)
-├── rand/       # Rand 算子(PyPI v2.0.0 新增)
+├── transform/  # Transform 算子(RoPE)
+├── rand/       # Rand 算子(randn/seed)
 ├── engram/     # Engram gating 内核(融合 RMSNorm、前后向、权重梯度归约)
 ├── mhc/        # Manifold HyperConnection(Sinkhorn 归一化 + mix 拆分/应用)
 ├── modeling/   # autograd.Function 高层封装(engram gate、mHC pipeline)
@@ -55,18 +54,20 @@ tile_kernels/
 
 ---
 
-## 3. 实践要点(⚠ 版本要求两套,都要写清)
+## 3. 实践要点(⚠ 版本要求已统一,main = v2.0.0)
 
-| 维度 | main README(NVIDIA 版) | PyPI v2.0.0(昇腾版) |
-|---|---|---|
-| Python | 3.10+ | **3.12+** |
-| PyTorch | 2.10+ | **2.13+** |
-| TileLang | 0.1.9+ | **0.1.15+** |
-| 硬件 | NVIDIA SM90/SM100 | **Ascend 950** |
-| CUDA/CANN | CUDA 13.1+ | **CANN 9.2.0+** |
+main 已合入 v2.0.0(HEAD 66258df),版本要求不再分「main vs PyPI」两套:
 
-- **坑 1**:别把「main README 只写 NVIDIA」当成「不支持昇腾」——v2.0.0/PyPI 已支持,main README 滞后。
-- **坑 2**:漏写两套版本要求差异(main vs PyPI 2.0.0 的 Python/PyTorch/TileLang 版本都不同)。
+| 维度 | 要求(main = PyPI v2.0.0) |
+|---|---|
+| Python | **3.12+** |
+| PyTorch | **2.13+** |
+| TileLang | **0.1.15+** |
+| 硬件 | NVIDIA SM90/SM100 + **Ascend 950**(双平台) |
+| CUDA/CANN | CUDA 13.1+ / **CANN 9.2.0+** |
+
+- **坑 1**:别把「main README 只写 NVIDIA」当成「不支持昇腾」——v2.0.0 起 main 与 PyPI 同口径,双平台。
+- **坑 2**:漏写双平台版本要求差异(NVIDIA 侧 CUDA 13.1+,昇腾侧 CANN 9.2.0+、Python 3.12/PyTorch 2.13/TileLang 0.1.15)。
 - **坑 3**:mHC(流形超连接)不是普通全连接,是 Sinkhorn 归一化 + mix 拆分/应用的 hyper-connection。
 - **安装**:本地开发 `pip install -e ".[dev]"`;发布版 `pip install tile-kernels`(v2.0.0 起含昇腾后端)。
 - **运行时**:昇腾后端自动选择,同一 Python API 在 NVIDIA GPU 与华为 NPU 上运行。

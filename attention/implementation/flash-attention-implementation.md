@@ -422,7 +422,7 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
 16. **warp specialization 是 FA3 核心且是"1 producer + 2 consumer"的 pingpong**:producer/consumer 分工交错让 softmax 藏进 GEMM 影子——读 FA3 kernel 先看这层。
 17. **反向也讲 work partitioning / 也重叠**:FA2 backward 沿 KV 块切、只存 LSE(见 §5);FA3 反向靠 3-stage pipeline 重算 attention matrix 来 overlap——训练场景它同样重要。
 18. **精细化路线**:要更高利用率先看 **work partitioning**(FA1→FA2 的主改进:threadblock/warp 划分、层级并行),再看硬件特性(TMA/WGMMA/FP8)。
-19. **配合工具链**:FA3 基于 CUTLASS 3.x/CuTe(FA2 为自研内核)(见 [cutlass 域](../../cutlass/index.md));FA4 走 CuTe DSL(Python)。
+19. **配合工具链**:FA3 基于 CUTLASS 3.x/CuTe,FA2 亦用 CuTe 原语写 tiling(外层调度自写)(见 [cutlass 域](../../cutlass/index.md));FA4 走 CuTe DSL(Python)。
 
 ---
 
@@ -434,7 +434,7 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
 - Online softmax 前驱:Milakov & Gimelshein, *Online normalizer calculation for softmax*, https://arxiv.org/abs/1805.02867 (2018)
 - O(1) 显存前驱(FA1 [66],附录 B.5 专节比较):Rabe & Staats, *Self-Attention does not Need O(n²) Memory*, https://arxiv.org/abs/2112.05682 → 本域详注 [exact-attention-memory-lineage.md](../algorithm/exact-attention-memory-lineage.md)
 
-**FA2(work partitioning、基于 CUTLASS 3.x;§3.2 减 non-matmul FLOPs、§3.3 序列维并行)**
+**FA2(work partitioning、基于 CUTLASS 3.x/CuTe 重写;§3.2 减 non-matmul FLOPs、§3.3 序列维并行)**
 - FA2 论文: Dao, *FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning*, ICLR 2024, https://arxiv.org/abs/2307.08691
 - Tri Dao 的 FA2 博客(25-40%→72% MFU、A100 230 TFLOP/s、warp 划分示意图;`flash-atttention-2` 为站点真实拼写): https://princeton-nlp.github.io/flash-atttention-2/
 

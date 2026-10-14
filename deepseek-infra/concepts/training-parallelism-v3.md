@@ -157,7 +157,7 @@ MTP(多 token 预测,D=1,预测额外 1 个 token)不只是损失函数上的改
 | combine 三段 | NVLink 发送 / NVLink→IB 转发与累加 / IB 接收与累加 |
 | 实现细节 | 定制 PTX + 自动调优通信 chunk size,压 L2 干扰 |
 
-这些内核在开源侧对应 **DeepEP**(见 [deepep-nvidia-vs-ascend.md](deepep-nvidia-vs-ascend.md)):dispatch(token→expert rank)/ combine(expert 结果→token 原 rank)、FP8 dispatch、`EventOverlap` 式计算-通信重叠。V2 起 SM 占用从 24 降到 4–6,是同一目标的延续——**通信不能抢计算的 SM**。
+这些内核在开源侧对应 **DeepEP**(见 [deepep-nvidia-vs-ascend.md](deepep-nvidia-vs-ascend.md)):dispatch(token→expert rank)/ combine(expert 结果→token 原 rank)、FP8 dispatch、`EventOverlap` 式计算-通信重叠。V2 起 SM 占用从 24 降到 4–6(旧 V2 公告口径,当前 README 已移除性能表),是同一目标的延续——**通信不能抢计算的 SM**。
 
 ### 3.4 时间线视图(一层内)
 
@@ -267,7 +267,7 @@ SM 划分: 计算 SM 跑 GEMM | 通信 SM(20)跑 IB/NVLink 转发| 同卡并发
 ## 相关条目(库内互链)
 
 - **[dualpipe.md](dualpipe.md)** — 本篇 §3 的调度机制专篇:双向流水、气泡公式 `(PP/2−1)(F&B+B−3W)`、参数 2×/激活 PP+1、DualPipeV。编排账在本篇,调度图在彼篇。
-- **[deepep-nvidia-vs-ascend.md](deepep-nvidia-vs-ascend.md)** — 本篇 §3.3 的通信内核专篇:dispatch/combine、EPBuffer、SM 占用 24→4–6、NCCL Gin 后端。
+- **[deepep-nvidia-vs-ascend.md](deepep-nvidia-vs-ascend.md)** — 本篇 §3.3 的通信内核专篇:dispatch/combine、EPBuffer、SM 占用 24→4–6(旧 V2 公告口径)、NCCL Gin 后端。
 - **[deepep-ascend.md](deepep-ascend.md)** — 同一 API 的昇腾后端(HCCL/HCOMM/UBMEM),移植 EP 通信时对照。
 - **[lplb-epb-load-balancing.md](lplb-epb-load-balancing.md)** — EPLB 静态冗余专家 / LPLB 动态 LP 分流:决定 EP64 上专家是否跑满,是「拓扑定了之后」的下一层问题。
 - **[../../model-architecture/concepts/deepseek-arch-v3.md](../../model-architecture/concepts/deepseek-arch-v3.md)** — 算法域:MLA + DeepSeekMoE + MTP + aux-loss-free 的结构细节(61 层、7168 维、256 专家 top-8)。互链不重复:结构在彼篇,训练编排在本篇。

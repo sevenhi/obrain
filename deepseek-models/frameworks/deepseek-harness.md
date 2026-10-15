@@ -4,7 +4,7 @@ type: howto
 tags: [deepseek, agent, harness, plugin, cordis, typescript, tool]
 date: 2026-10
 source:
-  - "code: deepseek-harness | https://github.com/deepseek-ai/deepseek-harness | 2026-10-14 | ↑primary"
+  - "code: deepseek-harness | https://github.com/deepseek-ai/deepseek-harness | 2026-10-15 | ↑primary"
   - "web: DeepSeek Harness 文档 | https://deepseek-harness.github.io/deepseek-harness/ | 2026-10-09"
   - "pdf: A Programming Paradigm for Spatiotemporal Composability | arXiv:2608.25512 | https://arxiv.org/abs/2608.25512"
 ---
@@ -44,7 +44,7 @@ pnpm dsh web
 
 ## 3b. 增量:0.2.1-alpha.3(2026-10-14)
 
-> 版本演进:`0.2.0-rc.2`(09-29)→ `0.2.1-alpha.1/2/3`(10-03/10-09/10-14)。仍为 alpha,迭代很快,破坏性变更常态。本节收录 v0.2.1-alpha.3 相对既有笔记的新观察点。
+> 版本演进:`0.2.0-rc.2`(09-29)→ `0.2.1-alpha.1/2/3/4`(10-03/10-09/10-14/10-15)。仍为 alpha,迭代很快,破坏性变更常态。本节收录 v0.2.1-alpha.3 相对既有笔记的新观察点。
 
 **新增能力(本次值得记的):**
 
@@ -65,6 +65,27 @@ pnpm dsh web
 
 ### 增量溯源
 - 版本/功能点以仓库 release body(2026-10-14)为准;本次仅增量更新已有篇,机制/上手不变。
+
+## 3c. 增量:0.2.1-alpha.4(2026-10-15)
+
+> 版本演进延续:`0.2.1-alpha.4`(10-15)。仍是 alpha,迭代快、破坏性变更常态。本节收录 alpha.4 相对 3b 的新观察点。相对 alpha.3 共 89 个 commit,新增功能收敛为两类,**无架构级变化**。
+
+**新增能力(本次值得记的):**
+
+- **自定义模型 API 推理等级 UI 化**:此前改各模型 reasoning level 要手改配置文件,alpha.4 起可在 **UI 中直接为每个自定义模型 API 配置推理等级**(读 pi-ai schema、keep reasoning edits with their model、mirror pi-ai refusals),无需碰配置文件。
+- **自定义插件索引源**:支持从**自定义插件市场源(plugin index source)发现与安装插件**;一并引入 `engines.dsh` 版本兼容声明——第三方插件**优先按 `engines.dsh` 判版本兼容,未声明时沿用旧规则**(插件作者需检查声明覆盖的 DSH 版本)。
+
+**问题修复(略记):**
+
+- 命令与参数交界处输入异常(支持整体选中/删除、撤销/刷新后恢复);
+- Office 文件交付改进(避免引用已删除预览图、减少 PDF 导出后多余工具检索);
+- Linux 启动命令前置重复检查减少、命令启动开销降低、兼容较旧 systemd;失败命令现在呈现有效状态信息。
+
+**其他**:卸载/重装插件实例清理、host release 变化时提示 reload 等非破坏性收尾。
+
+### 增量溯源
+- release body tag `dsh-v0.2.1-alpha.4`(2026-10-15,prerelease,作者 LegGasai);feature/commit 明细见仓库 `master` 分支 `dsh-v0.2.1-alpha.3..dsh-v0.2.1-alpha.4` 区间。
+
 
 ## 3. 关键点/坑
 

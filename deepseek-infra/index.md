@@ -77,7 +77,7 @@ date: 2026-10
 | DeepEP-Ascend | [concepts/deepep-ascend.md](concepts/deepep-ascend.md) | MoE 专家并行通信库,EP all-to-all(dispatch/combine),EP≤32 dispatch 达 90–95% 物理带宽 | ✅ 已入库 |
 | TileKernels | [concepts/tilekernels.md](concepts/tilekernels.md) | TileLang 之上的 LLM 算子库(MoE routing/量化/Engram/mHC),v2.0.0 起支持昇腾(已合入 main),v2.1.0(2026-10)量化/Engram bug 修复,同一 Python API 跑 NVIDIA+华为 | ✅ 已入库 |
 | DeepSelect | [concepts/deepselect.md](concepts/deepselect.md) | DSA/Sampler 的定制 TopK 算子,2–20× vs torch.topk(口径:有效内存带宽);昇腾仅 bfloat16 | ✅ 已入库 |
-| FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | MLA 注意力内核库(dense+sparse),昇腾版 2026-09-30 已合入 main(commit 2e5429f,breaking change 三条已由 README 明写);410 TFlops 双义(平台要标清) | ✅ 已入库 |
+| FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | MLA 注意力内核库(dense+sparse),昇腾版 2026-09-30 已合入 main(commit 2e5429f,breaking change 三条已由 README 明写);410 TFlops 双义(平台要标清);2026-10-15 ABI 稳定化(构建层) | ✅ 已入库 |
 
 ### NVIDIA 版对照 + 并行/工具/存储(NVIDIA 主线)
 

@@ -43,7 +43,7 @@ DeepGEMM 原版(deepseek-ai/DeepGEMM)是 DeepSeek 的轻量 GEMM 库:单一 kern
 
 - BF16 / FP8 / FP4 GEMM;
 - MQA logits(多查询注意力 logits 计算);
-- **稀疏 MQA logits(2026/10 Public Release 新增)**:`fp8_fp4_sparse_mqa_logits`(非分页)+ `fp8_fp4_paged_sparse_mqa_logits`(分页),只对选中的稀疏 KV 块打分,支持 MXFP4/MXFP8(见 [deepgemm-nvidia-vs-ascend.md](deepgemm-nvidia-vs-ascend.md) §1.7);
+- **稀疏 MQA logits(2026/10 Public Release 新增)**:`fp8_fp4_sparse_mqa_logits`(非分页)+ `fp8_fp4_paged_sparse_mqa_logits`(分页),只对选中的稀疏 KV 块打分,支持 MXFP4/MXFP8(见 [deepgemm-nvidia-vs-ascend.md](deepgemm-nvidia-vs-ascend.md) §1.7);Ascend 侧分页稀疏 MQA 通过 Python wrapper 提供 FIRST/REUSE 状态管理(首次调用缓存 KV 快照,后续同 metadata 复用);
 - MegaMoE(MoE 的大规模专家 GEMM 场景);
 - HC prenorm kernel(依赖 tilelang)。
 
@@ -79,6 +79,8 @@ pip install . --no-build-isolation
 | M-Grouped GEMM(FP8×FP4,BF16 output) | **856 / 862 TFLOPS** | 4 组 / 8 组专家(DeepSeek MoE 场景) |
 | FP8 inference | **850 TFLOPS** | M=4096 / N=4096 / K=7168 |
 | MQA logits | prefill FP8 **681** / FP4 **743**;decode FP8 **565** / FP4 **708 TFLOPS** | #Q=4096/256,#K=8192,32 heads,dim 128 —— MQA 是 **FIX-pipe bound**(FIX 管道 99% 饱和),非 compute bound |
+
+> ⚠ **此表为 dense MQA(全量 KV)性能**,稀疏 MQA logits 暂无独立公开性能数字。
 
 ---
 

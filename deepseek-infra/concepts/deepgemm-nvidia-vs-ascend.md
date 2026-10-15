@@ -80,17 +80,17 @@ deep_gemm.fp8_fp4_mega_moe(y, transformed_l1, transformed_l2, buffer)
 
 为 V3.2 的 lightning indexer 提供 scoring kernel(`fp8_fp4_mqa_logits` 非分页 / `fp8_fp4_paged_mqa_logits` 分页),算每个 query 对 KV 的加权 ReLU 压缩 logits:`out = Σ_j relu(q_i @ (kv_j · kv_sf_j)) · weights[i,:]`。这是 DSA 链路里出索引前的打分环节(库内 [deepselect.md](deepselect.md) 消费这些 logits 做 TopK)。
 
-### 1.7 稀疏 MQA logits(NVIDIA v2.8.2 与 Ascend 2026/10 同步新增)
+### 1.7 稀疏 MQA logits(NVIDIA 09-30 引入、10-14 对齐修复;Ascend 2026/10 新增)
 
-**2026-10-14 v2.8.2(NVIDIA)与 Public Release 2026/10(Ascend)两边同步新增「稀疏 MQA 打分」内核族**,扩展 MQA 评分到**稀疏 KV 上下文**场景(DSA/Lightning Indexer 的索引环节,配合 DeepSelect 选出的稀疏块):
+**NVIDIA 侧 2026-09-30(v2.8.1,#462)已引入「稀疏 MQA 打分」内核族,10-14 v2.8.2 做 stride 对齐等修复;Ascend 侧 Public Release 2026/10 加入**,扩展 MQA 评分到**稀疏 KV 上下文**场景(DSA/Lightning Indexer 的索引环节,配合 DeepSelect 选出的稀疏块):
 
 - **非分页** `fp8_fp4_sparse_mqa_logits` + **分页** `fp8_fp4_paged_sparse_mqa_logits`;
 - 每个 query 只 attend 选中的**稀疏 KV 块**(`sparse_kv_block_indices`,`sparse_block_kv=8/16`,最多 `num_max_sparse_blocks` 块),而非全量 KV —— 由 prepare 元数据 `get_sparse_mqa_logits_metadata` / `get_paged_sparse_mqa_logits_metadata` 生成调度信息,logits 调用传 `metadata` 复用;
-- 支持 **MXFP4 / MXFP8**(KV cache 量化),`head_dim=128`,`page_kv=64`;NVIDIA 侧 SM100(Blackwell)专属(`get_arch_major()==10` 才测),Ascend 侧走 950 + MAD/协程原语;
-- **FIRST/REUSE 状态**:首次调用缓存 KV 快照,后续同 metadata 复用该快照只换当前 Q/weights;KV 内容变化须重新生成 metadata(见 `deep_gemm/__init__.py` 的 paged wrapper 注释);
-- **split-KV 跨 core 归并**:`kSplitKV=512/640`(fp8/fp4),上层 `get_num_kv_split_blocks` 把每个 Q 块均匀分到各 KV split,reduce 阶段按 mask 归并 —— 与 FA 的 split-K reducible 思路一致。
+- 支持 **MXFP4 / MXFP8**(KV cache 量化),`head_dim=128`,`page_kv` 典型 64(NVIDIA 侧仅要求 `page_kv % sparse_block_kv == 0`);NVIDIA 侧 SM100(Blackwell)专属(`get_arch_major()==10` 才测),Ascend 侧走 950 + MAD/协程原语;
+- **FIRST/REUSE 状态(Ascend 版 paged wrapper 特有,见 DeepGEMM-Ascend `__init__.py`)**:首次调用缓存 KV 快照,后续同 metadata 复用该快照只换当前 Q/weights;KV 内容变化须重新生成 metadata —— NVIDIA 版纯 C++ binding 无 is_first/FIRST-REUSE 状态;
+- **split-KV 归并**:NVIDIA SM100 侧 `kSplitKV=512/640`(fp8/fp4,来自 `get_sparse_mqa_split_kv`)是**单个 CTA 内部的 KV 切分粒度**,归并(reduce)由 CTA 内 math warpgroups 累加(`__hadd2_rn`)完成,非跨 SM/core;Ascend 侧则是**按 core 切分处理**:`num_ai_cores` 把 Q 块/KV split 调度到各 AI core,metadata 中 `QBlockSplitKVOutputInfo` 的 `output_ranges`/`masks` 记录每块输出范围与有效 mask(每 core 写自己负责的段),两端不要混。
 
-> 稀疏 MQA 是 **DSA 注意力链路里「打分」环节的稀疏化版本**:DeepSelect(TopK,见 [deepselect.md](deepselect.md))选稀疏块 → 稀疏 MQA 只对这些块打分 → 产出的稀疏 logits 供 indexer 用。与 FlashMLA sparse 是不同环节(见 [flashmla.md](flashmla.md))。
+> 稀疏 MQA 是 **DSA 注意力链路里「打分」环节的稀疏化版本**:DeepSelect(TopK,见 [deepselect.md](deepselect.md))选稀疏块 → 稀疏 MQA 只对这些块打分 → 产出的稀疏 logits 供 indexer 用。与 FlashMLA sparse 是不同环节(见 [flashmla.md](flashmla.md))。注意区分两个阶段:§1.6 的**全量 MQA 打分**(`fp8_fp4_mqa_logits`,对全量 KV)产 logits → DeepSelect TopK 选稀疏块;§1.7 的**稀疏 MQA 重打分**(`fp8_fp4_sparse_mqa_logits`)只对已选出的稀疏块打分,两个打分方向相反、串行衔接,不是同一环节。
 
 ---
 

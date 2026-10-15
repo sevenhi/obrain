@@ -63,7 +63,7 @@ pnpm dsh web
 
 **文档 URL 实测存活**(2026-10-14 复核):仓库 `https://github.com/deepseek-ai/deepseek-harness`、文档站 `https://deepseek-harness.github.io/deepseek-harness/` 均可访问;release tag 走 `dsh-v*`(如 `dsh-v0.2.1-alpha.3`)。
 
-## 增量溯源
+### 增量溯源
 - 版本/功能点以仓库 release body(2026-10-14)为准;本次仅增量更新已有篇,机制/上手不变。
 
 ## 3. 关键点/坑

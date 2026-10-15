@@ -19,7 +19,7 @@ date: 2026-10
 
 **TileKernels** 是构建在 TileLang 之上的 **LLM 算子库**(Python),封装了一批训练/推理高频算子:MoE routing、量化(FP8/FP4/E5M6 + fused SwiGLU+quant)、Transpose、Engram(融合 RMSNorm 前后向 + 权重梯度归约)、Manifold HyperConnection(mHC,Sinkhorn 归一化 + mix 拆分)、Modeling(autograd.Function 高层封装)。多数算子接近硬件算力/带宽极限,部分已用于内部训练与推理。
 
-**⚠ 昇腾支持(本域 P0 坑)**:main 分支已合入 v2.0.0(HEAD 66258df),README 现含 Ascend 950 + CANN 9.2.0 + Python 3.12/PyTorch 2.13/TileLang 0.1.15 双平台版本;PyPI `tile-kernels` v2.0.0(2026-09-30)同样明确 "Added Huawei Ascend support… same Python APIs run on both NVIDIA GPUs and Huawei NPUs"。写作按「v2.0.0 起支持昇腾」记。昇腾后端运行时自动选择,同一 Python API 跑 NVIDIA GPU + 华为 NPU。
+**⚠ 昇腾支持(本域 P0 坑)**:main 分支已合入 v2.1.0(HEAD c1cf914a),README 现含 Ascend 950 + CANN 9.2.0 + Python 3.12/PyTorch 2.13/TileLang 0.1.15 双平台版本;PyPI `tile-kernels` v2.0.0(2026-09-30)同样明确 "Added Huawei Ascend support… same Python APIs run on both NVIDIA GPUs and Huawei NPUs"。写作按「v2.0.0 起支持昇腾」记。昇腾后端运行时自动选择,同一 Python API 跑 NVIDIA GPU + 华为 NPU。
 
 ---
 
@@ -58,11 +58,11 @@ tile_kernels/
 
 ---
 
-## 3. 实践要点(⚠ 版本要求已统一,main = v2.0.0)
+## 3. 实践要点(⚠ 版本要求已统一,main = v2.1.0)
 
-main 已合入 v2.0.0(HEAD 66258df),版本要求不再分「main vs PyPI」两套:
+main 已合入 v2.1.0(HEAD c1cf914a),版本要求不再分「main vs PyPI」两套:
 
-| 维度 | 要求(main = PyPI v2.0.0) |
+| 维度 | 要求(main = PyPI v2.1.0) |
 |---|---|
 | Python | **3.12+** |
 | PyTorch | **2.13+** |

@@ -4,7 +4,7 @@ type: howto
 tags: [deepseek, agent, harness, plugin, cordis, typescript, tool]
 date: 2026-10
 source:
-  - "code: deepseek-harness | https://github.com/deepseek-ai/deepseek-harness | 2026-10-15 | ↑primary"
+  - "code: deepseek-harness | https://github.com/deepseek-ai/deepseek-harness | 2026-10-16 | ↑primary"
   - "web: DeepSeek Harness 文档 | https://deepseek-harness.github.io/deepseek-harness/ | 2026-10-09"
   - "pdf: A Programming Paradigm for Spatiotemporal Composability | arXiv:2608.25512 | https://arxiv.org/abs/2608.25512"
 ---
@@ -86,6 +86,24 @@ pnpm dsh web
 ### 增量溯源
 - release body tag `dsh-v0.2.1-alpha.4`(2026-10-15,prerelease,作者 LegGasai);feature/commit 明细见仓库 `master` 分支 `dsh-v0.2.1-alpha.3..dsh-v0.2.1-alpha.4` 区间。
 
+
+## 3d. 增量:0.2.1-alpha.5(2026-10-16)
+
+> 版本演进延续:`0.2.1-alpha.5`(10-16,共 29 commit)。仍为 alpha,迭代快。相对 alpha.4 收敛为**无架构变化**、以问题修复为主的一版:1 个新 Slot + 4 个修复。
+
+**新增能力(唯一值得记的):**
+
+- **`conversation.input.model.label` Slot**:新增插件 Slot,允许第三方插件**按模型渠道自定义输入框(composer)模型选择器中的名称展示**。习惯用 `conversation.input.model.*` 组合钩子定制模型 UI 的插件作者可直接挂这个新 Slot。@LegGasai
+
+**问题修复(略记):**
+
+- 插件页启停插件后,已打开会话的 `/` 菜单技能列表未同步更新的问题(修复需重新拉取技能);
+- 新建/恢复多个终端时减少重复查询,并避免失效终端在切换面板后反复重试;
+- PTC Mode 补全缺失指引,统一 SDK/Web/headless 三种 profile 下的模型身份说明;
+- 修复 Windows/Linux 下右侧栏收起时,在文本输入框按 Page Up 导致整个界面左移的问题。
+
+### 增量溯源
+- release body tag `dsh-v0.2.1-alpha.5`(2026-10-16,prerelease,`published_at 2026-10-16T12:23:28Z`);commit 区间 `dsh-v0.2.1-alpha.4..dsh-v0.2.1-alpha.5` 共 29 个 commit,新增功能收敛为此 1 个 Slot,故仅小幅补记。
 
 ## 3. 关键点/坑
 

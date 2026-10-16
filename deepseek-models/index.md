@@ -33,7 +33,7 @@ date: 2026-10
 | [deepseek-moe](concepts/deepseek-moe.md) | concept | DeepSeekMoE 16B:细粒度专家+共享专家,40% 算力打平 DeepSeek 7B/LLaMA2 7B;数据/评测侧重(结构细节引网络结构篇) | ✅ 已入库(2026-10) |
 | [deepseek-r1-reasoning](concepts/deepseek-r1-reasoning.md) | concept | R1 推理谱系(训练策略视角):R1-Zero(V3-Base 纯 RL,AIME 15.6→71.0%,反思/aha moment 涌现)→ R1(冷启动+四阶段流水线,AIME 79.8 对标 o1-1217)→ Distill(800k 样本只 SFT,32B 超 o1-mini,蒸馏打赢同规模 RL 72.6 vs 47.0);GRPO 公式/reward 设计/失败尝试(PRM/MCTS)核自本地论文 PDF+README | ✅ 已入库(2026-10-14) |
 | [deepseek-esft](concepts/deepseek-esft.md) | concept | ESFT 专家专精微调(模型领域视角):打分(gate/token 两口径)→ top_p 选任务相关专家 → parameter↔buffer 互换只训这批专家(esft.py 源码机制);MoE 版 PEFT,adapter 即被训专家权重包;操作流程见 deepseek-infra 篇,本篇讲机制与谱系定位 | ✅ 已入库(2026-10-14) |
-| [deepseek-harness](frameworks/deepseek-harness.md) | howto | DeepSeek Harness(dsh):everything-is-a-plugin 架构的 agent 框架,基于 Cordis,TS/npm,developer preview | ✅ 已入库(2026-10,含 0.2.1-alpha.4) |
+| [deepseek-harness](frameworks/deepseek-harness.md) | howto | DeepSeek Harness(dsh):everything-is-a-plugin 架构的 agent 框架,基于 Cordis,TS/npm,developer preview | ✅ 已入库(2026-10,含 0.2.1-alpha.5) |
 | [deepspec](frameworks/deepspec.md) | howto | DeepSpec:投机解码草稿模型训练/评测全栈(DSpark/DFlash/Eagle3),数据→训练→评测,可为 Qwen3/Gemma 等目标模型练 draft(arXiv:2607.05147) | ✅ 已入库(2026-10) |
 | [dsh-node-addon-require-builtin](frameworks/dsh-node-addon-require-builtin.md) | howto | dsh 的内部 Node 原生插件:不亮 `--expose-internals` 拿到私有 requireBuiltin(探 Realm 指针/机器码偏移)、internal-loader 白名单 vs require-builtin 无限制、fail-closed,Node 20/22/24/26+Electron(2026-10-12 新仓) | ✅ 已入库(2026-10-12) |
 

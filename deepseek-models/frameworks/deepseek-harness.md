@@ -105,6 +105,25 @@ pnpm dsh web
 ### 增量溯源
 - release body tag `dsh-v0.2.1-alpha.5`(2026-10-16,prerelease,`published_at 2026-10-16T12:23:28Z`);commit 区间 `dsh-v0.2.1-alpha.4..dsh-v0.2.1-alpha.5` 共 29 个 commit,新增功能收敛为此 1 个 Slot,故仅小幅补记。
 
+## 3e. 增量:0.2.1-rc.1 → rc.2(2026-10-17,进入 release candidate)
+
+> 版本演进再进一步:`0.2.1-alpha.5`(10-16)→ **`0.2.1-rc.1`**(10-16 深夜)→ **`0.2.1-rc.2`**(10-17,HEAD=rc.2)。**从 alpha 阶段正式进入 release candidate(rc)阶段**,标志 0.2.1 接近正式发布。rc.1 仅 vendor 升级、无功能变化;rc.2 收敛为 2 个新功能,仍无架构级变化。
+
+**新增能力(rc.2 值得记的):**
+
+- **DeepSeek Search & Fetch API(可选 Web Search API,`#6103`)**:此前"搜索"只走 Messages/内置搜索;rc.2 起新增一个**可选的「Use the new Web Search API」开关**,走 DeepSeek 官方的可检索 **Search / Fetch API**(默认 base `https://api.deepseek.com/v1/tools`),Messages 搜索仍是默认行为。要点:
+  - **鉴权只用 API key**:DeepSeek **Account token 在 `/v1/tools/*` 上会返回空 HTTP 404**(2026-10-16 实测),所以该 API 只用 API key 鉴权。
+  - **`web-search-deepseek.count` 结果数**:1–50,默认 10(服务端默认);请求里更小的 `maxResults` 仍优先。
+  - **发送触发问题 `ori_question`**:把发起该会话的最近一条人类 prompt 压缩空白、截到 128 字符上限后作为 `ori_question` 传给提供商;可 `sendOriginalQuestion:false` 关掉。搜索去重改按请求的 `query` 字段(因 ori_question 现在带了每条 query)。
+  - **auxiliary 搜索请求关闭 thinking**:providers 丢弃辅助 Messages turn 的生成文本,thinking 没消费者,开启只会加延迟和 output token(修 #6099)。
+  - **行为实测记录**:总结 1000–2300 字符;Fetch 对无法解析的目标返回 **HTTP 500**;`WebFetchResult.statusCode` 保持必填(DeepSeek Fetch 报告 HTTP 200 并丢弃页标题)。
+- **DeepSeek Flash "1017" 临时徽章(`#6406`/`#6417`)**:给内置 DeepSeek Flash 显示名临时追加 "1017" 徽章(先加、revert、再加回:badge 显示的临时改动)。
+
+**vendor 升级(rc.1,无功能面变化但值得记版本锚点):** `cordis 4.0.5`、`cosmokit 1.8.6`、`group 1.0.5`、`hmr 1.0.20`、`include 1.0.10`、`loader 1.0.6`、`logger-console 1.0.5`、`schemastery 3.18.5`、`timer 1.1.7`。
+
+### 增量溯源
+- rc.1 tag `dsh-v0.2.1-rc.1`(2026-10-16)、rc.2 tag `dsh-v0.2.1-rc.2`(2026-10-17,当前 HEAD);功能/commit 区间 `dsh-v0.2.1-alpha.5..dsh-v0.2.1-rc.2`。
+
 ## 3. 关键点/坑
 
 - **developer preview,破坏性变更**是常态,生产使用前读 SAFETY.md 与 AGENTS.md。

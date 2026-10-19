@@ -4,8 +4,9 @@ type: concept
 tags: [deepseek-recipe, api, prompt, chat-completions, responses, v4, v4.1, rust, python, serving]
 date: 2026-10
 source:
-  - "code: deepseek-ai/deepseek-recipe | https://github.com/deepseek-ai/deepseek-recipe | 2026-10-11 | ↑primary"
-  - "code: deepseek-recipe README.zh | https://github.com/deepseek-ai/deepseek-recipe/blob/main/README.zh.md | 2026-10-11"
+  - "code: deepseek-ai/deepseek-recipe (v0.2.0) | https://github.com/deepseek-ai/deepseek-recipe | 2026-10-19 | ↑primary"
+  - "code: deepseek-recipe README.zh | https://github.com/deepseek-ai/deepseek-recipe/blob/main/README.zh.md | 2026-10-19"
+  - "code: deepseek-recipe CHANGELOG (0.2.0) | https://github.com/deepseek-ai/deepseek-recipe/blob/main/CHANGELOG.md | 2026-10-19"
 ---
 
 # deepseek-recipe — DeepSeek V4/V4.1 多格式 API 与 prompt 编解码库
@@ -27,10 +28,10 @@ source:
 | Prompt 编码 | DeepSeek **V4 / V4.1** 对话 → prompt 或 token IDs |
 | 生成参数 | thinking 模式、reasoning effort、`temperature`、`top_p`、输出 token 上限 |
 | 输出解析 | 思考、工具调用、JSON object、stop sequence |
-| 图片 | OpenCV 实现的 V4.1 预处理 |
+| 图片 | OpenCV 实现的 V4.1 预处理;V4 不接受图片,转换替换为 `[Unsupported Image]` |
 | 工具定义 | Function tools;Responses 另支持工具命名空间与 `apply_patch` 自定义工具 |
 
-**明确不支持**(见 README):`logprobs`、文档/音视频输入、`file_id` 文件检索、服务端工具执行(如 `web_search`)、JSON Schema/regex 约束、`n>1` 多补全、Responses 的 `previous_response_id` 会话存储、加密思考内容等。
+**明确不支持**(见 README 0.2.0):文档内容、音视频输入、`file_id` 文件检索、服务端工具执行(如 `web_search`)、工具 `strict` 强制、`n>1` 多补全、Responses `apply_patch` 之外的自定义工具、Responses 的 `previous_response_id` 会话存储、加密思考内容。**`logprobs`/`top_logprobs`、JSON Schema/regex 约束已在 0.2.0 支持**(见下节),不再是「不支持」。
 
 ## 3. 代码结构
 
@@ -40,11 +41,24 @@ deepseek-recipe/
 ├── deepseek-recipe-core/         # Conversation / 核心类型
 ├── deepseek-recipe-encoding/     # prompt / token IDs 编码
 ├── deepseek-recipe-image/        # V4.1 图片预处理(OpenCV)
+├── deepseek-recipe-macros/    # v0.2.0 新增:proc-macro(`prompt!` 宏)、untagged 序列化辅助
 ├── deepseek-recipe-python/       # Python bindings
 ├── server-py/  server-rs/        # 示例服务
 ├── encoding-decoding-demo/
 └── docs/                         # streaming / tokenizer 等
 ```
+
+## 3.5 v0.2.0 增量(2026-10-19 发布,破坏性 API 变更)
+
+0.1 → 0.2.0 改了**所有 crate 与 Python 包的公共 API**(0.1 之前的版本号;**1.0 之前 minor 可含不兼容改动**)。主要新增:
+
+- **模型版本解析(ModelVersion)**:按请求里的 `model` 名解析 V4 或 V4.1,默认接受 `DeepSeek-V4-Pro` 与 `DeepSeek-V4.1-Flash`;其他名字(如 `deepseek-flash`)用 `ConversionOptions::with_model_alias` / `with_model_versions_by_name` 注册。`ConversationRequest::model_version` 返回结果。
+- **按模型版本的采样参数解析**:`temperature` / `top_p` 不再透传,由转换层按 ModelVersion 解析——thinking 模式下 `temperature` 恒为 1.0;`top_p` 依 `ModelVersion::resolve_top_p`(thinking 模式 V4.1 抬到 ≥0.95,V4 用工具 0.95/无工具 1.0;非 thinking 模式 V4.1 用 1.0、V4 用请求值)。
+- **Log probabilities**:Chat Completions 的 `logprobs`/`top_logprobs` 与 Responses 的 `top_logprobs` 转换进 `InferenceOptions`;调用方在后端 `InferenceChunk::Tokens` 提供值,adapter 输出(库本身不算概率)。
+- **Reasoning token 计数**:`CompletionUsage::reasoning_tokens`,thinking 模式下 stream processor 附加 tokenizer 后对 reasoning 内容计数。
+- **结构化输出**:新增 `ResponseFormat::JsonSchema` 与 `ResponseFormat::Regex`。转换**校验** Chat Completions `response_format` 或 Responses `text.format` 的 `json_schema`(0.1 是"接受但忽略"),渲染时把 schema 写进 prompt;`regex` 以 `ResponseFormat::Regex` 透传。是否由后端约束解码执行由调用方决定。
+- **显式特殊 token**:新增 `deepseek-recipe-macros` crate 提供 `prompt!` 宏,`deepseek-recipe-core` 提供 `Prompt`;`RenderedPrompt::special_ranges` 记录显式特殊 token 的字节区间,`PromptTokenizer` 只把该区间编码为特殊 token——除 assistant/reasoning 内容的 grounding token 外,消息文本里的特殊 token 拼写按纯文本编码。
+- **max_tokens 默认值**:`ConversationRequest::resolve_max_tokens` 按上下文长度校验 prompt 与 `max_tokens`,给未指定者取默认——非思考模式 8192、思考模式 65536、思考模式且 `max` effort 131072。
 
 ## 4. 在栈里的位置
 
@@ -68,4 +82,5 @@ deepseek-recipe/
 
 - 仓库:https://github.com/deepseek-ai/deepseek-recipe
 - 中文 README:https://github.com/deepseek-ai/deepseek-recipe/blob/main/README.zh.md
+- CHANGELOG(0.2.0 增量):https://github.com/deepseek-ai/deepseek-recipe/blob/main/CHANGELOG.md
 - 库内互链:[deepseek-infra/index.md](../index.md)、[flashmla.md](flashmla.md)(V4.1 服务对象)、[open-model-landscape-2025-2026](../../model-architecture/concepts/open-model-landscape-2025-2026.md)(V4/V4.1 架构)

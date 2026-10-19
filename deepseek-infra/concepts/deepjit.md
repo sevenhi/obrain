@@ -6,8 +6,9 @@ source:
   - "code: deepseek-ai/DeepJIT | https://github.com/deepseek-ai/DeepJIT ↑primary"
   - "code: deepseek-ai/DeepGEMM(DeepJIT 消费方)| https://github.com/deepseek-ai/DeepGEMM"
   - "code: deepseek-ai/DeepEP(DeepJIT 消费方)| https://github.com/deepseek-ai/DeepEP"
-date: 2026-10
+date: 2026-10-19
 ---
+> 更新记录:2026-10-19 增量 — PR #29 修复异常 backtrace 的线程安全(catch 多线程并发抛错时符号化/反解不崩溃);此前 2026-10-09 增量已覆盖 SGID 共享缓存权限。最新 commit `18fe520`(2026-10-19 合并)。
 
 # DeepJIT — xPU kernel 运行时 JIT 编译
 
@@ -111,6 +112,7 @@ deep_jit::Config("/opt/my_library", "MYLIB",
 - **CUDA Graph 兼容**:在捕获前先 compile+load kernel;已加载 kernel 的 launch 可捕获(含继承当前 PyTorch stream 时)。
 - **每设备一个 Runtime**:Runtime 构造时快照当前设备/架构,别在设备间搬动已加载 kernel。
 - **昇腾 launch**:`num_blocks` 必填,`ASCEND_LAUNCH_BLOCKING` 开启后每次 launch 后同步设备。
+- **异常 backtrace 非线程安全(2026-10 已修)**:`get_backtrace()` 内部用 `execinfo`/`libdwfl.so.1`(dlopen 动态符号解析)做符号化与反解,同一进程多线程并发抛异常时静态 `DwflApi` 会被多路并发访问。PR #29 在 `get_backtrace()` 里加了一把**全局静态 `std::mutex` + `lock_guard`** 串行化符号化,保证多线程 JIT 编译/launch 中任一线程抛错都能安全打出带函数名、文件:行的 backtrace。启示:**别在并发路径里裸调线程不安全的符号化/demangle**,要符号化就串行化。
 
 ---
 

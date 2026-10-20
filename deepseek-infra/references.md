@@ -37,6 +37,8 @@ date: 2026-10
 ## 论文(arXiv,curl 实测有效)
 
 - DeepSeek-V3 Technical Report(DualPipe 出处)— https://arxiv.org/abs/2412.19437
+- **mHC: Manifold-Constrained Hyper-Connections**(DeepSeek-AI, mHC 机制/重算/DualPipe 扩展)— https://arxiv.org/abs/2512.24880
+- **Hyper-Connections**(HC 前作,OLMoE-1B-7B DHC×4)— https://arxiv.org/abs/2409.19606
 - Engram《Conditional Memory via Scalable Lookup》— https://arxiv.org/abs/2601.07372 (ACL 2026 long)
 - ESFT《Let the Expert Stick to His Last》— https://arxiv.org/abs/2407.01906 (EMNLP 2024)
 - 《Insights into DeepSeek-V3》(ISCA25 Industry Track)— https://arxiv.org/abs/2505.09343

@@ -92,6 +92,16 @@ deep_gemm.fp8_fp4_mega_moe(y, transformed_l1, transformed_l2, buffer)
 
 > 稀疏 MQA 是 **DSA 注意力链路里「打分」环节的稀疏化版本**:DeepSelect(TopK,见 [deepselect.md](deepselect.md))选稀疏块 → 稀疏 MQA 只对这些块打分 → 产出的稀疏 logits 供 indexer 用。与 FlashMLA sparse 是不同环节(见 [flashmla.md](flashmla.md))。注意区分两个阶段:§1.6 的**全量 MQA 打分**(`fp8_fp4_mqa_logits`,对全量 KV)产 logits → DeepSelect TopK 选稀疏块;§1.7 的**稀疏 MQA 重打分**(`fp8_fp4_sparse_mqa_logits`)只对已选出的稀疏块打分,两个打分方向相反、串行衔接,不是同一环节。
 
+### 1.8 Mega mHC:manifold-constrained 残差流的融合内核
+
+`mega_mhc`(SM100 专属)把 **n 路残差流的合并(Post)+ 系数投影(TF32 GEMM)+ Sinkhorn 双随机投影 + 融合 RMSNorm(+可选 FP8 cast/UE8M0 SF)** 融进一次 kernel 启动,是 [mHC(Manifold-Constrained Hyper-Connections)](mhc-manifold-hyper-connections.md) 的 NVIDIA 侧实现;昇腾侧对应的是 DeepGEMM-Ascend 里依赖 tilelang 的 **HC Prenorm GEMM**。三条要记住的工程点:
+
+- **n 被硬编成 4**(`kNumRoutes=4`),系数总数 `n(n+2)=24` 正好占满一个 warp 的 lane 区,Mix 阶段(归约 split partial → sigmoid/Sinkhorn)全在 warp 内完成,不需要跨 warp 合并;
+- **6 个 warpgroup 静态分工**(TMA/MMA、Post×2、workspace epilogue、Mix、Norm),persistent kernel 一 SM 一 CTA,`grid = num_sms`;
+- **跨 CTA 只有两条屏障**:`Mix`(split partial 齐)与 `Norm`(shifted 版 X1 落盘后),缓冲区按 stream 缓存 → 不同 stream 并发调用互不干扰。
+
+**2026-10-20 `#478` 修了一个只在 CUDA graph 下复现的屏障 bug**:原实现用 `%gridid` 给屏障状态打代次,而 graph 的一个 kernel node 每次 replay 的 `%gridid` 相同 → 重放时残留的终态正好等于本次要找的目标值,迟到的初始化 CTA 会让 waiter 提前放行、读到上一次重放的旧 partial。改法是不动缓冲区形状,把 **epoch + 退出计数塞进屏障首行 128 B 的空闲尾部**(偏移 64/72),每个 CTA 在 `cudaGridDependencySynchronize()` 之后读同一 epoch,**最后一个退出的 CTA 复位计数并推进 epoch**。教训:凡要跨 graph replay 判新旧,用 kernel 自推进的显存计数器,别用硬件 ID。机制细节与复用清单见 [mhc-manifold-hyper-connections.md](mhc-manifold-hyper-connections.md)。
+
 ---
 
 ## 2. 与 Ascend 版的对照(同 API,不同后端)
@@ -147,4 +157,4 @@ deep_gemm.fp8_fp4_mega_moe(y, transformed_l1, transformed_l2, buffer)
 - **DeepGEMM-Ascend README**(昇腾版对照,MAD/fractal/协程/scaling factor int16/CANN 9.20):https://github.com/deepseek-ai/DeepGEMM-Ascend
 - **DeepJIT**(运行时 JIT):https://github.com/deepseek-ai/DeepJIT
 - **开源周 Day 3 公告**(1350+ TFLOPS、~300 行核心逻辑;来自 open-infra-index,本地未核):https://github.com/deepseek-ai/open-infra-index
-- **库内交叉**:[deepgemm-ascend.md](deepgemm-ascend.md)(昇腾版机制全文)、[ascend-port-principles.md](ascend-port-principles.md)(NVIDIA→昇腾抽象对照)、[deepjit.md](deepjit.md)(JIT 机制)、[../../cutlass/index.md](../../cutlass/index.md)(CUTLASS 造内核方法论)、[deepep-nvidia-vs-ascend.md](deepep-nvidia-vs-ascend.md)(Mega MoE 的通信侧)。
+- **库内交叉**:[deepgemm-ascend.md](deepgemm-ascend.md)(昇腾版机制全文)、[ascend-port-principles.md](ascend-port-principles.md)(NVIDIA→昇腾抽象对照)、[deepjit.md](deepjit.md)(JIT 机制)、[mhc-manifold-hyper-connections.md](mhc-manifold-hyper-connections.md)(Mega mHC 的架构动机与屏障/epoch 机制)、[../../cutlass/index.md](../../cutlass/index.md)(CUTLASS 造内核方法论)、[deepep-nvidia-vs-ascend.md](deepep-nvidia-vs-ascend.md)(Mega MoE 的通信侧)。

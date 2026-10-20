@@ -14,7 +14,7 @@ date: 2026-10
 
 ## 一句话定位
 
-**deepseek-infra** 记录 DeepSeek 开源的**算力基础设施栈**(2025-02 开源周放训练/推理/存储三件套;2026-09-30 补昇腾适配;稀疏 MQA 打分内核 NVIDIA 侧 09-30(v2.8.1)引入、10-14 v2.8.2 对齐修复,Ascend 2026/10 加入)。全景是「算子怎么写(TileLang)→ 矩阵怎么算(DeepGEMM)→ 专家怎么通信(DeepEP)→ 训练怎么并行(DualPipe/EPLB/LPLB)→ 微调怎么省(ESFT)→ 稀疏记忆怎么查(Engram)→ 数据怎么存/算(3FS/smallpond)」这条从语言、算子、通信、并行到存储的全链路,**NVIDIA 与昇腾双平台**跑出近硬件峰值。
+**deepseek-infra** 记录 DeepSeek 开源的**算力基础设施栈**(2025-02 开源周放训练/推理/存储三件套;2026-09-30 补昇腾适配;稀疏 MQA 打分内核 NVIDIA 侧 09-30(v2.8.1)引入、10-14 v2.8.2 对齐修复,Ascend 2026/10 加入;mHC 流形超连接 2026-10 单列一篇,含 DeepGEMM `mega_mhc` 融合内核与 10-20 的 CUDA graph 屏障修复)。全景是「算子怎么写(TileLang)→ 矩阵怎么算(DeepGEMM)→ 专家怎么通信(DeepEP)→ 训练怎么并行(DualPipe/EPLB/LPLB)→ 残差流怎么连(mHC)→ 微调怎么省(ESFT)→ 稀疏记忆怎么查(Engram)→ 数据怎么存/算(3FS/smallpond)」这条从语言、算子、通信、并行到存储的全链路,**NVIDIA 与昇腾双平台**跑出近硬件峰值。
 
 它定位在**算子实现层 / 基础设施层**,与库内 model-architecture(架构)、attention(算法)、vllm(引擎)、cutlass(NVIDIA 造内核方法论)四个领域正交互补:那些域讲「模型长什么样、注意力为什么省显存、引擎怎么调度、NVIDIA 怎么造内核」,本域讲「**这些算子/通信/并行/存储怎么实现、怎么适配、性能到哪**」。
 
@@ -34,6 +34,7 @@ date: 2026-10
   3. **TileKernels 昇腾支持从 PyPI v2.0.0 起**,main 现为 v2.1.0(HEAD c1cf914a,含 Ascend 950 + CANN 9.2.0 双平台)。
 - **术语(本域核定拼写;标「待核」者为一手库未附链接)**:fractal(分形**布局**)、MAD(matrix multiply-add 原语)、UBMEM、URMA、HCCL(集合通信)、HCOMM(控制面 API,**待核/据昇腾官方资料**)、bisheng(毕昇编译器)、DeepJIT(运行时 JIT)、torch_npu、**CANN 9.2.0**(DeepGEMM README 原文 "9.20" 即此版本,不写 9.20)、**950PR ≠ 950DT**(同一 950 Die 两款型:PR=Prefill&Recommendation、DT=Decode&Training,**待核/据昇腾官方资料**)。
 - **性能数字单源标注**:本域各算子性能数字(DeepGEMM 99.8%/856/862/850 TFLOPS、DeepEP 90–95% 带宽、FlashMLA 410/360、TileLang FA/mHC 比值)均出自各仓 README/deep-dive 一手源,暂无独立第三方或硬件实测复核,引用时保留原始口径、待硬件实测复核。
+- **mHC 三句话**:① 收益来自**残差流 n 路化 + 流间混合**(n=4),稳定性来自把混合矩阵**投影到双随机流形**(Sinkhorn,t_max=20)——双随机保证谱范数 ≤1 且对乘法封闭,复合增益 HC ~3000 → mHC ~1.6;② 代价是访存 ~10× 与 PP 通信 ~n×,靠 kernel 融合 + 按 `L_r*≈√(nL/(n+2))` 分块重算 + DualPipe 重叠压到**净增 6.7% 训练时间**;③ NVIDIA 侧落地是 DeepGEMM `mega_mhc`(SM100 单 kernel,6 WG,split-K),昇腾侧是依赖 tilelang 的 HC Prenorm GEMM。详见 [concepts/mhc-manifold-hyper-connections.md](concepts/mhc-manifold-hyper-connections.md)。
 
 ### 六件套 ↔ 上游映射表(已核实)
 
@@ -83,7 +84,8 @@ date: 2026-10
 
 | 专题 | 文件 | 一句话 | 状态 |
 |---|---|---|---|
-| DeepGEMM NVIDIA vs Ascend | [concepts/deepgemm-nvidia-vs-ascend.md](concepts/deepgemm-nvidia-vs-ascend.md) | NVIDIA 原版:轻量 tensor core 内核库(FP8/FP4/BF16、Mega MoE、MQA),H800 1550 TFLOPS;与昇腾版同 API 不同后端(WGMMA/TMA vs MAD/协程);稀疏 MQA logits:NVIDIA 09-30(v2.8.1)引入、10-14 v2.8.2 对齐修复,Ascend 2026/10 新增 | ✅ 已入库 |
+| DeepGEMM NVIDIA vs Ascend | [concepts/deepgemm-nvidia-vs-ascend.md](concepts/deepgemm-nvidia-vs-ascend.md) | NVIDIA 原版:轻量 tensor core 内核库(FP8/FP4/BF16、Mega MoE、MQA),H800 1550 TFLOPS;与昇腾版同 API 不同后端(WGMMA/TMA vs MAD/协程);稀疏 MQA logits:NVIDIA 09-30(v2.8.1)引入、10-14 v2.8.2 对齐修复,Ascend 2026/10 新增;mHC 融合内核 10-20 修 CUDA graph 屏障 bug(#478) | ✅ 已入库 |
+| mHC Manifold Hyper-Connections | [concepts/mhc-manifold-hyper-connections.md](concepts/mhc-manifold-hyper-connections.md) | 残差流 n 路扩展 + Birkhoff 双随机约束(Sinkhorn 20 轮)恢复恒等映射:HC 复合增益 ~3000→mHC ~1.6,n=4 仅增 6.7% 训练时间;DeepGEMM `mega_mhc` 单 kernel(6 WG 静态分工/split-K/跨 CTA Mix+Norm 屏障),2026-10-20 #478 用 epoch 取代 `%gridid` 修 CUDA graph 重放旧 partial bug | ✅ 已入库(2026-10-20) |
 | DeepEP NVIDIA vs Ascend | [concepts/deepep-nvidia-vs-ascend.md](concepts/deepep-nvidia-vs-ascend.md) | NVIDIA 原版:EP 通信库,V2 迁 NCCL Gin 后端、EPBuffer 统一接口、SM 占用 24→4–6(旧 V2 公告口径);与昇腾版同 API 不同后端 | ✅ 已入库 |
 | DeepJIT | [concepts/deepjit.md](concepts/deepjit.md) | xPU kernel 运行时 JIT(CUDA + 昇腾),header-only;缓存键穷尽 source/include/编译版本;支持跨节点共享缓存 | ✅ 已入库 |
 | Engram | [concepts/engram.md](concepts/engram.md) | 条件记忆:O(1) N-gram 查找,与 MoE 互补的稀疏轴;确定性寻址可 offload 到 host memory;27B 全面领先 iso-param MoE | ✅ 已入库 |

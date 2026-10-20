@@ -42,6 +42,8 @@ date: 2026-09
 
 **pre-norm**(GPT-2 起成为主流):`x = x + Sublayer(LayerNorm(x))`——归一化挪到子层输入,残差主干是干净的恒等通路,梯度可以无衰减地从顶层直达底层。**代价**:最后输出前需要补一个 final norm;理论上 pre-norm 的层间"有效深度"略低(各层贡献更均匀),但工程上稳定压倒一切——GPT-2/3、LLaMA、几乎所有现代 LLM 都是 pre-norm。
 
+> **残差这条线 2025-26 的进展**:pre-norm 之所以稳,是因为残差主干满足**恒等映射**;后续 Hyper-Connections(HC)把残差流扩成 n 条并允许流间混合拿到性能收益,却丢掉了恒等性(深层复合增益失控),mHC 用「双随机矩阵投影(Sinkhorn)」把它约束回 Birkhoff 多面体恢复恒等性。机制与工程见 [`deepseek-infra/concepts/mhc-manifold-hyper-connections.md`](../../deepseek-infra/concepts/mhc-manifold-hyper-connections.md)。
+
 ### 1.2 RMSNorm:去掉减均值
 
 LayerNorm 做两件事:减均值(re-centering)+ 除标准差(re-scaling)。Zhang & Sennrich(NeurIPS 2019)发现 **re-centering 不是关键,re-scaling 才是**,于是 RMSNorm 只保留缩放:

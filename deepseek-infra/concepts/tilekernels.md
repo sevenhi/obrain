@@ -72,7 +72,7 @@ main 已合入 v2.1.0(HEAD c1cf914a),版本要求不再分「main vs PyPI」两�
 
 - **坑 1**:别把「main README 只写 NVIDIA」当成「不支持昇腾」——v2.0.0 起 main 与 PyPI 同口径,双平台。
 - **坑 2**:漏写双平台版本要求差异(NVIDIA 侧 CUDA 13.1+,昇腾侧 CANN 9.2.0+、Python 3.12/PyTorch 2.13/TileLang 0.1.15)。
-- **坑 3**:mHC(流形超连接)不是普通全连接,是 Sinkhorn 归一化 + mix 拆分/应用的 hyper-connection。
+- **坑 3**:mHC(流形超连接)不是普通全连接,是 Sinkhorn 归一化 + mix 拆分/应用的 hyper-connection;机制、双随机约束与 NVIDIA 侧融合内核见 [mhc-manifold-hyper-connections.md](mhc-manifold-hyper-connections.md)。
 - **安装**:本地开发 `pip install -e ".[dev]"`;发布版 `pip install tile-kernels`(v2.0.0 起含昇腾后端)。
 - **运行时**:昇腾后端自动选择,同一 Python API 在 NVIDIA GPU 与华为 NPU 上运行。
 

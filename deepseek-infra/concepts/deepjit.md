@@ -112,7 +112,7 @@ deep_jit::Config("/opt/my_library", "MYLIB",
 - **CUDA Graph 兼容**:在捕获前先 compile+load kernel;已加载 kernel 的 launch 可捕获(含继承当前 PyTorch stream 时)。
 - **每设备一个 Runtime**:Runtime 构造时快照当前设备/架构,别在设备间搬动已加载 kernel。
 - **昇腾 launch**:`num_blocks` 必填,`ASCEND_LAUNCH_BLOCKING` 开启后每次 launch 后同步设备。
-- **异常 backtrace 非线程安全(2026-10 已修)**:`get_backtrace()` 内部用 `execinfo`/`libdwfl.so.1`(dlopen 动态符号解析)做符号化与反解,同一进程多线程并发抛异常时静态 `DwflApi` 会被多路并发访问。PR #29 在 `get_backtrace()` 里加了一把**全局静态 `std::mutex` + `lock_guard`** 串行化符号化,保证多线程 JIT 编译/launch 中任一线程抛错都能安全打出带函数名、文件:行的 backtrace。启示:**别在并发路径里裸调线程不安全的符号化/demangle**,要符号化就串行化。
+- **异常 backtrace 非线程安全(2026-10 已修)**:`get_backtrace()` 内部用 `execinfo`/`libdw.so.1`(dlopen 动态符号解析)做符号化与反解,同一进程多线程并发抛异常时静态 `DwflApi` 会被多路并发访问。PR #29 在 `get_backtrace()` 里加了一把**全局静态 `std::mutex` + `lock_guard`** 串行化符号化,保证多线程 JIT 编译/launch 中任一线程抛错都能安全打出带函数名、文件:行的 backtrace。启示:**别在并发路径里裸调线程不安全的符号化/demangle**,要符号化就串行化。
 
 ---
 

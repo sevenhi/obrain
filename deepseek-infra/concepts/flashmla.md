@@ -122,7 +122,7 @@ flash_mla_with_kvcache(..., is_fp8_kvcache=True, indices=...)
 - **dense vs sparse 别混表**:660 是 dense、410 是 sparse(decode 场景)。
 - **漏写 breaking change 的坑**:昇腾版(已合入 main)移除 Hopper/旧模型、改 KV cache 格式,旧用户要切 `ba89a346`。
 - **多 batch 的 sparse prefill**:内核无 batch 维,多 batch 需 reshape + 调 indices。
-- **2026-10-15 ABI 稳定化(构建层,机制不变)**:commit `0f11e17` 只动了构建/绑定层——Python 扩展由 pybind 迁移到 **TORCH_LIBRARY(稳定 Torch ABI,兼容 CPython/abi3 + PyTorch 2.10 stable ABI)**,并把加载方式改成 setup.py 生成 `flash_mla/_build_info.py` 记录平台与扩展文件名、import 时精确加载(不再 glob 目录猜 `cuda*`/`npu*` so);昇腾流桥接头拆到 `csrc/api/ascend_stream.{h,cpp}`。**对使用者几乎无感知,唯一影响**:编译/打包后的扩展在 CPython 多版本间更稳、Ascend 构建缺 torch_npu 时报明确 ImportError。无内核/性能变化,现有数据全保留。
+- **2026-10-15 ABI 稳定化(构建层,机制不变)**:commit `0f11e17` 只动了构建/绑定层——Python 扩展由 pybind 迁移到 **TORCH_LIBRARY(稳定 Torch ABI,兼容 CPython/abi3 + PyTorch 2.10 stable ABI)**,并把加载方式改成 setup.py 生成 `flash_mla/_build_info.py` 记录平台与扩展文件名、import 时精确加载(不再 glob 目录猜 `cuda*`/`npu*` so);昇腾流桥接头拆到 `csrc/api/ascend_stream.{h,cpp}`。**对使用者几乎无感知,唯一影响**:编译/打包后的扩展在 CPython 多版本间更稳、Ascend 构建缺 torch_npu 时报明确 ImportError。无内核/性能变化,现有数据全保留。另有 `sparse_decode_fwd` 可选缓冲区(tile_scheduler_metadata/num_splits)的 **in-place 变异 schema 标注修正**(Tensor(a!)?/Tensor(b!)?),不改内核数值。
 
 ---
 

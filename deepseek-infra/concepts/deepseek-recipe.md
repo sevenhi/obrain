@@ -4,9 +4,9 @@ type: concept
 tags: [deepseek-recipe, api, prompt, chat-completions, responses, v4, v4.1, rust, python, serving]
 date: 2026-10
 source:
-  - "code: deepseek-ai/deepseek-recipe (v0.2.0) | https://github.com/deepseek-ai/deepseek-recipe | 2026-10-19 | ↑primary"
-  - "code: deepseek-recipe README.zh | https://github.com/deepseek-ai/deepseek-recipe/blob/main/README.zh.md | 2026-10-19"
-  - "code: deepseek-recipe CHANGELOG (0.2.0) | https://github.com/deepseek-ai/deepseek-recipe/blob/main/CHANGELOG.md | 2026-10-19"
+  - "code: deepseek-ai/deepseek-recipe (v0.2.0) | https://github.com/deepseek-ai/deepseek-recipe | 2026-10-20 | ↑primary"
+  - "code: deepseek-recipe README.zh | https://github.com/deepseek-ai/deepseek-recipe/blob/main/README.zh.md | 2026-10-20"
+  - "code: deepseek-recipe CHANGELOG (0.2.0) | https://github.com/deepseek-ai/deepseek-recipe/blob/main/CHANGELOG.md | 2026-10-20"
 ---
 
 # deepseek-recipe — DeepSeek V4/V4.1 多格式 API 与 prompt 编解码库
@@ -48,7 +48,7 @@ deepseek-recipe/
 └── docs/                         # streaming / tokenizer 等
 ```
 
-## 3.5 v0.2.0 增量(2026-10-19 发布,破坏性 API 变更)
+## 3.5 v0.2.0 增量(2026-10-20 发布,破坏性 API 变更)
 
 0.1 → 0.2.0 改了**所有 crate 与 Python 包的公共 API**(0.1 之前的版本号;**1.0 之前 minor 可含不兼容改动**)。主要新增:
 

@@ -99,6 +99,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 - **长上下文/流式 KV cache 算法侧**:PagedAttention 解决"cache 装得下就全留"的分页管理;**装不下时逐出谁**见 [`attention/algorithm/attention-sinks-streaming.md`](../attention/algorithm/attention-sinks-streaming.md)(StreamingLLM:attention sink + 滚窗,4M token 稳定生成)。两者正交,vLLM 主线未内置 sink 逐出(TensorRT-LLM/HF 已内置;SGLang 主线仍支持 attention sink:sinks kwarg / learnable sink / speculative draft sink 等多个 backend)。
 - **注意力内核与架构谱系**:[`attention/`](../attention/index.md)(算法/架构层 + FA 内核实现层,合并域)。
 - **内核底座**:[`cutlass/`](../cutlass/index.md)——本域优化注意力内核的 FA 族与 `CUTLASS_MLA` backend 均构建于 CUTLASS/CuTe 之上(自底向上依赖);CUTLASS tiling/Tensor Core 机制见其概念篇。
+- **同源改造的生产引擎**:[`deepinfer`](../deepseek-infra/concepts/deepinfer.md)——DeepSeek 基于 vLLM 重写的单模型生产推理框架(V4.1-Flash)。保留 paged KV + 连续批处理两条不变量,换掉 Scheduler(C++ 化)、加 ZOS/EPLB/DSpark/YoCo 三级 KV;两边的机制对照表在该篇 §14。**注意它已把 `vllm/distributed/eplb/` 的思路原生内置并与自身 ZOS 耦合**,不能拿「EPLB 是 DeepInfer 独有」当差异点。
 
 ## 扩展位(2026-10 全库审查待补)
 
@@ -107,7 +108,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 - multi-LoRA 服务(adapter 热插拔、base 共享、LoRARequest 链路)
 - ~~PD 分离与 KV transfer~~(已入库)
 - RL rollout 服务(sleep/wake、async scheduling、DP 负载均衡)
-- MoE EP/EPLB 服务侧(补 distributed-ray 目录空白)
+- ~~MoE EP/EPLB 服务侧~~(vLLM 侧已有 `vllm/distributed/eplb/` 实现;DeepSeek 侧的生产口径见 [`deepinfer`](../deepseek-infra/concepts/deepinfer.md) §9)
 - KV cache 分层/卸载(CPU/NVMe、LMCache)
 - Model Runner V2 落地篇(index 警示已备)
 - production-serving 补指标名与 continuous-batching 对齐

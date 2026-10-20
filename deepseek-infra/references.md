@@ -1,7 +1,7 @@
 ---
 title: deepseek-infra 外部链接索引
 type: reference
-tags: [deepseek, ascend, nvidia, cuda, tilelang, deepgemm, deepep, deepjit, tilekernels, flashmla, deepselect, dualpipe, eplb, lplb, esft, engram, 3fs, smallpond, npu, references]
+tags: [deepseek, ascend, nvidia, cuda, tilelang, deepgemm, deepep, deepjit, tilekernels, flashmla, deepselect, dualpipe, eplb, lplb, esft, engram, 3fs, smallpond, deepinfer, serving, npu, references]
 date: 2026-10
 ---
 
@@ -24,6 +24,11 @@ date: 2026-10
 
 - **DeepGEMM(NVIDIA 原版)** — https://github.com/deepseek-ai/DeepGEMM
 - **DeepEP(NVIDIA 原版)** — https://github.com/deepseek-ai/DeepEP
+- **DeepInfer(生产推理框架,2026-10-20 开源;服务 V4.1-Flash)** — https://github.com/deepseek-ai/DeepInfer
+  - 官方部署 Q&A(架构/并行/EPLB/KV 存储/低精度/投机/异步调度/结构化输出的权威口径)— https://github.com/deepseek-ai/DeepInfer/blob/main/doc/inference_deployment_qa.md
+  - benchmark 指标口径 — https://github.com/deepseek-ai/DeepInfer/blob/main/examples/README.md
+  - 默认 checkpoint — https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017
+  - 前置设计篇(知乎,V4.1 Flash 推理系统架构)— https://zhuanlan.zhihu.com/p/2095560295930508953
 - **DeepJIT(运行时 JIT,CUDA + 昇腾双后端)** — https://github.com/deepseek-ai/DeepJIT
 - **Engram(条件记忆/稀疏查找)** — https://github.com/deepseek-ai/Engram ;论文 arXiv:2601.07372 — https://arxiv.org/abs/2601.07372
 - **DualPipe(双向流水线并行)** — https://github.com/deepseek-ai/DualPipe

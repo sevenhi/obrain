@@ -1,7 +1,7 @@
 ---
 title: deepseek-infra — DeepSeek 开源算力基础设施栈(昇腾 + NVIDIA 双平台 + 并行/存储)
 type: domain
-tags: [deepseek, ascend, nvidia, cuda, tilelang, deepgemm, deepep, deepjit, tilekernels, flashmla, deepselect, dualpipe, eplb, lplb, esft, engram, 3fs, smallpond, npu, huawei, infra]
+tags: [deepseek, ascend, nvidia, cuda, tilelang, deepgemm, deepep, deepjit, tilekernels, flashmla, deepselect, dualpipe, eplb, lplb, esft, engram, 3fs, smallpond, deepinfer, serving, npu, huawei, infra]
 date: 2026-10
 ---
 
@@ -14,7 +14,7 @@ date: 2026-10
 
 ## 一句话定位
 
-**deepseek-infra** 记录 DeepSeek 开源的**算力基础设施栈**(2025-02 开源周放训练/推理/存储三件套;2026-09-30 补昇腾适配;稀疏 MQA 打分内核 NVIDIA 侧 09-30(v2.8.1)引入、10-14 v2.8.2 对齐修复,Ascend 2026/10 加入;mHC 流形超连接 2026-10 单列一篇,含 DeepGEMM `mega_mhc` 融合内核与 10-20 的 CUDA graph 屏障修复)。全景是「算子怎么写(TileLang)→ 矩阵怎么算(DeepGEMM)→ 专家怎么通信(DeepEP)→ 训练怎么并行(DualPipe/EPLB/LPLB)→ 残差流怎么连(mHC)→ 微调怎么省(ESFT)→ 稀疏记忆怎么查(Engram)→ 数据怎么存/算(3FS/smallpond)」这条从语言、算子、通信、并行到存储的全链路,**NVIDIA 与昇腾双平台**跑出近硬件峰值。
+**deepseek-infra** 记录 DeepSeek 开源的**算力基础设施栈**(2025-02 开源周放训练/推理/存储三件套;2026-09-30 补昇腾适配;稀疏 MQA 打分内核 NVIDIA 侧 09-30(v2.8.1)引入、10-14 v2.8.2 对齐修复,Ascend 2026/10 加入;mHC 流形超连接 2026-10 单列一篇,含 DeepGEMM `mega_mhc` 融合内核与 10-20 的 CUDA graph 屏障修复;**2026-10-20 DeepInfer 开源,把前面的算子/通信/负载均衡装进一个生产推理引擎**)。全景是「算子怎么写(TileLang)→ 矩阵怎么算(DeepGEMM)→ 专家怎么通信(DeepEP)→ 训练怎么并行(DualPipe/EPLB/LPLB)→ 残差流怎么连(mHC)→ 微调怎么省(ESFT)→ 稀疏记忆怎么查(Engram)→ 数据怎么存/算(3FS/smallpond)→ **推理怎么落到生产(DeepInfer)**」这条从语言、算子、通信、并行到存储、服务的全链路,**NVIDIA 与昇腾双平台**跑出近硬件峰值。
 
 它定位在**算子实现层 / 基础设施层**,与库内 model-architecture(架构)、attention(算法)、vllm(引擎)、cutlass(NVIDIA 造内核方法论)四个领域正交互补:那些域讲「模型长什么样、注意力为什么省显存、引擎怎么调度、NVIDIA 怎么造内核」,本域讲「**这些算子/通信/并行/存储怎么实现、怎么适配、性能到哪**」。
 
@@ -85,6 +85,7 @@ date: 2026-10
 | 专题 | 文件 | 一句话 | 状态 |
 |---|---|---|---|
 | DeepGEMM NVIDIA vs Ascend | [concepts/deepgemm-nvidia-vs-ascend.md](concepts/deepgemm-nvidia-vs-ascend.md) | NVIDIA 原版:轻量 tensor core 内核库(FP8/FP4/BF16、Mega MoE、MQA),H800 1550 TFLOPS;与昇腾版同 API 不同后端(WGMMA/TMA vs MAD/协程);稀疏 MQA logits:NVIDIA 09-30(v2.8.1)引入、10-14 v2.8.2 对齐修复,Ascend 2026/10 新增;mHC 融合内核 10-20 修 CUDA graph 屏障 bug(#478) | ✅ 已入库 |
+| **DeepInfer** | [concepts/deepinfer.md](concepts/deepinfer.md) | DeepSeek 生产推理框架首次开源(2026-10-20):服务 V4.1-Flash,EPD 分离 + Wide-EP(EP64–128)、零开销调度 ZOS(post-process 推迟一步 + GPU 侧 seqlens 修正)、DSpark 变长投机验证、YoCo + SWA bounded replay、三级 KV(3FS 分页/host SWA/GPU state)、原生 EPLB;**KV 存储客户端与跨 DP 负载均衡器未开源**;SM100 + Ascend 950 双平台 | ✅ 已入库(2026-10-20) |
 | mHC Manifold Hyper-Connections | [concepts/mhc-manifold-hyper-connections.md](concepts/mhc-manifold-hyper-connections.md) | 残差流 n 路扩展 + Birkhoff 双随机约束(Sinkhorn 20 轮)恢复恒等映射:HC 复合增益 ~3000→mHC ~1.6,n=4 仅增 6.7% 训练时间;DeepGEMM `mega_mhc` 单 kernel(6 WG 静态分工/split-K/跨 CTA Mix+Norm 屏障),2026-10-20 #478 用 epoch 取代 `%gridid` 修 CUDA graph 重放旧 partial bug | ✅ 已入库(2026-10-20) |
 | DeepEP NVIDIA vs Ascend | [concepts/deepep-nvidia-vs-ascend.md](concepts/deepep-nvidia-vs-ascend.md) | NVIDIA 原版:EP 通信库,V2 迁 NCCL Gin 后端、EPBuffer 统一接口、SM 占用 24→4–6(旧 V2 公告口径);与昇腾版同 API 不同后端 | ✅ 已入库 |
 | DeepJIT | [concepts/deepjit.md](concepts/deepjit.md) | xPU kernel 运行时 JIT(CUDA + 昇腾),header-only;缓存键穷尽 source/include/编译版本;支持跨节点共享缓存 | ✅ 已入库 |

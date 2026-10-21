@@ -4,7 +4,10 @@ type: concept
 tags: [deepinfer, deepseek, inference, serving, v4.1, dflash, yoco, swa, eplb, wide-ep, zero-overhead-scheduling, ascend, nvidia]
 date: 2026-10
 source:
-  - "code: deepseek-ai/DeepInfer (main, HEAD 774ce244b8, 2026-10-20) | https://github.com/deepseek-ai/DeepInfer | 2026-10-20 | ↑primary"
+  - "code: deepseek-ai/DeepInfer (main, HEAD 9bd9cf243f, 2026-10-21;此前 774ce244b8/2026-10-20) | https://github.com/deepseek-ai/DeepInfer | 2026-10-21 | ↑primary"
+  - "code: DeepInfer scripts/build_vendor.sh + Makefile + requirements-nvidia.txt(vendored pin 与构建链) | https://github.com/deepseek-ai/DeepInfer/blob/main/scripts/build_vendor.sh | 2026-10-21"
+  - "code: DeepInfer PR #157(Bump DeepEP to f6aa38fe / drop SSH->HTTPS rewrite) | https://github.com/deepseek-ai/DeepInfer/pull/157 | 2026-10-21"
+  - "code: deepseek-ai/DeepGEMM(上游 main 5081f8513a,含 #478;DeepInfer pin 仅到 1fc9c66975) | https://github.com/deepseek-ai/DeepGEMM | 2026-10-21"
   - "code: DeepInfer doc/inference_deployment_qa.md(官方部署 Q&A) | https://github.com/deepseek-ai/DeepInfer/blob/main/doc/inference_deployment_qa.md | 2026-10-20"
   - "code: DeepInfer examples/README.md(benchmark 指标口径) | https://github.com/deepseek-ai/DeepInfer/blob/main/examples/README.md | 2026-10-20"
   - "code: DeepSeek-V4.1-Flash-1017(默认 checkpoint) | https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017 | 2026-10-20"
@@ -402,7 +405,31 @@ constexpr int64_t FP32 = TF32; // Accounting reference, not actual kernel precis
 ## 15. 双平台抽象与构建
 
 - `PlatformGPU` / `PlatformNPU`(deepinfer/platform.py:55–89):tilelang 后端 `cuda`/`asc`,分布式后端 `nccl`/`hccl`;NPU 侧把 `ASCEND_RT_VISIBLE_DEVICES` 映射到 `CUDA_VISIBLE_DEVICES` 以复用代码路径;NCCL 的 max/min CTA 数由 `DEEPINFER_NCCL_NUM_SMS=32` 钉死。内核族(FlashMLA/DeepGEMM/DeepEP/TileKernels/DeepSelect + 自研 TileLang kernel)的双平台对照,本库已各有专篇([./deepgemm-nvidia-vs-ascend.md](./deepgemm-nvidia-vs-ascend.md)、[./deepep-nvidia-vs-ascend.md](./deepep-nvidia-vs-ascend.md)、[./tilelang.md](./tilelang.md))。Q&A 补充:内部版 FlashMLA 多一处手调 SASS,开源版 decode kernel 慢 5–10%,端到端差距 ≤5%;Mega MoE 在 scale-up domain 内不论 EP/batch 都快于非融合 MoE。
-- **构建**:Linux + GCC ≥13 + Python 3.12(空环境)+ CUDA 13(NVIDIA)或 CANN 9.2(昇腾);`export DEEPINFER_ACCELERATOR=nvidia|ascend && ./build.sh`——脚本装对应 requirements、NVIDIA 侧把 NCCL 钉到 2.32.3、构建 vendored 依赖后编译安装。
+- **构建**:Linux + GCC ≥13 + Python 3.12(`pyproject.toml` `requires-python = ">=3.12"`,空环境)+ CUDA 13(NVIDIA)或 CANN 9.2(昇腾);`export DEEPINFER_ACCELERATOR=nvidia|ascend && ./build.sh`。`build.sh` 三步固定:① `pip install -r requirements-${ACCELERATOR}.txt`;② NVIDIA 侧 `pip install --no-deps --force-reinstall nvidia-nccl-cu13==2.32.3`(**钉死 NCCL**,芯片侧对 Gin 后端版本敏感);③ `scripts/build_vendor.sh` 构建 vendored 算子轮子 → `scripts/build.sh build` 编主仓 Python 扩展。NVIDIA 依赖链里 `torch==2.13.0+cu132` + `flash-attn-4==4.0.0b34` 来自 `download.pytorch.org/whl/cu132`,不是 PyPI(装错源会拉到 CPU 版)。`Makefile` 把这几步拆成 `build-nvidia` / `build-ascend` / `vendor-nvidia` / `vendor-ascend` / `clean` / `stubgen` / `format` 七个目标,调 vendor 不必重编主仓。
+
+**vendored 算子的 pin 是「已知快照」,不是「当前 main」(2026-10-21 增量)**
+
+`scripts/build_vendor.sh` 把四个算子作为 git submodule 拉进 `vendor/` 再各自 `python setup.py bdist_wheel`,所以**引擎能用哪版内核由 DeepInfer 仓的 submodule pin 决定,与你另行 pip install 的算子版本无关**。2026-10-21 的 PR #157「Bump DeepEP to f6aa38fe and drop the SSH->HTTPS rewrite」只动了两处:submodule pin 前移 + 删掉 `GIT_REWRITE=(-c url."https://github.com/".insteadOf="git@github.com:")` 这段改写在(`build_vendor.sh` 里对主仓和每个 vendor 包各调用一次)。删除的理由写在 commit message 里:**DeepEP 自己的 `.gitmodules` 已把 `third-party/deep_jit` 从 `git@github.com:` 改成 `https://`,不再需要外层替它改写 URL**。对使用者的实际影响:内网只开了 HTTPS 出口、没配 SSH key 的构建机以前要靠这层 rewrite 才能 `submodule update`,现在上游已修好,少数依赖 rewrite 掩盖其它私仓 SSH 地址的场景会直接暴露(报 `Permission denied (publickey)`)。
+
+当前 pin 集(`9bd9cf243f`,2026-10-21)与上游 main 的对照——**两处落后**:
+
+| vendor 包 | DeepInfer pin | 上游 main HEAD | 差 | 影响 |
+|---|---|---|---|---|
+| DeepEP | `f6aa38fe06` (10-21) | `f6aa38fe06` (10-21) | 同步 | #157 就是为对齐它 |
+| DeepEP-Ascend | `3b25377d04` (09-29) | `3b25377d04` (09-29) | 同步 | — |
+| DeepGEMM | `1fc9c66975` (10-14) | `5081f8513a` (10-20) | **落后 #478** | ⚠ mega_mhc CUDA graph 屏障 bug(见下) |
+| DeepGEMM-Ascend | `3a35326271` (10-14) | `3a35326271` (10-14) | 同步 | — |
+| DeepSelect | `bfa4507d93` (09-30) | `bfa4507d93` (09-30) | 同步 | — |
+| FlashMLA | `2e5429fc56` (09-30) | `0f11e178da` (10-15) | **落后 #230** | ABI 稳定化(构建层),无内核变化 |
+
+**这两条落后要分开看**。FlashMLA 落在 `2e5429fc56` 只丢 #230 的 TORCH_LIBRARY/abi3 稳定化(见 [./flashmla.md](./flashmla.md) §ABI),那是打包层收益,不影响数值。DeepGEMM 落在 `1fc9c66975` 则是**实打实的功能缺陷**:`#478` 修的正是 mega_mhc 在 CUDA graph 重放下的屏障代数错误,而 DeepInfer 的 decode 路径**同时满足触发条件**——
+
+1. 走 mega_mhc:`v4_modules/hc.py:99` 的门控是 `PLATFORM.is_gpu and hc_mult == 4 and hc_attn_fn.shape[1] % (hc_mult * 16*64) == 0`,而 V4.1 的 `mhc_mult` 默认就是 4;命中后 `hc.py:270` 直接 `deep_gemm.mega_mhc(...)`;
+2. 走 CUDA graph:decode 侧 `model_runner.py:327` 走 `cuda_graph_runner.replay(...)`。
+
+于是 pin 里那版 `scheduler/mega_mhc.cuh` 用 `encode_state(ptx::get_grid_idx())` 给 split 屏障打代数,而屏障缓冲区是 `csrc/apis/mega_mhc.hpp:26–38` 里**按 CUDA stream 缓存的 static 张量**(`split_barriers_by_stream`,首次 `torch::zeros` 分配后一直复用)——graph 重放时 `%gridid` 恒定、缓冲区又是同一块,上一轮的终态 `encode_state(grid_idx, kNumSplits)` 恰好等于本轮要找的值,迟到的初始化 CTA 会让 waiter 提前放行读到**旧 split partial**。症状是偶发数值错误、只在 graph 重放下出现(即启动每次 gridid 都变,不复现)。机制推导与 epoch 修法详见 [./mhc-manifold-hyper-connections.md](./mhc-manifold-hyper-connections.md) §5。
+
+> **操作结论**:用 DeepInfer 的 NVIDIA 路径跑 decode(CUDA graph 默认开)、且吃 mega_mhc(`hc_mult=4`)时,别信 pin 里的 DeepGEMM——在 `vendor/DeepGEMM` 手动 `git checkout 5081f8513af5`(或只 pick #478)后 `make vendor-nvidia` 重编,或运行时 `DEEPINFER_ENFORCE_EAGER=1` 回避 graph 重放(代价是掉 graph 的性能)。这类「pin 落后上游」的坑没法靠 `pip list` 看出来,查 `git -C vendor/DeepGEMM rev-parse HEAD` 才是真的版本。
 - **运行**:`python examples/offline_inference.py`(默认 ckpt 自动下载;`DEEPINFER_HF_MODEL_DIR` 指本地副本,不覆盖显式 `--model_name`)。
 
 ---
@@ -437,13 +464,16 @@ constexpr int64_t FP32 = TF32; // Accounting reference, not actual kernel precis
 - NPU 调试:`ASCEND_LAUNCH_BLOCKING=1`(算子同步执行、栈可读)+ `ASCEND_SLOG_PRINT_TO_STDOUT=1`(examples/README.md)。
 - 拿 benchmark 数字对比时:先确认口径(满接受 ×(1+nextn)、LB flush 剔除、profiler 残留 ~7–11%),否则 SPS 会系统性偏高或偏低(§13)。
 - ZOS 下最后一步输出要靠 `flush_inflight_reqs` 收口;自己写 serving 循环时别只调 `step()`。
+- **别把 `pip list` 里的算子版本当成引擎实际用的版本**(§15):vendored 算子由 `vendor/*` 的 submodule pin 决定,`git -C vendor/<pkg> rev-parse HEAD` 才是真版本。2026-10-21 实查 pin 落后上游两处,其中 DeepGEMM 停在 `1fc9c66975` 缺 `#478`,而 V4.1 decode 恰好满足 mega_mhc + CUDA graph 双条件 → 偶发读到旧 split partial。上生产前先对齐 DeepGEMM 到 `5081f8513a` 或开 `DEEPINFER_ENFORCE_EAGER=1`。
 
 ---
 
 ## 溯源
 
 **一手链接**(均取自仓库 README / Q&A 原文):
-- 仓库:https://github.com/deepseek-ai/DeepInfer(HEAD 774ce244b8,2026-10-20)
+- 仓库:https://github.com/deepseek-ai/DeepInfer(HEAD 9bd9cf243f,2026-10-21)
+- PR #157(bump DeepEP pin + 删 SSH→HTTPS rewrite):https://github.com/deepseek-ai/DeepInfer/pull/157
+- vendored pin 的原子仓:`vendor/` 下 DeepEP/DeepEP-Ascend/DeepGEMM/DeepGEMM-Ascend/DeepSelect/FlashMLA 六个 submodule,版本见 §15 对照表
 - 官方部署 Q&A:https://github.com/deepseek-ai/DeepInfer/blob/main/doc/inference_deployment_qa.md
 - benchmark 口径:https://github.com/deepseek-ai/DeepInfer/blob/main/examples/README.md
 - 默认 checkpoint:https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017
@@ -453,7 +483,7 @@ constexpr int64_t FP32 = TF32; // Accounting reference, not actual kernel precis
 - 此前开源的 TileLang 与内核库(微信公号):https://mp.weixin.qq.com/s/X41mKH4Ds-VXUAnK6M8Eww
 - 致谢的上游:[vLLM](https://github.com/vllm-project/vllm)、[SGLang](https://github.com/sgl-project/sglang)、[TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM)
 
-**本篇逐文件核对的源码**(仓库相对路径):`README.md`;`doc/inference_deployment_qa.md`;`examples/README.md`;`examples/_config.py`;`examples/offline_inference.py`;`deepinfer/environ.py`;`deepinfer/config.py`;`deepinfer/engine/arg_utils.py`;`deepinfer/engine/engine_type.py`;`deepinfer/engine/llm_engine.py`;`deepinfer/entrypoints/llm.py`;`csrc/engine/scheduler.hpp`;`csrc/engine/zos.cpp`;`csrc/engine/mtp_varlen.hpp`;`csrc/engine/flops_estimator.hpp`;`csrc/engine/input_metadata/block_load_plan.cpp`;`deepinfer/worker/worker.py`;`deepinfer/worker/base.py`;`deepinfer/worker/zos_status.py`;`deepinfer/worker/cache_engine.py`;`deepinfer/worker/model_runner.py`;`deepinfer/worker/decode_perf_cache.py`;`deepinfer/model_executor/eplb/__init__.py`;`deepinfer/model_executor/eplb/policy.py`;`deepinfer/model_executor/layers/tilelang_ops/cache_common.py`;`deepinfer/model_executor/layers/tilelang_ops/schedule_mtp_varlen.py`;`deepinfer/model_executor/layers/tilelang_ops/compute_seqlens_k_zos.py`;`deepinfer/model_executor/layers/tilelang_ops/dflash.py`;`deepinfer/model_executor/models/mtp/dflash.py`;`deepinfer/model_executor/models/v4_modules/yoco.py`;`deepinfer/model_executor/parallel_utils/userbuffer.py`;`deepinfer/structure_output/compiler.py`;`deepinfer/platform.py`;`build.sh`。
+**本篇逐文件核对的源码**(仓库相对路径):`README.md`;`doc/inference_deployment_qa.md`;`examples/README.md`;`examples/_config.py`;`examples/offline_inference.py`;`deepinfer/environ.py`;`deepinfer/config.py`;`deepinfer/engine/arg_utils.py`;`deepinfer/engine/engine_type.py`;`deepinfer/engine/llm_engine.py`;`deepinfer/entrypoints/llm.py`;`csrc/engine/scheduler.hpp`;`csrc/engine/zos.cpp`;`csrc/engine/mtp_varlen.hpp`;`csrc/engine/flops_estimator.hpp`;`csrc/engine/input_metadata/block_load_plan.cpp`;`deepinfer/worker/worker.py`;`deepinfer/worker/base.py`;`deepinfer/worker/zos_status.py`;`deepinfer/worker/cache_engine.py`;`deepinfer/worker/model_runner.py`;`deepinfer/worker/decode_perf_cache.py`;`deepinfer/model_executor/eplb/__init__.py`;`deepinfer/model_executor/eplb/policy.py`;`deepinfer/model_executor/layers/tilelang_ops/cache_common.py`;`deepinfer/model_executor/layers/tilelang_ops/schedule_mtp_varlen.py`;`deepinfer/model_executor/layers/tilelang_ops/compute_seqlens_k_zos.py`;`deepinfer/model_executor/layers/tilelang_ops/dflash.py`;`deepinfer/model_executor/models/mtp/dflash.py`;`deepinfer/model_executor/models/v4_modules/yoco.py`;`deepinfer/model_executor/parallel_utils/userbuffer.py`;`deepinfer/structure_output/compiler.py`;`deepinfer/platform.py`;`build.sh`;`scripts/build_vendor.sh`;`scripts/build.sh`;`Makefile`;`requirements-nvidia.txt`;`requirements.txt`;`requirements-dev.txt`;`pyproject.toml`;`.gitmodules`;`vendor/`(submodule pin);`deepinfer/model_executor/models/v4_modules/hc.py`(mega_mhc 门控与调用);`deepinfer/worker/cuda_graph_runner.py`(**2026-10-21 增量追加**)。
 
 **单源标注**:§2/§9/§10 的部署与性能数字(155T token/天、$38/GPU-h、moe_lb、TTL、带宽、存储配比、~80% 均衡、+4–7%)全部出自官方部署 Q&A,单源、未经第三方复核。
 

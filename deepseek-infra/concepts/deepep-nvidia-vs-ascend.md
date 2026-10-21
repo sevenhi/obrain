@@ -3,7 +3,7 @@ title: DeepEP NVIDIA 版 vs Ascend 版 — MoE 专家并行通信库
 type: concept
 tags: [deepep, nvidia, cuda, nccl, gin, rdma, nvlink, ascend, moe, expert-parallel, dispatch, combine, fp8, engram, deepjit, epbuffer]
 source:
-  - "code: deepseek-ai/DeepEP(NVIDIA 原版)| https://github.com/deepseek-ai/DeepEP ↑primary"
+  - "code: deepseek-ai/DeepEP(NVIDIA 原版;2026-10-21 核对于 f6aa38fe,PR #788 submodule 转 HTTPS)| https://github.com/deepseek-ai/DeepEP ↑primary"
   - "code: deepseek-ai/DeepEP-Ascend(昇腾版)| https://github.com/deepseek-ai/DeepEP-Ascend"
   - "code: deepseek-ai/DeepJIT(运行时 JIT)| https://github.com/deepseek-ai/DeepJIT"
 date: 2026-10
@@ -103,12 +103,16 @@ DeepEP 暴露 `EPBuffer.lb_prefetch_weights` / `lb_reduce_grads`,支撑动态冗
 - **术语雷区(易写错)**:NCCL Gin ≠ NVSHMEM(V2 已弃 NVSHMEM);dispatch/combine 的反向互为对偶(dispatch 反向是 combine,combine 反向是 dispatch);FP8 dispatch 的 scaling factor 有 TMA-aligned col-major 要求。
 - **NVIDIA 版 ≠ 昇腾版**:昇腾版无 NVSHMEM、无 IBGDA,后端是 HCCL/HCOMM/URMA(见 [deepep-ascend.md](deepep-ascend.md) 的 PoC HDK vs 商用 HDK 坑)。
 - **网络调优**:流量隔离靠 InfiniBand VL(`sl_idx` / `EP_OVERRIDE_RDMA_SL` / `EP_DEFAULT_RDMA_SL`),带宽型负载建议关 congestion control,PCIe 环境 `mlxconfig ... PCI_ATOMIC_MODE=4` 提 RDMA atomic 性能。
+- **submodule 必须走 HTTPS(2026-10-21 起)**:`f6aa38fe`(PR #788)把 `.gitmodules` 里 `third-party/deep_jit` 的 URL 从 `git@github.com:` 改成 `https://github.com/`。含义有两层:① DeepJIT 是**必需** submodule(JIT 编译通信内核),漏 init 会在 import 期才炸;② 以前靠外层仓库 `-c url."https://github.com/".insteadOf="git@github.com:"` 兜底的构建机(只开 HTTPS 出口、无 SSH key)现在不依赖这层 rewrite 也能过——DeepInfer 的 PR #157 就是同步删掉自家 rewrite 的(见 [deepinfer.md](deepinfer.md) §15)。反过来,若你的 fork 里还有别的 `git@` 地址,这层兜底没了就会报 `Permission denied (publickey)`,用 `git config --global url."https://github.com/".insteadOf "git@github.com:"` 自行补。
+- **同一天还删了 lint 工具链**:`b5a33eef`(PR #781)移除 `.clang-format` / `.github/workflows/format.yml` / `format.sh` / `pyproject.toml` / `requirements-lint.txt` 五个文件。**纯工程卫生,无内核变化**——贡献者本地 `format.sh` 会 404,自己接 clang-format/yapf 即可;使用者无感。
 
 ---
 
 ## 溯源
 
-- **DeepEP 原版 README**(主源:V2/NCCL Gin/EPBuffer/负载均衡原语/Bucket/Engram/PP/环境变量/性能表):https://github.com/deepseek-ai/DeepEP
+- **DeepEP 原版 README**(主源:V2/NCCL Gin/EPBuffer/负载均衡原语/Bucket/Engram/PP/环境变量/性能表;2026-10-21 核对于 `f6aa38fe`):https://github.com/deepseek-ai/DeepEP
+- **DeepEP commit `f6aa38fe`**(submodule URL 改 HTTPS,PR #788):https://github.com/deepseek-ai/DeepEP/commit/f6aa38fe06cd4a0489e7730365d4e0114970a2f3
+- **DeepEP PR #781**(移除 clang-format/yapf lint 工具链):https://github.com/deepseek-ai/DeepEP/pull/781
 - **DeepEP-Ascend README**(昇腾版对照,HCCL/HCOMM/UBMEM/URMA/PoC HDK):https://github.com/deepseek-ai/DeepEP-Ascend
 - **DeepJIT**(运行时 JIT):https://github.com/deepseek-ai/DeepJIT
 - **⚠ DeepEP 无独立 arXiv 论文**:公开引用是 GitHub 仓库(bibtex `deepep2025`);候选号 arXiv 2609.01649 经核为**无关的直播异常检测论文**(cs.SI),不采用。

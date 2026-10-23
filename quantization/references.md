@@ -22,6 +22,13 @@ date: 2026-09
 - AQLM — arXiv:2401.06118(ICML 2024)
 - KVQuant — arXiv:2401.18079(NeurIPS 2024)
 - KVTuner — arXiv:2502.04420(ICML 2025)
+- Minitron(结构化剪枝 + 蒸馏;15B→8B/4B)— arXiv:2407.14679(NeurIPS 2024)
+- LLM Pruning and Distillation in Practice: The Minitron Approach(Llama-3.1-8B→4B、Mistral-NeMo-12B→8B)— arXiv:2408.11796
+- Puzzle: Distillation-Based NAS for Inference-Optimized LLMs(异构逐层剪枝 + MIP,Puzzletron 的论文)— arXiv:2411.19146(v5 2025-06)
+- Minitron-SSM(Hybrid Mamba 的 group-aware SSM 剪枝)— arXiv:2504.11409
+- NVIDIA Nemotron Nano 2(hybrid Mamba-Transformer 剪枝 + 两阶段蒸馏)— arXiv:2508.14444
+- ShortGPT(Block Influence 深度剪枝指标)— arXiv:2403.03853
+- LaCo(Layer Collapse,剪层时把被删层信息并入相邻层)— arXiv:2402.11187
 - Low-Rank Matrix Factorization for LSTM Compression — arXiv:1908.09982(PACLIC 2019)
 - LLM.int8() outlier features — arXiv:2208.07339
 - Deep Compression — arXiv:1510.00149
@@ -29,6 +36,12 @@ date: 2026-09
 
 ## 官方代码 / 项目
 
+- NVIDIA Model Optimizer(剪枝三 mode:minitron / puzzletron / fastnas)— https://github.com/NVIDIA/Model-Optimizer
+- ModelOpt 剪枝示例(支持矩阵、超参建议、端到端教程)— https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/pruning/README.md
+- ModelOpt Puzzletron 示例(MIP sweep、runtime 延迟约束、AnyModel)— https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/puzzletron/README.md
+- ModelOpt 剪枝指南(mtp.prune 统一 API)— https://nvidia.github.io/Model-Optimizer/guides/3_pruning.html
+- Megatron-Bridge 剪枝文档(Minitron 在 M-Bridge 的调用)— https://docs.nvidia.com/nemo/megatron-bridge/latest/modelopt/pruning.html
+- Minitron 模型集合(HuggingFace)— https://huggingface.co/collections/nvidia/minitron
 - HyQuant — https://github.com/jerrysfls/HyQuant
 - SpQR — https://github.com/Vahe1994/SpQR
 - QuIP# — https://github.com/Cornell-RelaxML/quip-sharp

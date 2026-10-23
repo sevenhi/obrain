@@ -5,7 +5,7 @@ tags: [computer-vision, nerf, vit, cnn, reparameterization, inference, onnx, ten
 source:
   - "web: ONNX Runtime 官方文档 | https://onnxruntime.ai/docs/ | 阅读日期 2026-10-23(最新发布 1.31.0)"
   - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/ | 阅读日期 2026-10-23(当前版 11.4.0)"
-  - "code: NVIDIA Model Optimizer | github.com/NVIDIA/Model-Optimizer(原仓库名 TensorRT-Model-Optimizer 会 301 重定向到此) + 文档站 https://nvidia.github.io/Model-Optimizer/ | 阅读日期 2026-10-23"
+  - "code: NVIDIA Model Optimizer | github.com/NVIDIA/Model-Optimizer(原仓库名 TensorRT-Model-Optimizer 会 301 重定向到此) + 文档站 https://nvidia.github.io/Model-Optimizer/ | 阅读日期 2026-10-23(commit 8f435e8,PR #2922:Minitron/Puzzletron 适配 Megatron-Core 26.10)"
 date: 2026-10
 ---
 

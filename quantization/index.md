@@ -10,6 +10,9 @@ source:
   - "pdf: AWQ | arXiv:2306.00978"
   - "pdf: SmoothQuant | arXiv:2211.10438"
   - "pdf: KIVI | arXiv:2402.02750"
+  - "pdf: Minitron(激活幅度结构化剪枝 + 知识蒸馏)| arXiv:2407.14679;实战版 arXiv:2408.11796"
+  - "pdf: Puzzle(异构剪枝 NAS + MIP,即 Puzzletron 论文)| arXiv:2411.19146"
+  - "code: NVIDIA/Model-Optimizer 剪枝示例与 PR #2922(2026-10-23,Megatron-Core 26.10 兼容)| https://github.com/NVIDIA/Model-Optimizer"
   - "web: vLLM Quantization | https://docs.vllm.ai/en/latest/features/quantization/ | 阅读日期 2026-09-27"
 date: 2026-10
 ---
@@ -18,7 +21,7 @@ date: 2026-10
 
 ## 一句话定位
 
-> 领域索引。定位:**LLM/NN 的量化与压缩**——权重/KV cache 量化的算法侧(混合精度、低比特、误差分析方法)+ 权重压缩的结构路线(稀疏+量化混合表示、低秩分解/剪枝)。2026-09 由原 `llm-inference` 域下的论文笔记目录(papers/)升级而来;同月批C扩充后定位从「量化算法」扩为「量化与压缩」(SpQR=量化+稀疏混合路线,LSTM 低秩=分解/剪枝路线)。
+> 领域索引。定位:**LLM/NN 的量化与压缩**——权重/KV cache 量化的算法侧(混合精度、低比特、误差分析方法)+ 权重压缩的两条结构路线(稀疏+量化混合表示/低秩分解 = 不动形状压表示;**结构化剪枝 + 蒸馏 = 直接改形状砍参数**)。2026-09 由原 `llm-inference` 域下的论文笔记目录(papers/)升级而来;同月批C扩充后定位从「量化算法」扩为「量化与压缩」(SpQR=量化+稀疏混合路线,LSTM 低秩=分解/剪枝路线);2026-10 补 Minitron/Puzzletron,把「剪枝」从「只有理论/低秩」补到「有完整工程链路(打分→剪→蒸馏→量化→部署)」。
 
 ## 条目索引
 
@@ -32,8 +35,9 @@ date: 2026-10
 | [2-bit 权重量化前沿:QuIP# / AQLM](concepts/two-bit-weight-frontier.md) | concept | ≤4-bit 权重 SOTA:QuIP# 旋转消 outlier+E8 格码+fine-tune,AQLM 多码本加和;3-bit 近无损、2-bit 有可感知退化(arXiv 2402.04396 / 2401.06118) |
 | [KV cache 极低比特前沿:KVQuant / KVTuner](concepts/kvquant-kvtuner-frontier.md) | concept | KVQuant 3-bit 近无损(Pre-RoPE+NUQ+sparse,10M context);KVTuner layer-wise 精度对搜索(≈3.25-bit 近无损,+21.25% 吞吐) |
 | [FP8/FP4 硬件原生格式](concepts/fp8-fp4-formats.md) | concept | E4M3/E5M2/E2M1 位布局与 scale 粒度(per-tensor/token;DeepSeek-V3:权重 block 128×128、激活 1×128)、Delayed vs JIT scaling;NVFP4/MXFP4/MXFP8 与 Blackwell tcgen05 路径;与 QuIP#/AQLM 算法压缩分野;训练 V3 recipe vs 推理 FP8 KV |
+| [结构化剪枝 + 知识蒸馏:Minitron / Puzzletron](concepts/structured-pruning-minitron-puzzletron.md) | concept | 改结构而非改位宽:1024 样本纯前向激活幅度打分 → 按轴剪(深度/神经元/头/embedding/MoE/mamba)→ KL 蒸馏在 <3% token 量上恢复。15B→8B 只用 94B token(40× 更少)、MMLU +16%;Puzzletron 用块级局部蒸馏 + MIP 搜异构逐层架构(Llama-70B→51B,单卡 H100 2.17× 吞吐、保留 98.4%);含 Mamba hybrid 剪枝的三处状态一致性坑 |
 
-**共同心法(八篇一条线)**:压缩误差不是均匀分布的——HyQuant 按 attention mass 分精度、SpQR 按敏感度分位宽、LSTM 篇按谱结构(核范数)分压缩方式、GPTQ/AWQ/SmoothQuant 与 KV cache 篇按误差补偿/激活敏感/离群迁移分预算、QuIP#/AQLM 与 KVQuant/KVTuner 用旋转消 outlier / 多码本加和 / layer-wise 精度对把 2-bit 联合压缩推进到极限;**都是"把预算花在杠杆点上",而非全局均匀砍**。
+**共同心法(九篇一条线)**:压缩误差不是均匀分布的——HyQuant 按 attention mass 分精度、SpQR 按敏感度分位宽、LSTM 篇按谱结构(核范数)分压缩方式、GPTQ/AWQ/SmoothQuant 与 KV cache 篇按误差补偿/激活敏感/离群迁移分预算、QuIP#/AQLM 与 KVQuant/KVTuner 用旋转消 outlier / 多码本加和 / layer-wise 精度对把 2-bit 联合压缩推进到极限、Minitron/Puzzletron 按激活幅度与逐层重要性决定砍哪一维;**都是"把预算花在杠杆点上",而非全局均匀砍**。而 Minitron/Puzzletron 是唯一**改结构**的一条线(其余都在改表示精度),所以它的精度恢复不靠微调而靠 teacher 蒸馏。
 
 ## 相关条目(跨域互链)
 
@@ -44,7 +48,8 @@ date: 2026-10
 ## 扩展位(待补充候选)
 
 - 已补充:GPTQ / AWQ / SmoothQuant(算法侧统一篇)、KV cache 量化(KIVI + vLLM 工程视角)、2-bit 权重前沿(QuIP# / AQLM)、KV cache 极低比特前沿(KVQuant / KVTuner)。
-- 已补:FP8/FP4 硬件原生格式(2026-10)。待补充:BitsAndBytes/NF4/QLoRA 机制篇;GGUF/k-quant/imatrix 体系;激活量化独立篇(W4A8/LLM.int8() 离群值);QuaRot/SpinQuant/QTIP 旋转家族;W4A16 vs W8A8 kernel 成熟度(Marlin/Machete);BitNet b1.58 training-aware 对比;各 GPU 架构实测基准。
+- 已补:FP8/FP4 硬件原生格式(2026-10)、结构化剪枝 + 蒸馏 Minitron/Puzzletron(2026-10)。
+- 待补充:BitsAndBytes/NF4/QLoRA 机制篇;GGUF/k-quant/imatrix 体系;激活量化独立篇(W4A8/LLM.int8() 离群值);QuaRot/SpinQuant/QTIP 旋转家族;W4A16 vs W8A8 kernel 成熟度(Marlin/Machete);BitNet b1.58 training-aware 对比;各 GPU 架构实测基准;**剪枝与量化叠加的联合搜索**(剪完再量化的 scale 重校准、剪枝感知的量化粒度选择);**稀疏化(Wanda/SparseGPT 的非结构化/Semi-structured 路线)**与剪枝的对比(一个是 mask 不动 shape、一个是真改 shape)。
 
 ## 溯源
 

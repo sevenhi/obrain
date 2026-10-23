@@ -10,7 +10,7 @@ source:
   - "pdf: MEGABYTE | arXiv:2305.07185 NeurIPS 2023"
   - "pdf: Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 前驱) | arXiv:2112.05682"
   - "pdf: FlashAttention FA1/FA2/FA3/FA4 | arXiv:2205.14135 / 2307.08691 / 2407.08608 / 2603.05451(详细 source 见 implementation/flash-attention-implementation.md frontmatter)"
-  - "code: github.com/Dao-AILab/flash-attention | Star 24.7k"
+  - "code: github.com/Dao-AILab/flash-attention | Star 24.7k;CuTe 后端 HEAD 10b74d98(2026-10-22)一手实读"
 date: 2026-10
 ---
 
@@ -108,6 +108,13 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
 - FA2 快 2× 的来源:减 non-matmul FLOPs、warp 按 Q 行切分免通信、序列维并行(切 Q 免归并,切 KV 才要 split-K 归并);
 - FA3(H100):异步 WGMMA + TMA + softmax/matmul/load 重叠 pipeline + FP8;论文口径 BF16 相对 FA2 加速 1.5-2×,FP16 前向最高 740 TFLOPS(≈H100 dense 峰值的 75%);
 - 显存 O(N) 的胜利来自"前向只存 LSE 统计量 + 反向重算"(约 2× 重复 FLOPs 换长序列可行)。
+
+**实现层 · 2026-10 工程增量(CuTe 后端,HEAD `10b74d98`)**
+
+- **mask 挡不住 `0 × NaN`**:KV cache 复用场景里 `[seqlen_k, tile_n)` 的脏行会经 `P@V`(前向 V 尾)与 `dQ = dS@K`、`dP = dO@Vᵀ`(反向)把输出整片污染成 NaN,且**反向与前向独立**——根治手段是把 TMA 加载的 rows extent 收缩到 `seqlen_k` 让越界行 zero-fill,而不是加 mask;
+- **wraparound descriptor 是陷阱**:TMA 预取足迹最多越过 box ~128 KB,撞未映射页即 `cudaErrorIllegalAddress`,而 caching allocator 会把它伪装成"偶发/顺序相关";上游已改为**每 CTA 一份 GMEM descriptor + 设备端 `tensormap.replace`**(#2983/#3012/#3013/#3071),代价 ≤2.23% 延迟;
+- **版本线**:FA2=`2.8.4`、FA3=`3.0.1`、FA4(PyPI `flash-attn-4`)tag `fa4-v4.0.0.beta36`,依赖 `nvidia-cutlass-dsl>=4.6.2` + `quack-kernels>=0.5.3`;
+- **hd256 反向已可走通用 SM100 内核**(`FLASH_ATTENTION_HD256_GENERIC_BWD=1` 灰度):MHA/varlen 2k–32k 快 3–17%,但 GQA 在 2k 慢 22–29%——按 shape 分派。
 
 **框架层**
 

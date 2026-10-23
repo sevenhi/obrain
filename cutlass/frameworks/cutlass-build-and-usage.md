@@ -329,11 +329,25 @@ make cutlass_profiler -j16
 4. **一些示例只给一次构建+运行**:调试单个示例无需全量,`cmake --build . --target 49_hopper_gemm_with_collective_builder` 即可。
 5. **Windows 上 3.x 构建失败** → 已知问题(官方 README 注明 **3.x 在 Windows 上有已知构建问题,团队修复中**,未提 4.x),建议 Linux。
 
+### 8.1 v4.8.1 已知问题清单(照抄官方 release note,写内核前先对一遍)
+
+v4.8.1(2026-10-15 记入 CHANGELOG,2026-10-20 打 tag;相对 v4.8.0 只有 2 个 commit、16 个文件,属**补丁版**)在 release note 里明确列了三类"会算错数"的坑,都是**编译器/指令级**的,不会在 API 层报错:
+
+| 症状 | 触发条件 | 规避 |
+|---|---|---|
+| packed 高吞吐 FP8 减法结果错 | inline PTX `sub.rn.e4m3x4.e4m3x4` / `sub.rn.e5m2x4.e5m2x4`(MMA_K=128 路径) | **不要用**;等上游 CTK 修 |
+| Rubin(SM107)`sm107a/sm107f` 上 packed mixed-input 编译错 | `add/mul/sub_packed_{f16,bf16}x2_f32x2_f32x2`(结果类型 16-bit、输入 32-bit、之后又转回 fp32);以及 `mul_packed_bf16x2_bf16x2_f16x2` / `mul_packed_f16x2_f16x2_bf16x2` 且第一个操作数是编译期常量 | 避免该组合,或拆开成显式转换 |
+| 设备端缩小 TMA descriptor 后越界访问 | `tensormap_replace` 把 descriptor 的 extent 改小于初始值(如 grouped GEMM 每 group 尺寸不同) | v4.8.1 已修;需要旧行为时传 `keep_oob_fetch_window=True`(保留原始越界抓取窗口) |
+
+第三项的机制值得单独记:**设备端改 descriptor 是"缩窗口"操作,不是"换指针"**。CUDA 的 `cuTensorMapEncodeTiled` 有已知问题(官方把细节放在 CTK release notes 的 known issues 里),descriptor 被收缩后 TMA 单元可能仍按**最初的 box 范围**去预取,于是读到已不该访问的地址——Blackwell/Rubin 上表现为非法访存。所以凡是做 **grouped GEMM / 变长 batch / paged KV** 这类"每 group 尺寸不同"的内核,都要确认自己用的是 v4.8.1+;FlashAttention 侧正好踩的是同一族问题(见 [attention 篇 §4.5.1](../../attention/implementation/flash-attention-implementation.md)),它的解法是**每 CTA 一份 descriptor + fence/prefetch 协议**,可作对照读。
+
+> 版本对照:**v4.8.0** = 功能版(2026-09-17 CHANGELOG / 09-22 tag,新增 Rubin SM107 初步支持);**v4.8.1** = 2026-10-15 补丁(CHANGELOG 记 10-15,tag 10-20),只有 CuTe DSL 侧 4 条修复 + 上述 3 条已知问题,无新特性。
+
 ---
 
 ## 9. 溯源
 
-> 版本说明:本篇官方文档链接统一用 `latest`(跟随最新版,现为 v4.8.0);需查历史版本时把 URL 中 `latest` 换成如 `4.7.0`。
+> 版本说明:本篇官方文档链接统一用 `latest`(跟随最新版,现为 v4.8.1,2026-10-20 tag);需查历史版本时把 URL 中 `latest` 换成如 `4.7.0`。
 
 - Quickstart / 初始构建步骤: https://docs.nvidia.com/cutlass/latest/media/docs/cpp/quickstart.html
 - CollectiveBuilder 示例与构建: `examples/49_hopper_gemm_with_collective_builder` / `71_blackwell_gemm_with_collective_builder`

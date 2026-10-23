@@ -41,6 +41,10 @@ date: 2026-09
 ## 代码与仓库
 
 - CUTLASS GitHub — https://github.com/NVIDIA/cutlass
+- CUTLASS v4.8.1 release(2026-10-20 tag;CuTe DSL 修复 + 已知问题清单 + 各下游框架验证 commit) — https://github.com/NVIDIA/cutlass/releases/tag/v4.8.1
+- CUTLASS CHANGELOG(4.8.0 / 4.8.1 全文) — https://github.com/NVIDIA/cutlass/blob/main/CHANGELOG.md
+- CUDA Toolkit 595.91.07 release notes 的 known issues(`cuTensorMapEncodeTiled` descriptor 收缩问题的一手说明) — https://docs.nvidia.com/datacenter/tesla/tesla-release-notes-595-91-07/index.html#known-issues
+- CuTeDSL `TensorMapManager` 源码(GMEM/SMEM update 模式、`init/update_tensormap` 与两种 fence) — https://github.com/NVIDIA/cutlass/blob/main/python/CuTeDSL/cutlass/tensor_utils/tensormap.py
 - examples/tutorial/wgmma_sm90.cu、examples/49_hopper_gemm_with_collective_builder、examples/71_blackwell_gemm_with_collective_builder、examples 12/35/37/45(epilogue 融合示例)
 - sm90_tile_scheduler_stream_k.hpp / sm100_tile_scheduler_stream_k.hpp
 - include/cute/arch/ tcgen05/UMMA/TMEM 头文件:mma_sm100_umma.hpp、mma_sm100_desc.hpp、tmem_capacity_sm100.hpp、tmem_allocator_sm100.hpp、mma_sm107_umma.hpp、mma_sm120.hpp、mma_sm120_sparse.hpp(详见 blackwell-tcgen05.md 溯源)

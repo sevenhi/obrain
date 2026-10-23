@@ -13,7 +13,9 @@ source:
   - "pdf: Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 引用[66]并设附录 B.5 专节比较;online softmax/lazy softmax 前驱) | arXiv:2112.05682"
   - "pdf: Online normalizer calculation for softmax (Milakov & Gimelshein, FA1 引用[60], online softmax 最早出处) | arXiv:1805.02867 | https://arxiv.org/abs/1805.02867 (2026-09 实测 200)"
   - "code: github.com/Dao-AILab/flash-attention | Star 24.7k"
-date: 2026-09
+  - "code: github.com/Dao-AILab/flash-attention CuTe 后端源码一手实读 (HEAD 10b74d98, 2026-10-22) | flash_attn/cute/config.py、interface.py、flash_fwd_sm90.py、flash_fwd_sm100.py、flash_bwd_sm100.py、buffer 相关的 tensormap workspace 逻辑"
+  - "code: github.com/NVIDIA/cutlass | cutlass/tensor_utils/tensormap.py 的 TensorMapManager / TensorMapUpdateMode(GMEM 模式)"
+date: 2026-10
 ---
 
 # FlashAttention 实现全解:四代内核主线(FA1→FA2→FA3→FA4)
@@ -381,6 +383,89 @@ FA4(2026,MLSys,arXiv:2603.05451)聚焦 **Blackwell(B200/GB200)**:瞄准"张量�
 
 ---
 
+## 4.5 2026-10 的 CuTe 后端工程增量(上游 10-12 → 10-22,HEAD `10b74d98`)
+
+FA4 的 CuTe DSL 后端(同时服务 Hopper/SM90 与 Blackwell/SM100)在 2026-10 有一批**不是新算法、但决定"能不能上线"**的工程改动。它们比论文更能说明真实部署里会踩什么,故单列一节。
+
+### 4.5.1 一类反复出现的 bug:未用量 KV 行的 NaN 污染(`0 × NaN = NaN`)
+
+现网 KV cache 是**复用**的:paged/ragged 布局里 `[seqlen_k, tile_n)` 这段"本序列用不到的行"保留的是上一轮或 padding 的脏数据,完全可能是 NaN。直觉认为"mask 掉就没事",但**mask 只能让系数为 0,消不掉乘法本身**:
+
+| 位置 | 计算 | 后果 |
+|---|---|---|
+| 前向 | `O = P @ V`,P 在尾行被 mask 成 0 | 仍逐元素读 V 尾部 → `0×NaN=NaN` → **输出 NaN**(K 尾 NaN 无害,它在 exp 前被 mask 成 −inf) |
+| 反向 | `dS` 被 mask 成 0,但 `dP = dO @ Vᵀ` 读 V 尾、`dQ = dS @ K` 对整个 K tile 求和 | K 尾**或** V 尾有 NaN 就让 `dQ` 全 NaN,而 `dK/dV` 仍有限 → **与前向独立**,前向干净不代表反向干净 |
+
+所以正确做法不是改 mask,而是**在加载层面把 tile 上界收缩到 `seqlen_k`**,让越界行由 TMA 自己补 0(zero-fill),根本不进 SMEM。上游为此换了三种写法(#2983 → #3012 → #3013 → #3071 逐步收敛):
+
+| 手段 | 做法 | 代价/失败模式 |
+|---|---|---|
+| 5-D wraparound descriptor | 把 `(rows, features)` 伪装成高维张量,用维度上界让 TMA 判越界 | **足迹无界**:TMA 会预取 box 之后最多 ~128 KB,遇未映射页即 `cudaErrorIllegalAddress`;PyTorch caching allocator 通常把这块藏起来,于是表现为"偶发、与执行顺序相关"(issue #3068) |
+| ptr_shift | 把 descriptor 的 base 前移 | base 落到已映射区之外,load 直接 fault——**只适合 store 侧**(dK/dV/O 的写出仍用它) |
+| **per-CTA GMEM descriptor** | 每个 CTA 一份 descriptor,进 work tile 时按该 batch 的 `seqlen_k` 改 rows extent | 需要 workspace、fence/prefetch 协议与上界校验(见下) |
+
+最终实现的骨架(`flash_attn/cute/flash_fwd_sm90.py`,SM100 同构):
+
+```python
+# 每个 CTA 一份 descriptor,放在 gmem workspace 里(128 B/槽)
+tensormap_manager = TensorMapManager(TensorMapUpdateMode.GMEM, 128)
+cta_linear_idx = bidx + bidy * gdx + bidz * gdx * gdy
+if cta_linear_idx >= cute.size(tensormap_workspace, mode=[0]):
+    cute.arch.inline_ptx("trap;")           # workspace 不够就硬失败,不静默越界
+tensormap_V_gmem = tensormap_manager.get_tensormap_ptr(workspace[cta_linear_idx, None].iterator)
+tensormap_manager.init_tensormap_from_atom(tma_atom_V, tensormap_V_gmem, 0)   # warp 0 单线程 copy
+tensormap_manager.fence_tensormap_initialization()                            # fence.acq_rel.cta
+
+v_desc_batch_idx = Int32(-1)
+while work_tile.is_valid_tile:
+    batch_idx = work_tile.tile_idx[2]
+    if batch_idx != v_desc_batch_idx:            # 只在 batch 变化时改一次,不是每 tile
+        v_rows_end = max(offset_k + seqlen_k if packed else seqlen_k, 1)
+        tensormap_manager.update_tensormap((mV_bounded,), (tma_atom_V,), (tensormap_V_gmem,), 0, (None,))
+        tensormap_manager.fence_tensormap_update(tensormap_V_gmem)   # fence.proxy.tensormap::generic.acquire
+        cute.arch.inline_ptx("prefetch.tensormap [{$r0}];", read_only_args=[tensormap_V_gmem.toint()])
+```
+
+反向要同时管 K、V、Kt **三份** descriptor(`workspace` 形状 `(n_ctas, 3, 16) int64`;前向是 `(n_ctas, 16)`),因为 `dP = dO@Vᵀ` 与 `dQ = dS@K` 都要读尾行。
+
+**工程教训(比这个 bug 本身可复用)**:
+- **workspace 上界要自己推一遍**:前向 grid 上界 `rows // tile_m + 2 * batch + 1`(`2` 来自变长调度器每 batch 的 padding tile,cluster 尺寸与 Q stage 数都被这条覆盖);反向 `total_k // n_block_size + 2 * batch + 1`。上游最初漏算 padding,H100 上 `B=49, seqlen_q=128, H=6` 排出 **582 个 CTA 却只有 302 个槽**,多出的 CTA 改写别的 descriptor 后照旧加载——**这类"算错容量"的 bug 不会报错,只会偶发错数**。
+- **block-sparse 路径要单独补 fence**:SM100 前向把 descriptor 的 acquire fence 推迟到首个 V load 前,而 block-sparse 走的是另一条 producer 函数,永远到不了那行 → 持久 CTA 会拿上一序列的 extent 加载。
+- **验证方法**:"偶发非法地址"先把 caching allocator 关掉(`PYTORCH_NO_CUDA_MEMORY_CACHING=1` + 子进程单序列)复现,再把 V 放到 VMM 映射尾部、后面留一段**保留未映射的 guard range**——这样"改前每次必 fault、改后必过",测试才立得住。
+- **性能代价可接受**:B200 上 194 个正确性用例通过,16 组对照 × 3 次运行,最大延迟增幅 **2.23%**。
+
+### 4.5.2 typed forward config(#2732):把"调度策略"变成可校验的数据
+
+`flash_attn/cute/config.py` 新增不可变、全解析的 `FwdConfig`(`device_capacity / tile_m / tile_n / mma_pv_is_rs / intra_wg_overlap / q_stage / use_clc_scheduler / is_static_persistent / use_tma_o / use_s_ping_pong / num_splits / use_2cta_instrs / registers`),把主机侧选择器输入隔离成 `FwdHeuristicInputs`;`registers` 按架构给 `Sm90Registers(mma, producer)` 或 `Sm100Registers(softmax, correction, other)`。
+
+三条设计约束值得抄到任何 kernel 自动调优代码里:
+1. **显式配置被"校验"而不是"归一化"** —— 传了非法组合就报错,不静默改成"能跑的组合"(否则调优结果与配置永远对不上);
+2. **选择器不许读 tensor、不许同步 CUDA、不许分配显存**(纯 host 计算,可缓存、可复现);
+3. **每个调度特性只写一条 SM100 支持谓词,选择与校验共用** —— 防止"选得出来但跑不了"。
+
+### 4.5.3 hd256 反向统一到通用 SM100 内核(opt-in,#2965/#2966)
+
+head_dim=256 原本走独立的 dQ / dKdV 双内核,现在可以合并到通用 `FlashAttentionBackwardSm100`(环境变量 `FLASH_ATTENTION_HD256_GENERIC_BWD=1` 灰度,默认仍是专用内核):2CTA、`tile_m=128`、每 CTA 64 行 KV tile(`M=64` 的 TMEM 布局)、serial 2CTA 调度。
+
+- **TMEM 预算正好用满 512 列**:`dV 128 | dK 128 | S 64(P 别名) | dP 64(dS 别名,与 dQ 尾重叠) | dQ 128`;
+- **SMEM 231,424 B / 232,448 B**——只剩 16 KB 给 dQ 归约暂存(两个 16 列 stage),"把 SMEM 抠到字节"是这类内核的常态;
+- 关键收益来自**删掉交换暂存**:M=64 布局下,对端需要的 dS 那一半可以直接从本 CTA 的 `sdS_dK`(对端的 dSᵀ,K-major)读——它正好落在对端 dQ A 操作数的半块布局里,省掉一份交换缓冲和 `dQaccum_empty` 等待,而那个等待曾把整条 dQ 归约链放到关键路径上、在 hd256 上吃掉约 **17%**;
+- **实测(B200 @1400 MHz,vs 专用双内核)**:MHA h8 在 1k 持平、2k–32k 快 **3–5%**(causal 6–11%);varlen h8 在 2k 持平、8k/32k 快 **4–17%**;GQA(24/4)在 8k 持平、32k 快 4–5%,但 **2k 慢 22–29%**(专用 dKdV 内核在 kernel 内循环 group 的 q-head,通用内核还没做这个循环);
+- **默认行为零变化**:36 组(2CTA + 1CTA,280 个文件)的 CUBIN/PTX 与父 commit **逐字节相同**。
+
+### 4.5.4 版本与依赖快照(2026-10-22 实测)
+
+| 组件 | 版本 | 备注 |
+|---|---|---|
+| FA2(C++ 主线) | `2.8.4`(`flash_attn/__init__.py`) | 论文语义那条线仍是 2.8.x |
+| FA3(Hopper) | `3.0.1`(`hopper/__init__.py`) | `flash_attn_3` 包;`hopper/` 长期 beta 的状态未变 |
+| FA4(CuTe DSL) | PyPI 包名 `flash-attn-4`,setuptools-scm 动态版本,当前 tag `fa4-v4.0.0.beta36` | 依赖 `nvidia-cutlass-dsl>=4.6.2`、`quack-kernels>=0.5.3`、`apache-tvm-ffi` |
+| 同期修复 | #2984 paged KV cache 的 CUDA graph 捕获(csrc 侧 12 行)、#3007 给 FA4/FA2 入口补 CUDA graph 捕获-重放测试、#2758 SM120 自动 `num_splits` | 都是"能上线"级的小改动,不是算法变化 |
+
+> **读源码的顺序建议**:先看 `config.py`(调度决策的数据形态)→ `interface.py`(host 侧选型/校验/workspace 上界)→ `flash_fwd_sm90.py` / `flash_fwd_sm100.py`(producer:descriptor 与流水)→ 再看 `flash_bwd_*`。FA4 论文给的算法框架没变,但"合法且不崩"的边界条件全在这几层里。
+
+---
+
 ## 5. 反向重算(Recomputation):训练省显存的关键
 
 TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统计量、反向重算**:
@@ -422,7 +507,17 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
 16. **warp specialization 是 FA3 核心且是"1 producer + 2 consumer"的 pingpong**:producer/consumer 分工交错让 softmax 藏进 GEMM 影子——读 FA3 kernel 先看这层。
 17. **反向也讲 work partitioning / 也重叠**:FA2 backward 沿 KV 块切、只存 LSE(见 §5);FA3 反向靠 3-stage pipeline 重算 attention matrix 来 overlap——训练场景它同样重要。
 18. **精细化路线**:要更高利用率先看 **work partitioning**(FA1→FA2 的主改进:threadblock/warp 划分、层级并行),再看硬件特性(TMA/WGMMA/FP8)。
-19. **配合工具链**:FA3 基于 CUTLASS 3.x/CuTe,FA2 亦用 CuTe 原语写 tiling(外层调度自写)(见 [cutlass 域](../../cutlass/index.md));FA4 走 CuTe DSL(Python)。
+19. **配合工具链**:FA3 基于 CUTLASS 3.x/CuTe,FA2 亦用 CuTe 原语写 tiling(外层调度自写)(见 [cutlass 域](../../cutlass/index.md));FA4 走 CuTe DSL(Python),要求 `nvidia-cutlass-dsl>=4.6.2`。
+
+**CuTe 后端(FA4/FA3-Hopper 实现在用的这套 Python kernel)专项**
+
+20. **KV cache 复用场景必须把 TMA 上界收到 `seqlen_k`**:mask = 0 挡不住 `0 × NaN`——前向 NaN 出在 V 尾,反向 NaN 出在 dQ(K 尾或 V 尾都会中招,且**前向干净不代表反向干净**)。凡是自己写 ragged/paged attention kernel,先确认"越界行是 TMA zero-fill 补的,还是 mask 挡的"。
+21. **别用 wraparound descriptor 兜可变长度**:TMA 的预取足迹会超出 box 最多 ~128 KB,撞到未映射页就是 `cudaErrorIllegalAddress`,而 PyTorch caching allocator 会把它伪装成"偶发/与顺序相关"。改用**每 CTA 一份 GMEM descriptor + `tensormap.replace` 改 rows extent**,并补 `fence_tensormap_update` + `prefetch.tensormap`。
+22. **descriptor workspace 容量自己推导并 `trap` 兜底**:`rows // tile + 2 * batch + 1`(2 = 变长调度器每 batch 的 padding tile);算少了不会报错,只会让 CTA 改写别人的 descriptor 后照旧加载。写 `if cta >= size: trap;`,宁可硬失败。
+23. **block-sparse / 特殊 producer 路径要单独过一遍 fence**:主路径加的 acquire fence 往往在另一条 producer 函数里到不了(FA4 #3071 的实际坑),持久 CTA 会用上一序列的 extent。
+24. **调优配置用"不可变 + 校验,不归一化"的数据结构**:FA4 的 `FwdConfig` 就是范式——非法组合直接抛错,选择器纯 host 计算(不读 tensor / 不同步 / 不分配),每个特性一条支持谓词供选择与校验共用。
+25. **"偶发非法地址"的测试写法**:先关 caching allocator 单序列子进程复现;再把被测 tensor 放到 VMM 映射尾部、后面留保留未映射 guard range,做到"改前必 fault、改后必过"。否则测试在有 allocator 时 100% 假通过。
+26. **hd256 这类极端 head_dim 要先看资源账**:FA4 的 hd256 反向 TMEM 正好占满 512 列、SMEM 用掉 232,448 B 中的 231,424 B;这种配置下"少一次等待"(如删掉 dQaccum 别名握手)就是 17% 的差别,而 GQA 小序列反而可能退 22–29%——按 shape 分派,别一套配置通吃。
 
 ---
 
@@ -447,4 +542,10 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
 
 **实现仓库 / 跨域**
 - 官方实现仓库(含 FA1/FA2 kernel 与 `benchmarks/` 复测): https://github.com/Dao-AILab/flash-attention
+- 2026-10 CuTe 后端增量的上游一手源(均于 2026-10-23 复核 commit message 与 diff):
+  - #2983 / #3012 / #3013 / #3071:未用量 K/V 尾行的 NaN 污染防治(前向 V TMA 上界 → 反向 K/V/Kt → SM90 对齐 → 改用 per-CTA GMEM descriptor)https://github.com/Dao-AILab/flash-attention/pull/3071
+  - #2732:typed forward config(`FwdConfig` / `FwdHeuristicInputs`)https://github.com/Dao-AILab/flash-attention/pull/2732
+  - #2965 / #2966:hd256 反向统一到通用 SM100 内核(opt-in)https://github.com/Dao-AILab/flash-attention/pull/2966
+  - #2984 paged KV cache 的 CUDA graph 捕获修复、#3007 FA4/FA2 的 CUDA graph 捕获-重放测试、#2758 SM120 自动 `num_splits`
+- CuTe DSL 侧:`TensorMapManager` / `TensorMapUpdateMode`(GMEM |=在设备端改 descriptor)与 `prims.tensormap_replace` 见 CUTLASS 仓库 `python/CuTeDSL/cutlass/tensor_utils/tensormap.py`、`python/CuTeDSL/cutlass/experimental/primitives/nvvm_wrapper.py`;CUTLASS v4.8.1 的 release note 明确修了 `tensormap_replace` 在 descriptor 被缩小后的越界风险(可用 `keep_oob_fetch_window=True` 退回旧行为)——**这是 FA 侧 per-CTA 写法的上游前提**
 - 相关:CUTLASS 领域的 WGMMA/TMA/epilogue 篇(同硬件特性,跨参考,见 [cutlass/concepts/hopper-wgmma.md](../../cutlass/concepts/hopper-wgmma.md))

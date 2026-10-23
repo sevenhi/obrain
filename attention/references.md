@@ -54,6 +54,17 @@ date: 2026-09
 - attention-gym(官方示例库:FLASH vs TRITON 对比、paged/ring attention、mask/mod 库)— https://github.com/meta-pytorch/attention-gym
 - FA4 CuTeDSL 实现(flash_attn/cute/,含 FlexAttention 扩展点)— https://github.com/Dao-AILab/flash-attention/tree/main/flash_attn/cute
 
+## FA CuTe 后端的 ragged/paged 加载与 TMA descriptor 治理(2026-10)
+
+- 用 per-CTA GMEM descriptor 约束 ragged K/V TMA 加载(替代 wraparound descriptor,内含预取足迹与 128 KB 越界说明)— https://github.com/Dao-AILab/flash-attention/pull/3071
+- SM100 反向按 seqlen_k 约束 K/V 加载,避免未用行 NaN 污染 dQ — https://github.com/Dao-AILab/flash-attention/pull/3012
+- SM90 前向/反向按 seqlen_k 约束 TMA 加载(对齐 SM100)— https://github.com/Dao-AILab/flash-attention/pull/3013
+- SM100 前向:未用 V cache 行的 NaN 污染防治 + 抽出 reusable ragged TMA helper — https://github.com/Dao-AILab/flash-attention/pull/2983
+- typed forward config(`FwdConfig`/`FwdHeuristicInputs`,host 侧纯计算的选择器契约)— https://github.com/Dao-AILab/flash-attention/pull/2732
+- hd256 反向统一到通用 SM100 内核(opt-in 灰度)— https://github.com/Dao-AILab/flash-attention/pull/2966
+- CUTLASS v4.8.1 release notes(`tensormap_replace` 缩小 descriptor 的越界修复 + `keep_oob_fetch_window` 退回开关;CUDA 已知问题页链接)— https://github.com/NVIDIA/cutlass/releases/tag/v4.8.1
+- CUTLASS CuTeDSL `TensorMapManager` 源码(GMEM/SMEM 两种 update 模式与 fence 语义)— https://github.com/NVIDIA/cutlass/blob/main/python/CuTeDSL/cutlass/tensor_utils/tensormap.py
+
 ## attention sink 后续研究(延伸,均 curl 200)
 
 - When Attention Sink Emerges in Language Models(ICLR 2025)— https://openreview.net/forum?id=78Nn4QJTEN

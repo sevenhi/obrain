@@ -3,7 +3,7 @@ title: CUTLASS
 type: domain
 tags: [cutlass, gpu, gemm, cute, cuda]
 source:
-  - "code: github.com/NVIDIA/cutlass | 版本 v4.8.0 (2026-09 发布;CHANGELOG 记 09-17 / GitHub tag 09-22;新增 Rubin SM107 初步支持)"
+  - "code: github.com/NVIDIA/cutlass | 版本 v4.8.1 (2026-10-20 打 tag / CHANGELOG 记 10-15;v4.8.0 为 2026-09 功能版,新增 Rubin SM107 初步支持)"
   - "web: NVIDIA CUTLASS 官方文档站 | https://docs.nvidia.com/cutlass/latest/"
 date: 2026-10
 ---
@@ -27,7 +27,7 @@ date: 2026-10
 
 | 项 | 值 |
 |---|---|
-| 版本 | v4.8.0(2026-09 发布;CHANGELOG 记 09-17 / GitHub tag 09-22;新增 Rubin SM107 初步支持)|
+| 版本 | **v4.8.1**(2026-10-20 tag / CHANGELOG 记 10-15,补丁版:4 条 CuTe DSL 修复 + 3 条已知问题);功能版 **v4.8.0**(2026-09-22 tag,新增 Rubin SM107 初步支持)|
 | Stars / Forks / License | ~10.3k / ~2k / BSD-3-Clause(核心源码;`python/CuTeDSL` 受 NVIDIA EULA 单独许可 → GitHub 自动识别为 Other;2017-11-30 创建)|
 | 定位对比 | **WMMA**(最底层硬件接口)/ **cuBLAS**(黑盒成品)/ **CUTLASS**(开源模板+可定制)|
 | 性能 | 与 cuBLAS 同量级,部分超越;Stream-K 峰值最高 **14×**(vs CUTLASS)/ **6.7×**(vs cuBLAS)|
@@ -68,6 +68,8 @@ date: 2026-10
 - **`cp.async` 自 Ampere 引入**,Ada 属 Ampere 阵营;无异步指令的一代是 Volta/Turing
 - **CuTe 运算名**:是 `logical_divide`/`zipped_divide`/`tiled_divide`/`coalesce`/`composition`/`complement`,不是 `left_padding`/`partitioned_into_TV`
 - **Stream-K 有 fixup 代价**:跨 CTA 归约 + workspace;默认 `ReductionMode::Deterministic` 已是确定性归约(非"天然不可复现")
+- **设备端缩小 TMA descriptor(v4.8.1 前)会越界**:`tensormap_replace` 改小 extent 后 TMA 仍可能按原 box 预取 → Blackwell/Rubin 非法访存;需 v4.8.1+ 或显式 `keep_oob_fetch_window=True`。变长 batch / grouped GEMM / paged KV 必查(细节见 [frameworks/cutlass-build-and-usage.md](frameworks/cutlass-build-and-usage.md) §8.1)
+- **`0 × NaN = NaN`:mask 挡不住脏数据**:KV cache / 复用的 ragged 缓冲里未用到的尾行必须靠**加载层收缩上界 + TMA zero-fill** 排除,不能只靠 mask(FA4 曾因此前向输出、反向 dQ 整片 NaN)
 
 > 以上为多轮审查纠错沉淀(2026-09),详见各篇正文。
 

@@ -44,6 +44,9 @@ date: 2026-09
 ## 源码(一手实读,commit b74ac0bc6)
 
 - vLLM GitHub — https://github.com/vllm-project/vllm
+- 版本现状(2026-10-23 实查):PyPI 最新发布 **v0.32.0**(上传 2026-10-18),main 为 `v0.32.1rc0-353-g2d40c0609`(2026-10-22)
+- Model Runner V2 篇的一手实读路径(v0.32 main):vllm/config/vllm.py(`use_v2_model_runner`)、vllm/v1/worker/gpu_worker.py、vllm/v1/worker/gpu/{model_runner.py, states.py, buffer_utils.py, cudagraph_utils.py, input_batch.py, sample/gumbel.py, sample/logprob.py}
+- Model Runner V2 设计文档源文件 — https://github.com/vllm-project/vllm/blob/main/docs/design/model_runner_v2.md
 - 实读路径:vllm/entrypoints/、vllm/v1/engine/、vllm/v1/executor/、vllm/distributed/、vllm/v1/sample/、vllm/model_executor/models/registry.py、vllm/model_executor/layers/quantization/
 - 相关 PR:#52131(api_server.py 移出 openai/)、#52309(入口 middleware 整合)
 - 实读路径(2026-10 main,注意力后端选型篇):vllm/v1/attention/backends/registry.py、vllm/v1/attention/backend.py、vllm/v1/attention/selector.py、vllm/platforms/cuda.py、vllm/config/attention.py

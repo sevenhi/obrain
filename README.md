@@ -31,7 +31,7 @@ obrain/
 | CUTLASS | [`cutlass/`](cutlass/index.md) | 高性能 GEMM 模板库与 CuTe DSL:造内核的库(concepts 8 + frameworks 2,共 10 篇) | 2026-10 |
 | GPU 随机数生成 | [`gpu-rng/`](gpu-rng/index.md) | counter-based(Philox)与 MTGP 两条 GPU PRNG 路线 + cuRAND 落地(1 篇) | 2026-10 |
 | 量化与压缩 | [`quantization/`](quantization/index.md) | LLM 量化与压缩:PTQ(GPTQ/AWQ/SmoothQuant)、KV cache 量化、稀疏量化混合(SpQR)、2-bit 前沿(QuIP#/AQLM)、KV 极低比特(KVQuant/KVTuner)、HyQuant 混合精度、FP8/FP4 硬件原生格式 + 低秩/剪枝路线(8 篇,论文来源通过公开链接追溯) | 2026-10 |
-| vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构、生产部署、观测与引擎选型、投机解码、注意力后端选型、PD 分离;生态构件:全模态/路由集群/压缩/投机RL/硬件插件/评测(23 篇) | 2026-10 |
+| vLLM | [`vllm/`](vllm/index.md) | 高吞吐 LLM 推理与服务引擎:PagedAttention、连续批处理、V1 架构、**Model Runner V2(执行层重设计,当前默认)**、生产部署、观测与引擎选型、投机解码、注意力后端选型、PD 分离;生态构件:全模态/路由集群/压缩/投机RL/硬件插件/评测(24 篇) | 2026-10 |
 | Computer Vision | [`computer-vision/`](computer-vision/index.md) | 视觉模型基础/表示与部署效率:ViT 基础机制、目标检测与实例分割(Faster/Mask R-CNN、DETR、YOLO、SAM)、NeRF 视图合成、TRT-ViT 硬件感知架构、OREPA 重参数化、CCNN 连续卷积核、ONNX/TensorRT 部署(7 篇) | 2026-10 |
 | DeepSeek Infra | [`deepseek-infra/`](deepseek-infra/index.md) | DeepSeek 算力基础设施栈:昇腾六件套(TileLang/DeepGEMM-Ascend/DeepEP-Ascend/TileKernels/FlashMLA/DeepSelect)+ 移植原则(ascend-port-principles)+ NVIDIA 原版对照(DeepGEMM/DeepEP)+ mHC 流形超连接(论文 + Mega mHC 内核)+ 并行/工具/存储(DeepJIT/Engram/DualPipe/EPLB+LPLB/ESFT/open-infra-index/3FS/smallpond)+ 训练并行编排 V3 + deepseek-recipe API 编解码 + **DeepInfer 生产推理引擎(V4.1-Flash,EPD 分离/ZOS/DSpark/YoCo 三级 KV)** + 部署清单(22 篇) | 2026-10 |
 | DeepSeek Vision | [`deepseek-vision/`](deepseek-vision/index.md) | DeepSeek 多模态/视觉家族:图文理解(VL/VL2)、视觉压缩(OCR/OCR-2)、统一理解+生成(Janus 系列)、图生 3D(DreamCraft3D)(4 篇) | 2026-10 |

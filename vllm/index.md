@@ -3,16 +3,16 @@ title: vLLM 推理引擎
 type: domain
 tags: [vllm, llm-inference, pagedattention, kv-cache]
 source:
-  - "code: vLLM 仓库 (分析基准 commit b74ac0bc6, v0.28.1rc0-40)"
+  - "code: vLLM 仓库 (分析基准 commit b74ac0bc6, v0.28.1rc0-40;执行层 MRV2 篇另以 main 2d40c0609 / v0.32.1rc0-353 一手实读)"
   - "code: vLLM flash-attention fork | commit 506341a143fc (2026-09-04 起)"
-  - "web: vLLM 官方文档 | https://docs.vllm.ai/en/latest/ | 阅读日期 2026-09-27"
-  - "web: vLLM Model Runner V2 Design Document | https://docs.vllm.ai/en/latest/design/model_runner_v2/ | 阅读日期 2026-09-27"
+  - "web: vLLM 官方文档 | https://docs.vllm.ai/en/latest/ | 阅读日期 2026-10-23(最新发布版本 v0.32.0)"
+  - "web: vLLM Model Runner V2 Design Document | https://docs.vllm.ai/en/latest/design/model_runner_v2/ | 阅读日期 2026-10-23(与仓库 docs/design/model_runner_v2.md 逐字一致)"
 date: 2026-10
 ---
 
 # vLLM 推理引擎
 
-> 领域索引。**知识本体在 `concepts/` 深度概念篇**(9 篇,由源码一手实读 + 官方文档多源综合而成);生产部署清单在 `practices/`(4 篇,含选型对比);生态构件在 `ecosystem/`(10 篇,含 vllm-project 组织 47 仓源码实读)。原 `notes/` 源码笔记已全部提炼入概念篇并删除,内容自足,不依赖库外文件。本页放定位、关键事实与导航。
+> 领域索引。**知识本体在 `concepts/` 深度概念篇**(10 篇,由源码一手实读 + 官方文档多源综合而成);生产部署清单在 `practices/`(4 篇,含选型对比);生态构件在 `ecosystem/`(10 篇,含 vllm-project 组织 47 仓源码实读)。原 `notes/` 源码笔记已全部提炼入概念篇并删除,内容自足,不依赖库外文件。本页放定位、关键事实与导航。
 
 ## 一句话定位
 
@@ -29,10 +29,10 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 
 ## 关键事实速记
 
-- 当前文档快照：官方文档已进入 v0.29+ 时代；本地源码分析基线仍是 `v0.28.1rc0-40`（commit `b74ac0bc6`），不能把基线当作当前实现版本。
+- 当前文档快照:官方文档已进入 **v0.32** 时代(PyPI 最新发布 `v0.32.0`,2026-10-18;main 为 `v0.32.1rc0-353`),本地多数概念篇的源码分析基线仍是 `v0.28.1rc0-40`(commit `b74ac0bc6`),**不能把基线当作当前实现版本**;唯一按 v0.32 main 一手实读的是 [Model Runner V2 篇](concepts/model-runner-v2.md)。
 - **V1 架构(`vllm/v1/`)仍是本库的主线组织方式**；旧 `vllm/engine/` 仅作兼容背景，网上多数资料讲的是 V0，不能直接套用。
 - 分析基准 commit `b74ac0bc6`; FA fork `506341a143fc`
-- ⚠️ **Model Runner 时效警示**：官方 Model Runner V2 设计文档称其从头设计了持久 batch、async-first 执行、异步 barrier 移除和显式 CUDA Graph 管理，但同时明确写着 MRV2 尚未 feature-complete、未经过充分严格测试且仍有开放设计决策；本库原有源码分析恰在切换前，因此不能把旧 `GPUModelRunner` 细节直接套到新执行链。当前官方架构总览仍用 API Server / Engine Core / GPU Worker 解释部署进程模型，后续更新应分别核对 MRV2 设计、`vllm/v1/worker/`、API Server 与量化执行链。
+- ⚠️ **Model Runner 时效警示(2026-10-23 复核,已从警示升级为落地篇)**:官方 Model Runner V2 设计文档仍写"尚未 feature-complete、未严格测试",但**当前 main(`v0.32.1rc0-353`)的 `VllmConfig.use_v2_model_runner` 默认返回 True**——只有命中不支持特性、无 Triton 或特定 ROCm 架构才回退 V1。因此:**默认部署跑的是 MRV2(`vllm/v1/worker/gpu/model_runner.py`)**,旧 `gpu_model_runner.py` 只是回退路径;凡引用后者的 path:line 需先确认日志里是 `Using V2 Model Runner` 还是 `... does not yet support ...`。机制、回退特性清单与实践检查见 [Model Runner V2 篇](concepts/model-runner-v2.md)。
 - 主线 `vllm/v1/` 目录(本库概念篇的源码一手实读来自这里)
 - **关键版本差异(区别于网上旧资料)**:API 层 `api_server.py` 已退化为 59 行 shim,协议端点拆独立子包;模型注册从 `Models` 枚举演进为 `registry.py` 分类字典 + `_ModelRegistry`;量化合并为 `auto_gptq.py`/`auto_awq.py` + 统一 kernel 选型;executor 迁至 `vllm/v1/executor/`;采样惩罚在 `vllm/v1/sample/ops/` + argmax 不变性分组框架(详见各概念篇)
 
@@ -51,6 +51,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 | [采样参数与惩罚机制](concepts/sampling-penalties.md) | concept | Sampler 管线顺序即机制;惩罚两类数学(repetition 乘性、presence/frequency 加性)、指数竞赛免同步、to_sampling_params 三级回退 |
 | [投机解码](concepts/speculative-decoding.md) | concept | 草稿模型串行猜 γ 个 + 目标模型一次并行验证;期望每步 token = (1−α^(γ+1))/(1−α),EAGLE/MTP/Medusa/n-gram/DSpark 各后端支持状态 |
 | [API Server 与 OpenAI 兼容层](concepts/api-server-openai-compat.md) | concept | 59 行 shim + 四件套子包重构;薄路由 + app.state 注入、条件化路由注册、SO_REUSEPORT 多进程、SSE keep-alive |
+| [Model Runner V2(MRV2)](concepts/model-runner-v2.md) | concept | 执行层重设计:持久 batch 与输入解耦(永久行 + preemption 当结束)、async-first 用快照缓冲替代 barrier、StagedWriteTensor/UVA 只搬 diff、Triton Gumbel 采样、显式 CUDAGraphManager(多步 draft 融一张图);**当前 main 默认启用**,含回退 V1 的特性清单 |
 
 ## 生产实践篇(practices)
 
@@ -110,7 +111,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 - RL rollout 服务(sleep/wake、async scheduling、DP 负载均衡)
 - ~~MoE EP/EPLB 服务侧~~(vLLM 侧已有 `vllm/distributed/eplb/` 实现;DeepSeek 侧的生产口径见 [`deepinfer`](../deepseek-infra/concepts/deepinfer.md) §9)
 - KV cache 分层/卸载(CPU/NVMe、LMCache)
-- Model Runner V2 落地篇(index 警示已备)
+- ~~Model Runner V2 落地篇(index 警示已备)~~(已入库:见 [concepts/model-runner-v2.md](concepts/model-runner-v2.md),按 v0.32 main 源码一手实读)
 - production-serving 补指标名与 continuous-batching 对齐
 
 ## 溯源

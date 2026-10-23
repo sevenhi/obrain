@@ -41,6 +41,12 @@ DeepGEMM 原版(deepseek-ai/DeepGEMM)是 DeepSeek 的轻量 GEMM 库:单一 kern
 
 ### 1.3 支持算子
 
+下面这张交互图概括了从安装构建到算子执行的完整工作流,以及 MAD 抽象层隐藏的底层细节:
+
+<iframe src="../../../diagrams/deepgemm-ascend.workflow.html"
+        style="width:100%;height:640px;border:1px solid #ddd;border-radius:8px"
+        loading="lazy" title="DeepGEMM-Ascend 工作流交互图"></iframe>
+
 - BF16 / FP8 / FP4 GEMM;
 - MQA logits(多查询注意力 logits 计算);
 - **稀疏 MQA logits(2026/10 Public Release 新增)**:`fp8_fp4_sparse_mqa_logits`(非分页)+ `fp8_fp4_paged_sparse_mqa_logits`(分页),只对选中的稀疏 KV 块打分,支持 MXFP4/MXFP8(见 [deepgemm-nvidia-vs-ascend.md](deepgemm-nvidia-vs-ascend.md) §1.7);Ascend 侧分页稀疏 MQA 通过 Python wrapper 提供 FIRST/REUSE 状态管理(首次调用缓存 KV 快照,后续同 metadata 复用);

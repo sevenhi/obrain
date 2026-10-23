@@ -20,3 +20,17 @@ __pycache__/
 
 # 本地索引/工具产物(仅本地产出,不入库)
 .codegraph/
+
+# mkdocs 站点构建产物(仅本地产出,不入库)
+.site/
+site/
+
+# archify 中间产物(仅本地产出,不入库)
+.archify/
+
+# archify 校验回执 sidecar(生成时自动产出,可随时重跑,不入库)
+diagrams/*.finalize.json
+diagrams/*.finalize-summary.json
+diagrams/*.delivery.json
+diagrams/*.browser-check.json
+diagrams/*.visual-check.json

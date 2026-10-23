@@ -15,6 +15,12 @@ date: 2026-10
 
 > **TL;DR**:FP8/FP4 是**硬件原生**低比特格式(浮点数制 + Tensor Core 直通路径),与 INT8/AWQ 的「自定义 scale + 整数 kernel」路线、QuIP#/AQLM 的「算法压缩 + 码本 kernel」路线都不同。Hopper 起 FP8 成为默认服务/训练格式;Blackwell 引入 FP4、NVFP4、MXFP4。真正决定可用性的**不是位宽本身,而是 scale 粒度**(per-tensor / per-token / block-wise)与配套 kernel 成熟度——粗粒度 scale 会被 outlier 击穿,细粒度 scale 才是近年训练 recipe 的核心变量。
 
+下面这张交互图展示了统一量化模板下的数据流:高精度输入如何经 scale 统计、格式 cast 走进低比特 GEMM,以及 FP8/FP4/梯度三条路径的分工:
+
+<iframe src="../../../diagrams/fp8-fp4-formats.dataflow.html"
+        style="width:100%;height:640px;border:1px solid #ddd;border-radius:8px"
+        loading="lazy" title="FP8/FP4 量化数据流交互图"></iframe>
+
 ## 1. 为什么是「格式」而不只是「位宽」
 
 低比特领域至少有三条正交路线,混用概念会导致选型错误:

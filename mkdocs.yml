@@ -1,0 +1,36 @@
+site_name: obrain
+docs_dir: .site
+site_dir: site
+use_directory_urls: true        # 默认值,显式写出;iframe 路径规则依赖它
+theme:
+  name: material
+  custom_dir: overrides
+  font: false                   # 关掉默认 Roboto CDN,字体栈由 extra.css 接管
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+    - navigation.instant        # 无刷新导航
+    - navigation.tracking       # TOC 跟随滚动更新地址栏
+    - toc.follow
+    - content.tabs.link
+    - search.suggest
+  palette:                      # 没有 palette 就没有暗色模式(实测)
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: 切换到暗色
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: 切换到亮色
+extra_css:
+  - assets/css/extra.css
+markdown_extensions:
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format

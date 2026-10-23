@@ -27,6 +27,12 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 | **V1 引擎架构** | 调度(CPU)与执行(GPU)解耦的多进程 + 异步调度 |
 | **优化注意力内核** | FlashAttention / FlashInfer / Triton / MLA 族(FlashMLA/FlashInfer MLA/CUTLASS MLA/Triton MLA)等,可插拔 backend(见 [attention-backend-selection](practices/attention-backend-selection.md)) |
 
+下面这张交互图概括了 V1 引擎的分层架构:从 API shim 到 EngineCore/Worker 的调度执行解耦,再到可插拔注意力后端:
+
+<iframe src="../../diagrams/vllm-index.architecture.html"
+        style="width:100%;height:640px;border:1px solid #ddd;border-radius:8px"
+        loading="lazy" title="vLLM 推理引擎架构交互图"></iframe>
+
 ## 关键事实速记
 
 - 当前文档快照:官方文档已进入 **v0.32** 时代(PyPI 最新发布 `v0.32.0`,2026-10-18;main 为 `v0.32.1rc0-353`),本地多数概念篇的源码分析基线仍是 `v0.28.1rc0-40`(commit `b74ac0bc6`),**不能把基线当作当前实现版本**;唯一按 v0.32 main 一手实读的是 [Model Runner V2 篇](concepts/model-runner-v2.md)。

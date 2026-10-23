@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% if page and page.is_homepage %}
+  <section class="ob-hero">
+    <div class="ob-hero__glow" aria-hidden="true"></div>
+    <div class="ob-hero__grid" aria-hidden="true"></div>
+    <div class="ob-hero__inner">
+      <div class="ob-hero__eyebrow">
+        <span class="ob-hero__dot" aria-hidden="true"></span>
+        Personal Knowledge Base
+      </div>
+      <h1 class="ob-hero__title">把复杂的<span class="ob-hero__accent">系统原理</span><br>画成能看懂的结构</h1>
+      <p class="ob-hero__lede">124 篇深度技术笔记，覆盖注意力机制、CUTLASS 内核、vLLM 推理与量化前沿。从论文到工程，每篇都追到原始出处。</p>
+      <div class="ob-hero__cta">
+        <a class="ob-btn ob-btn--primary" href="#ob-domains">浏览知识库</a>
+        <a class="ob-btn" href="attention/">从 Attention 开始</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="ob-stats" id="ob-domains">
+    <div class="ob-stat"><b>124</b><span>知识篇目</span></div>
+    <div class="ob-stat"><b>10</b><span>技术领域</span></div>
+    <div class="ob-stat"><b>35</b><span>追踪上游源</span></div>
+    <div class="ob-stat"><b>885</b><span>交叉引用</span></div>
+  </div>
+  {% endif %}
+
+  <div class="ob-content-root{% if page and page.is_homepage %} ob-homepage{% endif %}">
+    {{ super() }}
+  </div>
+{% endblock %}

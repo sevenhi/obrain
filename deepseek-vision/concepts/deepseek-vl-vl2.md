@@ -23,11 +23,27 @@ date: 2026-10
 
 两代共享同一个融合范式:**vision tower → projector(MLP)→ LLM**。区别只在 vision tower 的构造(双塔冻结 vs 单塔可训+分块)与 LLM 的稀疏化(dense vs MoE)。
 
+下图把这两代放进同一条时间轴,标出视觉侧改了哪三处、语言侧换了什么:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dv-vl-to-vl2-evolution.timeline.html"
+        style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DeepSeek-VL 到 VL2 的九个月演进"></iframe>
+</div>
+
 ---
 
 ## 一、DeepSeek-VL:Hybrid 双塔 + 冻结 + 投影
 
 ### 机制原理(为什么是「Hybrid 双塔」)
+
+下图是一条数据流:同一张图分别以 1024² 和 384² 进入两个冻结塔,再各自投影、拼接后进 dense LLM——注意两个塔的输出维度都被刻意对齐到 1024:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dv-vl-hybrid-dual-tower.dataflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DeepSeek-VL 的 Hybrid 双塔数据流"></iframe>
+</div>
 
 DeepSeek-VL 的核心设计动机写在论文标题里——「Towards Real-World Vision-Language Understanding」:真实场景的输入是**高分辨率、信息密集**的(网页截图、PDF、图表、公式、科学文献),而 vision encoder 面临一个两难:
 
@@ -85,6 +101,14 @@ DeepSeek-VL 的解法是**「低塔出语义、高塔出细节」的 Hybrid(混�
 
 ### 机制原理(三大升级,论文 §1 明示)
 
+下图把动态分块走一遍:选候选网格 → 切 tile + 产全局缩略图 → 全部过同一个可训 SO400M → 用 2D 位置标签拼回长序列:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dv-vl2-dynamic-tiling.workflow.html"
+        style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DeepSeek-VL2 的动态分块流程"></iframe>
+</div>
+
 VL2 相对 VL 有两大(论文原文)到三大升级:
 
 1. **视觉侧:动态分块(dynamic tiling)视觉编码**——处理不同宽高比的高分辨率图。不是固定 384²/1024²,而是把图切成**候选分辨率网格里的多个 tile**,每个 tile 单独过 encoder,再拼成 token 序列。config.json 里的 `candidate_resolutions` 有 23 种(384² → 384×3456、1152² 等),`global_view_pos="head"` 表示在序列头部放一个全局视图(整图下采样的缩略图)token,实现「全局 + 局部」联合编码。`tile_tag="2D"` 表示 2D 分块(带行列位置)。
@@ -92,6 +116,14 @@ VL2 相对 VL 有两大(论文原文)到三大升级:
 3. **语言侧:DeepSeekMoE(MHA)**——把 dense LLM 换成 DeepSeek 自家的 MoE 稀疏骨干。注意口径:论文写 MLA,但开源 checkpoint config 实测 `use_mla=false`(tiny 显式 false,small 缺省即 false)、`num_key_value_heads=num_attention_heads`(MHA),论文与 config 两口径不一;按 config 部署勿套 MLA 假设(KV cache 估算会失真)。稀疏激活(1.0/2.8/4.5B)来自 MoE 细粒度专家,与注意力形式无关。
 
 ### 三个变体(总参 / 激活参数,README + config 实测)
+
+下图把三个变体和两套激活参数口径放在一棵树上——尤其标出 full 版路由方式换成 V3 那套、以及 README 内部的 4.5B/4.2B 矛盾:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dv-vl2-moe-variants.tree.html"
+        style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DeepSeek-VL2 三变体与参数口径"></iframe>
+</div>
 
 | 变体 | 激活参数 | hidden_size | 专家数 | 每 token 专家 | 共享专家 |
 |---|---|---|---|---|---|

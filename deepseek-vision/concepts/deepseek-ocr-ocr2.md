@@ -22,11 +22,27 @@ date: 2026-10
 
 两代共享同一个**纯视觉大编码器(DeepEncoder)→ 小 MoE 解码器**范式,解码器都是 **DeepSeek3B-MoE-A570M**(64 专家 + 2 共享,570M 激活)。
 
+下图是两代的结构对照树:解码器两代完全一样,真正换掉的只有「语义塔」——从 CLIP-L 换成 Qwen2-0.5B:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dv-ocr-two-gen.tree.html"
+        style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DeepSeek-OCR 与 OCR-2 的结构对照"></iframe>
+</div>
+
 ---
 
 ## 一、DeepSeek-OCR:Contextual Optical Compression
 
 ### 机制原理(为什么「纯视觉大模型」能压文本)
+
+下图是这条压缩链路:整页 1024² 图分别过 CLIP-L(语义)与 SAM-B(细节),拼成 2048 维后线性投影进 1280 维的 MoE token 空间——压缩比就是这一步「token 数变少」换来的:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dv-ocr-optical-compression.dataflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DeepSeek-OCR 的光学压缩数据流"></iframe>
+</div>
 
 论文的起点是 LLM 长文本处理的 O(n²) 账单:**一段文字用 text token 表示很长(千 token 级),但放进一张图用 vision token 表示很短(几十到几百 token)**。一张包含整页文档的图,vision token 数远少于等价文本 token 数——所以「用视觉当压缩介质」能拿到远高于文本的压缩比。这就是标题 **Contexts Optical Compression(上下文的光学压缩)** 的含义。
 
@@ -59,6 +75,14 @@ DeepSeek-OCR 的结构只有两个组件(论文原话):**DeepEncoder + DeepSeek3
 
 ### 压缩比的量化结论(论文摘要 + Fig.1)
 
+下图把「压缩比 → 精度」这条曲线摊成三段,并标出两个档位各自能干什么活——这也是评估 OCR 系模型该看的主指标:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dv-ocr-compression-curve.workflow.html"
+        style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="压缩比与解码精度的对应关系"></iframe>
+</div>
+
 - **压缩比 <10× 时,解码(OCR)精度 97%**;压缩比 20× 时仍 ~60%——即「1 个 vision token 顶 20 个 text token」仍能保住 60% 精度,这是 LLM 长文本压缩/记忆遗忘研究的重要信号。
 - **OmniDocBench 上,仅用 100 vision token 就超过 GOT-OCR2.0(256 token/页)**,且以**少于 800 vision token** 超过 MinerU2.0(平均 6000+ token/页)——「最少 vision token 的端到端 SOTA」。
 - **生产吞吐**:单卡 A100-40G,每天可生成 200k+ 页 LLM/VLM 训练数据;PDF 并发 ~2500 tokens/s(README)。
@@ -81,6 +105,14 @@ DeepSeek-OCR 的结构只有两个组件(论文原话):**DeepEncoder + DeepSeek3
 ## 二、DeepSeek-OCR-2:Visual Causal Flow
 
 ### 机制原理(为什么「因果流」能改 token 顺序)
+
+下图把「光栅顺序 vs 因果重排」两条路并排画出来:左侧一代按坐标排序,跨栏句子会被图表 token 隔断;右侧二代让 SAM-B 出细节后交给 Qwen2-0.5B 按语义重排,再投影给同一个解码器:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dv-ocr2-causal-flow.workflow.html"
+        style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Visual Causal Flow:光栅顺序 vs 因果重排"></iframe>
+</div>
 
 OCR-2 的动机是一个认知观察:**传统 VLM 把 visual token 按光栅顺序(左上→右下)固定送入 LLM,配固定位置编码**;但人类看复杂版面的文档不是光栅扫描,而是**遵循语义、受逻辑结构驱动、有因果性的顺序扫读**(先标题、再正文块、再图表…)。OCR-2 让 encoder 自己模拟这种「因果顺序」。
 
@@ -141,6 +173,14 @@ OCR-2 的动机是一个认知观察:**传统 VLM 把 visual token 按光栅顺�
 ---
 
 ## 实践要点(checklist)
+
+下图把部署链路和三条必踩的坑串起来:固定版本 → 选推理栈(vLLM 要 nightly)→ 关前缀缓存 → 挂重复抑制 → 按版面选 prompt;下方是三个不报错但会算错的点:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dv-ocr-deploy-path.workflow.html"
+        style="width:100%;height:700px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DeepSeek-OCR 系部署链路与坑"></iframe>
+</div>
 
 - **环境**:cuda11.8 + torch2.6.0 + vllm-0.8.5(README 指定);transformers 推理用 `trust_remote_code=True` + `flash_attention_2`。
 - **vLLM 推理(官方支持)**:上游 vLLM 需 nightly(至 v0.11.1 前),`enable_prefix_caching=False` + `NGramPerReqLogitsProcessor` 抑制重复 token。

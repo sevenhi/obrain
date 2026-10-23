@@ -27,6 +27,14 @@ V1 的采样是一条**单趟 GPU 管线**(`vllm/v1/sample/sampler.py` 的 `Samp
 
 `sampler.py:21` 的 `Sampler(nn.Module)`,标准处理顺序(docstring 与 forward 实现一致):
 
+下图把这条管线画成一条线,每一步下面标注「它为什么必须站在这个位置」——顺序不是风格问题,换了就改变语义:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-sampler-order.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Sampler 的步骤为什么必须排成这样"></iframe>
+</div>
+
 ```
 1. logprobs 预留(有请求时,在【原始 logits】上算)      sampler.py:81-84
 2. 转 float32
@@ -66,12 +74,28 @@ pad 用 `make_tensor_with_pad(pad=vocab_size)`:词表内不存在 id=vocab_size,
 
 `get_token_bin_counts_and_mask`(utils.py:34-48)对每条序列建 `vocab_size+1` 的计数桶,`scatter_add_` 累加,截掉 pad 列后同时导出两个视图:
 
+下图展示这次 scatter 的完整数据路径——注意「次数」和「出现过」不是算两遍,而是同一个数组切出的两个视图:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-token-bin-count.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="分桶计数:一次 scatter 同时算出次数和出现过"></iframe>
+</div>
+
 - `output_bin_counts`:**出现次数**(frequency 用);
 - `output_mask` / `prompt_mask`:**是否出现**(presence / repetition 用)。
 
 **统计范围覆盖"prompt + 已生成"全部 token**(`prompt_token_ids` 一并传入 SamplingMetadata)——repetition penalty 连你提示词里的重复都算,这是与直觉最容易偏差的点。
 
 ### 2.3 乘性 vs 加性(核心算式)
+
+下图把三个算子按实际执行顺序串起来,每一行说明它的数学形式、参数语义与可调范围。**乘性一个、加性两个**,这是调参前必须先分清的事:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-penalty-math.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="三个惩罚算子的数学:乘性一个加性两个"></iframe>
+</div>
 
 ```python
 # utils.py:51 apply_penalties(节选)
@@ -117,6 +141,14 @@ token 只要出现在 prompt **或** output(掩码并集)就施加;未出现乘 
 
 `sample_with_exponential_noise`(441-472 行):取 `q ~ Exp(1)`,返回 `argmax(probs / q)`——统计上等价按 probs 采样,却**避开 `torch.multinomial` 的 CPU-GPU 同步**。这是"Gumbel-argmax"一族的做法:加指数噪声取 argmax,天然适配 batch 化。
 
+下图把两种写法摆在一起对比,并标出各自的同步代价——左边是会同步的朴素写法,右边是 vLLM 的实际做法:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-sync-free-sampling.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="把 CPU-GPU 同步从采样算法里挤出去"></iframe>
+</div>
+
 带请求级种子(`SamplingParams.seed`)的行逐行 `q[i].exponential_(generator=...)` 覆写(TODO(woosuk):逐行慢,待优化);`use_fp64_gumbel` 走 float64 噪声路径。`flashinfer_sample`(:475)基于**拒绝采样**免排序,作者注明"统计等价但不保证与 native 输出逐位一致"——换后端别期待逐位可复现。
 
 ### 3.3 后端分发(TopKTopPSampler.init,85-129 行)
@@ -128,6 +160,14 @@ CUDA → FlashInfer(受 `VLLM_USE_FLASHINFER_SAMPLER` 与算力门控 `flashinfe
 ## 4. 参数入口:to_sampling_params 三级回退 + SamplingParams 校验
 
 请求参数到引擎参数的完整归一链(OpenAI 兼容层的字段拆解见 [api-server-openai-compat.md](api-server-openai-compat.md) §6):
+
+下图把「请求字段 → 模型配置 → 协议内建」三级回退和之后的校验张量化画成一条链。排查「为什么行为和文档不一样」时,答案通常落在第二级:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-sampling-params-fallback.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="请求参数没写时默认值从哪来:三级回退"></iframe>
+</div>
 
 **三级回退**(`chat_completion/protocol.py:661` `ChatCompletionRequest.to_sampling_params`):每个参数为 `None` 时依次取 ① 请求字段 → ② 服务器默认 `default_sampling_params`(模型 `generation_config.json`)→ ③ 协议内建 `_DEFAULT_SAMPLING_PARAMS`(如 `"repetition_penalty": 1.0`,protocol.py:629)。另有:`stop_token_ids` 与服务端默认(如 gpt-oss 的 `</call>`)`dict.fromkeys` 去重合并;`echo=True` 时继承 `prompt_logprobs=top_logprobs`;最终统一 `SamplingParams.from_optional(...)`(sampling_params.py:382-391)把可选项归一成具体值。
 

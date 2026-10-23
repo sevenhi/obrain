@@ -27,6 +27,14 @@ date: 2026-10
 
 一个直觉例子:给分类网络(如 ResNet)看一张街景,它只能说「图里有车」;但你想要的是「三辆车,分别在这三个框里,其中一辆还被行人挡住一半」。难点在于**输出数量不定、位置任意、大小悬殊**:
 
+下图把这三个难点和三条主线对起来看——上排是「难在哪」,中排是「为什么难」,下排是「三种回答」:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-detection-core-difficulty.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="检测难在哪:输出数量不定、位置任意、大小悬殊"></iframe>
+</div>
+
 - 分类输出固定 K 维;检测输出是「不定长集合」(每张图 0~几百个物体)→ 必须设计「怎么把不定数量的预测对齐到不定数量的真值」。
 - 物体可大可小(远处行人 20px,近处卡车 800px)→ 要么多尺度特征(FPN),要么预设不同大小的 anchor。
 - 同一物体被多个位置重复预测 → 需要去重(NMS),或者干脆设计成「一个物体只许一个预测」(DETR 的二分图匹配)。
@@ -38,6 +46,14 @@ date: 2026-10
 ### 1. 两阶段:Faster R-CNN → Mask R-CNN
 
 **Faster R-CNN(arXiv:1506.01497)** 的关键发明是 **RPN(Region Proposal Network)**:一个全卷积网络在共享特征图上每个位置同时预测「候选框边界 + objectness 分数」,与检测头共享全部卷积特征,使候选框生成几乎零成本(论文原话 nearly cost-free)。RPN+Fast R-CNN 合并为单网络——用论文的说法,RPN 就是告诉网络「往哪看」的 attention 机制。VGG-16 下全流水线 5fps,每图仅 300 个 proposal 即达 PASCAL VOC/COCO SOTA。
+
+下图是这条流水线的数据路径,注意末尾的分叉:Mask R-CNN 的掩码分支是从 RoI 特征**并行**长出来的,不是接在检测头后面:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-faster-mask-rcnn.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Faster R-CNN 到 Mask R-CNN"></iframe>
+</div>
 
 **Mask R-CNN(arXiv:1703.06870)** 在 Faster R-CNN 上**并行**加一条掩码分支(不是串行——先框后掩码会伤精度),为每个实例输出像素级掩码;同框架还能直接扩展人体关键点。ResNet-101 下 mask AP 35.7、5fps,拿下当年 COCO 三项全冠。一个工程细节:掩码分支用 RoIAlign 替代 RoIPool 消除量化误差,这是掩码质量的关键(论文 §3)。
 
@@ -65,11 +81,27 @@ DETR(DEtection TRansformer)把检测视为**直接集合预测(set prediction)**
 2. **固定 N=100 个可学习 object query + 解码器**:query 通过**交叉注意力**(概念同 [attention 域](../../attention/algorithm/attention-is-all-you-need.md) 的 encoder-decoder attention)从编码特征里「收集」自己负责的物体,并行输出 N 个预测。
 3. **匈牙利二分图匹配损失**:预测集合与真值集合一对一最优匹配后再算损失——一个真值只配一个预测,因此**不需要 NMS,不需要 anchor**。
 
+下图是这三件事的因果链:编码器提供全局上下文,query 通过交叉注意力各收集一个物体,训练时一对一匹配把「去重」学进权重,推理只剩阈值过滤:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-detr-set-prediction.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DETR 用匈牙利匹配替掉 anchor 与 NMS"></iframe>
+</div>
+
 官方 README:R50 骨干 **42.0 box AP(COCO val5k)**,与 Faster R-CNN 打平但 **FLOPs 减半、参数量相同**;推理只需 50 行 PyTorch。代价:训练收敛慢(500 epoch,是 Faster R-CNN 的十几倍),小目标弱(后续 Deformable DETR 缓解,本篇不展开)。掩码侧 DETR 还能统一做全景分割(R50 PQ 43.4,论文 Table 5 / 官方 panoptic 权重)。
 
 ### 4. 可提示分割基础模型:SAM(arXiv:2304.02643)
 
 SAM 回答的问题不是「这是什么类」而是「你指哪我割哪」。三段式架构(论文 §2/Fig.1b):
+
+下图按「运行频次 / 组件 / 成本」三行拆开这个架构——关键在于重编码器只跑一次,交互成本全落在轻解码器上:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-sam-three-parts.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="SAM 的三段式:重编码器跑一次,轻解码器交互多次"></iframe>
+</div>
 
 - **重图像编码器**:MAE 预训练的 **ViT-H**(632M 参数的 ViT,见 [ViT 基础篇](vision-transformer-basics.md)),对整图算一次 embedding——贵但可摊销;
 - **轻提示编码器**:点/框/掩码/文本提示,极便宜;
@@ -110,6 +142,14 @@ masks, _, _ = predictor.predict(point_coords=pts, point_labels=lbls)  # 交互�
 ```
 
 伪代码看对齐机制的本质差别:
+
+下图把三条路线的推理流程并排放,看「谁负责去重」这一列——这是三种范式最本质的分歧点:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-three-paradigms-inference.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="推理期三条路线的对齐流程"></iframe>
+</div>
 
 ```text
 Faster R-CNN / YOLO(带 NMS):

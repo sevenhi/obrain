@@ -31,6 +31,14 @@ date: 2026-09
 
 ### 1.1 时间线(架构视角)
 
+下图把这条谱系按「架构视角」摊在时间轴上,分四条泳道:密集主干、效率分叉(GQA/SWA)、MoE 分叉、非 softmax 旁支——每条泳道标的是「这一次改动动了四个变量里的哪一个」:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-open-model-timeline.timeline.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="开源模型谱系的架构时间线"></iframe>
+</div>
+
 ```
 GPT-2 (2019, open-weight) / GPT-3 (2020, 闭源 API)          ← decoder-only + learned PE + GeLU + pre-LN(相对原 Transformer post-LN 的代际切换)
    └─ LLaMA (Meta, 2023-02, 权重公开)       ← 三件套定型: pre-RMSNorm + SwiGLU + RoPE;公开数据
@@ -50,6 +58,14 @@ GPT-2 (2019, open-weight) / GPT-3 (2020, 闭源 API)          ← decoder-only +
 
 ### 1.2 谱系的共识与分化点
 
+下图把这棵树画成层级:主干下挂 LLaMA 一脉,LLaMA 再分出 Llama 2/3、Mistral→Mixtral、Qwen→Qwen-MoE、DeepSeek→V2→V3,旁支是 RWKV——读新模型公告时先在这棵树上定位它改的是哪一枝:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-open-model-lineage.tree.html"
+        style="width:100%;height:700px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="开源 LLM 谱系树"></iframe>
+</div>
+
 | 维度 | 共识(2023 后几乎全员) | 分化点(各家选择) |
 |---|---|---|
 | 骨架 | decoder-only causal Transformer | — |
@@ -67,6 +83,14 @@ GPT-2 (2019, open-weight) / GPT-3 (2020, 闭源 API)          ← decoder-only +
 ## 2. MoE 专讲:稀疏激活怎么算账、怎么路由
 
 ### 2.1 机制:router + top-k 专家
+
+下图把 MoE 的账算清:router 打分 → 只取 top-K → 只有被选中的专家参与计算;右侧两条泳道分别是负载均衡的两种解法和「总参定显存、激活参定速度」的账本:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-moe-accounting.workflow.html"
+        style="width:100%;height:680px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="MoE 的路由、负载均衡与成本账"></iframe>
+</div>
 
 MoE 把每层(或部分层)的 FFN 换成 N 个并行「专家」(每个专家就是一套独立 SwiGLU FFN 权重),外加一个 router(门控网络)对每个 token 选 top-K 个专家:
 
@@ -91,6 +115,14 @@ DeepSeekMoE 论文(arXiv:2401.06066)针对 GShard 式「粗专家 top-K」的专
 数据(论文摘要):DeepSeekMoE 2B ≈ GShard 2.9B(1.5× 专家参数与计算);16B ≈ LLaMA2-7B 但只用 ~40% 计算;145B ≈ DeepSeek 67B 但只用 28.5%(或更低 18.2%)计算。**V2/V3 的 MoE 层 = 1 共享专家 + 大量细粒度路由专家**(V3:1+256,每 token 激活 8 路由 + 1 共享)。
 
 ### 2.3 DeepSeek-V2/V3:MoE + MLA 的组合拳
+
+下图把这两条省法画在同一个 block 里:attention 侧用 MLA 把 KV 压成低秩潜向量(省 cache),FFN 侧用 MoE 只激活 8 个专家(省算力)——两者正交,叠加起来才是 V3「又大又便宜」的来源:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-v2-v3-combo.dataflow.html"
+        style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DeepSeek-V2/V3 的 MoE + MLA 组合"></iframe>
+</div>
 
 - **V2**(2024-05):236B 总 / 21B 激活,128K 上下文,8.1T tokens;attention 用 **MLA**(KV 低秩压缩,cache 省 93.3%、吞吐 5.76×,对比同系 dense 67B),训练成本较 67B dense 省 42.5%;
 - **V3**(2024-12):**671B 总 / 37B 激活**;61 层、hidden 7168;每 MoE 层 256 路由专家(每专家内维 2048)+ 1 共享,top-8,且**每 token 最多发往 4 个节点**(推理通信约束);14.8T tokens;**全程 2.788M H800 GPU 时**(≈$5.5M 论文口径),无一次不可恢复 loss spike;上下文两阶段扩展 32K→128K;另加**多 token 预测**(MTP,深度 1:每 token 同时预测下下个 token,可作投机解码草稿头);
@@ -131,6 +163,14 @@ MoE 推理的痛点不是算力而是**权重搬运与专家分布**:47B/671B �
 ---
 
 ## 4. 实践要点(选型准则)
+
+下图把选型决策摊成五条互斥入口:显存紧→小 dense;卡够但集群不够→稀疏 MoE;卡很多→V3;要微调/长文档→Llama 3 / Qwen2.5;右侧标出两个最常踩的估算误区:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-open-model-choice.workflow.html"
+        style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="开源模型选型决策路径"></iframe>
+</div>
 
 > ⚠ **快照框定**:以下选型准则基于本谱系收录到 2024-12 的模型;Qwen3、DeepSeek-R1/V4 等未纳入,**2025-26 谱系见续篇 [open-model-landscape-2025-2026.md](open-model-landscape-2025-2026.md)**,选型以 HF 当日 config 为准(见下方「看 config 四件套」)。
 

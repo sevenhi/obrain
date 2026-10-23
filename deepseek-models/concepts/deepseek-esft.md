@@ -27,6 +27,14 @@ date: 2026-10
 
 **直觉例子**:一家医院有 64 个科室(MoE 专家),你要提升「骨科手术」水平(领域微调)。全量微调 = 给全院所有科室重新培训;ESFT = 先统计骨科病人实际经过哪些科室(挂号→影像→骨科→麻醉→康复),只给这几个科室做专项培训,其余科室照常运转。论文标题 *"Let the Expert Stick to His Last"*(让专家安守本行)说的就是这个:**每个专家只深耕它擅长的任务**。
 
+下图把「三重浪费」和 ESFT 的三步解法摆成上下对照——上排解释为什么存在省的可能(稀疏性),中排是 ESFT 实际做的三步,下排是每一步省掉了什么:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dm-esft-why-waste.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="MoE 全量微调的三重浪费与 ESFT 的三步解法"></iframe>
+</div>
+
 **谱系位置**:DeepSeekMoE(见 [deepseek-moe.md](deepseek-moe.md))提出「细粒度专家分割 + 共享专家隔离」,论证了专家会自然专精;ESFT 是这个思想的**微调端兑现**——既然专家已专精,微调就只训任务相关的专家。这是 DeepSeek MoE 谱系里「训练方法」一支的代表作(2024-07,arXiv:2407.01906),早于 R1 的 RL 路线。
 
 ---
@@ -34,6 +42,14 @@ date: 2026-10
 ## 2. 机制总览:打分 → 选专家 → 特化训练
 
 三阶段流水线(脚本命令详见 infra 篇,这里讲**每步内部发生了什么**,全部核自本地源码):
+
+下图按「阶段 / 内部动作 / 留下什么」三行展开这条流水线——注意每一行是同一列的三层视角,不是三个独立流程:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dm-esft-three-stages.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="ESFT 三阶段:打分 → 选专家 → 特化训练"></iframe>
+</div>
 
 ```
 ① get_expert_scores.py      在任务评估集上前向,记录每层每个专家的激活
@@ -58,6 +74,14 @@ date: 2026-10
 
 `--score_function=token` 即用 token_scores。**选专家是 top_p 累积裁剪**(类似 nucleus sampling 的思路):
 
+下图是这个循环的完整形状——两种打分口径进同一层,排序后逐专家累加,累计到 top_p 就停,产物是每层一张专家列表:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dm-esft-top-p.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="top_p 累积裁剪:每层选出承担 20% 激活分数的头部专家"></iframe>
+</div>
+
 ```python
 # generate_expert_config.py 核心逻辑(简化,核自本地源码)
 for layer, l_score in scores.items():
@@ -76,6 +100,14 @@ top_p=0.2 意思是「每层选出累计承担 20% 激活分数的头部专家�
 ### 2.2 冻结的实现:parameter ↔ buffer 互换(esft.py 核心,新手最值得学的技巧)
 
 PyTorch 优化器只收集 `nn.Parameter`;`buffer` 是随模型保存但不参与梯度的张量。esft.py 的 `to_buffer()` 把模块所有 parameter **删掉注册、重新登记为 buffer**(并把参数名记进 `module.param_list` 以便还原),`to_param()` 反向还原。**冻结/解冻 = 这两个函数互换**,不需要手写 `requires_grad=False` 遍历,也不影响 state_dict 的保存/加载。
+
+下图把这条调用链和「张量注册状态」并排看——上排是代码里发生的事,下排是同一时刻模型内部 Parameter 与 buffer 的分布:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dm-esft-param-buffer.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="冻结的实现:parameter 与 buffer 互换"></iframe>
+</div>
 
 ```python
 # esft.py 核心调用示例(核自本地源码,ESFT 仓库 2024-08 训练代码版)
@@ -106,6 +138,14 @@ model, tokenizer = load_esft_model("deepseek-ai/ESFT-vanilla-lite", adapter_dir)
 
 因为 state_dict 里只有 parameter,**训练产物自动就是 adapter**(每任务一份,只含被训专家 + 可选共享专家/非专家模块的权重)。N 个任务共享一个基座、各挂各的 adapter——这就是「用更少资源和存储高效定制」的落点。`add_adapter` 的一致性校验(配置 vs 权重文件里的专家 ID 集合,`_dict_equal` 不符就 raise)防止「拿 A 任务的配置去挂 B 任务的 adapter」这种静默错误。
 
+下图把「训练产物 → adapter 目录 → 与基座组装 → 一致性校验」串成一条数据流,注意校验发生在注入之前:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dm-esft-adapter-storage.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="adapter 的存储红利与加载一致性校验"></iframe>
+</div>
+
 ---
 
 ## 3. 训练配置(configs/base.yaml,核自本地)
@@ -128,6 +168,14 @@ ep_size: 2                      # train_ep.py 的专家并行度
 ---
 
 ## 4. 与其它路线的关系(定位一张表)
+
+下图把五条路线排成五行,每行读作「动的是什么 → 什么时候用 → 与 ESFT 的关系」。**ESFT 与 LoRA 正交可组合**;最容易出错的是把它和 EPLB 混为一谈(一个训练时挑专家,一个推理时摊负载):
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dm-esft-route-position.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="五条微调路线各自的定位,ESFT 站在哪一格"></iframe>
+</div>
 
 | 路线 | 训什么 | 适合 | 与 ESFT 关系 |
 |---|---|---|---|

@@ -33,6 +33,14 @@ date: 2026-10
 
 ### 1.2 方案:draft → 并行 verify
 
+下图是这套机制的主流程:草稿串行猜 γ 个 → 目标模型一次前向并行验证 → 接受 k 个(外加一个 bonus token),被拒处回退重采样:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-spec-draft-verify.workflow.html"
+        style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="投机解码:draft 串行猜 + 目标模型并行验证"></iframe>
+</div>
+
 ```
 标准自回归:   每步 1 token,串行,访存受限,算力闲置
 投机解码:     草稿模型串行猜 γ 个 → 目标模型一次前向并行验证 γ 个
@@ -54,6 +62,14 @@ E[每步 token 数] = (1 − α^(γ+1)) / (1 − α)
 
 **墙钟加速 ≠ 期望 token 数**,还要扣草稿成本:
 
+下图把时间轴摊开对比(示意量级,非实测):基线每 token 20ms 串行;投机下 4 个草稿各 2ms 叠成 8ms,验证 4 个候选仍只占 22ms——这就是「多验几个几乎不花时间」的来源:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-spec-timeline.waterfall.html"
+        style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="投机解码的耗时结构对比"></iframe>
+</div>
+
 ```
 加速比 = E[每步 token] × T_single / (T_draft(γ) + T_verify(γ))
 ```
@@ -66,6 +82,14 @@ E[每步 token 数] = (1 − α^(γ+1)) / (1 − α)
 ---
 
 ## 2. 主流方案:草稿从哪来(五条路线)
+
+下图是 vLLM 官方速选表的决策路径:先问目标模型有没有原生草稿头,再逐层退到 EAGLE → 独立小模型 → n-gram;右侧标出已被禁用的 MLP Speculator:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-spec-five-routes.workflow.html"
+        style="width:100%;height:680px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="五条草稿路线的选择路径"></iframe>
+</div>
 
 | 路线 | 代表 | 草稿来源 | 特点 / 代价 |
 |---|---|---|---|
@@ -121,6 +145,14 @@ speculative_config={"method": "ngram", "num_speculative_tokens": 5, "prompt_look
 命令行等价:`vllm serve ... --speculative-config '{"model": "...", "num_speculative_tokens": 5, "method": "draft_model"}'`。
 
 ### 3.4 2025-26 新增的三个机制(何时不值得用 / 怎么救)
+
+下图对比两个「救场」机制各自的干预点:dynamic SD 按并发档位改 γ,adaptive verification 给每个槽位打生存概率再按预算录取——两者不冲突,但后者实测只覆盖 DSpark:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-spec-dynamic-adaptive.workflow.html"
+        style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="dynamic SD 与 adaptive verification 的干预点"></iframe>
+</div>
 
 1. **Dynamic Speculative Decoding(动态投机)**:`num_speculative_tokens_per_batch_size` 按并发区间动态调 γ。为什么需要:验证阶段有效 batch = BS×K,一旦越过临界点 SD 反而拖慢 decode(TPOT)。适用:同部署波动并发、RL rollout 尾部长尾请求。
 2. **Adaptive Verification(自适应验证)**:不再静态定 γ,而是每步对每个 (request, position) 草稿槽位按「生存概率 = 各位置置信度连乘」打分,按全局预算录取——高置信请求保留整块、低置信请求提前截断。预算来自启动时 profiling 的成本模型。目前 DSpark-only,且**强制 full cudagraph、不支持 LoRA/流水线并行**。

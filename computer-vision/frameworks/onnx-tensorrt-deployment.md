@@ -3,10 +3,10 @@ title: 视觉模型部署：PyTorch → ONNX → TensorRT / ONNX Runtime
 type: howto
 tags: [computer-vision, inference, onnx, tensorrt, onnx-runtime, deployment, benchmark]
 source:
-  - "web: ONNX Runtime 官方文档 | https://onnxruntime.ai/docs/ | 阅读日期 2026-09-27"
-  - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/ | 阅读日期 2026-09-27"
+  - "web: ONNX Runtime 官方文档 | https://onnxruntime.ai/docs/ | 阅读日期 2026-10-23(最新发布 1.31.0)"
+  - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/ | 阅读日期 2026-10-23(当前版 11.4.0,支持 Vera Rubin 计算能力)"
   - "web: TensorRT Architecture Overview | https://docs.nvidia.com/deeplearning/tensorrt/latest/architecture/architecture-overview.html | 阅读日期 2026-09-27"
-  - "web: NVIDIA Model Optimizer | https://nvidia.github.io/TensorRT-Model-Optimizer/ | 阅读日期 2026-09-27"
+  - "web: NVIDIA Model Optimizer(仓库已由 TensorRT-Model-Optimizer 更名为 Model-Optimizer;新文档站 https://nvidia.github.io/Model-Optimizer/ 实测 200,旧站 nvidia.github.io/TensorRT-Model-Optimizer 已 404)| https://github.com/NVIDIA/Model-Optimizer | 阅读日期 2026-10-23"
 date: 2026-09
 ---
 
@@ -130,6 +130,7 @@ TensorRT 数值回归 + 目标硬件 benchmark
 - INT8/FP8：需要校准数据、scale 和硬件/算子支持；校准集必须接近真实输入分布。
 - INT4/FP4：压缩收益更大，但算子覆盖、精度回归和 kernel 支持更敏感。
 - Model Optimizer 可用于 PTQ、QAT、剪枝、蒸馏和 ONNX 相关优化；使用时要保存配置和校准数据版本。
+- **Model Optimizer 已更名并北移文档站**(2026-10 核实):仓库从 `NVIDIA/TensorRT-Model-Optimizer` 改为 **`NVIDIA/Model-Optimizer`**(旧地址 301 重定向,不会断但也别写死),文档站从 `nvidia.github.io/TensorRT-Model-Optimizer/`(现 **404**)搬到 **`nvidia.github.io/Model-Optimizer/`**;PyPI 包名仍是 `nvidia-modelopt`(稳定版 0.47.0,2026-09-23;仓库已有 0.48.0rc)。**含义**:它不再只是 TensorRT 的前处理,而是硬件无关的量化/蒸馏/剪枝 + NAS 工具链,导出目标同时覆盖 TensorRT-LLM、TensorRT、vLLM、SGLang。现有能力里与部署最相关的是 **AutoQuant**(按层敏感度 + 存储预算自动分配精度):GEMM 与 **KV cache** 两条搜索可分别设预算(如 Qwen3-8B 的 KV 案例:5.76 等效 bit 把 modeled KV payload 降 **64.0%**、RULER-128K 只掉 **1.04 个百分点**,而同预算均匀 NVFP4 掉 **6.54** 个百分点)——**"统一低精度"不如"按敏感度分配"**,这条与库内量化域的 HyQuant/KVTuner 是同一心法。
 - 图融合和 constant folding 可能改变数值误差，优化前后都要跑回归。
 
 量化不是部署的最后一个开关，而是模型格式、校准、kernel、输入分布和评测协议的共同结果。和 [PTQ：GPTQ / AWQ / SmoothQuant](../../quantization/concepts/ptq-gptq-awq-smoothquant.md) 一起阅读。
@@ -170,5 +171,6 @@ TensorRT serialized engine 对版本和硬件有兼容限制；不要默认一�
 
 ## 溯源
 
-- 主源:ONNX Runtime 官方文档(https://onnxruntime.ai/docs/)与 NVIDIA TensorRT 官方文档(https://docs.nvidia.com/deeplearning/tensorrt/latest/)。
-- 交叉源:TensorRT Architecture Overview(https://docs.nvidia.com/deeplearning/tensorrt/latest/architecture/architecture-overview.html)、TensorRT Model Optimizer(https://nvidia.github.io/TensorRT-Model-Optimizer/)。
+- 主源:ONNX Runtime 官方文档(https://onnxruntime.ai/docs/)与 NVIDIA TensorRT 官方文档(https://docs.nvidia.com/deeplearning/tensorrt/latest/)。TensorRT 版本以 [release notes](https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/release-notes.html) 为准(2026-10 核实:11.4.0 为当前版,11.3.0 Enterprise 起支持 Vera Rubin 计算能力)。
+- 交叉源:TensorRT Architecture Overview(https://docs.nvidia.com/deeplearning/tensorrt/latest/architecture/architecture-overview.html)、NVIDIA Model Optimizer(https://nvidia.github.io/Model-Optimizer/ 文档站 + https://github.com/NVIDIA/Model-Optimizer 仓库;旧地址 TensorRT-Model-Optimizer 的文档站已 404)。
+- AutoQuant KV 案例数据:NVIDIA Model Optimizer 官方公告 *AutoQuant KV: Automatic Mixed-Precision KV Cache Quantization*(2026-10-08)— https://nvidia.github.io/Model-Optimizer/announcements/20261008-autoquant-kv.html

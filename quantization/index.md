@@ -3,7 +3,7 @@ title: 量化与压缩
 type: domain
 tags: [quantization, compression, llm-inference, kv-cache, low-rank, outlier]
 source:
-  - "pdf: HyQuant 论文全文 | arXiv:2608.27875v1"
+  - "pdf: HyQuant 论文全文 | arXiv:2608.27875v3(EMNLP 2026 Main;v1/v2 摘要未变,仅补录用标注)"
   - "pdf: SpQR 论文全文 | arXiv:2306.03078 (ICLR 2024)"
   - "pdf: On the Effectiveness of Low-Rank Matrix Factorization for LSTM Model Compression | arXiv:1908.09982 (PACLIC 2019)"
   - "pdf: GPTQ | arXiv:2210.17323"

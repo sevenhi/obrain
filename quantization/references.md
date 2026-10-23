@@ -11,7 +11,7 @@ date: 2026-09
 
 ## 论文(arXiv)
 
-- HyQuant — arXiv:2608.27875v1
+- HyQuant — arXiv:2608.27875v3(EMNLP 2026 Main)
 - SpQR — arXiv:2306.03078(ICLR 2024)
 - GPTQ — arXiv:2210.17323
 - AWQ — arXiv:2306.00978

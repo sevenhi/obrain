@@ -46,8 +46,12 @@ date: 2026-10
 | OREPA 官方代码 | https://github.com/JUGGHM/OREPA_CVPR2022 | PyTorch 实现、ImageNet/COCO/Cityscapes 训练脚本 |
 | CCNN 官方代码 | https://github.com/david-knigge/ccnn | PyTorch Lightning + Hydra;models/resnet.py 是块定义 |
 | S4 官方代码 | https://github.com/HazyResearch/state-spaces | 对照实现 |
-| TensorRT 文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/index.html | TRT-ViT 延迟测量的推理框架 |
+| TensorRT 文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/index.html | TRT-ViT 延迟测量的推理框架(当前版 11.4.0) |
+| TensorRT release notes | https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/release-notes.html | 版本号/已知问题/硬件支持(11.3.0 Enterprise 起支持 Vera Rubin) |
 | TensorRT GitHub | https://github.com/NVIDIA/TensorRT | 开源组件 |
+| NVIDIA Model Optimizer 仓库 | https://github.com/NVIDIA/Model-Optimizer | 原 TensorRT-Model-Optimizer 更名而来;量化/蒸馏/剪枝/NAS,导出 TRT-LLM/vLLM/SGLang |
+| NVIDIA Model Optimizer 文档站 | https://nvidia.github.io/Model-Optimizer/ | AutoQuant(GEMM/KV 混合精度搜索)、NVFP4、QAD 教程(旧站 TensorRT-Model-Optimizer 已 404) |
+| Model Optimizer — AutoQuant KV 公告 | https://nvidia.github.io/Model-Optimizer/announcements/20261008-autoquant-kv.html | KV 精度按层分配:5.76 等效 bit,payload −64.0%,RULER-128K −1.04pp(vs 均匀 NVFP4 −6.54pp) |
 | TRT-ViT 社区复现(非官方) | https://github.com/Phoenix8215/TRT-ViT | 论文官方未开源时的参考实现 |
 | ViT 官方代码(google-research) | https://github.com/google-research/vision_transformer | 论文 abstract 注明的微调代码与预训练权重发布处(JAX/TF) |
 | DETR 官方代码(facebookresearch) | https://github.com/facebookresearch/detr | Model Zoo(R50/R101,DC5 变体)、torch.hub 用法、全景分割权重 |

@@ -3,14 +3,14 @@ title: HyQuant — 面向 LLM Attention 的混合精度量化
 type: concept
 tags: [attention, quantization, kv-cache, llm-inference, long-context, hyquant]
 source:
-  - "pdf: HyQuant 论文全文 | arXiv:2608.27875v1"
+  - "pdf: HyQuant 论文全文 | arXiv:2608.27875(**v3**,2026-09-16;v1=2026-08-28、v2=2026-09-11;三版**摘要逐字未变**,PDF 仅增约 1 KB,唯一实质变化是 arXiv comments 栏新增 **EMNLP 2026 Main** 录用标注——正文结论无需改写)"
   - "web: HyQuant 代码仓库 | https://github.com/jerrysfls/HyQuant"
-date: 2026-09
+date: 2026-10
 ---
 
 # HyQuant:混合精度量化 LLM Attention
 
-> 论文阅读笔记(arXiv 2608.27875v1,2026-08-28;SJTU / 西安交大 / 腾讯 PPL 等)。
+> 论文阅读笔记(arXiv 2608.27875v3,2026-09-16;SJTU / 西安交大 / 腾讯 PPL 等)。**发表状态:EMNLP 2026 Main**(2026-10-23 实测 v3 摘要页 comments 栏确认;v1/v2 无此标注,故此前笔记未记会议——不是笔误)。
 
 ## TL;DR
 
@@ -128,5 +128,5 @@ def hyquant_decode_step(q, kv_blocks):
 
 ## 溯源
 
-- 主源:HyQuant 论文(arXiv:2608.27875v1)。
+- 主源:HyQuant 论文(arXiv:2608.27875v3,2026-09-16;**EMNLP 2026 Main**,2026-10-23 实测 v3 摘要页 comments 栏;v1/v2 无录用标注)。
 - 交叉源:官方代码仓库(https://github.com/jerrysfls/HyQuant)。

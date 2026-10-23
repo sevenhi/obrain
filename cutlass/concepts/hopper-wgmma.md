@@ -35,6 +35,14 @@ date: 2026-09
 
 ### 操作数位置(雷区级硬约束)
 
+> 下图把两代指令并排:`mma.sync` 的操作数必须先在寄存器里,所以中间有一整层 `ldmatrix`/`lds`;`wgmma` 经 64-bit descriptor 直接从 SMEM 取,省掉的就是那一层。**这也解释了为什么 B 必须恒在 SMEM**——它的后缀第二位永远是 `S`。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-wgmma-vs-mma.workflow.html"
+        style="width:100%;height:700px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Ampere mma.sync 与 Hopper wgmma:操作数从哪来、谁在发指令"></iframe>
+</div>
+
 | 操作数 | 允许位置 | 备注 |
 |---|---|---|
 | **A** | **SMEM 或 RMEM** | SS 模式来自 SMEM;RS 模式来自寄存器 |
@@ -84,6 +92,14 @@ TiledMMA tiled_mma = make_tiled_mma(
 ---
 
 ## 3. SMEM 布局:8 种 canonical layout atom + tile_to_shape(最大实操坑)
+
+> 下图把这 8 个 atom 按 majorness × swizzle 展开。**实操上只有这一条正道**:从这 8 个里选一个喂给 `tile_to_shape`;手写 shape/stride「碰巧能跑」只是未定义行为的温床。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-gmma-layout-atoms.tree.html"
+        style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="8 种 canonical GMMA layout atom:MN-major / K-major × 4 档 swizzle"></iframe>
+</div>
 
 WGMMA 对 sA/sB 的 SMEM **shape 和 stride 都有额外约束**,且随 swizzle 模式变化——`(bM,bK):(1,bM)` 这种"顺手"的布局一般**不合法**。
 
@@ -147,6 +163,14 @@ tCrC: ptr[16b](0x7feee1fffbe0) o ((_2,_2,_8),_2,_2):((_1,_2,_4),_32,_64)
 
 ### Core matrix 与 descriptor 的 5 个参数
 
+> 下图是这一节的图形版:`wA`/`wB` 被切成 core matrix,而 descriptor 就是编码这 5 个量的 64-bit 值。注意 **LBO 与 SBO 各指哪个方向**——这两个名字按 BLAS 习惯命名,不是按行主/列主,是最容易记反的地方。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-gmma-descriptor.architecture.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="core matrix 与 matrix descriptor 的 5 个参数"></iframe>
+</div>
+
 wgmma 把 atom tile wA(64×K)/wB(N×K)切成 **core matrix**:每个 core matrix 在 **strided 方向长 8、contiguous 方向长 16 字节**;**wA = 8×2 个 core matrix,wB = 2×(N/8) 个**。
 
 SS 模式需要 desc-a / desc-b 两个 matrix descriptor,CUTLASS 的 `make_gmma_desc` 从 SMEM tensor 布局构造 `GmmaDescriptor`,编码 **5 个参数**:
@@ -170,6 +194,14 @@ No swizzle : Swizzle<0,4,3> o smem_ptr o ((8,m),(T,2)):((1T,SBO),(1,LBO))   LBO=
 
 ### atom 的 fma:PTX 内联真身
 
+> 上一节那三个 `print` 输出各是什么,下图给出一条线讲清:`tCsA` 是整块 SMEM 换了个布局、`tCrA` 是 descriptor 迭代器(不是数据)、只有 `tCrC` 是真寄存器。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-wgmma-fragments.dataflow.html"
+        style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="tCsA / tCrA / tCrC:哪些是真数据、哪些是描述符"></iframe>
+</div>
+
 `cute::gemm` 最内层调 atom 的 `fma`,就是内联 PTX:
 
 ```cpp
@@ -188,6 +220,14 @@ asm volatile(
 ---
 
 ## 5. 同步机制:三件套 + fence.proxy.async
+
+> 下图是 mainloop 里同步的正确顺序,以及 `fence.proxy.async` 的触发条件。**缺任何一步都不会报错**——只会变成隐蔽 race,或者编译器把 wgmma 串行化(性能直接掉)。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-wgmma-sync.workflow.html"
+        style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="wgmma 的同步三件套:mainloop 里的正确顺序"></iframe>
+</div>
 
 wgmma 是异步指令,同步不当的后果:**(a) 隐蔽 race、(b) 编译器把 wgmma 串行化(性能大跌)、(c) 未定义行为**。
 
@@ -257,6 +297,14 @@ dim3 dimBlock(cute::size(tiled_mma));            // 128 = 1 warpgroup
 ---
 
 ## 7. 数据对比:WGMMA 为什么值这套复杂度
+
+> 下图把三条收益(单指令工作量、省掉的搬数指令流、代际峰值)连同各自的口径一起列出——最后一条特别标注了「哪个是论文数字、哪个只是评论区估计」,别把两者混着引。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-wgmma-value.tree.html"
+        style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="WGMMA 为什么值这套复杂度:三条可查的收益"></iframe>
+</div>
 
 Colfax Part 1 本身无性能数字(评论区作者也确认:量化收益看 FA3 论文),以下是可验证的公开数据:
 

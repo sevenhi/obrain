@@ -36,6 +36,15 @@ date: 2026-09
 
 ## 1. 归一化演进:post-norm → pre-norm → RMSNorm
 
+下图把三次挪动串成一条链:归一化从残差相加之后移到子层输入,再砍掉减均值。每次改动都只为一个具体问题买单——读任何新架构,先看这一处放在哪。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-llm-norm-lineage.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="归一化三次挪动:post-norm → pre-norm → RMSNorm"></iframe>
+</div>
+
+
 ### 1.1 post-norm vs pre-norm
 
 原 Transformer(Vaswani 2017)是 **post-norm**:`x = LayerNorm(x + Sublayer(x))`——归一化在残差相加**之后**。问题:深层网络里梯度必须反复穿过每层的 LayerNorm,残差主干不再"恒等直通",**深层训练不稳,通常需要 learning-rate warmup 才能收敛**(Xiong et al., ICML 2020, arXiv:2002.04745 给出理论分析:pre-LN 的梯度量级与层数无关,post-LN 的梯度在最底层附近被层数放大)。
@@ -60,6 +69,15 @@ RMSNorm(x)   = x / RMS(x) · g,   RMS(x) = sqrt(mean(x²) + ε)   # 不减均值
 ---
 
 ## 2. 激活函数演进:ReLU → GeLU → SwiGLU
+
+下图对比标准 FFN 与 SwiGLU 的数据路径:标准 FFN 是「升维→激活→压回」;SwiGLU 是两条并行线性投影,一条经过 Swish 当门、一条原样当内容,逐元素相乘后压回。注意内维为什么必须压到 (2/3)·4d。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-llm-swiglu-ffn.workflow.html"
+        style="width:100%;height:760px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="SwiGLU 与标准 FFN 的结构差异"></iframe>
+</div>
+
 
 FFN(逐位置前馈层)是 Transformer 里参数最多的组件(`4d×d×2` 每层),激活函数选择直接影响容量利用:
 
@@ -87,6 +105,15 @@ FFN(逐位置前馈层)是 Transformer 里参数最多的组件(`4d×d×2` 每�
 LLaMA(Meta AI,2023-02)证明**只用公开数据**就能训出第一梯队基础模型:7B~65B 四档,1.0~1.4T tokens。**架构上对原始 Transformer 只做三处修改**——① pre-normalization + **RMSNorm**(GPT-3 路线,稳训练);② ReLU FFN → **SwiGLU**(PaLM 路线,内维取 (2/3)·4d 保持参数量对齐);③ 绝对正弦位置编码 → **RoPE** 每层旋转(GPT-NeoX 路线)。这三件套自此成为开源 LLM 事实标准(Llama 2/3、Qwen、Mistral 等全部沿用)。**训练哲学**是核心贡献:Hoffmann(Chinchilla)scaling law 只优化训练算力,LLaMA 把**推理预算**纳入——给定目标性能,推理最快的模型胜出,所以"小模型 + 远超 Chinchilla 建议量的数据"(7B 训 1T tokens,Chinchilla 建议 7B 只配 ~140B);结果 7B 在 1T tokens 后 loss 仍在降,**LLaMA-13B 多数基准超 GPT-3(175B,10× 大),LLaMA-65B 与 Chinchilla-70B/PaLM-540B 同档**。工程侧:65B 在 2048×A100-80G 上 380 tokens/s/GPU,1.4T tokens ≈ 21 天;attention 用 xformers 的高效因果实现(前向思想来自 Rabe & Staats 的 O(1) 注意力内存,反向来自 FlashAttention),加手工反向的选择性激活重计算 + 模型/序列并行 + 通信重叠。
 
 ### 3.1 为什么"小模型多数据":把推理预算写进 scaling law
+
+下图展示 scaling law 目标函数的三次改写:Kaplan 只看参数,Chinchilla 发现参数与数据要同速翻倍,LLaMA 再把「每个 token 的推理成本」塞进目标函数——于是 7B 可以训 1T tokens。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-llm-token-budget.workflow.html"
+        style="width:100%;height:730px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="从 Kaplan 到 LLaMA:推理预算如何进入 scaling law"></iframe>
+</div>
+
 
 - Kaplan(2020):性能主要随参数量涨 → 大家拼命堆大模型;
 - Hoffmann/Chinchilla(2022, arXiv:2203.15556):固定**训练**算力下,最优是参数量与数据量同速增长(~20 tokens/参数;论文原话 "for every doubling of model size the number of training tokens should also be doubled",训练 400+ 个 70M~16B 模型、5~500B tokens 拟合得出)→ 10B 配 200B tokens;Chinchilla-70B(4× Gopher 数据)在 MMLU 上 67.5%,超 GPT-3/Gopher-280B/MT-NLG-530B,且推理便宜得多;
@@ -156,6 +183,15 @@ LLaMA(Meta AI,2023-02)证明**只用公开数据**就能训出第一梯队基础
 
 ## 4. 位置编码演进:正弦 → learned → RoPE → ALiBi
 
+下图并列四条路线,判断只看两个轴:超出训练长度还能不能用、要不要占参数。RoPE 与 ALiBi 走的是「改造 QK 内积」这条路,所以能外推;两种绝对编码不能。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-llm-positional-encoding.workflow.html"
+        style="width:100%;height:820px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="位置编码四条路线对比"></iframe>
+</div>
+
+
 ### 4.1 正弦绝对编码(原 Transformer, 2017)
 
 `PE(pos,2i)=sin(pos/10000^{2i/d})`、`PE(pos,2i+1)=cos(...)`,波长 2π → 10000·2π 几何级数。选择理由:对任意固定偏移 k,PE_{pos+k} 可表示为 PE_pos 的线性函数 → 容易学"按相对位置 attend";理论上可外推到比训练更长的序列(AIAYN Table 3 行 E:learned 与正弦几乎同分,dev BLEU 25.7 vs 25.8)。
@@ -193,6 +229,15 @@ softmax( q·kᵀ − m·|i−j| )      # m 为每个 head 预设的固定斜率(
 ---
 
 ## 5. 演进线:GPT → LLaMA → Llama 2/3
+
+下图把四代模型放在同一条时间轴上,按「架构组件」和「数据与上下文」两条泳道对照——能直接看出三件套自 LLaMA 起没有再动,所有增长都在 tokens 量、context 长度和 tokenizer 词表上。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-llm-evolution.timeline.html"
+        style="width:100%;height:760px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="GPT-3 → LLaMA → Llama 2/3 演进时间轴"></iframe>
+</div>
+
 
 | | GPT-3 (2020) | LLaMA 1 (2023-02) | Llama 2 (2023-07) | Llama 3 (2024-07) |
 |---|---|---|---|---|

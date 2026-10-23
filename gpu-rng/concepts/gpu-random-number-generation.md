@@ -39,6 +39,15 @@ date: 2026-09
 
 Salmon 等人的关键翻转:传统 PRNG 是"复杂 f + 平凡 g",counter-based 反过来用"**平凡 f + 复杂 g**"。
 
+> 下图是这条翻转的数据通路:左边只剩「key + counter」两个输入,所有质量压力都压到双射 b_k 上,右边直接出随机数。没有任何中间状态要存——这是它能天然并行、且能跨硬件复现的根本。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/rng-counter-based.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="counter-based 的关键翻转:状态退化成计数器,复杂度全压到 b_k 上"></iframe>
+</div>
+
+
 ```
 传统:   s_{m} = f(s_{m-1})            u_n = g(s_{⌊n/J⌋})   // f 复杂,g 平凡(线性映射到 [0,1))
 counter: s_n = (s + 1) mod 2^p          u_{k,n} = h_j(b_k(n))  // f 只是计数器,b_k 是 keyed 双射
@@ -66,9 +75,27 @@ counter: s_n = (s + 1) mod 2^p          u_{k,n} = h_j(b_k(n))  // f 只是计数
 - **乘子怎么定**:量化 avalanche(用 χ² 统计量,测 4 轮),遗传算法式搜索(点突变 + 重组 + 最速下降)最大化 avalanche,再过全套 Crush 定最小轮数。结果:Philox-4×32 用 `0xCD9E8D57` 与 `0xD2511F53`;Philox-2×64 用 `0xD2B74407B1CE6E93`;Crush-resistant 最小轮数为 Philox-4×32-7 / 2×64-6 / 4×64-7。
 - **为什么 4×32 适合 GPU**:依赖 32-bit 乘法,GPU(及低功耗嵌入式 CPU)支持更好;SC11 实测 GTX580 上 202 GB/s/chip(已知单芯片最高吞吐),AMD HD6970 上 113 GB/s/chip。cuRAND 用带 3 轮安全裕度的 **Philox-4×32-10**。
 
+> 下图把「一轮 Philox」拆开给你看:两个乘子各出一条 mulhi/mullo,高半拿来交叉异或,轮末 key 按 Weyl 序列加常数。看懂这一轮,就懂了为什么它是 GPU 上最快的 counter-based。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/rng-philox-round.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Philox-4×32 的一轮:两个乘子 + Weyl 序列推 key,重复 10 轮"></iframe>
+</div>
+
+
 ### 1.4 MTGP:一个 block 协作推进一个大 generator
 
 Saito/Matsumoto 的路子正相反——**不抛弃 F2-linear 递推,而是把递推内部的并行度暴露出来**:
+
+> 下图把两条路线并排对比。左边是朴素做法(SDK-MT,4096 个 MT607 各占一份状态),右边是 MTGP:一个 block 共享一个大状态,内存反而只要 32-bit×线程数。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/rng-thread-vs-block.architecture.html"
+        style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="MTGP 反着走:不是一线程一 generator,而是一个 block 共享一个大状态"></iframe>
+</div>
+
 
 - **递推结构**:`x_{N+i} = g(x_{M+i}, x_{1+i}, x_{i})`,M 是 middle position。当数组长度 L ≥ 2N−M 时,`i = 0 … N−M−1` 这一段可**并行计算**(到 i=N−M 时才需要串行依赖)。MTGP 就用这 N−M 个并行位喂一个 block 的线程。
 - **一线程一 generator vs 一 block 一 generator**:朴素做法(SDK-MT)是 4096 个 MT607,每线程一个,内存 = (607+参数)×线程数;MTGP 是**一 block 共享一个大状态**,内存 = 32-bit×线程数,状态放 shared memory,周期却高达 2¹¹²¹³−1 且高维等分布更好。三种周期 2¹¹²¹³−1 / 2²³²⁰⁹−1 / 2⁴⁴⁴⁹⁷−1 对应线程数 256 / 512 / 1024。
@@ -92,6 +119,14 @@ Saito/Matsumoto 的路子正相反——**不抛弃 F2-linear 递推,而是把�
 
 ## 2. 可复现细节
 
+> 在进入代码细节前,先把 MTGP 递推里「哪一段能并行」看清楚:递推的三个自变量时滞不同,所以前 N−M 个位置互不依赖,正好喂满一个 block。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/rng-mtgp-recursion.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="MTGP 递推里哪一段能并行:i = 0 … N−M−1"></iframe>
+</div>
+
 ### 2.1 Philox-4×32 单轮(S-box)伪码
 
 ```
@@ -108,6 +143,15 @@ Saito/Matsumoto 的路子正相反——**不抛弃 F2-linear 递推,而是把�
 无状态:给定 (counter, key) 直接算出输出,不需要保存中间状态。
 
 ### 2.2 cuRAND device API 用法(GPU kernel 内生成)
+
+> 下面这张图是官方 Performance Notes 的直接落地:state 存 global、初始化只做一次、生成与初始化拆成两个 kernel。右侧两个反例是常见但别默认采用的做法。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/rng-curand-state-reuse.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="cuRAND 的正确用法:state 存 global,跨 launch 复用"></iframe>
+</div>
+
 
 ```cpp
 #include <curand_kernel.h>
@@ -143,6 +187,14 @@ __global__ void gen(curandStatePhilox4_32_10_t* s, float* out) {
 ---
 
 ## 3. 数据对比
+
+> 表格之前先看决策路径:选型的第一个问题不是「谁快」,而是「要不要跨平台可复现」——答案决定走 Philox 还是 MTGP。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/rng-picker.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="选型决策:先问「要可复现」还是「要超长周期」"></iframe>
+</div>
 
 ### 3.1 SC11 counter-based 性能/内存表(节选,cpB=cycles per byte,越低越快)
 

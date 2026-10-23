@@ -25,6 +25,15 @@ CPU 世界有 BLIS:核心 microkernel 是**单线程 agent 发 SIMD 指令**,多
 
 ## 1. 机制原理:GPU 为什么需要自己的 microkernel 概念
 
+下图把 BLIS 的三条前提逐条摆到 GPU 上对照:agent 从单线程变一群、指令从 1D SIMD 变 3D tensor core、切分图案从「只动最外层」变成「每代重写」。三条全塌,但「决定哪些逻辑坐标映射到哪个 agent」这个定义本身没变。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-blis-formula-breaks.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="BLIS 三条公式在 GPU 上的失效点"></iframe>
+</div>
+
+
 ### 1.1 BLIS 的成功公式(CPU)
 
 BLIS 的关键设计:
@@ -63,6 +72,15 @@ CUTLASS 3.x = 对不变量建接口(Atom/TiledMMA/Collective 概念),对变化�
 
 ### 1.4 两级 microkernel 与五层 API
 
+下图是五层 API 的包含关系,并把「空间」「时间」两个词标在对应层上:TiledMMA 管数据怎么切给线程(空间),Collective 管节拍怎么流水(时间),Kernel 只做组合与调度。读源码先定级,就靠这张图。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-two-level-microkernel.tree.html"
+        style="width:100%;height:800px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="五层 API 与两级 microkernel"></iframe>
+</div>
+
+
 概念层级(自底向上),对应 API 入口:
 
 | 层 | 概念 | API 入口 | 组合点(可定制什么) |
@@ -80,6 +98,15 @@ CUTLASS 3.x = 对不变量建接口(Atom/TiledMMA/Collective 概念),对变化�
 ## 2. 可复现细节
 
 ### 2.1 MMA Atom:一条指令的完整语义固化
+
+下图对照三代指令的 ThrID 与值布局:Pascal 单线程、Volta 8 线程 quadpair、Ampere 整 warp。同一件事三种线程切分——这就是「没有平凡办法把 partitioning 泛化跨代」的具体形态,也是 Atom 抽象存在的理由。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-atom-generation-layouts.workflow.html"
+        style="width:100%;height:760px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="三代 MMA Atom 的线程布局差异"></iframe>
+</div>
+
 
 Atom = `MMA_Op`(裸 PTX)+ `MMA_Traits`(PTX 元信息)→ 提供 checked call 接口与 fragment 生成。Traits 编码 ISA 里**不表达**的语义:值类型、collective 的线程布局、`[thr_id, val_id] → 逻辑坐标 (M,N,K)` 的数据布局映射。三个真实 traits(原 PPT 摘录):
 
@@ -116,6 +143,15 @@ template <> struct MMA_Traits<SM80_16x8x8_F32F16F16F32_TN> {
 注意布局方向:traits 里的 layout 是 **(thr,val) 域 → MNK 逻辑坐标**;使用侧一般想要它的逆(MNK → thr,val),由 CuTe 代数的 `right_inverse/left_inverse` 完成。三代指令的 ThrID/值布局完全不同——这正是"没有 trivial 方法把 partitioning 泛化跨代"的具体形态,也是 Atom 抽象要吞掉的复杂度。
 
 ### 2.2 TiledMMA:空间 microkernel 的三个旋钮
+
+下图是三个旋钮的作用顺序:AtomLayout 先定给谁、ValLayout 再定每线程几份值、Permutation 最后调 tiling 形状。三个都默认时就是 Hopper 的大 atom;三个全开才是 Volta。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-tiledmma-three-knobs.workflow.html"
+        style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="TiledMMA 的三个旋钮"></iframe>
+</div>
+
 
 ```cpp
 template <class MMA_Atom,
@@ -169,6 +205,15 @@ for (int k = 0; k < size<1>(tCrA); ++k)
 对照 CUTLASS 2.x:同样的事要靠**每代架构手写 iterator/layout functor**,"indexing math 难写更难维护"。TiledCopy 结构完全同构(`Copy_Op → Copy_Traits → Copy_Atom → TiledCopy → ThrCopy`,多出 `retile_D` 把目标 fragment 重排成 copy 视角),并且 `make_tiled_copy_A(copy_atom, tiled_mma)` 可以**直接继承 MMA 的 accumulator 布局**——这就是"copy 与 compute partitioning 图案不一致"问题的工程解:让 copy 按 math 的图案重铺。
 
 ### 2.4 Collective:时间 microkernel 与 dispatch policy
+
+下图把三个 dispatch policy 名字逐项拆开看:同步机制从「谓词化 load」到「cp.async n-buffer」再到「TMA + mbarrier」,编排者从单线程变成 warp-specialized 的生产者/消费者。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-collective-dispatch-policy.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Collective 的 dispatch policy 演进"></iframe>
+</div>
+
 
 ```cpp
 template <class DispatchPolicy, class TileShape,

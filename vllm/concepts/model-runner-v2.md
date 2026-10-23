@@ -35,6 +35,16 @@ date: 2026-10
 
 ## 1. Persistent Batch:每请求一条永久行
 
+> 下图把原文那两行 ASCII 展开成完整生命周期:行怎么占、每步怎么 gather、finish 与抢占为什么都退化成「标记空闲」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-persistent-batch.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Persistent Batch 生命周期"></iframe>
+</div>
+
+
 ### 1.1 机制
 
 MRV2 把"持久状态"和"本步输入"彻底分家:
@@ -62,6 +72,16 @@ idx: 0   1   2   3  ... 1023            query_start_loc  [0, 5, 9, ...]
 ---
 
 ## 2. Async-First,以及"不用 barrier 也能防竞态"
+
+> 两种写法并列:V1 靠同步点保护同一块内存,MRV2 让读写落在两块内存上——后者从结构上就不可能漏。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-async-snapshot.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="async barrier vs 快照"></iframe>
+</div>
+
 
 ### 2.1 问题形状
 
@@ -112,6 +132,16 @@ return pp_size
 ## 3. StagedWriteTensor + UVA:大状态只搬 diff
 
 ### 3.1 机制:五步代替"整张量重拷"
+
+> 数据流图:`stage_write` 只攒 diff,`apply_write` 一次 kernel 落盘,`cu_lens` 的前缀和让一个下标切出任意段。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-staged-write.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="StagedWriteTensor 五步"></iframe>
+</div>
+
 
 block table 这类张量每步**只有几行变化**,整份 H2D 拷贝是纯浪费。`StagedWriteTensor`(`vllm/v1/worker/gpu/buffer_utils.py`)的做法:
 
@@ -168,6 +198,16 @@ class UvaBufferPool:
 
 ### 4.2 Gumbel-max 采样:一个 kernel 顶替 softmax + multinomial
 
+> kernel 内三步:按 (seed,pos) 定位随机流 → 造 Gumbel 噪声 → 取 argmax;右侧是原文点出的三个细节。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-gumbel-sampling.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Gumbel-max 采样"></iframe>
+</div>
+
+
 `sample/gumbel.py` 的核心:
 
 ```python
@@ -198,6 +238,16 @@ def gumbel_noised_argmax(logits, keys, mask, seed, pos, temp, USE_FP64):
 ## 5. 显式 CUDA Graph:一个 manager、一个描述符键
 
 ### 5.1 `CudaGraphManager`(`vllm/v1/worker/gpu/cudagraph_utils.py`)
+
+> 分派流程图:查表 → 逐个兼容性判定 → 命中重放 / 显式回退。`cg_mode=NONE` 是正常路径,不是异常。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-cudagraph-dispatch.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="CudaGraphManager.dispatch"></iframe>
+</div>
+
 
 ```python
 self.graphs: dict[BatchExecutionDescriptor, torch.cuda.CUDAGraph] = {}

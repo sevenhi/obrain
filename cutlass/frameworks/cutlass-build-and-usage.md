@@ -74,6 +74,14 @@ date: 2026-09
 
 ## 2. 基本构建(只构建你要的)
 
+> 下面这张图把「你要做什么 → 走哪条构建路径」画成一条判断链,并给出编译太慢时依次该拉哪三个开关。**路径选错(给 header-only 用法去搭 cmake 工程)是新手最常见的绕路**。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-build-decision.workflow.html"
+        style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="构建路径怎么选:header-only 用 vs 构建示例"></iframe>
+</div>
+
 ```bash
 export CUDACXX=${CUDA_INSTALL_PATH}/bin/nvcc
 mkdir build && cd build
@@ -118,6 +126,14 @@ cmake .. -DCUTLASS_ENABLE_CUBLAS=OFF -DCUTLASS_ENABLE_CUDNN=OFF
 
 ## 3.5 编译你自己的第一个 kernel(header-only 用法)
 
+> 下图把 `sm_90` 与 `sm_90a` 的两种命运画成状态转移:少了 `a` 后缀,编译期照样放行,错误要到运行时才暴露——这正是 §8 FAQ 第一条的成因。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-arch-suffix.lifecycle.html"
+        style="width:100%;height:520px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="少一个 a 后缀会发生什么:sm_90 vs sm_90a 的两种命运"></iframe>
+</div>
+
 CUTLASS 是 header-only,自己写 kernel 时**只需把 include 路径指对 + 开两个 flags**,不需要整个 CMake 工程:
 
 ```bash
@@ -142,6 +158,14 @@ nvcc -std=c++17 \
 > 来源:杨远航《CUTLASS 笔记 (1)》Minimal GEMM Kernel(CUTLASS 4.1.0,代码在 SM90 上编译验证)。CuTe API 名以 [../concepts/cute-layout-algebra.md](../concepts/cute-layout-algebra.md) 为准。这是"不用 CollectiveBuilder、直接裸用 CuTe"的最小完整闭环:**写 kernel → PyTorch binding → 精度验证 → 计时 → ncu/PTX 分析**。
 
 ### 3.6.1 场景与用到的 CuTe 组件
+
+> 下图是 §3.6 那个 16×8×8 Minimal GEMM 的数据流:五层 CuTe 组件逐层展开,最后落到 6 条 PTX。看懂这张图就理解了「CUTLASS 是 PTX 的白盒封装」这句话的具体含义。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-minimal-gemm-path.dataflow.html"
+        style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Minimal GEMM:五层 CuTe 抽象怎么展开成 6 条 PTX"></iframe>
+</div>
 
 算子:单条 `SM80_16x8x8_F16F16F16F16_TN` mma 指令,算 16×8×8 的 `C = A*B`(或 `C = A*B + C`);一个 block、32 线程(1 warp)、无 SMEM、无分级 tiling。组件对应关系:
 
@@ -240,6 +264,14 @@ SASS(SM90)全程序仅 34 条,核心同样 6 条:`LDG.E`×3 → `HMMA.1688.F16` 
 
 ## 4. 推荐用法(3.x):CollectiveBuilder
 
+> 下图是 `CollectiveBuilder` 的推导链:你只给高层准则(架构、算符类别、A/B 的类型布局对齐、tile 与 cluster 形状),`DispatchPolicy`、stage 数、SMEM 布局全是它的**推导产物**。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-collective-builder.sequence.html"
+        style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="CollectiveBuilder 的推导链:你给准则,它填模板"></iframe>
+</div>
+
 CUTLASS 3.x 推荐 `CollectiveBuilder`——**给出高层准则,底层参数自动推导**,避免手拼一堆模板。下面是根据示例 49 源码整理的**真实签名骨架**(`CollectiveBuilder` 的第二个实参是算符类别 `OpClassTensorOp`,不是 DispatchPolicy——后者是 builder 的**推导产物**,这正是"自动推导"的体现):
 
 ```cpp
@@ -330,6 +362,14 @@ make cutlass_profiler -j16
 5. **Windows 上 3.x 构建失败** → 已知问题(官方 README 注明 **3.x 在 Windows 上有已知构建问题,团队修复中**,未提 4.x),建议 Linux。
 
 ### 8.1 v4.8.1 已知问题清单(照抄官方 release note,写内核前先对一遍)
+
+> 下图把这三类坑按「症状 → 触发条件 → 规避」拆成树:它们的共同点是**API 层不报错、编译也能过**,只在运行结果或访存上暴露。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-build-pitfalls.tree.html"
+        style="width:100%;height:520px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="CUTLASS 4.8.1 已知问题:三类「不报错但算错数」的坑"></iframe>
+</div>
 
 v4.8.1(2026-10-15 记入 CHANGELOG,2026-10-20 打 tag;相对 v4.8.0 只有 2 个 commit、16 个文件,属**补丁版**)在 release note 里明确列了三类"会算错数"的坑,都是**编译器/指令级**的,不会在 API 层报错:
 

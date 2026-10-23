@@ -35,6 +35,15 @@ date: 2026-10
 
 ## 1. 并行原语速览(为 V3 编排做铺垫)
 
+> 下图把六种原语排成两排:上排是 V3 训练真正采用的三维(PP / EP / ZeRO-1 DP),下排是被刻意放弃的三维(TP / SP / CP)。看清楚「各切什么、通信什么」,才能理解后面为什么敢把 TP 整条砍掉。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-v3-parallel-primitives.architecture.html"
+        style="width:100%;height:520px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="六种并行原语:各切什么、通信什么、V3 用不用"></iframe>
+</div>
+
+
 大模型训练的并行原语,按「切什么、通信什么、显存归谁」拆开:
 
 | 原语 | 切什么 | 主要通信 | 显存效果 | V3 是否用 |
@@ -70,6 +79,15 @@ date: 2026-10
 | 精度 | **FP8 混合精度**(超大规模首次验证) |
 
 ### 2.2 三维切分的具体含义
+
+> 下图是本节那段 ASCII 草图的结构化版:三个维度各切什么、彼此怎么嵌套。注意 PP 的两端(stage 0 与 stage 15)被 DualPipe 绑在同一个 rank 上,这是 §2.4 MTP 能物理共享 embedding/output head 的前提。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-v3-3d-partition.architecture.html"
+        style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="V3 训练的三维切分:PP16 × EP64 × ZeRO-1 DP"></iframe>
+</div>
+
 
 ```
                  全局 2048 GPU(H800)
@@ -126,6 +144,15 @@ MTP(多 token 预测,D=1,预测额外 1 个 token)不只是损失函数上的改
 
 ### 3.2 DualPipe 在编排层做了什么
 
+> 下图把 1F1B 与 DualPipe 放在同一时间轴上对比:1F1B 的气泡集中在流水线两端(warmup 填充 + cooldown 排空),DualPipe 从两端同时灌入 micro-batch,让一段的气泡被另一段的计算填掉,气泡公式从 `(PP−1)(F+B)` 降到 `(PP/2−1)(F&B+B−3W)`。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-v3-dualpipe-schedule.waterfall.html"
+        style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DualPipe vs 1F1B:气泡从哪来、被谁填掉"></iframe>
+</div>
+
+
 每个 chunk 被拆成四段:**attention → all-to-all dispatch → MLP → all-to-all combine**;反向 chunk 再把 attention/MLP 各拆成 **backward for input / backward for weights**(ZeroBubble 风格)。然后:
 
 - 在**一对前向+反向 chunk** 内重排这四段,并**手工调配通信 SM 与计算 SM 的比例**;
@@ -144,6 +171,15 @@ MTP(多 token 预测,D=1,预测额外 1 个 token)不只是损失函数上的改
 
 ### 3.3 DeepEP:all-to-all 本身要快、还要省 SM
 
+> 下图把这一层 a2a 的两趟(dispatch / combine)摊开:去程 IB→NVLink 两级转发、回程反方向累加,以及为什么「每 token 最多进 4 个节点」是重叠成立的前提而不是可选优化。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-v3-deepep-dispatch.workflow.html"
+        style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DeepEP 的 dispatch 与 combine:token 怎么跨节点找 expert、怎么回来"></iframe>
+</div>
+
+
 即便重叠,通信内核也得吃满带宽、且不能占掉太多 SM(H800 共 **132 SM**,论文口径分配 **20 SM** 给通信):
 
 | 机制 | 论文口径 |
@@ -161,6 +197,15 @@ MTP(多 token 预测,D=1,预测额外 1 个 token)不只是损失函数上的改
 
 ### 3.4 时间线视图(一层内)
 
+> 下图是上面那段 ASCII 时间线的交互版:计算流与通信流在同一时间轴上的相对位置。**时间轴是相对量**(illustrative),只表达重叠关系与比例,不是实测微秒数。灰条是反事实基线:不做重叠就有一半时间在等网络。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-v3-a2a-timeline.waterfall.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="一层之内:计算、all-to-all、PP 通信与 SM 划分怎么叠"></iframe>
+</div>
+
+
 ```
 时间 ──────────────────────────────────────────────────────────►
 计算流: [attention][  MLP/expert GEMM  ][attention][  MLP ... ]
@@ -177,6 +222,15 @@ SM 划分: 计算 SM 跑 GEMM | 通信 SM(20)跑 IB/NVLink 转发| 同卡并发
 ## 4. 显存预算账:参数/梯度/优化器/激活怎么被摊掉
 
 ### 4.1 四类占用的分摊路径
+
+> 下图把这四笔账拆成树:参数靠 PP × EP 双切、梯度随参数走、优化器由 ZeRO-1 单独切一刀、激活靠「点名重算 + FP8 + 只缓存输入」压单份大小。四笔都过,才敢不用 TP。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-v3-memory-budget.tree.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="每卡显存账:四类占用各由谁来摊"></iframe>
+</div>
+
 
 | 显存项 | 谁来摊 | V3 具体做法 |
 |---|---|---|

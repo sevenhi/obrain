@@ -21,6 +21,14 @@ PD 分离（Prefill/Decode Disaggregation）把 **compute-bound 的 prefill** �
 
 ### 1.1 两个阶段的算力画像完全不同
 
+下图把两个阶段的资源画像摊开:prefill 侧是 compute-bound(瓶颈 GPU FLOPS),decode 侧是 memory-bound(瓶颈 HBM 带宽)——**它们不是同一种资源,所以混在一起跑必然互相浪费**:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-pd-topology.architecture.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="PD 分离的基本拓扑与两池资源画像"></iframe>
+</div>
+
 | 阶段 | 计算形态 | 瓶颈 | 典型指标 |
 |---|---|---|---|
 | **Prefill** | 大矩阵乘（prompt 整段/分块前向），算术强度高 | compute-bound（GPU FLOPS） | TTFT、prefill 吞吐 |
@@ -88,6 +96,22 @@ Splitwise 的贡献是把 phase splitting 落到共享集群（甚至同一 GPU 
 
 失败点也按这五步看：路由没预留、prefill 超时、传输慢/断、接收端缓冲满、decode 侧 slot 映射不一致——任一步出问题都要能降级回单体实例。
 
+下图把五步画成数据流:上排是主干,下排是每段额外多出来的动作。特别注意**第 3 跳(按 slot 打包 → 传输通道)是新增的一跳**,单体 vLLM 里根本不存在:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-pd-request-path.dataflow.html"
+        style="width:100%;height:460px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="一条请求的 PD 五段路径"></iframe>
+</div>
+
+下图把同一条路径画成状态机:新增的「KV 传输中」是唯一能「传了一半」的状态,所以它必须有超时与降级出口,而不能只有成功出口——**这四条降级边就是 PD 比单体多出来的故障面**:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-pd-request-states.lifecycle.html"
+        style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="PD 下一条请求的状态机与降级路径"></iframe>
+</div>
+
 ### 2.3 vLLM 侧落地形态（按 2026-10 文档快照）
 
 - **多实例部署**：prefill 实例与 decode 实例是两个（或两组）`vllm serve`/engine，靠 **KV transfer 配置**（`kv_transfer_config` / KVConnector）互相交接；具体字段名与 connector 列表随版本变化，部署前用当前版本文档与 `--help` 核对。
@@ -100,6 +124,14 @@ Splitwise 的贡献是把 phase splitting 落到共享集群（甚至同一 GPU 
 ## 3. 何时用 / 何时不用
 
 ### 3.1 决策表
+
+下图把这张表变成四道门:**任何一道不过就停在软融合**。注意左边那条竖线——小模型/单卡场景在第一步就被筛掉,不该走完整个流程:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-pd-decision.workflow.html"
+        style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="该不该上 PD 分离的四道门"></iframe>
+</div>
 
 | 流量/部署特征 | 建议 | 理由 |
 |---|---|---|

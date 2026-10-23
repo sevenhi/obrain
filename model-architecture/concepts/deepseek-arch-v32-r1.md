@@ -27,6 +27,15 @@ date: 2026-10
 
 ## 1. 代际定位:V3.2 在 DeepSeek 谱系中的位置
 
+> 下图把「代码级逐项对照」的结果组织成树:所有新增/改动条目,无一例外都服务于 DSA。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-v32-diff.tree.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="V3 → V3.2 的结构 diff 树"></iframe>
+</div>
+
+
 | 代 | arXiv | 核心结构增量 | 相对上一代改了什么 |
 |---|---|---|---|
 | V2 | 2405.04434 | MLA(低秩 KV 压缩 + 解耦 RoPE)+ 细粒度稀疏 MoE | dense → MLA + MoE |
@@ -121,6 +130,7 @@ date: 2026-10
 
 ### 3.1 两个组件
 
+
 DSA = **闪电索引器(Lightning Indexer)** + **细粒度 token 选择(fine-grained token selection)**。
 
 **① 闪电索引器** —— 论文公式 (1),计算 query `h_t` 与历史 token `h_s` 之间的索引分数:
@@ -145,6 +155,15 @@ u_t = Attn( h_t, { c_s : I_{t,s} ∈ Top-k( I_{t,:} ) } )
 只取 top-k(**2048**)个索引分数对应的 KV 条目,主注意力只在这 k 个条目上做。
 
 ### 3.2 代码里 DSA 的数据流(Indexer.forward,逐行对照)
+
+> 下图是 `Indexer.forward` 的完整链路(逐行对照原文代码):共享的 `qr`、独立 key、哈达玛旋转、FP8 打分、top-2048,最后转成 index_mask 加回主注意力的 scores。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-dsa-pipeline.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DSA 完整数据流"></iframe>
+</div>
+
 
 ```python
 def forward(self, x, qr, start_pos, freqs_cis, mask):
@@ -187,6 +206,15 @@ def forward(self, x, qr, start_pos, freqs_cis, mask):
 
 ### 3.3 主注意力的两条路径(稀疏化如何落地)
 
+> 两条路径的分叉与合流:masked MHA 走全矩阵 mask,MQA 走单行 mask,索引器是共用的一环。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-mla-two-paths.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="MLA.forward 的两条路径"></iframe>
+</div>
+
+
 ```python
 # v32_model.py MLA.forward 的两种模式:
 if mask is not None:        # MHA prefill(短序列,论文:masked MHA 模拟 DSA)
@@ -221,6 +249,15 @@ else:                       # MQA decode(长序列,真稀疏路径)
 ## 4. DSA 在 DecoderBlock 里的插入结构图
 
 ### 4.1 模型总览(结构不变,只 MLA 内嵌 Indexer)
+
+> 把原文 ASCII 结构图重画:主干 61 层、FFN 的 dense/MoE 分界、以及 Indexer 挂在 MLA 里而不是挂在 Block 上。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-v32-stack.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="V3.2-Exp 全模型结构"></iframe>
+</div>
+
 
 ```
 DeepSeek-V3.2-Exp 全模型

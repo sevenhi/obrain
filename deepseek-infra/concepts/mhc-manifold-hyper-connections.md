@@ -25,6 +25,14 @@ date: 2026-10
 
 ## 1. 问题:HC 拿到了收益,但破坏了恒等映射
 
+下图把这条因果链摊开:H_res 的流间混合既是 HC 的收益来源(消融 −0.022),也是增益失控的来源——而 mHC 只加了一条约束就把两端分开了。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-mhc-gain-runaway.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="HC 到 mHC 的增益失控与修复"></iframe>
+</div>
+
 ### 1.1 HC 是什么
 
 标准残差:$\mathbf{x}_{l+1}=\mathbf{x}_l+\mathcal{F}(\mathbf{x}_l,\mathcal{W}_l)$。HC(Zhu et al., 2024)把 $\mathbf{x}_l$ 沿宽度复制成 $n$ 条流 $\mathbf{x}_l\in\mathbb{R}^{n\times C}$(n 称 expansion rate),再用三个可学习映射管住「读入 / 写出 / 流间混合」:
@@ -51,6 +59,14 @@ $$\mathbf{x}_{l+1}=\mathcal{H}^{\mathrm{res}}_l\,\mathbf{x}_l+\mathcal{H}^{\math
 一句话因果:**identity mapping 是「守恒机制」(跨流平均信号强度不变),HC 的无约束混合把它变成「放大/衰减器」,深度一长就爆。**
 
 ### 1.3 代价二:访存与并行通信
+
+公式只给了数字,下图把它落到每一步的实际读写位置——注意融合前后差了一个数量级,这正是 §4 那个 kernel 存在的理由。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-mhc-io-traffic.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="未融合 21C 读 vs 融合后 5C"></iframe>
+</div>
 
 HC 的 FLOPs 几乎为零,但**访存成了新瓶颈**。论文 Tab.2 给了每 token、每残差层的元素级 I/O(不含 $\mathcal{F}$ 内部):
 
@@ -82,6 +98,14 @@ $$\mathcal{P}_{\mathcal{M}^{\mathrm{res}}}(\mathcal{H}^{\mathrm{res}}):=\left\{H
 另外 $\mathcal{H}^{\mathrm{pre}},\mathcal{H}^{\mathrm{post}}$ 只做**非负约束**(sigmoid / 2·sigmoid),防止正负系数相互抵消(也算一种特殊的流形投影)。
 
 ### 2.2 参数化:Sinkhorn-Knopp 迭代
+
+下图是 mHC 唯一真正的机制:24 个 logit 如何分成三路、行/列归一如何交替收敛到双随机矩阵。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-sinkhorn-projection.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Sinkhorn-Knopp 投影到 Birkhoff 多面体"></iframe>
+</div>
 
 先把 $\vec{\mathbf{x}}_l=\mathrm{vec}(\mathbf{x}_l)\in\mathbb{R}^{1\times nC}$ 做 RMSNorm,再一次投影出所有系数(论文 Eq.10–13 把 bias 与投影合并成 $\varphi_l\in\mathbb{R}^{nC\times(n^2+2n)}$、标量 $\mathbf{b}_l\in\mathbb{R}^{1\times(n^2+2n)}$,RMSNorm 权重也吸进 $\varphi_l$):
 
@@ -147,6 +171,14 @@ n=4、L=30(27B 模型层数)代入 ≈ **4.5 层**;而 27B 每 stage 层数与�
 
 ### 4.2 6 个 warpgroup 的静态分工
 
+下图给出 6 个 WG 的角色、数据路径与两条跨 CTA 屏障——注意寄存器是按角色重分配、干完就交还的。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-mhc-warpgroup-roles.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="mega_mhc 的 6 warpgroup 分工与屏障"></iframe>
+</div>
+
 persistent kernel,`grid = num_sms`(一 SM 一 CTA),6 个 WG,每个 WG 静态领一个角色,注册器按角色重分配(`setmaxnreg`):
 
 ```
@@ -191,6 +223,14 @@ M 方向按 `BLOCK_M=64` 切 m-block,K 方向再切 `kNumSplits`,task = (m_block
 ---
 
 ## 5. 2026-10-20 的 `#478`:CUDA graph 重放时 `%gridid` 不是「这一次」
+
+下面这张时序图把 bug 复现出来:第 2 次 replay 的目标值正好等于第 1 次留下的终态,迟到的初始化 CTA 一放行就穿帮。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-mhc-cuda-graph-race.sequence.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="#478 屏障代次竞态与 epoch 修复"></iframe>
+</div>
 
 这是本轮同步要补的核心变化,也是一个**可以当教材的同步 bug**。
 

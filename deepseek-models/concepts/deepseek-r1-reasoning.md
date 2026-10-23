@@ -33,6 +33,15 @@ R1 的赌注是:**只给模型「最终答案对/错」这种便宜的规则信�
 
 ## 2. 算法底座:GRPO(R1 论文公式 (1)–(3))
 
+下图是一个 GRPO 训练步的完整数据流:同题采样 G 个回答 → 各自算规则 reward → 组内标准化成 Aᵢ → 裁剪目标 + KL。整条路径里没有 critic,这就是它能在 671B 上跑起来的原因。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dm-r1-grpo-step.workflow.html"
+        style="width:100%;height:730px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="GRPO 单个训练步的数据流"></iframe>
+</div>
+
+
 GRPO(Group Relative Policy Optimization)与 [deepseek-math.md](deepseek-math.md) 篇口径一致:**去掉 PPO 的 critic(价值函数),用「同一问题的 G 个回答组内标准化」做优势估计**。R1 论文 §2.2.1 原文:
 
 - 对每个问题 q,从旧策略 π_old 采样一组输出 {o₁…o_G},每个得 reward rᵢ;
@@ -82,6 +91,15 @@ optimizer.step()                  # 一个 step 内所有问题累积完再更�
 
 ## 3. R1-Zero:纯 RL、零 SFT 的对照实验(论文 §2.2)
 
+下图把三条 reward 路线并列:规则 reward(R1 选的)、神经 reward model(明确不用)、PRM / MCTS(试过但放弃)。每组下面标出具体的失效机制——读懂这张图,就懂了 R1 为什么长成这样。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dm-r1-reward-choices.tree.html"
+        style="width:100%;height:820px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="训练信号的三种来源与取舍"></iframe>
+</div>
+
+
 **做法**:DeepSeek-V3-Base 直接上 GRPO,不做任何 SFT。这是「推理能否纯靠 RL 激励出来」的第一个公开验证。
 
 **结果(有据数字,论文 Table 2 / Figure 2)**:
@@ -109,6 +127,15 @@ optimizer.step()                  # 一个 step 内所有问题累积完再更�
 
 ## 4. R1 正式流水线:四阶段(论文 §2.3)
 
+下图是四阶段的状态转移,右侧旁支是 R1-Zero:它只走第 ② 步,所以能力到但话说不清。每次 SFT/RL 交替都在补上一步的短板——这是 R1 与 R1-Zero 的全部差别。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dm-r1-four-stages.lifecycle.html"
+        style="width:100%;height:820px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="R1 四阶段流水线与 R1-Zero 旁支"></iframe>
+</div>
+
+
 | 阶段 | 做什么 | 关键数字/细节 |
 |---|---|---|
 | ① 冷启动 SFT | 数千条长 CoT 数据微调 V3-Base,作为 RL 起点 | 输出格式 `\|special_token\|<reasoning_process>\|special_token\|<summary>`;人写可读 pattern(带结尾摘要),过滤不友好回答 |
@@ -123,6 +150,15 @@ optimizer.step()                  # 一个 step 内所有问题累积完再更�
 ---
 
 ## 5. 蒸馏:小模型的推理能力从哪来(论文 §2.4、§4.1)
+
+下图是同底座 Qwen-32B 的两条路对照:自己跑 10K+ 步 RL 得 47.0,吃 R1 的 800k 轨迹只做 SFT 得 72.6。差的 25.6 个点说明「推理模式」本身就是资产。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dm-r1-distill-vs-rl.workflow.html"
+        style="width:100%;height:730px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="蒸馏 vs 直接 RL:同底座的对照"></iframe>
+</div>
+
 
 **做法**:用 R1 当 teacher 生成 800k 推理样本,对 6 个开源 dense 模型**只做 SFT、不做 RL**(Qwen2.5-Math-1.5B/7B、Qwen2.5-14B/32B、Llama-3.1-8B、Llama-3.3-70B-Instruct)。
 
@@ -168,6 +204,15 @@ vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-32B \
 ---
 
 ## 8. 谱系小结与互链
+
+下图是本文谱系小结的可视化版本:GRPO 来自 DeepSeekMath → R1-Zero 验证纯 RL → R1 四阶段补可读性 → 蒸馏压进 dense 模型;下方标出被放弃的 PRM / MCTS 两条路。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/dm-r1-lineage.timeline.html"
+        style="width:100%;height:740px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="R1 推理谱系时间轴"></iframe>
+</div>
+
 
 ```
 DeepSeekMath(2024,提出 GRPO,数学 7B RL)

@@ -22,6 +22,14 @@ date: 2026-10
 
 DeepSeek-V3 仍是标准 decoder-only Transformer,顶层结构为 `Embedding → N×DecoderBlock → RMSNorm → LM Head`。
 
+下图把 61 层的主干与两分支画出来,注意右侧那个「前 3 层 dense、后 58 层 MoE」的分界——**它是全模型唯一按层号区分的结构差异**:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-v3-stack.workflow.html"
+        style="width:100%;height:520px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DeepSeek-V3 全模型结构"></iframe>
+</div>
+
 ```
                     tokens [B, T]  (Byte-level BPE, vocab=129280)
                               │
@@ -156,6 +164,14 @@ class MLA(nn.Module):
 
 `absorb` 优化的意义:通过把 `W^UK`、`W^UV` 吸收进 `q_nope` 和输出投影,注意力分数可直接在 `d_c=512` 的 latent 空间计算,无需显式展开到 `n_h·d_h` 的 K/V,进一步省显存和带宽(这也是 FlashMLA 内核优化点)。
 
+下图把 naive 与 absorb 两种实现并排:两者的数学结果完全一样,**差别只在中间张量是 `n_h·d_h` 还是 `d_c`**。看懂这张图就不会把 absorb 误解成近似算法:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-v3-mla-absorb.workflow.html"
+        style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="MLA:naive 展开 vs absorb 吸收"></iframe>
+</div>
+
 ---
 
 ## 4. DeepSeekMoE(1 共享 + 256 路由,top-8)
@@ -202,9 +218,25 @@ P_i = (1/T) Σ_t s'_{i,t} ,  s'_{i,t} = s_{i,t}/Σ_j s_{j,t}
 
 源码对应(HF `MoEGate`, `topk_method="noaux_tc"`):`e_score_correction_bias` 就是 bias 项 `b_i`;选择时用 `scores + bias` 做 topk,权重回落到原始 `scores`。
 
+下图把这个机制画成训练期的闭环:每步「选路 → 统计负载 → 微调 bias」,注意 **bias 只进 top-k 选择、不进 gating 值**,这是它不扰动梯度的根本原因:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-v3-auxfree.lifecycle.html"
+        style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="aux-loss-free 负载均衡的训练闭环"></iframe>
+</div>
+
 ### 4.4 专家分组 + 节点受限路由(Node-Limited Routing)
 
 为降低训练通信成本,把 256 路由专家按 8 个专家一组分成组,每 token **最多路由到 4 个节点(M=4)**,节点按其上专家的 top-(K_r/M) 亲和度之和选取。训练框架据此实现近完全的计算-通信 overlap。源码 `Gate` 的 `n_groups/n_limited_groups/topk_groups` 即此机制(`group_scores = topk(2).sum(-1)` 再选组)。
+
+下图把这条路由链画全:从 sigmoid 亲和度开始,先过「节点分组」这一层(为通信),再过「组内 top-8」这一层(为均衡)。**两次分组目的不同,别混为一谈**:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-v3-node-limited.architecture.html"
+        style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="V3 sigmoid 路由与节点受限"></iframe>
+</div>
 
 ### 4.5 MoE 模块结构(源码)
 
@@ -232,6 +264,14 @@ class MoE(nn.Module):
 预测额外的未来 token,一方面**密化训练信号**提高数据效率,另一方面让模型学会**"预规划"表示**,从而提升主模型在下游 benchmark 上的表现。
 
 ### 5.2 模块结构(D=1,即只预测额外 1 个 token)
+
+下图是 MTP 的数据流:两半输入(主模型 hidden + 下一个 token 的 embedding)先各自 RMSNorm,拼成 2d 后由 `M_k` 投回 d 维,再过一层 Transformer,最后由**与主模型共享**的输出头出 logits:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-v3-mtp.dataflow.html"
+        style="width:100%;height:400px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="MTP 模块的数据流"></iframe>
+</div>
 
 ```
 主模型 last hidden: h_i^0  ────────────────┐
@@ -327,6 +367,14 @@ L_MTP = (λ / D) Σ_{k=1}^D L_MTP^k                              (25)
 ---
 
 ## 9. 与 V2 的代际 diff + 演进动因
+
+下图是这张表的树形版:注意根节点的五个孩子里,**只有「注意力」标注为「同」**——V3 的全部增量都在 FFN 规模、路由打分、负载均衡机制、训练目标与精度这四处:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-v3-vs-v2-diff.tree.html"
+        style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="V2 → V3 的代际 diff"></iframe>
+</div>
 
 | 维度 | V2 | **V3** | 动因 |
 |---|---|---|---|

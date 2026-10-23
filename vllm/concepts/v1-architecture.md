@@ -21,6 +21,14 @@ date: 2026-09
 
 ## 1. 三层结构(从上到下)
 
+下图把三层画成"进程内 / 进程外"的真实归属:实线是同步调用,ZMQ 虚线是跨进程的消息传递——**API 进程不碰调度,EngineCore 进程不碰流式发送**,这条边界是本篇所有设计的根:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-v1-three-layers.architecture.html"
+        style="width:100%;height:760px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="vLLM V1 三层架构"></iframe>
+</div>
+
 ```
 ┌────────────────────────────────────────────────────────────┐
 │  AsyncLLM (API 层)       vllm/v1/engine/async_llm.py        │
@@ -76,6 +84,14 @@ EngineCore.step()                            # core.py:597 (每步:schedule 本�
 
 > ⚠ batch queue **并非普适机制**:仅当 `max_concurrent_batches > 1`(PP>1,或显式异步调度时为 2)才存在(core.py:210-216);`async_scheduling` 默认由 `VllmConfig` 自动裁决(多种特性组合下被强制关,可 `--async-scheduling` 显式开)。调试时别默认它开着。
 
+下图把两条路径并排放:左边同步路径每步都白等 GPU,右边异步路径在 GPU 跑 batch N 时已经把 N+1 排好——**重叠不是靠更快的 kernel,是靠把 CPU 的空档填满**:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-v1-async-schedule.sequence.html"
+        style="width:100%;height:700px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="同步 step 与异步调度的时间线对比"></iframe>
+</div>
+
 **SchedulerOutput 字段(调度器→执行层的\"指令\",理解三层如何协作的关键)**:
 ```
 SchedulerOutput:
@@ -121,6 +137,14 @@ API 层与采样层的展开分别见 [api-server-openai-compat.md](api-server-o
 ## 3. 初始化链路(EngineCore 起来时做了什么)
 
 `EngineCore.__init__` 的 5 步(`core.py:108-205`):
+
+下图把这 5 步摊成一条从左到右的链,重点看第 2、3 步:**显存峰值必须先实测,块数才能算,顺序颠倒就无从下手**:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-v1-init-chain.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="EngineCore 初始化五步链"></iframe>
+</div>
 
 1. `register_all_kvcache_specs` + `get_kv_cache_specs()`:收集模型每层对 KV cache 的需求(block_size、head 数等);
 2. `determine_available_memory()`:跑 dummy batch 测峰值显存,算出可用于 KV cache 的余量;
@@ -175,6 +199,14 @@ GPUModelRunner.execute_model()
 
 `Executor.get_class()` 据 `ParallelConfig` 选实现(`vllm/v1/executor/abstract.py:49`):
 
+下图把「Executor 决定进程形态」与「TP/PP/DP 决定切分方式」这两层正交选择分层画出——**选错 Executor 是部署问题,选错并行维度是模型问题**:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-v1-executor-choice.tree.html"
+        style="width:100%;height:520px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Executor 三选一与并行维度"></iframe>
+</div>
+
 | Executor | 场景 | 机制 |
 |---|---|---|
 | `UniProcExecutor` | 单 GPU | 直接持有 Worker |
@@ -212,6 +244,14 @@ GPUModelRunner.execute_model()
 ## 8. 整体架构串联:一条请求的五段旅程
 
 把 vLLM 各主题串成一条完整的请求处理链路(各段细节在对应 concept 篇):
+
+下图是这条链路的时序版:每一圈代表一个请求 token 走完全程,连续批处理让它**循环若干轮**直到 FINISHED——中间三段的启动期工作(加载/量化/分布式)不在这条时序上:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-v1-request-journey.sequence.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="一条请求从 HTTP 到 SSE 的五段旅程"></iframe>
+</div>
 
 **① 请求入口**:一条 `POST /v1/chat/completions` 进入 FastAPI 路由层,路由只做返回形态分流,真实逻辑在 `OpenAIServingChat`;`to_sampling_params` 把请求参数映射成引擎侧 `SamplingParams`(三级回退 + 校验),再经 `AsyncLLM.generate()` 交给引擎进程([api-server-openai-compat.md](api-server-openai-compat.md))。
 

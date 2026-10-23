@@ -27,6 +27,14 @@ CuTe(CUTLASS 3.x 的核心库)用三个递进抽象把"硬件上怎么铺数据�
 
 ## 1. Layout:一切抽象的地基
 
+下图把「Layout 是坐标到线性索引的映射」落到具体数字上:同一个 (i,j)、只换 Stride,落点完全不同。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-layout-to-index.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Layout 把逻辑坐标翻译成内存偏移"></iframe>
+</div>
+
 > **一个 `Layout` 是从坐标空间到线性内存索引的映射**,本质是"怎么把多维数组摊平成一维地址"。
 
 ```cpp
@@ -54,6 +62,14 @@ Layout colMajor = Layout<Shape<_4,_8>, Stride<_1,_4>>{};   // (m,n) → m + n*4 
 // 手算验证:A∘B 把 B 的坐标 (i,j) 先经 B 映射到 A 的坐标,再经 A 映射到内存索引
 ```
 
+下图把上面这个官方例拆成四步演算(A 与 B 各算一遍)——卡住的时候按这张图的顺序推一遍。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-layout-composition.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="composition(A,B) 的官方例演算"></iframe>
+</div>
+
 **验证**:可复现 = 有输入、有运算、有输出。上面给的 `A=(6,2):(8,2)`, `B=(4,3):(3,1)` ⟹ `A∘B = ((2,2),3):((24,2),8)` 是官方文档原例,可在 CuTe 里 `print_layout` 验证。
 
 - **product**(`logical_product` / `tiled_product` / `zipped_product`):按一种 layout 复制另一种,用于用多次复制拼接成大 layout;
@@ -69,6 +85,14 @@ Layout colMajor = Layout<Shape<_4,_8>, Stride<_1,_4>>{};   // (m,n) → m + n*4 
 ---
 
 ## 2. MMA Atom:把一条硬件指令变成可组合的组件
+
+下图拆开 Atom 的两半:Operation 管指令、Traits 管布局元信息,以及 Traits 里到底写了哪三个字段。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-mma-atom-traits.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Atom = Operation + MMA_Traits"></iframe>
+</div>
 
 硬件 mma 指令是架构相关的(Ampere 的 `m16n8k16`、Hopper 的 `wgmma`…)。CuTe 把每条指令包装成**Atom** = **Operation struct**(具体 PTX 指令)+ **MMA_Traits struct**(元信息):
 
@@ -123,11 +147,27 @@ LayoutC_TV: ((_4,_8),(_2,_2)):((_32,_1),(_16,_8))
 
 ## 4. TiledMMA / TiledCopy:把 Atom 平铺成微内核
 
+先看整体层级——从一条 PTX 指令到完整 GEMM 一共五层,每次架构升级只有 Atom 那层动。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-tiled-mma-layers.tree.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="CuTe 抽象层级"></iframe>
+</div>
+
 单个 Atom 的粒度太细(一条指令)。**TiledMMA** 把多个 Atom **平铺(tile)和交织(interleave)**,构造更大、可复制的微内核:
 
 - **`TiledMMA` 提供 `partition_shape_A/B/C`、`thrfrg_*`、`make_fragment_*`** 等,把数据 layout **按线程分布**;**单线程视角的实际 partition 方法 `partition_A/B/C` 是 `ThrMMA`(`TiledMMA::get_slice()` 的返回物)的成员**——要先 `get_slice()` 拿 ThrMMA 再 partition,这是最易踩的坑**;
 - `TiledCopy` 同理,在多个线程/多个 Atom 间编排拷贝;
 - 再往上,Collective 层用这些 Tiled 微内核 + 架构同步,组织"一个 stage 的搬算";Kernel 层再组装成整个 kernel。
+
+下图把这个最小用法串成四步,并标出最易踩的那个坑:partition 属于 ThrMMA,不属于 TiledMMA。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-tiledmma-partition.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="TiledMMA 最小用法四步"></iframe>
+</div>
 
 ```cpp
 // 最小端到端用法:make_tiled_mma → get_slice → partition_A/B/C

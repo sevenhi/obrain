@@ -45,6 +45,15 @@ Q&A 解释:KV cache 管理与负载均衡与内部基础设施深度耦合,设�
 
 ## 2. 部署形态:EPD 分离 + Wide-EP(以下部署数字均出自官方部署 Q&A,单源、未经第三方复核)
 
+> 下图把原文的 ASCII 拓扑重画成可交互版本:三段异构算力(VE / Prefill 小 EP / Decode Wide-EP)与两类 KV 存储的分工,以及「哪个组件没开源」。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-epd-topology.architecture.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DeepInfer 部署形态:EPD 分离 + Wide-EP"></iframe>
+</div>
+
+
 ```
         请求(API 协议)
              │
@@ -75,6 +84,15 @@ Q&A 解释:KV cache 管理与负载均衡与内部基础设施深度耦合,设�
 
 ## 3. 引擎实现分层:C++ Scheduler + Python Engine + 多进程 Worker
 
+> 下面的分层图对应原文那段调用栈:决策为什么在 C++、Python 侧持有什么、以及每 GPU 一个 worker 进程的生死绑定关系。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-engine-layers.architecture.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="引擎实现分层"></iframe>
+</div>
+
+
 ```
 Entrypoint(生产侧未开源;引擎基类留虚函数 process_output / pe_do_save_kvcache / send_processed_prompts)
    │
@@ -98,6 +116,15 @@ CUDA Graph runner + TileLang/DeepGEMM/FlashMLA/DeepEP 内核
 ---
 
 ## 4. NORMAL 引擎:prefill/decode 同型投票(ALL 点 + ANY 点 + 两轮 all-reduce MIN)
+
+> 这张流程图把 ALL 点 / ANY 点的两种 MIN 极性、以及「第二轮确认」为什么必需画在一起——后者是原文指出死循环的那个坑。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-normal-voting.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="NORMAL 引擎同型投票"></iframe>
+</div>
+
 
 NORMAL 引擎混跑 prompt 和 decode,但 attention DP 要求**全组每一步同型**(要么都 prompt、要么都 decode),靠 DP 组内投票统一。源码(`csrc/engine/scheduler.hpp:295–343`,节选):
 
@@ -133,6 +160,15 @@ if (!any_scheduled) return _schedule_decode(acquire);
 ## 5. 零开销调度 ZOS(核心机制)
 
 ### 5.1 气泡从哪来
+
+> 同一时间轴上的对照:标注为「同步调度基线」的两条 span 就是 GPU 空转的气泡,其余 CPU span 是 ZOS 把 post-process 整体推迟一步后挪进 GPU 计算窗口的那部分工作。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-zos-overlap.waterfall.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="零开销调度 ZOS 的 CPU/GPU 重叠"></iframe>
+</div>
+
 
 同步调度下 decode 步 N 的时间线是 `schedule(N) → forward(N) → sample(N) → [GPU-CPU 同步] → post-process(N)`,其中 schedule 和 post-process 是纯 CPU 逻辑,且 post-process 前必须同步拿到 sample 结果 → **GPU 在 post-process(N) 和 schedule(N+1) 期间空转**。ZOS 的目标是消掉这段空闲:GPU 跑 `forward(N) → sample(N)` 的同时,CPU 并发跑 `schedule(N+1) → launch_forward(N+1) → post-process(N−1) → launch_sample(N+1)`(Q&A 原文口径,并注明沿用 SGLang / NanoFlow 的思路)。
 
@@ -176,6 +212,15 @@ else:
 
 ### 5.4 滞后一步的 seqlens:必须在 GPU 上修正
 
+> 修正链路的数据流:remap 与滞后长度从 C++ 到 GPU,两个 TileLang kernel 就地改长度,只有采样要用的 q 长度 D2H 回读。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-zos-seqlens-fix.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="滞后 seqlens 的 GPU 侧修正"></iframe>
+</div>
+
+
 ZOS 的根本矛盾:`schedule(N+1)` 运行时,**步 N 的采样结果还在 GPU 上没回 CPU**,所以 CPU 侧算出的 seqlens_q/k 是「假设上一步什么都没产出」的滞后值。修正链路(`_correct_seqlens_qk`,worker.py:191–245):
 
 1. C++ `prepare_zos_inputs`(csrc/engine/zos.cpp:142)对比当前 batch 与上一 batch,生成 pinned 的 `remap`(remap[i]=j 表示当前第 i 条对应上一批第 j 条,新请求为 −1)与初版 seqlens_q/k;无交集直接返回,不修正。
@@ -212,6 +257,15 @@ nextn=5、ZOS 开:额外 5+6+5=16 个位置。KV block 表按 runtime_max_model_
 
 ## 6. 投机解码:DFlash 草稿 + DSpark confidence-scheduled varlen 验证
 
+> 下图是 DSpark 的预算决策链:草稿与置信度 → CPU 只用它定 total_q → 逐请求长度必须在 GPU 上重算,以及「哪一轮的 accept rate 能给谁用」这条时序纪律。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-dspark-varlen.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DSpark 动态验证长度"></iframe>
+</div>
+
+
 - **草稿模型**:DFlash(`deepinfer/model_executor/models/mtp/dflash.py:82`),MTP 式草稿头,生产上一次生成 5 个 draft token(`DEEPINFER_USE_NEXTN_DECODE=5`,设 0 关闭);带可选 Markov embedding 的 **Confidence Head**(融合 kernel `confidence_head_fused`,tilelang_ops/dflash.py)预测每个 draft token 的接受率。
 - **为什么定长 5 浪费**:各请求、各位置的接受概率差异大,低概率 token 也占验证算力。DSpark 按「预期接受率排序 + 硬件吞吐曲线」选**边际收益最大的前缀子集**做验证(Q&A)。
 - **CPU 侧调度**(csrc/engine/mtp_varlen.hpp:150–260):维护 graph_size→baseline_ms 的 `_decode_perf_curve`(启动时实测、`DEEPINFER_DECODE_PERF_CACHE_DIR` 可落盘缓存,TTL 默认 3600s)+ 运行时斜率/采样耗时中位数估计器(窗口 9、最少 5 样本)。把全 batch 的 (accept_rate, seq) 排序后,**贪心逐个加入 draft token,每加一个算一次 `expected_tokens / time_ms`,取吞吐最大的 batch size 作为 total_q 预算**。关键的时序纪律(源码注释,`schedule_cnt` 与 `process_cnt` 两个计数器决定「accept_rates 是第几轮」):**算 total_q 预算永远用 N−2 轮的 accept rate**;**算每请求 seqlens_q:非 ZOS 用 N−1 轮,ZOS 下 CPU 只能先按 N−2 轮出初值(第 N−1 轮结果还在 GPU 上),真正的按请求分配在 GPU 上重算**(下条)。这条纪律的目的是「第 i 个 draft 是否被验证」不受它自己及之后的 confidence 影响——否则是用答案出题。
@@ -245,6 +299,15 @@ V4.1 的层分两段:前 `n_prefill_layer` 层是 producer(全量 prefill),其�
 
 ### 7.2 SWA bounded replay:重算成本变常数
 
+> 命中判定与重算的分支:命中长度由 block KV 定,最后一块是否要重算由 SWA 定;缺失时只重算末尾 128 token。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-swa-bounded-replay.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="SWA bounded replay 命中判定"></iframe>
+</div>
+
+
 缓存命中后 SWA KV 可能缺失。精确重建要把末尾一长段重跑一遍(官方例子:20 层 decoder、每层末尾 128 token,合计 2,560 token-层);**bounded replay 只重算末尾 128 token,且把 query 的可见域收窄到 `max(s, i−127)..i`**(s 为 replay 起点)——得到一个近似 SWA KV,重算成本与上下文长度、层数都无关(Q&A)。两处用法:
 - **Encoder 侧**:prefix cache 命中长度只由 block KV 决定;SWA 缺失时重算命中前缀的末尾 128 token,与非命中后缀一起 forward,replay 段只重建 SWA KV,block KV 原样复用、不重算不覆写。
 - **Decoder 侧**:每次 prefill 只在 decoder 层重算 prompt 末尾 128 token,结果**仅供本次 decode、不进 prefix cache**——总 prefill 计算近乎减半(Q&A 口径)。
@@ -258,6 +321,15 @@ V4.1 的层分两段:前 `n_prefill_layer` 层是 producer(全量 prefill),其�
 ## 8. KV cache 三级存储与 StateBlock
 
 ### 8.1 三级布局(Q&A 表格重排;数字均为官方单源)
+
+> 三级存储到 swap-in 的数据通路,以及三段开销(匹配 / 取 KV / swap-in)各自藏在哪里。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-kv-tiers.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="KV cache 三级存储"></iframe>
+</div>
+
 
 | 内容 | 介质 | 副本策略 | 管理者 |
 |---|---|---|---|

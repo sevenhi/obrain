@@ -52,6 +52,16 @@ GPU 上做一次矩阵乘 `C(M×N) = A(M×K) · B(K×N)`,不是把整块矩阵�
 
 ## 2. 核心机制:三层 tiling 的嵌套循环
 
+> 下图把原文那段循环嵌套改写成流程图:外层 CTA、中层 warp、内层 MMA 各决定什么,以及 `cta_k` 为什么是流水线的划分单位。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-three-level-tiling.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="三层 tiling 的嵌套循环"></iframe>
+</div>
+
+
 CUTLASS 把"一次 GEMM"映射成下面的循环嵌套(Efficient GEMM in CUDA 官方结构)。**逐层看注释,这就是整个引擎的灵魂**:
 
 ```c
@@ -98,6 +108,16 @@ for (cta_n = 0; cta_n < GemmN; cta_n += CtaTileN)        // 每个 threadblock_y
 
 ## 3. 数据流:mainloop(搬+算)与 epilogue(写回)
 
+> 数据在四个存储层之间的走法:mainloop 只做「搬 + 累加」,K 走完才进 epilogue。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-mainloop-epilogue.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="mainloop 与 epilogue 的数据流"></iframe>
+</div>
+
+
 一次 CUTLASS GEMM 的计算体量分两段:
 
 ```
@@ -142,6 +162,16 @@ TMA 相对 `cp.async` 的核心优势是**bulk 整块搬 + 硬件协调 + 不占
 
 ### 4.1 多级流水(Multistage,Ampere/Hopper 通用)
 
+> 时序图:`buf0`/`buf1` 交替,一个 stage 的搬运与另一个 stage 的 mma 在同一时间窗里并行——这就是 pipelining 的全部内容。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-multistage-pipeline.waterfall.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="多级流水:搬与算重叠"></iframe>
+</div>
+
+
 给 smem 里的 A/B 开 **N 份 buffer(级数 = stages)**,异步拷贝(`cp.async` 在 Ampere,TMA 在 Hopper)把下一 stage 的数据搬进来,同时 Tensor Core 算当前 stage。
 
 ```
@@ -157,6 +187,16 @@ stage 3:  [copy A3/B3 → smem buf0]  [mma B2]    // buf0 已被算完,可复用
 - 经验上 3~6 级常见,需针对目标 GPU 的 smem 容量和 tile 大小调。
 
 ### 4.2 Warp 特化(Warp Specialization,Hopper)
+
+> 角色分工图:producer 与 consumer 各自循环,barrier 只负责「数据就绪」与「buffer 可复用」两个方向的通知。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-warp-specialization.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Warp 特化:producer / consumer"></iframe>
+</div>
+
 
 把 warp 分成**两拨角色**:producer warp(专职搬数据:global→smem,用 TMA `cp.async.bulk.tensor` 或 `cp.async`)和 consumer warp(专职算:smem→register,发射 `wgmma`/`mma` 到 Tensor Core)。生产与消费**并发运行**,各自循环,靠 barrier 同步。
 
@@ -175,6 +215,16 @@ pipelining 让"谁先谁后"变复杂,正确性靠两种同步保证:
 ---
 
 ## 5. 更深的负载均衡:Stream-K(work-centric 分块)
+
+> 两条分派路径对比:按 tile 分会让尾批早退;按迭代数分则人人均等,但 K 被切开后必须 fixup。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-streamk-vs-tile.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="tile-based vs Stream-K"></iframe>
+</div>
+
 
 传统 tile-based 分解按**输出 tile** 分派工作:每个 threadblock 负责一块完整的 C tile。问题在**边缘不齐**(tail effect):当输出 tile 总数 `⌈M/TileM⌉×⌈N/TileN⌉` 不能被 SM 数整除时,最后一批 threadblock 只干一点点活就退场,GPU 空闲。
 
@@ -199,6 +249,16 @@ pipelining 让"谁先谁后"变复杂,正确性靠两种同步保证:
 ---
 
 ## 6. CuTe:把 tiling 抽象成"Layout 代数"
+
+> 抽象层次图:Layout 是什么、它与 MMA Atom / TV layout 的关系,以及 divide 族在切分里扮演的角色。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-layout-algebra.tree.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="CuTe Layout 代数"></iframe>
+</div>
+
 
 3.x 的架构级重构把上述 tiling / 数据分布**形式化**成 CuTe 的一套核心抽象,核心是 `Layout`:
 

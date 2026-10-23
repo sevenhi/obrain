@@ -37,6 +37,14 @@ DeepGEMM 的设计目标是一条:**单一 kernel、极致性能、代码可读*
 
 ### 1.2 JIT:安装时零 CUDA 编译
 
+> 下图是「安装期零编译」的完整路径:装 wheel 时一个 kernel 都不编,直到某个形状首次被调用才按缓存键决定「直接加载」还是「现场编译」。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-dg-jit-flow.dataflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="DeepJIT:安装期零编译,首次调用才出 CUBIN"></iframe>
+</div>
+
 所有 kernel 都通过 **DeepJIT** 在**运行时**编译(NVCC → CUBIN → CUDA Driver API 加载),所以**安装阶段不需要编译 CUDA**。这带来两个好处:
 - 安装轻(不要求 `TORCH_CUDA_ARCH_LIST`、不要求可见 GPU);
 - kernel 可按当前设备形状/精度即时生成(配合 `DG_JIT_CACHE_DIR` 磁盘缓存,编译一次复用)。
@@ -53,6 +61,14 @@ JIT 缓存键由:extra_signature + NVCC 版本 hash + 生效编译 flag + post_h
 
 ### 1.4 grouped GEMM(为 MoE 专家量身)
 
+> 下图把三个变体的选择条件画成一条判断链:CPU 知不知道各 expert 的 token 数,决定走 contiguous 还是 masked;反向则换成 K-grouped。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-dg-grouped-gemm.workflow.html"
+        style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="grouped GEMM 只 group M:三个变体各管什么场景"></iframe>
+</div>
+
 不同于 CUTLASS 的传统 grouped GEMM,**DeepGEMM 只 group M 轴**(N、K 必须固定)——因为 MoE 里各 expert 共享同一 hidden/intermediate 形状,只有 token 数(即 M)不同:
 
 - **contiguous layout**:训练前向 / 推理 prefill 时,把各 expert 的 token 拼成一张连续张量(`m_grouped_fp8_gemm_nt_contiguous`),每个 expert 段需对齐到 `get_mk_alignment_for_contiguous_layout()` 的 M block 大小;
@@ -60,6 +76,14 @@ JIT 缓存键由:extra_signature + NVCC 版本 hash + 生效编译 flag + post_h
 - **K-grouped**:MoE 权重反向用(`k_grouped_fp8_gemm_tn_contiguous`,M、N 固定)。
 
 ### 1.5 Mega MoE:单 mega-kernel 融合通信与计算
+
+> 下图是这条融合链的完整形状:准备阶段建对称内存并重排权重,之后 dispatch → linear1 → SwiGLU → linear2 → combine 全在一次 kernel 启动内完成。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-dg-mega-moe.workflow.html"
+        style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Mega MoE:五个阶段收进一个 kernel 的一次启动"></iframe>
+</div>
 
 Mega MoE 把 **EP dispatch + linear 1 + linear 2(FP8×FP4 或 FP8×FP8)+ SwiGLU + EP combine** 融合进一个 mega-kernel,**重叠 NVLink 通信与 tensor core 计算**。需要多进程启动 + 对称内存(PyTorch ≥ 2.9):
 
@@ -81,6 +105,14 @@ deep_gemm.fp8_fp4_mega_moe(y, transformed_l1, transformed_l2, buffer)
 为 V3.2 的 lightning indexer 提供 scoring kernel(`fp8_fp4_mqa_logits` 非分页 / `fp8_fp4_paged_mqa_logits` 分页),算每个 query 对 KV 的加权 ReLU 压缩 logits:`out = Σ_j relu(q_i @ (kv_j · kv_sf_j)) · weights[i,:]`。这是 DSA 链路里出索引前的打分环节(库内 [deepselect.md](deepselect.md) 消费这些 logits 做 TopK)。
 
 ### 1.7 稀疏 MQA logits(NVIDIA 09-30 引入、10-14 对齐修复;Ascend 2026/10 新增)
+
+> 下图把两个打分环节的串行关系画清楚:§1.6 的全量打分先产出 logits,DeepSelect 用 logits 选块,§1.7 的稀疏版本才对选中的块重打分——这是最容易读混的一段。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-dg-sparse-mqa.workflow.html"
+        style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="两个打分环节别混:全量 MQA 打分 → 选块 → 稀疏 MQA 重打分"></iframe>
+</div>
 
 **NVIDIA 侧 2026-09-30(v2.8.1,#462)已引入「稀疏 MQA 打分」内核族,10-14 v2.8.2 做 stride 对齐等修复;Ascend 侧 Public Release 2026/10 加入**,扩展 MQA 评分到**稀疏 KV 上下文**场景(DSA/Lightning Indexer 的索引环节,配合 DeepSelect 选出的稀疏块):
 
@@ -105,6 +137,14 @@ deep_gemm.fp8_fp4_mega_moe(y, transformed_l1, transformed_l2, buffer)
 ---
 
 ## 2. 与 Ascend 版的对照(同 API,不同后端)
+
+> 下图把「同 API 不同后端」摊成两行五列:上排 NVIDIA、下排昇腾,每列一个抽象。除 scaling factor 那一列之外,开发者看到的东西完全不变。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/di-dg-backend-mapping.architecture.html"
+        style="width:100%;height:520px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="同 API 两后端:每个抽象在两边各落到什么"></iframe>
+</div>
 
 昇腾版新建独立仓 **DeepGEMM-Ascend**,**包名 `deep_gemm` 不变、API 对齐**,把同一套「轻量 GEMM 内核」搬到昇腾。机制细节见 [deepgemm-ascend.md](deepgemm-ascend.md),这里只列对照结论:
 

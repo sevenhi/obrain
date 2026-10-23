@@ -22,6 +22,14 @@ date: 2026-09
 
 ## 1. 机制:为什么解码瓶颈是「加载 K/V」
 
+下图把「解码是带宽题」拆成一串因果:算的量极小、搬的量随序列线性涨,所以唯一有效的杠杆是 H_kv。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-kv-cache-bandwidth.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="解码为什么是 KV 带宽瓶颈"></iframe>
+</div>
+
 ### 1.1 KV cache 与自回归解码的带宽账单
 
 自回归解码每步只算 1 个新 token 的 Q,但 attention 要对**全部历史位置**的 K/V 做内积与加权求和。历史 K/V 已算过,存下来复用即 **KV cache**;每步解码都要把整份 cache 从 HBM 读进 SM 一遍。于是:
@@ -35,6 +43,14 @@ KV cache 大小 = 2(K,V) × n_layers × n_kv_heads × head_dim × seq_len × bat
 - 解码每步 FLOPs 极小(1 token),GPU 算力大量闲置——这是典型的**带宽受限**场景,砍 KV 头数=线性砍这块流量,几乎不损算力吞吐。
 
 ### 1.2 三种结构(数学定义)
+
+下图把三种结构并排放:Q 侧完全一样,差别只在 K/V 头数——以及由此推出的 cache 缩减倍数。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-mha-mqa-gqa-heads.architecture.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="MHA / MQA / GQA 的 K/V 共享方式"></iframe>
+</div>
 
 设每层 Q 头数 H、K/V 头数 H_kv、head_dim = d/H。三种结构只是 H_kv 的取值不同:
 
@@ -53,6 +69,14 @@ GQA-g: H_kv = g    Q 头均分 g 组,组内共享 K^(i), V^(i):
 - **为什么大模型更偏爱 GQA 而非 MQA**(GQA 论文 §2.2):① 模型越大 H 越多,MQA 的砍头比例越激进(容量损失随规模放大),GQA 可按比例温和地砍;② KV cache 随模型维度线性涨、FLOPs 随维度平方涨,大模型里 attention 带宽占比相对小,GQA 够用;③ **张量并行浪费**:标准 sharding 下单 KV 头要被复制到每个分片(Pope et al. 2022),GQA 的 g≥并行度时每片分到自己的 KV 头,消除复制浪费。
 
 ### 1.3 Uptraining:5% 算力把 MHA 改成 GQA
+
+下图是这条改造配方:均值池化 → 少量续训 → 验收,并标出跳过续训的后果。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-gqa-uptraining.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="GQA uptraining 配方"></iframe>
+</div>
 
 GQA 论文的第二个贡献是**改造存量 checkpoint 的配方**(不用从头训):
 
@@ -125,6 +149,14 @@ FlashAttention 2/3、xFormers、vLLM 各后端均原生支持 GQA(把 MQA 当 H_
 
 ### 3.2 采用情况(架构 config 口径)
 
+下图把表里的时间点排到时间轴上:看得到「大模型先转、小模型跟上」的节奏,以及 MLA 出现的位置。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-head-sharing-lineage.timeline.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="MHA → MQA → GQA → MLA 的采用时间线"></iframe>
+</div>
+
 | 模型 | 年份 | Q 头 / KV 头 | 结构 | 备注 |
 |---|---|---|---|---|
 | GPT-3 175B | 2020 | 96/96 | MHA | 前 GQA 时代 |
@@ -140,6 +172,14 @@ FlashAttention 2/3、xFormers、vLLM 各后端均原生支持 GQA(把 MQA 当 H_
 演进逻辑一句话:**MHA(容量)→ MQA(极致省带宽,质量受损)→ GQA(工程折中,2023 后主流)→ MLA(低秩压缩,把「共享」推到「压缩」)**。
 
 ### 3.3 MLA:GQA 思路的延伸(DeepSeek-V2/V3)
+
+下图把两种省 KV 的手段并排:GQA 只共享头、MLA 连每头 K/V 都不存——最终账都落在「每 token 多少字节」上。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-gqa-vs-mla-compression.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="GQA 头共享 vs MLA 低秩压缩"></iframe>
+</div>
 
 GQA 是「头级共享」,MLA(Multi-head Latent Attention)是「低秩压缩」:把每 token 的 K/V 联合压缩成一个 latent 向量 `c^KV = W^{DKV} h`(V3:d_c=512 维),解码时 cache 只存 latent,用时再上投影还原各头 K/V;Q 也做类似压缩。V3 配置:61 层、128 头、head_dim 128、KV 压缩维 512——**每 token cache ≈ 512+64(RoPE 部分)维,而非 128×128×2**;DeepSeek-V2 论文口径:相比同系 DeepSeek 67B(dense/MHA)KV cache 省 93.3%、最大生成吞吐 5.76×。MLA 与 GQA 不在一条互斥路线上,但目标同源:**解码期 KV 带宽/显存最小化**。
 

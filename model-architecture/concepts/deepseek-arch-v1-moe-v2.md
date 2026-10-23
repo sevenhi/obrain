@@ -22,6 +22,14 @@ date: 2026-10
 
 ## 0. 三代超参总表
 
+下图把三代骨架并排摆开:V1 是 Llama 式 dense,V2 的两处改动正好落在两个可以「替换」的位置上——**注意力先换成 MLA(省显存),FFN 再换成 MoE(省算力)**:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-ds-gen-stack.workflow.html"
+        style="width:100%;height:680px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="V1 / DeepSeekMoE / V2 三代骨架对照"></iframe>
+</div>
+
 | 维度 | V1-7B | V1-67B | DeepSeekMoE-16B | DeepSeekMoE-145B | V2 |
 |---|---|---|---|---|---|
 | 类型 | dense | dense | 稀疏 MoE | 稀疏 MoE | MLA + 稀疏 MoE |
@@ -120,6 +128,14 @@ class LlamaMLP(nn.Module):
 
 ### 2.3 层叠 / MoE 层结构
 
+下图把 MoE 层内部摊开:一个 token 同时走两条路——**恒激活的共享专家(2 个)和门控选出的路由专家(6 个)**,最后相加。注意共享专家完全不过门控,这是「隔离」二字的字面含义:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-ds-moe-route.workflow.html"
+        style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="MoE 层内部:共享专家 + 路由专家"></iframe>
+</div>
+
 ```
 Embedding → DecoderBlock × N → final Norm → lm_head
 DecoderBlock:
@@ -206,6 +222,14 @@ class DeepseekV2DecoderLayer(nn.Module):
 
 MLA 的出发点：MHA 的 KV cache 是 `每层 2 × heads × head_dim`，长上下文下成为显存瓶颈。GQA 只是减少 KV **头数**，MLA 更进一步：把 K 和 V 整体压成一个**低秩隐向量 c^KV_t**（`kv_lora_rank=512` 维），KV cache 只需缓存这一个向量（外加 64 维的解耦 RoPE 位置分量），实现**维度级**压缩。
 
+下图是 MLA 最该先看懂的一张:上排是计算路径,下排是真正驻留显存的东西。**升维出的 128 头 K/V 是每次 decode 临时算的,不进 cache**——这就是 576 vs 32768 的来源:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-ds-mla-kv.dataflow.html"
+        style="width:100%;height:430px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="MLA 的 KV cache:576 维 vs 32768 维"></iframe>
+</div>
+
 ```python
 class DeepseekV2Attention(nn.Module):
     def __init__(self, config):
@@ -265,9 +289,26 @@ class DeepseekV2Attention(nn.Module):
 
 1. **KV 低秩压缩（省显存）**：`KV cache = c^KV_t(512维) + k_pe(64维) = 576 维/层(全头共享一份 latent)`，而不是 MHA 的 `2 × 128头 × 128维`。这是 KV cache -93.3% 的来源。
 2. **解耦 RoPE（Decoupled RoPE）**：若把 RoPE 直接作用在低秩压缩后的 K 上，位置信息会与「被所有头共享的压缩表示」纠缠，导致**解压时位置信息失效**。解耦做法是——把每头的 K/Q 拆成「不旋转部分 q_nope/k_nope」和「旋转部分 q_pe/k_pe」，RoPE 只作用在后者，且 k_pe 是**所有头共享的 1 头 MQA 式分量**（`k_pe.view(bsz, q_len, 1, 64)`）。位置信息因此绕过低秩瓶颈、独立存储。
+
+下图用一条反证链把第 2 点讲透:先看「在压缩表示上旋转」为什么必然坏,再看到底拆成了什么。**核心矛盾是「压缩要求所有头共享、RoPE 要求每头每位置不同」，两者不能共存于同一段向量**：
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-ds-decouple-rope.workflow.html"
+        style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="解耦 RoPE 的反证链"></iframe>
+</div>
+
 3. **Q 也低秩**（省训练参数/显存）：`q_a_proj(5120→1536) → q_b_proj(1536→128×192)`，1536 << 5120，降低激活显存。
 
 ### 3.4 MLA 的 KV cache 量化
+
+下图把这份表画成三档对照,关键是看清 **GQA 砍「头数」、MLA 砍「维度」是两条不同的路径**——MLA 并没有让多个 Q 共享一组 K/V,而是让 K/V 从一个小 latent 现算出来:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-ds-kv-compare.architecture.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="MHA / GQA / MLA 的 KV cache 对比"></iframe>
+</div>
 
 | 方案 | 每层每 token 的 KV 维度 |
 |---|---|
@@ -340,6 +381,15 @@ class DeepseekV2MoE(nn.Module):
 - **共享专家**：2 个（`intermediate_size=1536×2=3072`），恒激活。
 - **每 token 激活 6 个路由专家**（top-6），激活参 ≈ 21B。
 - **分组受限贪心路由**（group-limited greedy）：160 专家分 8 组 → 先按组内 max 得分选 top-3 组 → 再在组内选 top-6 专家。这比全量 top-6 更能保证「专家在组间均衡分布」，缓解负载不均。
+
+下图把这个两级选择画出来:**第一级只在「组」这一层竞争,第二级才在选中的组内挑专家**——它的作用不是选得更准,而是把流量摊开:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/ma-ds-v2-group-route.workflow.html"
+        style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="V2 分组受限贪心路由的两级选择"></iframe>
+</div>
+
 - **路由分数**：softmax 后**不归一化**，而是乘 `routed_scaling_factor=16.0`（放大信号）。
 - **aux loss 负载均衡**：训练时用**序列级** aux loss（`seq_aux=True`，α=0.001），V2 仍是「aux loss」方案；到 V3 才换成 aux-loss-free。
 

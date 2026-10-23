@@ -24,6 +24,14 @@ vLLM 的量化是"**一条分派链 + 三个决策点**":用户/checkpoint 声�
 
 ## 1. 分派链全景(一图看懂)
 
+> 下图把六步串成一条链,并标出三个决策点:注册表映射(②③)、按层分派(按 layer 类型)、kernel 选型。量化报错先定位到哪一段,再去对应文件。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-quant-dispatch-chain.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="vLLM 量化分派链:从 config.json 到 kernel 的六步"></iframe>
+</div>
+
 ```
 用户侧 config.json / --quantization
    │
@@ -89,6 +97,15 @@ def get_quantization_config(quantization):
 
 `get_quant_method()`(`fp8.py:174-221` 是范例)按层类型三路分派,**同一 Config 处理 Linear/MoE/Attention**:
 
+> 下图是 `Fp8Config` 的三路分派全貌。注意最左边那个「被忽略层」出口——它在进 kernel 选型之前就退出了,这是排查「为什么这层没量化」的第一个检查点。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-quant-by-layer.architecture.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="一个 Config 管三类层:get_quant_method() 的三路分派"></iframe>
+</div>
+
+
 | 层类型 | 方法 | 关键点 |
 |---|---|---|
 | `LinearBase` | 序列化 checkpoint → `Fp8LinearMethod`;在线 → `Fp8PerTensorOnlineLinearMethod`(`online/fp8.py`);`ignored_layers` 命中 → `UnquantizedLinearMethod` | **被忽略层**是分派链第一个"出口" |
@@ -100,6 +117,14 @@ def get_quantization_config(quantization):
 ---
 
 ## 4. int4/int8:GPTQ 与 AWQ
+
+> 先看一眼权重在文件里长什么样。下图是 int4 从浮点到 int32 的完整打包链,以及运行期怎么解包——`pack_factor = 32 // weight_bits` 是所有形状校验的根源。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-int4-packing.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="int4 权重怎么塞进 int32:GPTQ 与 AWQ 的打包链"></iframe>
+</div>
 
 ### 4.1 GPTQ — 注册 + 打包 + 降级
 
@@ -117,6 +142,15 @@ def get_quantization_config(quantization):
 - 形状校验:`input_size % group_size == 0`、`output_size % pack_factor == 0`(`:841-854`)——**张量并行切分过大时触发**,排查 TP+AWQ 报错看这里。
 
 **Triton 路径的 token 数启发式**(`AutoAWQLinearMethod.apply`, `auto_awq.py:913`):
+
+> 下图就是这个分支点:`x.shape[:-1].numel()` 是否跨过 256,决定走「反量化 + cuBLAS」还是「Triton 融合 kernel」。prefill 和 decode 天然落在两侧。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-awq-batch-heuristic.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="AWQ 的性能分水岭:numel() ≥ 256 就换内核"></iframe>
+</div>
+
 
 ```python
 FP16_MATMUL_HEURISTIC_CONDITION = x.shape[:-1].numel() >= 256   # auto_awq.py:927
@@ -145,6 +179,15 @@ FP16_MATMUL_HEURISTIC_CONDITION = x.shape[:-1].numel() >= 256   # auto_awq.py:92
 ### 5.1 FP8 的 QuantKey 与硬件适配(最值得精读)
 
 `Fp8LinearMethod.init`(`fp8.py:251-290`)构造 weight/activation 的 `QuantKey`:
+
+> 下图是 FP8 的三层降级:先看权重粒度定 QuantKey,再看激活策略(块量化强制动态),最后看硬件能力决定落 CUTLASS 还是 Marlin 兜底。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-fp8-quantkey.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="FP8 的三层降级:量化粒度 → 激活策略 → 硬件兜底"></iframe>
+</div>
+
 - **块量化**(DeepSeek:权重 128×128;激活动态 per-token-group)→ `kFp8Static128BlockSym` + `kFp8Dynamic128Sym`,且 **`assert not act_q_static`(块量化强制动态激活)**;scale 参数名**特意用 `weight_scale_inv`**(`:348-349`,注释明确 "intentional for deepseekv3")。
 - **per-tensor** → `kFp8StaticTensorSym`;**动态激活**在 `cutlass_fp8_supported()` 时**升级 per-token**(`kFp8DynamicTokenSym`),否则退回 per-tensor(`:283-290`)。
 - **无 FP8 硬件的 GPU** → `init_fp8_linear_kernel()` 选 `MarlinFP8ScaledMMLinearKernel` → `use_marlin=True`(`:366`)——**FP8 weight-only 降级到 Marlin**。

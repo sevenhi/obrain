@@ -30,6 +30,14 @@ date: 2026-09
 
 ## 1. 传统静态批处理(或 waiting-batch)为什么浪费
 
+下图把「浪费」画成两条并行的时间线:静态批在攒批和执行两头漏,连续批每一步都在填。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-static-vs-continuous.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="静态批 vs 连续批的浪费对比"></iframe>
+</div>
+
 **静态批处理**:把一组请求积累起来一次性跑完,全部生成结束,再接纳下一组。
 
 ```
@@ -47,6 +55,14 @@ date: 2026-09
 ---
 
 ## 2. V1 的统一 token 预算模型(Scheduler 的灵魂)
+
+下图把这一个抽象展开成它覆盖的五种情况——它们不是五个分支,而是同一个追赶公式的不同取值。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-token-budget-model.tree.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="统一 token 预算模型覆盖的五种情况"></iframe>
+</div>
 
 V1 调度器**不区分"prefill 阶段"和"decode 阶段"**(这是和网上大量 V0 资料的本质区别)。源码注释(`scheduler.py:502-511`)原话:
 
@@ -72,6 +88,14 @@ V1 调度器**不区分"prefill 阶段"和"decode 阶段"**(这是和网上大�
 
 ## 3. 双队列 + 每步重排(Scheduler 如何工作)
 
+下图是每步 schedule() 的完整路径:先 RUNNING 后 WAITING,以及预算与 KV 块两道闸。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-scheduler-two-queues.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="每步 schedule() 的双队列调度"></iframe>
+</div>
+
 Scheduler 维护两个队列,V1 调度顺序(scheduler.py:548 起,先 RUNNING 后 WAITING):
 
 ```
@@ -92,6 +116,14 @@ schedule() 每步:
 ---
 
 ## 4. Chunked Prefill:让 prefill 不再"独占一步"
+
+下图是同一个长 prompt 的两种时间轴——切块后 decode 每步都没停,不切则整段停顿。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-chunked-prefill-timeline.waterfall.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="chunked prefill 与不切块的 step 时间轴对比"></iframe>
+</div>
 
 **为什么需要**:不需要 chunk 时,一个长 prefill 会吃掉整步预算,decode 请求被挤到后面,延迟飙升、GPU 利用率被一次大矩阵乘主导。
 
@@ -135,6 +167,14 @@ HuggingFace(TNG,24×H100 自托管集群)的实测博客把"为什么需要 chun
 
 ## 5. Continuous Batching 的 step 循环(EngineCore)
 
+下图把 EngineCore.step() 的五步画成消息时序,重点看 execute_model 下发之后 CPU 在干什么。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-enginecore-step.sequence.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="EngineCore.step() 的消息时序"></iframe>
+</div>
+
 V1 的连续批处理由 EngineCore 的 step 循环驱动(`core.py:597` `step()`):
 
 ```
@@ -154,6 +194,14 @@ EngineCore.step()                        # core.py:597(行号以 597 为准,v1-a
 ---
 
 ## 6. 与 PagedAttention 的协同(PagedAttention 是地基)
+
+下图是请求状态机:注意 RUNNING 不是终点而是每步重新竞争,以及被抢占后的回退路径。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-request-lifecycle.lifecycle.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="请求在 V1 调度器里的状态流转"></iframe>
+</div>
 
 连续批处理能"每步任意增减请求",**前提是 KV cache 能按 token 数精确分配/释放**——这正是 PagedAttention 的分页块池给的:
 

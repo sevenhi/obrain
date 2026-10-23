@@ -27,6 +27,15 @@ GEMM 的输出矩阵被切成很多 tile。**TileScheduler(调度器)决定每�
 
 ## 1. 问题背景:输出空间如何分给硬件
 
+下图对比两种 launch 策略:朴素做法每个 tile 一个 block,除不尽时尾批只干一点就退场;persistent 只 launch ≈SM 个数,驻留循环领活。差别全在尾批那一刻有多少 SM 在空转。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-scheduler-persistent-vs-naive.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="tile-based 尾批空闲 vs persistent 循环领活"></iframe>
+</div>
+
+
 一次 GEMM 输出 `C(M×N)` 被切成 `⌈M/TileM⌉×⌈N/TileN⌉` 个 tile。GPU 上有多少 **SM**(计算单元),就得决定:每个 SM 上跑哪些 threadblock、算哪些 tile。
 
 **朴素 tile-based 分解**:
@@ -81,6 +90,15 @@ CUTLASS 3.x(NVIDIA 技术博客,2025-07-16)把 GEMM 实现组织成**五层概�
 
 ### 3.2 Stream-K(work-centric,均分工作)
 
+下图分清两种切法:split-K 是 tile-centric(先切 tile 再拆 K),Stream-K 是 work-centric(把 K 迭代打平再均分)。前者在 tile 边缘仍不齐,后者在任意几何下都均匀——代价是要 fixup。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-splitk-vs-streamk.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="split-K 与 Stream-K 的切法差异"></iframe>
+</div>
+
+
 - **不按输出 tile 分,按"内层(K 方向)迭代总数"均分给固定数目的 threadblock**;
 - 每个 threadblock 可能做多个 tile 的多段 K,或只做一个 tile 的一部分 K;
 - 所有 threadblock **几乎同时下班**,无尾部空闲;
@@ -91,6 +109,15 @@ CUTLASS 3.x(NVIDIA 技术博客,2025-07-16)把 GEMM 实现组织成**五层概�
 - 代码: `cutlass/gemm/kernel/sm90_tile_scheduler_stream_k.hpp`(调度器 `PersistentTileSchedulerSm90StreamK`)。
 
 ### 3.3 Grouped(一个 launch 服务多个 problem)
+
+下图是 grouped 的执行循环:多个 problem 的 tile 汇成一条队列,block 驻留循环 next_tile → 算 → advance。最值钱的一步是把 problem 按大小排序,大 problem 先领、小的收尾。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-grouped-scheduler.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Grouped 调度的领活循环"></iframe>
+</div>
+
 
 **Grouped kernel = 单个 CUDA launch 里跑多个 problem(多个 GEMM/SYR2K)**:
 
@@ -112,6 +139,15 @@ while (pv.next_tile()) {        // 领下一个 tile
 
 ### 3.4 Rasterization order:调度器里最该懂的一根旋钮
 
+下图解释为什么这一根旋钮能改 L2 命中率:沿行顺序领 tile 时相邻 CTA 各读不同的数据带;按组 swizzle 后,同组 CTA 挤在同一条带上,互相在 L2 里命中。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-raster-order-l2.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="rasterization order 与 L2 局部性"></iframe>
+</div>
+
+
 **rasterization order 决定 threadblock 沿哪个方向、按什么顺序领 tile**——它直接关系 **L2 cache 局部性**:
 
 - **几何直觉**:相邻 threadblock 若处理**内存相邻**的 tile,它们读 A/B 的 tile 片会在 L2 里**互相命中 → 提高 L2 命中率、减少 DRAM 读**;反之若各读各的远隔片,则 L2 复用差。所以光栅方向不是细节,是访存效率的核心。
@@ -122,6 +158,15 @@ while (pv.next_tile()) {        // 领下一个 tile
 > swizzle 直观理解:若 tile 按行顺序领,相邻 CTA 同时碰同一行相邻段 → L2 抖动;swizzle 让每个 CTA 领到的 tile 在地址上均匀错开,提高复用。**先调它,再考虑换调度器**。
 
 ### 3.5 演进:Blackwell 的 persistent cluster / Cluster Launch Control
+
+下图对比两种持久化的假设:Hopper 静态按「启动时的 SM 数」预留;Blackwell CLC 反而 launch 全量 tile 数,靠 try_cancel 取消未启动块来适配真实空闲 SM。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-clc-vs-static.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="Hopper 静态 persistent vs Blackwell CLC"></iframe>
+</div>
+
 
 Blackwell(SM100)的 **persistent cluster(Cluster Launch Control, CLC)** 机制与直觉相反——它并**不是**静态预留一部分 SM 驻留:像非 persistent kernel 一样 launch **全量 tile 数的 grid**,已启动的 Worker 用 `clusterlaunchcontrol.try_cancel` **"取消掉尚未启动的 block、领走其坐标"** 继续干活。解决的是 **SM 被其他 kernel 挤占时,静态 persistent 无法感知真实可用 SM 数** 的问题(green context / 共享 GPU / MIG 多租户场景)。
 
@@ -135,6 +180,15 @@ Blackwell(SM100)的 **persistent cluster(Cluster Launch Control, CLC)** 机制�
 ---
 
 ## 4. 选型决策树(把 "用哪种调度" 变成可判断的问题)
+
+下图把决策树画成状态转移:先问几何是否规整,规整就 persistent 收工;不规整再分「能否接受 fixup」与「是不是小 GEMM 多」。两条红线在图上标出——Grouped 与 Stream-K 互斥,CUDA Graph 场景要额外算 Memset 的账。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-scheduler-decision.lifecycle.html"
+        style="width:100%;height:780px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="TileScheduler 选型决策路径"></iframe>
+</div>
+
 
 ```
 输出几何规整(方形、K 均匀、T 整除 SM数)?

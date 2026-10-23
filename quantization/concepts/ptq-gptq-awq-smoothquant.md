@@ -109,6 +109,7 @@ s_j = max(|X_j|)^α / max(|W_j|)^(1-α)   # α≈0.5;α=1 全迁权重、α=0 �
 
 - [KV Cache 量化](kv-cache-quantization.md)
 - [SpQR：稀疏+量化混合表示](spqr-sparse-quantized.md)
+- **GPTQ 在 MoE 上的落地**:上面 §2 的推导是 dense 单层。真实 MoE 里专家是 3-D fused 参数、每个专家要独立 Hessian(一层就 13–23 GiB),校准必须逐层做,并且**batching 策略会改变激活 scale**——这些工程约束见 [大规模 MoE 的 GPTQ 工程化](moe-gptq-layerwise-calibration.md)。
 - [vLLM GPTQ / AWQ / FP8](../../vllm/concepts/quantization-gptq-awq-fp8.md)
 - [FlashAttention 实现](../../attention/implementation/flash-attention-implementation.md)
 

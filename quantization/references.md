@@ -37,6 +37,16 @@ date: 2026-09
 ## 官方代码 / 项目
 
 - NVIDIA Model Optimizer(剪枝三 mode:minitron / puzzletron / fastnas)— https://github.com/NVIDIA/Model-Optimizer
+- ModelOpt MoE 逐层 GPTQ 链:PR #2840(逐专家 Hessian,fused MoE)— https://github.com/NVIDIA/Model-Optimizer/pull/2840
+- ModelOpt PR #2864(逐层 GPTQ 加速三修,2026-10-23 合并)— https://github.com/NVIDIA/Model-Optimizer/pull/2864
+- ModelOpt PR #2877(fused NVFP4 GPTQ kernel 按张量所在 GPU 启动,2026-10-23 合并)— https://github.com/NVIDIA/Model-Optimizer/pull/2877
+- ModelOpt PR #2945(Hessian 按实测 headroom 放置 + 逐层 batch 探测,**open 未合并**)— https://github.com/NVIDIA/Model-Optimizer/pull/2945
+- ModelOpt PR #2943(AutoQuant 自动 batch 探测复现打分负载,2026-10-23 合并)— https://github.com/NVIDIA/Model-Optimizer/pull/2943
+- ModelOpt 公告《Quantizing a 4.9 TB Qwen3.8 Model on a Single GPU》(2026-09-28)— https://nvidia.github.io/Model-Optimizer/announcements/20260928-single-gpu-ptq.html
+- 逐层导出示例 recipe(nvfp4_experts_only-kv_fp8_layerwise_export.yaml)— https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt_recipes/general/ptq/nvfp4_experts_only-kv_fp8_layerwise_export.yaml
+- ModelOpt model_calib API(gptq / imatrix / local_hessian / layerwise_calibrate)— https://nvidia.github.io/Model-Optimizer/reference/generated/modelopt.torch.quantization.model_calib.html
+- ModelOpt 源码 calib_utils.py(update_hessian / GPTQHelper / _hessian_offload_device)— https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt/torch/quantization/utils/calib_utils.py
+- ModelOpt 源码 hf_ptq.py(LAYERWISE_CALIB_TOKENS=8192)— https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/hf_ptq/hf_ptq.py
 - ModelOpt 剪枝示例(支持矩阵、超参建议、端到端教程)— https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/pruning/README.md
 - ModelOpt Puzzletron 示例(MIP sweep、runtime 延迟约束、AnyModel)— https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/puzzletron/README.md
 - ModelOpt 剪枝指南(mtp.prune 统一 API)— https://nvidia.github.io/Model-Optimizer/guides/3_pruning.html

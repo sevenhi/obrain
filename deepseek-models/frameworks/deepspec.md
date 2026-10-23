@@ -96,4 +96,5 @@ DeepSpec 产出的草稿模型要反复试配方,单次训练成本直接决定�
 - DFlash:https://arxiv.org/abs/2602.06036 · 原实现 https://github.com/z-lab/dflash
 - EAGLE-3:https://arxiv.org/abs/2503.01840 · 训练框架参考 SpecForge
 - §5 训练优化数据与踩坑:ModelOpt PR #2279 *perf(speculative): speed up DFlash/DSpark drafter training 3.49x*(2026-10-23 合并)— https://github.com/NVIDIA/Model-Optimizer/pull/2279
+- 导出侧坑:ModelOpt PR #2902 *Fix vanilla DSpark checkpoint exports for vLLM*(2026-10-23 合并)— https://github.com/NVIDIA/Model-Optimizer/pull/2902。**vanilla DSpark 草稿原先导出成 `DFlashDraftModel` + 扁平的 Markov/confidence head 名,vLLM 因此选错 loader 加载失败**;修复是导出成 **`Qwen3DSparkModel`**(名字描述的是草稿的 Qwen3 backbone,teacher 仍可以是 GPT-OSS),并把量化排除项与 per-layer 设置同步重映射。**通用教训**:draft checkpoint 的"能用"取决于**架构类名 + 权重名 + 量化元数据三者同时匹配目标引擎**,自训草稿模型要按引擎约定导出,别按训练时的类名存。
 - 库内互链:[deepseek-models/index.md](../index.md)、[vllm/concepts/speculative-decoding.md](../../vllm/concepts/speculative-decoding.md)、[model-architecture/concepts/deepseek-arch-v3.md](../../model-architecture/concepts/deepseek-arch-v3.md)(MTP)、[model-architecture/concepts/hybrid-linear-attention.md](../../model-architecture/concepts/hybrid-linear-attention.md)(Gated DeltaNet 与 FLA 版本坑)

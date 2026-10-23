@@ -10,8 +10,8 @@ source:
   - "pdf: GQA (Ainslie et al.) | arXiv:2305.13245"
   - "pdf: MQA (Shazeer) | arXiv:1911.02150"
   - "pdf: Position Interpolation (Chen et al.) | arXiv:2306.15595"
-  - "pdf: YaRN (Peng et al.) | arXiv:2309.00071"
-  - "pdf: LongRoPE (Ding et al.) | arXiv:2402.13753"
+  - "pdf: YaRN (Peng et al.) | arXiv:2309.00071 (v1 2023-08 / v3 2026-02-06 重写版)"
+  - "pdf: LongRoPE (Ding et al.) | arXiv:2402.13753 (v1 2024-02)"
   - "pdf: Mixtral of Experts | arXiv:2401.04088"
   - "pdf: DeepSeek-V3 Technical Report | arXiv:2412.19437"
 date: 2026-10
@@ -32,14 +32,14 @@ date: 2026-10
 |---|---|---|---|
 | [llm-architecture](concepts/llm-architecture.md) | concept | 通用 LLM 架构:post/pre-norm→RMSNorm、ReLU→GeLU→SwiGLU((2/3)4d)、正弦→learned→RoPE→ALiBi 三条演进线 + Chinchilla/推理预算训练哲学 + GPT→LLaMA→Llama 2/3 演进表(GQA/θ=500k/128K vocab/15T tokens) | ✅ 已入库 |
 | [attention-heads-mha-mqa-gqa](concepts/attention-heads-mha-mqa-gqa.md) | concept | 注意力头结构谱系:KV cache 带宽账单为何驱动 K/V 头共享(MHA→MQA→GQA-g 插值,mean-pool uptrain 5% 算力),T5-XXL 质量/速度数据,GQA-8 成开源标配,延伸到 DeepSeek MLA 低秩压缩 | ✅ 已入库(2026-09) |
-| [context-extension](concepts/context-extension.md) | concept | RoPE 难外推的频率机制(陌生相位→灾难 logit,理论上界差 ~600×)+ 四代扩展法:PI 线性插值→NTK-aware 改 base→YaRN 分段插值+注意力温度→LongRoPE 逐维搜索到 2M;工业路线 θ=500k 渐进预训练;选型决策树 | ✅ 已入库(2026-09) |
+| [context-extension](concepts/context-extension.md) | concept | RoPE 难外推的频率机制(陌生相位→灾难 logit,理论上界差 ~600×)+ 四代扩展法:PI 线性插值→NTK-aware 改 base→YaRN 分段插值+注意力温度(`sqrt(1/t)=0.1ln(s)+1`,s=16 时 logit ×1.63)→LongRoPE 逐维搜索到 2M;工业路线 θ=500k 渐进预训练;选型决策树 | ✅ 已入库(2026-10 按 YaRN v3 重核修订) |
 | [open-model-landscape](concepts/open-model-landscape.md) | concept | 开源谱系树:GPT→LLaMA 定型→Llama2/3、Mistral(GQA+SWA)、Qwen、DeepSeek;MoE 专讲(router/top-k、总参数 vs 激活参数、DeepSeekMoE 细粒度+共享专家、V3 671B/37B aux-loss-free+MTP);11 模型对比表 + 许可实测 + 选型准则 + RWKV 旁支(2024-12 快照) | ✅ 已入库(2026-09) |
 | [open-model-landscape-2025-2026](concepts/open-model-landscape-2025-2026.md) | concept | 2025-26 谱系续篇:DeepSeek R1→V3.1→V3.2(DSA 稀疏注意力)→V4/V4.1;Qwen3(Hybrid 思考)/3.5/3.6/3.8(2.4T-A95B 大 MoE);Llama 4 Scout/Maverick 原生 MoE;横向对比表 | ✅ 已入库(2026-10) |
 | [deepseek-model-evolution](concepts/deepseek-model-evolution.md) | concept(主篇) | DeepSeek 网络结构演进总览:TL;DR + 逐代概览(V1→DeepSeekMoE→V2→V3→V3.1→V3.2)+ 代际 diff 总表(注意力 MHA→GQA→MLA→MLA+DSA;FFN dense→细粒度→256 专家;位置 RoPE→解耦→YaRN)+ 双约束演进方向分析(稀疏省算力/低秩+稀疏省显存/训练机制保质量);3 子篇导航 | ✅ 已入库(2026-10) |
 | [deepseek-arch-v1-moe-v2](concepts/deepseek-arch-v1-moe-v2.md) | concept(子篇) | 奠基段:V1(7B MHA/67B GQA)+ DeepSeekMoE(细粒度+共享专家)+ V2(MLA 低秩 KV + 解耦 RoPE + 160 专家 MoE,双主线首次合流);MHA/GQA/MLA KV cache 量化 | ✅ 已入库(2026-10) |
 | [deepseek-arch-v3](concepts/deepseek-arch-v3.md) | concept(子篇) | V3:MLA 规模化 + 256 专家 MoE(top-8,sigmoid 路由)+ MTP 多 token 预测 + aux-loss-free 负载均衡 + FP8;671B/37B、2.788M H800 小时训练 | ✅ 已入库(2026-10) |
 | [deepseek-arch-v32-r1](concepts/deepseek-arch-v32-r1.md) | concept(子篇) | V3.2(DSA 闪电索引器 + top-2048 稀疏选择,破 O(L²)→O(L·k))+ R1(无新结构,GRPO RL 推理时扩展);V3→V3.2 代码级 diff | ✅ 已入库(2026-10) |
-| [hybrid-linear-attention](concepts/hybrid-linear-attention.md) | concept | 混合线性注意力/SSM 第三主轴:核化线性注意力、RWKV 时间混合、Mamba/S6 选择性与 Mamba-2/SSD 对偶、Griffin/Jamba 混合层比、Gated DeltaNet→Qwen3-Next;训练并行 vs O(1) 状态两难与 hybrid 甜点 | ✅ 已入库(2026-10) |
+| [hybrid-linear-attention](concepts/hybrid-linear-attention.md) | concept | 混合线性注意力/SSM 第三主轴:核化线性注意力、RWKV 时间混合、Mamba/S6 选择性与 Mamba-2/SSD 对偶、Griffin/Jamba 混合层比、Gated DeltaNet→Qwen3-Next;训练并行 vs O(1) 状态两难与 hybrid 甜点;含 FLA `chunk_gated_delta_rule` 在 0.5.2 前对 packed 输入算错且不可复现的版本坑 | ✅ 已入库(2026-10) |
 
 ## 关键事实速记
 

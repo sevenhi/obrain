@@ -4,7 +4,7 @@ type: domain
 tags: [cutlass, gpu, gemm, cute, cuda]
 source:
   - "code: github.com/NVIDIA/cutlass | 版本 v4.8.1 (2026-10-20 打 tag / CHANGELOG 记 10-15;v4.8.0 为 2026-09 功能版,新增 Rubin SM107 初步支持)"
-  - "web: NVIDIA CUTLASS 官方文档站 | https://docs.nvidia.com/cutlass/latest/"
+  - "web: NVIDIA CUTLASS 官方文档站 | https://docs.nvidia.com/cutlass/latest/ (2026-10-23 复核:最新版仍为 4.8.1,页面 last-updated 10-16;与 4.8.0 文档站逐页比对导航/目录无差异,仅版本号与页脚日期变化)"
 date: 2026-10
 ---
 

@@ -10,6 +10,8 @@ source:
   - "pdf: Jamba: A Hybrid Transformer-Mamba Language Model | arXiv:2403.19887 (AI21 Labs, 2024-03)"
   - "pdf: Gated Delta Networks: Improving Mamba2 with Delta Rule | arXiv:2412.06464 (Yang et al., 2024-12)"
   - "pdf: Linear Transformers Are Secretly Fast Weight Memory Systems (Linear Transformer 谱系) | arXiv:2102.11174 (Schlag et al., 2021)"
+  - "code: fla-org/flash-linear-attention(FLA,kernel 库;GDN 的 `chunk_gated_delta_rule` packed 输入 bug 在 0.5.2 修复)| https://github.com/fla-org/flash-linear-attention"
+  - "code: NVIDIA/Model-Optimizer PR #2912(2026-10-23 合并:FLA 版本 × packed GDN 精度/可复现性实测表,practice 要点 0 的数据出处)| https://github.com/NVIDIA/Model-Optimizer/pull/2912"
 date: 2026-10
 ---
 
@@ -90,6 +92,16 @@ Gated DeltaNet 在 Mamba-2 的 delta rule 形式上加**门控遗忘**,用可并
 
 ## 5. 实践要点(checklist)
 
+0. **⚠️ 用 `flash-linear-attention` 跑 packed(`cu_seqlens`)训练前先查版本**:FLA 的 Gated DeltaNet `chunk_gated_delta_rule` 在 **0.5.2 之前对 packed 输入是错的,而且不可复现**——同一份输入两次跑结果不同,teacher/student 都受影响。NVIDIA ModelOpt 的实测(随机输入,packed vs 逐序列;**数字照抄其 PR,未独立复现**):
+
+   | FLA 版本 | 最大误差(占输出 max) | 偏差 >1% 的 token 占比 | 可复现 |
+   |---|---|---|---|
+   | 0.4.2(nemo:26.08 内置) | 33% | 8.4% | 否 |
+   | 0.5.0 | 63% | 10.9% | 否 |
+   | 0.5.1 | 59% | 14.2% | 否 |
+   | **0.5.2** | **0** | **0** | **是** |
+
+   对照:KDA(`chunk_kda`)在所有版本都正确(bf16 舍入内);**非 packed 训练在所有版本都精确**。所以「我的 GDN 模型训练不收敛/指标抖动」若用了 varlen packing,**先升级 FLA 再怀疑别的**(来源:NVIDIA/Model-Optimizer PR #2912,2026-10-23 合并;Megatron-LM main 当时仍 pin 0.5.1,ModelOpt 自带的 GDN 状态量化 kernel 锁 `fla-core==0.5.1`,同样中招)。
 1. **先量检索需求**:若产品有精确 needle/QA,不要上全线性;hybrid 中 full attention 比例先保 1/8~1/4。
 2. **推理后端**:线性层 O(1) 状态是服务优势,但**主流推理引擎对 Mamba/GDN 的 kernel 支持远不如 attention 成熟**(vLLM 等对 Mamba 有实验支持,混合模型的调度/量化更复杂)——选型前查该模型的 runtime 支持矩阵。
 3. **长上下文外推**:线性递推天然无位置相位崩溃(RoPE 外推问题),但训练长度之外的**分布**仍可能漂移;不要把「状态 O(1)」等同于「任意长度零退化」。

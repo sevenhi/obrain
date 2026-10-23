@@ -6,7 +6,7 @@ source:
   - "web: ONNX Runtime 官方文档 | https://onnxruntime.ai/docs/ | 阅读日期 2026-10-23(最新发布 1.31.0)"
   - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/ | 阅读日期 2026-10-23(当前版 11.4.0,支持 Vera Rubin 计算能力)"
   - "web: TensorRT Architecture Overview | https://docs.nvidia.com/deeplearning/tensorrt/latest/architecture/architecture-overview.html | 阅读日期 2026-09-27"
-  - "web: NVIDIA Model Optimizer(仓库已由 TensorRT-Model-Optimizer 更名为 Model-Optimizer;新文档站 https://nvidia.github.io/Model-Optimizer/ 实测 200,旧站 nvidia.github.io/TensorRT-Model-Optimizer 已 404)| https://github.com/NVIDIA/Model-Optimizer | 阅读日期 2026-10-23"
+  - "web: NVIDIA Model Optimizer(仓库已由 TensorRT-Model-Optimizer 更名为 Model-Optimizer;新文档站 https://nvidia.github.io/Model-Optimizer/ 实测 200,旧站 nvidia.github.io/TensorRT-Model-Optimizer 已 404) + PR #2929(Wan I2V 导出探针静默跳融合) + PR #2467(远程 trtexec_safe 安全 benchmark) | https://github.com/NVIDIA/Model-Optimizer | 阅读日期 2026-10-23"
 date: 2026-09
 ---
 
@@ -25,7 +25,25 @@ ONNX Runtime 会先做图优化，再按可用硬件的 Execution Provider 对�
 
 TensorRT 的典型入口是 PyTorch/其他框架导出 ONNX，再由 ONNX parser 导入并构建 engine；也可以通过 TensorRT API 或 Torch-TensorRT 等路线接入。选择路线时优先看模型算子、动态 shape、量化需求和目标硬件，而不是只看导出格式。
 
+> 下图是这条选择逻辑的分支形态:同一个 ONNX,先问「部署在哪」,再问「算子是否全覆盖」,两条答案指向完全不同的落地形态。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-two-routes.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="两条部署路线怎么选:ORT 当基线,TRT 要深优化"></iframe>
+</div>
+
+
 ## 2. 可复现部署流水线
+
+> 下图把原文 9 步压成 5 段。注意「验证」出现两次(导出后、构建后),这是整条流水线最容易省掉、也最容易事后翻车的地方。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-deploy-pipeline.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="可复现部署流水线:五个阶段,每段都留版本信息"></iframe>
+</div>
+
 
 ```text
 训练 checkpoint + 预处理配置
@@ -50,6 +68,15 @@ TensorRT 数值回归 + 目标硬件 benchmark
 每个阶段都保存版本信息：模型 revision、opset、导出脚本 commit、Python/PyTorch/ONNX/TensorRT/CUDA 版本、GPU 型号、输入 shape 和预处理参数。
 
 ## 3. 导出阶段的关键决策
+
+> 下图把这一节的三个决策排成一条链:契约 → 形状 → 算子缺口。顺序反了会反复返工——契约没定就配 profile,后面必然重做。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-export-decisions.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="导出阶段三个决策:契约、动态 shape、算子缺口"></iframe>
+</div>
+
 
 ### 输入输出契约
 
@@ -79,6 +106,14 @@ TensorRT 数值回归 + 目标硬件 benchmark
 不要为了“全图 TensorRT”把一个简单、稳定的后处理强行改成复杂 plugin；端到端收益要用 benchmark 证明。
 
 ## 4. 数值正确性验证
+
+> 下图是五级比较的顺序。跳级比较等于把「导出误差」「EP 误差」「低精度误差」三种来源混在一起,定位不到根因。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-numeric-layers.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="数值正确性的分层定位:五级比较,从图到任务指标"></iframe>
+</div>
 
 ### 分层比较
 
@@ -130,6 +165,7 @@ TensorRT 数值回归 + 目标硬件 benchmark
 - INT8/FP8：需要校准数据、scale 和硬件/算子支持；校准集必须接近真实输入分布。
 - INT4/FP4：压缩收益更大，但算子覆盖、精度回归和 kernel 支持更敏感。
 - Model Optimizer 可用于 PTQ、QAT、剪枝、蒸馏和 ONNX 相关优化；使用时要保存配置和校准数据版本。
+- **导出"成功"不等于产物能加载(2026-10 实例:Wan2.1 I2V)**:ModelOpt 导量化 checkpoint 时会先跑一次**探针前向**(用假输入走一遍模型)来触发 QKV scale 融合;如果探针**只喂了 text context、没喂 image features**,multi-modal 模型的 image-attention 分支直接抛异常,而外层捕获后**静默跳过融合**——导出照样报 success,但产出的 checkpoint 因 QKV scale 与权重不匹配**加载失败**。修复思路是补齐探针输入(512-token text context + 与模型 `image_dim` 匹配的 image features、按 projection bias 对齐 compute dtype、首尾帧 positional embedding),并开 **strict 融合模式**让探针失败直接抛错而不是跳过。**通用教训**:凡是"导出/转换脚本探针输入不完整"的场景,正确姿势是**让探针失败致命化**,而不是加 try/except 兜底——静默降级比直接报错危险得多(数据源:ModelOpt PR #2929)。
 - **Model Optimizer 已更名并北移文档站**(2026-10 核实):仓库从 `NVIDIA/TensorRT-Model-Optimizer` 改为 **`NVIDIA/Model-Optimizer`**(旧地址 301 重定向,不会断但也别写死),文档站从 `nvidia.github.io/TensorRT-Model-Optimizer/`(现 **404**)搬到 **`nvidia.github.io/Model-Optimizer/`**;PyPI 包名仍是 `nvidia-modelopt`(稳定版 0.47.0,2026-09-23;仓库已有 0.48.0rc)。**含义**:它不再只是 TensorRT 的前处理,而是硬件无关的量化/蒸馏/剪枝 + NAS 工具链,导出目标同时覆盖 TensorRT-LLM、TensorRT、vLLM、SGLang。现有能力里与部署最相关的是 **AutoQuant**(按层敏感度 + 存储预算自动分配精度):GEMM 与 **KV cache** 两条搜索可分别设预算(如 Qwen3-8B 的 KV 案例:5.76 等效 bit 把 modeled KV payload 降 **64.0%**、RULER-128K 只掉 **1.04 个百分点**,而同预算均匀 NVFP4 掉 **6.54** 个百分点)——**"统一低精度"不如"按敏感度分配"**,这条与库内量化域的 HyQuant/KVTuner 是同一心法。
 - 图融合和 constant folding 可能改变数值误差，优化前后都要跑回归。
 
@@ -138,6 +174,15 @@ TensorRT 数值回归 + 目标硬件 benchmark
 ## 7. Engine 发布与兼容性
 
 TensorRT serialized engine 对版本和硬件有兼容限制；不要默认一个 plan 文件可以跨 GPU、CUDA、TensorRT 版本复用。发布包至少包含：
+
+> 下图是发布包的七项结构:产物本身、可追溯性、形状与精度、验证与回退。缺任何一类,下次升级就会变成考古。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-engine-manifest.tree.html"
+        style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="lazy" title="TensorRT 发布包里到底该装什么"></iframe>
+</div>
+
 
 - engine 或可重建 engine 的构建配置
 - 原始 ONNX/checkpoint 的 revision

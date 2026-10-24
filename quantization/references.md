@@ -52,7 +52,10 @@ date: 2026-09
 - 逐层导出示例 recipe(nvfp4_experts_only-kv_fp8_layerwise_export.yaml)— https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt_recipes/general/ptq/nvfp4_experts_only-kv_fp8_layerwise_export.yaml
 - ModelOpt model_calib API(gptq / imatrix / local_hessian / layerwise_calibrate)— https://nvidia.github.io/Model-Optimizer/reference/generated/modelopt.torch.quantization.model_calib.html
 - ModelOpt 源码 calib_utils.py(update_hessian / GPTQHelper / _hessian_offload_device)— https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt/torch/quantization/utils/calib_utils.py
-- ModelOpt 源码 hf_ptq.py(LAYERWISE_CALIB_TOKENS=8192)— https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/hf_ptq/hf_ptq.py
+- ModelOpt 源码 hf_ptq.py(逐层 batch 默认值三段演进:`LAYERWISE_CALIB_TOKENS` 8192 @ #2864;`get_max_layerwise_batch_size` + 32768 @ open #2945)— https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/hf_ptq/hf_ptq.py
+- ModelOpt 源码 layerwise_calib.py(逐层 batch 探测 `_layer_batch_fit` / `get_max_layerwise_batch_size`,PR #2945)— https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt/torch/quantization/utils/layerwise_calib.py
+- ModelOpt 源码 dataset_utils.py(`tokenizer(all_samples, padding=True, ...)` 一次性 pad 全部样本,是评审 batch 是否改变 pad 口径的一手依据)— https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt/torch/utils/dataset_utils.py
+- ModelOpt PR #2816(Windows ONNX external data 损坏,onnx 1.21→1.23.2 仅 Windows;机制与自检清单落在 computer-vision 域)— https://github.com/NVIDIA/Model-Optimizer/pull/2816
 - ModelOpt DP=EP 专家并行 PTQ 传输(PR #2738,21 PR 系列第 1 块)— https://github.com/NVIDIA/Model-Optimizer/pull/2738
 - ModelOpt `modelopt/torch/utils/moe.py`(a2a_moe / torch_a2a 注册)— https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt/torch/utils/moe.py
 - transformers Expert parallelism 文档 — https://huggingface.co/docs/transformers/en/expert_parallelism

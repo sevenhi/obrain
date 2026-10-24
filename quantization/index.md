@@ -13,10 +13,11 @@ source:
   - "pdf: Minitron(激活幅度结构化剪枝 + 知识蒸馏)| arXiv:2407.14679;实战版 arXiv:2408.11796"
   - "pdf: Puzzle(异构剪枝 NAS + MIP,即 Puzzletron 论文)| arXiv:2411.19146"
   - "code: NVIDIA/Model-Optimizer 剪枝示例与 PR #2922(2026-10-23,Megatron-Core 26.10 兼容)| https://github.com/NVIDIA/Model-Optimizer"
-  - "code: NVIDIA/Model-Optimizer MoE 逐层 GPTQ 链(PR #2840 逐专家 Hessian → #2864 加速 → #2877 设备修复;#2943 AutoQuant 探测修复;commit f29bb60)| https://github.com/NVIDIA/Model-Optimizer/pull/2864;仓库 HEAD 已到 fb3ccd0(2026-10-24)"
+  - "code: NVIDIA/Model-Optimizer MoE 逐层 GPTQ 链(PR #2840 逐专家 Hessian → #2864 加速 → #2877 设备修复;#2943 AutoQuant 探测修复;commit f29bb60)| https://github.com/NVIDIA/Model-Optimizer/pull/2864;仓库 HEAD 已到 3c423a9f165b(2026-10-24)"
   - "code: NVIDIA/Model-Optimizer PR #2738 DP=EP 专家并行 PTQ 传输(2026-10-24 合并,21 个 PR 的第 1 块)| https://github.com/NVIDIA/Model-Optimizer/pull/2738"
   - "code: NVIDIA/Model-Optimizer PR #2889 vLLM fake-quant 导出改走 Megatron-Bridge(commit fb3ccd0e65bc,2026-10-24;`mtq.fold_weight` 顺序量化器/SVDQuant 折叠修复 + 前置校验 + TP/EP/PP/VLM + NLL 实测)| https://github.com/NVIDIA/Model-Optimizer/pull/2889"
-  - "web: ModelOpt 公告 *Quantizing a 4.9 TB Qwen3.8 Model on a Single GPU*(2026-09-28,逐层校准/逐层导出/单卡生产数据)| https://nvidia.github.io/Model-Optimizer/announcements/20260928-single-gpu-ptq.html"
+  - "code: NVIDIA/Model-Optimizer PR #2816 Windows ONNX external data 损坏(onnx 1.21→1.23.2,commit 3c423a9f165b;属 CV 导出域,落地在 computer-vision)| https://github.com/NVIDIA/Model-Optimizer/pull/2816"
+  - "web: ModelOpt 公告 *Quantizing a 4.9 TB Qwen3.8 Model on a Single GPU*(2026-09-28,逐层校准/逐层导出/单卡生产数据;注意文档站每页 title 都烤入 `0.0.1.dev1+<HEAD sha>`,**任何 commit 都会让该页 hash 变**,判变化须比正文)| https://nvidia.github.io/Model-Optimizer/announcements/20260928-single-gpu-ptq.html"
   - "web: vLLM Quantization | https://docs.vllm.ai/en/latest/features/quantization/ | 阅读日期 2026-09-27"
 date: 2026-10
 ---

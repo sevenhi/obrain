@@ -8,10 +8,12 @@ source:
   - "code: PR #2877 *Launch the fused NVFP4 GPTQ kernel on its tensors' GPU*(2026-10-23 合并:device_map=\"auto\" 多卡下的 Triton 当前设备 bug)| https://github.com/NVIDIA/Model-Optimizer/pull/2877"
   - "code: PR #2945 *Fit layerwise calibration to GPU memory*(**open,未合并**:65% 比例阈值 → 实测 headroom 放置 + 逐层 batch 探测)| https://github.com/NVIDIA/Model-Optimizer/pull/2945"
   - "code: PR #2943 *Fix AutoQuant automatic batch-size probing*(2026-10-23 合并:探测必须复现打分时的真实负载)| https://github.com/NVIDIA/Model-Optimizer/pull/2943"
-  - "web: ModelOpt 公告 *Quantizing a 4.9 TB Qwen3.8 Model on a Single GPU*(2026-09-28;逐层校准的 loop interchange、逐层导出/断点续跑、生产 recipe 与结果)| https://nvidia.github.io/Model-Optimizer/announcements/20260928-single-gpu-ptq.html"
+  - "web: ModelOpt 公告 *Quantizing a 4.9 TB Qwen3.8 Model on a Single GPU*(2026-09-28;逐层校准的 loop interchange、逐层导出/断点续跑、生产 recipe 与结果;2026-10-25 重抓正文,其 batch note 已被 #2864 改写为「默认 8192 token」口径,#2945 还将再改为实测探测)| https://nvidia.github.io/Model-Optimizer/announcements/20260928-single-gpu-ptq.html"
   - "web: ModelOpt model_calib API 文档(gptq / imatrix / local_hessian / layerwise_calibrate 的参数与断言)| https://nvidia.github.io/Model-Optimizer/reference/generated/modelopt.torch.quantization.model_calib.html"
   - "code: 源码 calib_utils.py(update_hessian / GPTQHelper / _hessian_offload_device,commit f29bb60)| https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt/torch/quantization/utils/calib_utils.py"
-  - "code: 源码 hf_ptq.py(LAYERWISE_CALIB_TOKENS=8192 / _layerwise_calib_batch_size)| https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/hf_ptq/hf_ptq.py"
+  - "code: 源码 hf_ptq.py(逐层 batch 三段演进:硬编码 1 → `LAYERWISE_CALIB_TOKENS=8192`@#2864 → 实测探测 + 上限 32768@open #2945)| https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/hf_ptq/hf_ptq.py"
+  - "code: 源码 layerwise_calib.py(`_layer_batch_fit` / `get_max_layerwise_batch_size` 的探测算法,open #2945)| https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt/torch/quantization/utils/layerwise_calib.py"
+  - "code: 源码 dataset_utils.py(`tokenizer(all_samples, padding=True, ...)` 一次性 pad 全部样本 —— 判定「batch 是否改变 pad 口径」的一手依据)| https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt/torch/utils/dataset_utils.py"
   - "code: recipe general/ptq/nvfp4_experts_only-kv_fp8_layerwise_export.yaml(layerwise.export_dir 即开关)| https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt_recipes/general/ptq/nvfp4_experts_only-kv_fp8_layerwise_export.yaml"
 date: 2026-10
 ---
@@ -189,6 +191,39 @@ batch 16 vs batch 1 的 KL 没有直接对照(那批 batch-1 运行反复被抢�
 
 **这条因果链在后续 open PR #2945 里被纠正了**,而且从源码能直接验:`dataset_utils.py` 里 `tokenizer(all_samples, padding=True, truncation=True, max_length=...)` 是**一次性把全部样本 pad 到同一长度**、再交给 DataLoader 切 batch 的——所以 **batch 大小并不改变哪些 token 是 pad**。#2864 的 changelog 与公告这段都被 #2945 一并改正。于是 `input_scale` 的小幅差异更可能来自规约顺序(浮点求和次序),而不是"pad 口径变了";这与 phi-2 实测(GPTQ batch16−batch1 KL = −0.0058 ± 0.0032、local-Hessian +0.0058 ± 0.0052,**都不显著**)和"权重逐位相同"自洽。
 
+#2945 给出的替换措辞(可直接对照当前线上公告的差异):`input_scale` 变动是因为**不同的 batch 形状让激活的规约/取整路径不同**("a different batch shape rounds the activations differently"),并明确补一句 **"Padding does not change: `hf_ptq.py` pads every calibration sample to the same length whatever the batch size."**
+
+### 5.1 逐层 batch 默认值的三段演进(版本敏感,必须钉死)
+
+同一行代码在三个版本里有三种语义,这是"默认值会咬人"的教科书案例:
+
+| 版本 | 逐层 batch 默认 | 依据 |
+|---|---|---|
+| ≤ #2864 之前 | **1**(`hf_ptq.py` 硬编码) | 理由:自动探测要跑整模型前向,违背逐层初衷、可能 OOM |
+| #2864 合并后(main、commit f29bb60) | **8192 token**(seq 512 → 16) | `LAYERWISE_CALIB_TOKENS = 8192`;`max(1, min(8192//calib_seq, num_samples))` |
+| #2945(**open,未合并**) | **实测探测**:每种解码层各跑一次前向,取"装得进半数空闲显存"的最大样本数,**上限 32768 token**(seq 512 → 64) | `get_max_layerwise_batch_size()`;探测失败/装不下时回退小值 |
+
+两个可自检的换算:`8192 / 512 = 16`、`32768 / 512 = 64`(公告给的就是这两个数)。公告原文还留了一句值得注意的自述——这次 2.4 T 生产运行是在默认值仍为 1 的版本上做的,"which is why it passed `--batch_size 8`",即**它的墙钟数字带着 batch 8 的加速,而不是默认值的成绩**。
+
+#2945 的探测之所以不能直接用现成的 `get_max_batch_size()`,是因为后者要跑**整模型**前向——既高估一层所需的显存,又可能自己 OOM。它的替代方案值得抄,因为这是"给逐层流程做 batch 探测"的通用写法:
+
+```python
+# modelopt/torch/quantization/utils/layerwise_calib.py(PR #2945,open)
+def _layer_batch_fit(model, layer, seq_len, num_samples, memory_fraction, device):
+    # 1) 对每种解码层(按 module 类集合去重:dense/MoE × full/linear attn)只测代表层
+    # 2) 跑 batch=1(两次,第一次只用来吃掉 cuBLAS workspace 这类一次性缓冲)与 batch=2
+    for batch_size in (1, 1, 2):
+        args, kwargs = _capture_layer_inputs(model, layer, batch_size, seq_len, device)
+        peaks.append(_forward_peak_per_gpu(layer, args, kwargs))   # 每次 reset_peak 后测增量
+    per_sample = two_peak - one_peak                              # 每样本的显存斜率
+    # 3) 给"整轮校准集缓存的输入"留位(逐层要缓存本层与下一层的激活 ⇒ ×2)
+    available = _available_gpu_bytes(gpu) - 2 * num_samples * cached_per_sample[gpu]
+    fixed     = one_peak - per_sample                             # 与 batch 无关的固定开销
+    return int((memory_fraction * available - fixed) // per_sample)   # memory_fraction 默认 0.5
+```
+
+三个细节都是踩过坑才有的:`batch=1` 要**跑两次**(第一次带上一次性 workspace 分配,算进斜率会低估 batch)、**斜率**而非绝对值(用 1 vs 2 的差,消掉固定开销)、探测完 `allgather` 取**所有 rank 的最小值**(多卡各算各的,小的那个才安全)。探测 OOM 时另有一条硬错误:逐层 kernel 是"replay 缓存 batch"的,拆小 batch 救不了,只能报错让人调小 `--batch_size`——这一点比默默重试有用得多。
+
 实践结论不变,但理由要换:**要比两次运行的产物,就显式钉死 `--batch_size`**;公开数字里凡是"batch 变了但结果等价"的断言,先问它指的是权重还是激活 scale。这与 [PTQ 篇](ptq-gptq-awq-smoothquant.md)里"校准集决定一切"是同一条原则的工程版:**batching 也是校准协议的一部分**。(本段保留争议双方:公告原表述 vs #2945 的更正;以代码行为(#2945 所述 pad 在 batching 之前)为准更可信,但它仍是 open PR。)
 
 ## 6. 可复现:逐层 GPTQ 的最小配置
@@ -246,7 +281,7 @@ python examples/hf_ptq/hf_ptq.py \
 
 **跑起来之前**
 
-- [ ] 记下你用的 **`--batch_size`**:默认值会随版本变(旧版 1,现在 8192 token),而它**改变激活 scale**。要对比两次运行,显式钉死。
+- [ ] 记下你用的 **`--batch_size`**:默认值会随版本变(旧版硬编码 1 → #2864 起 8192 token → #2945 起改为实测探测、上限 32768 token),而它**改变激活 scale**。要对比两次运行,显式钉死。
 - [ ] GPU/CPU 预算都留 10–20% 余量(实测会超预算 18%/0.8%)。
 - [ ] 多卡且 `device_map="auto"` 时,确认 `fused: true` 的 NVFP4 GPTQ 不会跨卡:旧代码里 Triton 在**当前** CUDA 设备启动,而张量在别的卡上 → NVLink 机器报 `illegal memory access`(报错点还在无关算子上)、PCIe 机器报 `Pointer argument cannot be accessed from Triton`。修复是 `with torch.cuda.device(w_block.device):`——**自己写 Triton wrapper 时同理:launch 前先切到张量所在设备**。
 - [ ] 原生 FP8 专家要 `unpack_weight()` 后再量化,否则原地更新丢失。
@@ -275,7 +310,8 @@ python examples/hf_ptq/hf_ptq.py \
 
 - 机制与内存公式、bit-exact 测试口径:ModelOpt PR #2840(2026-10-22 合并),正文与测试节。
 - 三处白等的拆解、全部分阶段与端到端实测、KL 表:PR #2864(2026-10-23 合并)。数字均为 PR 自述,**未独立复现**;本文对其中可推导项(每层 Hessian 13.3/22.5 GiB、专家投影数 141,312、3.4× 压缩、120 s/层、8192/512=16)做了重算并标注一致。
-- 逐层校准的 loop interchange、逐层导出/断点续跑、单卡 4.9 TB 生产数据:ModelOpt 官方公告(2026-09-28)。
+- 逐层校准的 loop interchange、逐层导出/断点续跑、单卡 4.9 TB 生产数据:ModelOpt 官方公告(2026-09-28,2026-10-25 重抓核对正文)。
+- 逐层 batch 默认值的三段演进、`_layer_batch_fit` 的探测算法:ModelOpt 源码 `hf_ptq.py` / `layerwise_calib.py`(commit `3c423a9f165b` 的 main 上是 8192 token 段;#2945 的 diff 给出 32768 token + 探测段)。"pad 不随 batch 变"的依据是 `modelopt/torch/utils/dataset_utils.py` 的 `tokenizer(all_samples, padding=True, ...)`,**不是**公告原话。
 - 设备选择 bug 与修法:PR #2877(2026-10-23 合并);`map_location` 之外的"Triton 当前设备"是通用坑。
 - 65% 阈值的问题与 headroom 方案、逐层 batch 探测:PR #2945(**open,未合并**)——文中凡引用它处均已标注"open",不要当已发布行为。
 - AutoQuant 自动 batch 探测需复现打分负载:PR #2943(2026-10-23 合并),细节见 computer-vision 部署篇。

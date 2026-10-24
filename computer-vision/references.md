@@ -51,6 +51,9 @@ date: 2026-10
 | TensorRT GitHub | https://github.com/NVIDIA/TensorRT | 开源组件 |
 | NVIDIA Model Optimizer 仓库 | https://github.com/NVIDIA/Model-Optimizer | 原 TensorRT-Model-Optimizer 更名而来;量化/蒸馏/剪枝/NAS,导出 TRT-LLM/vLLM/SGLang |
 | NVIDIA Model Optimizer 文档站 | https://nvidia.github.io/Model-Optimizer/ | AutoQuant(GEMM/KV 混合精度搜索)、NVFP4、QAD 教程(旧站 TensorRT-Model-Optimizer 已 404) |
+| ONNX External Data 规范 | https://onnx.ai/onnx/repo-docs/ExternalData.html | `data_location`/`external_data` 的 `location`/`offset`/`length`/`checksum` 字段语义与对齐建议(Windows 建议按 64 KiB 分配粒度对齐 offset) |
+| onnx/onnx PR #7790 | https://github.com/onnx/onnx/pull/7790 | external data 打开动作收进 C++ `open_external_data()`:Windows `_O_BINARY`、Linux `openat2`、TOCTOU 消除(2026-04 合并,1.22.0 起) |
+| onnx/onnx PR #8260 | https://github.com/onnx/onnx/pull/8260 | `save_external_data` 的 offset 守卫(1.23.0 起):offset 落在已写数据内或远超文件尾都硬报错,不再静默覆盖 |
 | Model Optimizer — AutoQuant KV 公告 | https://nvidia.github.io/Model-Optimizer/announcements/20261008-autoquant-kv.html | KV 精度按层分配:5.76 等效 bit,payload −64.0%,RULER-128K −1.04pp(vs 均匀 NVFP4 −6.54pp) |
 | TRT-ViT 社区复现(非官方) | https://github.com/Phoenix8215/TRT-ViT | 论文官方未开源时的参考实现 |
 | ViT 官方代码(google-research) | https://github.com/google-research/vision_transformer | 论文 abstract 注明的微调代码与预训练权重发布处(JAX/TF) |

@@ -5,7 +5,7 @@ tags: [computer-vision, nerf, vit, cnn, reparameterization, inference, onnx, ten
 source:
   - "web: ONNX Runtime 官方文档 | https://onnxruntime.ai/docs/ | 阅读日期 2026-10-23(最新发布 1.31.0)"
   - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/ | 阅读日期 2026-10-23(当前版 11.4.0)"
-  - "code: NVIDIA Model Optimizer | github.com/NVIDIA/Model-Optimizer(原仓库名 TensorRT-Model-Optimizer 会 301 重定向到此) + 文档站 https://nvidia.github.io/Model-Optimizer/ | 阅读日期 2026-10-25(commit fb3ccd0;PR #2889 vLLM fake-quant 导出改走 Megatron-Bridge——本 commit 改的是 LLM 量化导出链,落地在 quantization 域;PR #2922 剪枝适配 Megatron-Core 26.10;PR #2943 AutoQuant 自动 batch 探测;PR #2738 DP=EP 专家并行 PTQ;PR #2930 硬化 specdec smoke test)"
+  - "code: NVIDIA Model Optimizer | github.com/NVIDIA/Model-Optimizer(原仓库名 TensorRT-Model-Optimizer 会 301 重定向到此) + 文档站 https://nvidia.github.io/Model-Optimizer/ | 阅读日期 2026-10-25(commit 3c423a9f165b,2026-10-24;PR #2889 vLLM fake-quant 导出改走 Megatron-Bridge——本 commit 改的是 LLM 量化导出链,落地在 quantization 域;PR #2922 剪枝适配 Megatron-Core 26.10;PR #2943 AutoQuant 自动 batch 探测;PR #2738 DP=EP 专家并行 PTQ;PR #2930 硬化 specdec smoke test;PR #2816 Windows ONNX external data 损坏修复——**本篇域**,依赖升 onnx 1.23.2)"
 date: 2026-10
 ---
 
@@ -27,7 +27,7 @@ date: 2026-10
 | [TRT-ViT 推理导向架构](concepts/trt-vit-inference.md) | concept | 以 TensorRT 延迟(非 FLOPs)为设计准绳;4 条准则 + MixBlockC 混合 CNN/Transformer | ✅ 已入库 |
 | [CNN 重参数化(OREPA)](concepts/cnn-reparameterization.md) | concept | 训练多分支/推理单卷积;线性 scaling 替代 BN 使训练期 kernel 级在线合并 | ✅ 已入库 |
 | [CCNN 连续卷积核](concepts/cnn-long-range-nd.md) | concept | 核=坐标的 MLP 函数,核长与参数解耦;一个 CNN 通吃 1D/2D/任意分辨率 | ✅ 已入库 |
-| [视觉模型部署：PyTorch → ONNX → TensorRT / ONNX Runtime](frameworks/onnx-tensorrt-deployment.md) | howto | 从导出、图验证、动态 shape、量化、数值回归到 engine 兼容性和线上 benchmark 的完整部署流程 | ✅ 已入库 |
+| [视觉模型部署：PyTorch → ONNX → TensorRT / ONNX Runtime](frameworks/onnx-tensorrt-deployment.md) | howto | 从导出、图验证、动态 shape、量化、数值回归、**external data 字节完整性**到 engine 兼容性和线上 benchmark 的完整部署流程 | ✅ 已入库 |
 
 ## 阅读顺序建议
 

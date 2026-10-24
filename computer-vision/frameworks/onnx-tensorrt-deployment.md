@@ -6,7 +6,9 @@ source:
   - "web: ONNX Runtime 官方文档 | https://onnxruntime.ai/docs/ | 阅读日期 2026-10-23(最新发布 1.31.0)"
   - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/ | 阅读日期 2026-10-23(当前版 11.4.0,支持 Vera Rubin 计算能力)"
   - "web: TensorRT Architecture Overview | https://docs.nvidia.com/deeplearning/tensorrt/latest/architecture/architecture-overview.html | 阅读日期 2026-09-27"
-  - "web: NVIDIA Model Optimizer(仓库已由 TensorRT-Model-Optimizer 更名为 Model-Optimizer;新文档站 https://nvidia.github.io/Model-Optimizer/ 实测 200,旧站 nvidia.github.io/TensorRT-Model-Optimizer 已 404) + PR #2929(Wan I2V 导出探针静默跳融合) + PR #2467(远程 trtexec_safe 安全 benchmark) | https://github.com/NVIDIA/Model-Optimizer | 阅读日期 2026-10-23"
+  - "web: NVIDIA Model Optimizer(仓库已由 TensorRT-Model-Optimizer 更名为 Model-Optimizer;新文档站 https://nvidia.github.io/Model-Optimizer/ 实测 200,旧站 nvidia.github.io/TensorRT-Model-Optimizer 已 404) + PR #2929(Wan I2V 导出探针静默跳融合) + PR #2467(远程 trtexec_safe 安全 benchmark) + PR #2816(Windows ONNX external data 损坏,依赖升 1.23.2)| https://github.com/NVIDIA/Model-Optimizer | 阅读日期 2026-10-25"
+  - "code: onnx/onnx PR #7790 *Fix TOCTOU race in external data file open*(2026-04-06 合并:Windows `_O_BINARY` + Linux `openat2` 集中到 C++ `open_external_data()`);PR #8260 *Validate offset in save_external_data*(2026-08-05 合并,1.23.0 起)| https://github.com/onnx/onnx/pull/7790 | ↑primary"
+  - "code: onnx/onnx 源码 external_data_helper.py 的 save_external_data(),v1.21.0 vs v1.22.0/v1.23.2 逐版本对比(核对 O_BINARY 与 64 KiB padding 守卫的引入版本)| https://github.com/onnx/onnx/blob/main/onnx/external_data_helper.py"
 date: 2026-09
 ---
 
@@ -104,6 +106,73 @@ TensorRT 数值回归 + 目标硬件 benchmark
 4. 是否让该子图由 ONNX Runtime 或其他 backend 执行。
 
 不要为了“全图 TensorRT”把一个简单、稳定的后处理强行改成复杂 plugin；端到端收益要用 benchmark 证明。
+
+### 产物字节完整性:Windows 文本模式与 ONNX external data（2026-10）
+
+上面讲的是**图和数值**层面的正确性;还有一类更隐蔽的错误在**文件字节**层面——导出报 success、模型能加载、checker 也过,但权重数据本身已经错位。2026-10 的实例(ModelOpt PR #2816,消费 ONNX 上游 PR #7790)值得记全链条,因为它是"平台特定 + 静默"的典型。
+
+**为什么 external data 会错位。** >2GB 的 ONNX(量化大模型基本都超)必须走 external data:`TensorProto` 只保留 `{location, offset, length}`,真实字节写进一个共享 `.onnx_data` 文件。ONNX 的写法是**一个文件 + 逐张量 seek 追加**——每个张量 `seek(0, 2)` 到文件尾、写 `raw_data`、再回填自己的 `offset/length`:
+
+```python
+# onnx/external_data_helper.py :: save_external_data()(1.21 口径)
+fd = os.open(external_data_file_path, os.O_CREAT | os.O_RDWR, 0o600)   # ← 没有 O_BINARY
+with os.fdopen(fd, "r+b") as data_file:
+    data_file.seek(0, 2)                    # 追加到文件尾
+    offset = data_file.tell()
+    data_file.write(tensor.raw_data)         # 前一个张量少写 1 字节 → 后一个整体前移
+    set_external_data(tensor, info.location, offset, data_file.tell() - offset)
+```
+
+所以**任何一次写入少掉一个字节,后面所有张量的 offset 都错位**,而 `.onnx` 本身(protobuf + offset 表)仍然自洽。
+
+**Windows 的文本模式。** Windows CRT 的 fd 分文本/二进制两种:文本模式下 `0x1A`(Ctrl-Z)被当 **EOF**、并且做 `\n ↔ \r\n` 翻译。`os.open()` 在 Windows 上默认开**文本模式**,要 `| os.O_BINARY` 才是二进制(POSIX 没有这个区分;CPython bpo-52646 记录过这条跨平台陷阱)。
+
+ONNX 1.21.0 的写盘路径上那行 `os.open` 正是**没带 `O_BINARY`** 的(源码可核)。PR 给出的机制是:共享 external 文件被**逐张量重开追加**,当某个张量以 `0x1A` 结尾时,文本模式把它当 EOF 截断,于是下一个张量从 1023 而不是 1024 开始写,**覆盖掉前一个张量的最后一个字节**。`.onnx` 里的 offset 表由代码自己回填、内部自洽,所以 **checker 不报错**,崩的是 `raw_data` 的对应关系;症状不是崩溃,而是**模型能加载、输出崩坏**(PR 原文:错误输出 + 生成跑飞,直到把对话上下文撑爆)。
+
+> **口径要诚实**:上面"截断 `0x1A`"是 PR 的陈述 + 测试的观测(1.21.0 上 `0x1A` 用例失败、`0x00`/`0x0A` 通过;1.23.2 全通过),我**没有在 Windows 上复现**(本机 Linux)。另有一点与该解释不完全吻合、我保留不加判词:CPython 的 `FileIO` 初始化在 `fd` 由外部传入时**也会**执行 `_setmode(fd, O_BINARY)`(`Modules/_io/fileio.c`,我逐版本核过 3.10/3.11/3.12/3.13 都有)。也就是说真实失败路径可能比"任何 `os.open` 都中招"更窄(可能与 `O_CREAT` 新建 + 后续重开的具体组合、或 1.21 内部某处别的 `open` 调用有关)。**实践上不必分辨**:规则永远是"二进制数据一律 `O_BINARY` / 用 `open(..., 'rb'/'wb')` / 直接升 onnx ≥ 1.23.2",这条在两种机制下都成立。
+
+**上游怎么修的。** ONNX 把 external data 的所有打开动作收进 C++ `open_external_data()`:Linux 用 `openat2(RESOLVE_BENEATH|RESOLVE_NO_SYMLINKS)`、BSD/macOS 用 `openat(O_RESOLVE_BENEATH|O_NOFOLLOW)`、Windows 用 `CreateFileW(FILE_FLAG_OPEN_REPARSE_POINT)` 再 `_open_osfhandle(_O_RDONLY|_O_BINARY)`,并顺带把 TOCTOU 补掉(PR #7790,2026-04 合并;python 侧从 **v1.22.0** 起就是 `_open_external_data_fd()` 调用它,我已对 v1.21.0/v1.22.0 源码逐一核对)。1.23.0 又给 save 加了二次守卫(PR #8260,2026-08 合并,已核对 v1.23.0/v1.23.1/v1.23.2 均有、v1.22.0 无),把"静默覆盖"变成硬报错:
+
+```python
+# onnx/external_data_helper.py :: save_external_data()（1.23.x）
+padding = info.offset - data_file.tell()
+if not 0 <= padding <= _MAX_EXTERNAL_DATA_PADDING:      # 64 KiB
+    raise ValidationError(...)   # offset 落在已写数据里(会被覆盖)或远超文件尾(无界补零)都拒绝
+```
+
+**ModelOpt 侧的动作(PR #2816)。** 只给 Windows 升级依赖,Linux 保持不动(review 要求),因为损坏是平台特有的、Linux CI 本来就抓不到:
+
+```toml
+# pyproject.toml 的 onnx extra
+- "onnx~=1.21.0",
++ "onnx~=1.21.0; platform_system != 'Windows'",
++ "onnx~=1.23.2; platform_system == 'Windows'",
+```
+
+配的回归测试直接把三种"尾部字节"摆在一起跑——`0x00`(零)、`0x0A`(换行)、`0x1A`(Ctrl-Z),两个 1024 字节张量写进同一个 external 文件后逐字节比:
+
+```python
+@pytest.mark.parametrize("last_byte", [0x00, 0x0A, 0x1A])
+def test_save_external_data_preserves_tensor_boundaries(tmp_path, last_byte):
+    first = np.full(1024, 0x41, dtype=np.uint8); first[-1] = last_byte
+    second = np.full(1024, 0x42, dtype=np.uint8)
+    ...  # save_onnx(model, path, save_as_external_data=True)
+    assert (tmp_path / "model.onnx_data").read_bytes() == first.tobytes() + second.tobytes()
+    # 再 onnx.load 回来逐张量 assert_array_equal
+```
+
+三例里 `0x00`/`0x0A` 在 1.21.0 上就通过、**只有 `0x1A` 失败**(byte 1023 被覆盖);1.23.2 三例全过。为什么这类 bug 难发现:触发条件要求某个张量的最后一个字节恰好是 `0x1A`——单个张量约 1/256 概率,但一个量化大模型有几百到几千个 external 张量,**几乎必然踩到**;而一旦踩到,崩的是"输出质量"而不是"加载",极易被误判成量化算法或 kernel 的问题。
+
+**数据口径(PR 自述,已标注未独立复现)。** 用 1.23.2 wheel 重新导出 AWQ-lite INT4(32 校准样本):341 个 external 张量无重叠、无非法 scale;CUDA 两轮对话正常回答并停止。五 shot MMLU 全 57 科 14,042 例:重新导出的 INT4 **8,099/14,042(57.677%)** vs 干净 FP16 **8,374/14,042(59.635%)**,差 **1.96 个百分点**(我把两组数重算复核过:57.677 + 1.958 = 59.635)。注意 PR 明确说这批是**早先配置下的流水线结果,不是在当前 main 基线上完整跑出来的**;原始 CI 复现与完整测试套件作者也未跑。所以这组数字只能当"重新导出后模型没坏"的旁证,不能当精度基准。
+
+**实践要点。**
+
+- **导出侧的自检比"能加载"强得多**:`Σ 各张量 length == external 文件大小`、每个 `offset+length` 落在文件内、offset 两两不重叠——三条都是几十行 Python 就能查的不变量,建议进 CI。
+- **跨平台产物在生产平台上验字节**,别在 Linux 导出、Linux 加载通过就发布;Windows 依赖门槛:`onnx ≥ 1.23.2`。
+- **损坏不可修**:已错位的 external data 只能**从干净权重重新导出**,不要试图 patch offset。
+- **症状指纹**:模型加载成功 + 输出崩坏/生成不收敛 → 先查权重字节完整性,再怀疑量化算法或 kernel。
+- 与本节前面的 Wan I2V 那条是同一族问题的两个形态:**探针静默降级**(逻辑层少喂了输入)和**文件字节错位**(存储层少写了一个字节),共同教训是"导出 success 不是证据,产物必须被独立校验"。
+
 
 ## 4. 数值正确性验证
 
@@ -206,6 +275,7 @@ TensorRT serialized engine 对版本和硬件有兼容限制；不要默认一�
 - [ ] 已记录 engine 的构建环境和硬件兼容性。
 - [ ] 已分别测 warm-up、kernel、端到端和并发延迟。
 - [ ] 已完成精度、显存、吞吐和尾延迟验收。
+- [ ] **external data 字节完整性已自检**(`Σ length == 文件大小`、`offset+length` 不越界、offset 互不重叠);Windows 导出要求 `onnx ≥ 1.23.2`。
 - [ ] 已保留旧 engine、旧配置和回滚路径。
 
 ## 相关条目
@@ -221,3 +291,6 @@ TensorRT serialized engine 对版本和硬件有兼容限制；不要默认一�
 - 主源:ONNX Runtime 官方文档(https://onnxruntime.ai/docs/)与 NVIDIA TensorRT 官方文档(https://docs.nvidia.com/deeplearning/tensorrt/latest/)。TensorRT 版本以 [release notes](https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/release-notes.html) 为准(2026-10 核实:11.4.0 为当前版,11.3.0 Enterprise 起支持 Vera Rubin 计算能力)。
 - 交叉源:TensorRT Architecture Overview(https://docs.nvidia.com/deeplearning/tensorrt/latest/architecture/architecture-overview.html)、NVIDIA Model Optimizer(https://nvidia.github.io/Model-Optimizer/ 文档站 + https://github.com/NVIDIA/Model-Optimizer 仓库;旧地址 TensorRT-Model-Optimizer 的文档站已 404)。
 - AutoQuant KV 案例数据:NVIDIA Model Optimizer 官方公告 *AutoQuant KV: Automatic Mixed-Precision KV Cache Quantization*(2026-10-08)— https://nvidia.github.io/Model-Optimizer/announcements/20261008-autoquant-kv.html
+- Windows external data 损坏的机制、依赖改动与测试:ModelOpt PR #2816(2026-10-24 合并,commit `3c423a9f165b`;正文 + `pyproject.toml` / `tests/unit/onnx/test_external_data.py` diff)。上游根因与修法:onnx/onnx PR #7790(2026-04-06 合并)— https://github.com/onnx/onnx/pull/7790;save 侧 offset 守卫:PR #8260(2026-08-05 合并)。
+- 版本引入点经**逐版本源码对比**核实(非推断):`_open_external_data_fd()` 在 v1.21.0 不存在、v1.22.0 起存在;`_MAX_EXTERNAL_DATA_PADDING` 守卫 v1.22.0 无、v1.23.0 起有。ONNX 当前 PyPI 版 1.23.2(2026-10-06 发布)。
+- MMLU 数字为 PR 自述且 PR 声明「来自早先 ModelOpt 配置的流水线,非当前 main 基线的完整运行」,本文仅作旁证引用;百分比已重算复核(8,099/14,042 = 57.677%,8,374/14,042 = 59.635%,差 1.958 个百分点)。

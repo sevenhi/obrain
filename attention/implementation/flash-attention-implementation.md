@@ -13,7 +13,7 @@ source:
   - "pdf: Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 引用[66]并设附录 B.5 专节比较;online softmax/lazy softmax 前驱) | arXiv:2112.05682"
   - "pdf: Online normalizer calculation for softmax (Milakov & Gimelshein, FA1 引用[60], online softmax 最早出处) | arXiv:1805.02867 | https://arxiv.org/abs/1805.02867 (2026-09 实测 200)"
   - "code: github.com/Dao-AILab/flash-attention | Star 24.7k"
-  - "code: github.com/Dao-AILab/flash-attention CuTe 后端源码一手实读 (HEAD 10b74d98, 2026-10-22) | flash_attn/cute/config.py、interface.py、flash_fwd_sm90.py、flash_fwd_sm100.py、flash_bwd_sm100.py、buffer 相关的 tensormap workspace 逻辑"
+  - "code: github.com/Dao-AILab/flash-attention CuTe 后端源码一手实读 (HEAD bc52a40, 2026-10-23) | flash_attn/cute/config.py、interface.py、flash_fwd_sm90.py、flash_fwd_sm100.py、flash_bwd_sm100.py、flash_bwd_preprocess.py、flash_bwd_postprocess.py、pack_gqa.py、seqlen_info.py、buffer 相关的 tensormap workspace 逻辑"
   - "code: github.com/NVIDIA/cutlass | cutlass/tensor_utils/tensormap.py 的 TensorMapManager / TensorMapUpdateMode(GMEM 模式)"
 date: 2026-10
 ---
@@ -461,7 +461,7 @@ FA4(2026,MLSys,arXiv:2603.05451)聚焦 **Blackwell(B200/GB200)**:瞄准"张量�
 
 ---
 
-## 4.5 2026-10 的 CuTe 后端工程增量(上游 10-12 → 10-22,HEAD `10b74d98`)
+## 4.5 2026-10 的 CuTe 后端工程增量(上游 10-12 → 10-23,HEAD `bc52a40`)
 
 FA4 的 CuTe DSL 后端(同时服务 Hopper/SM90 与 Blackwell/SM100)在 2026-10 有一批**不是新算法、但决定"能不能上线"**的工程改动。它们比论文更能说明真实部署里会踩什么,故单列一节。
 
@@ -536,10 +536,126 @@ head_dim=256 原本走独立的 dQ / dKdV 双内核,现在可以合并到通用 
 - **TMEM 预算正好用满 512 列**:`dV 128 | dK 128 | S 64(P 别名) | dP 64(dS 别名,与 dQ 尾重叠) | dQ 128`;
 - **SMEM 231,424 B / 232,448 B**——只剩 16 KB 给 dQ 归约暂存(两个 16 列 stage),"把 SMEM 抠到字节"是这类内核的常态;
 - 关键收益来自**删掉交换暂存**:M=64 布局下,对端需要的 dS 那一半可以直接从本 CTA 的 `sdS_dK`(对端的 dSᵀ,K-major)读——它正好落在对端 dQ A 操作数的半块布局里,省掉一份交换缓冲和 `dQaccum_empty` 等待,而那个等待曾把整条 dQ 归约链放到关键路径上、在 hd256 上吃掉约 **17%**;
-- **实测(B200 @1400 MHz,vs 专用双内核)**:MHA h8 在 1k 持平、2k–32k 快 **3–5%**(causal 6–11%);varlen h8 在 2k 持平、8k/32k 快 **4–17%**;GQA(24/4)在 8k 持平、32k 快 4–5%,但 **2k 慢 22–29%**(专用 dKdV 内核在 kernel 内循环 group 的 q-head,通用内核还没做这个循环);
+- **实测(B200 @1400 MHz,vs 专用双内核)**:MHA h8 在 1k 持平、2k–32k 快 **3–5%**(causal 6–11%);varlen h8 在 2k 持平、8k/32k 快 **4–17%**;GQA(24/4)在 8k 持平、32k 快 4–5%,但 **2k 慢 22–29%**(**前提:这是 #2966 的口径,当时通用内核还没有反向 pack_gqa**——专用 dKdV 内核在 kernel 内循环 group 的 q-head,通用内核还没做这个循环;#2967 把 q-head 折进 Q tile 正是补上这个循环,之后同一"通用内核 GQA 小序列"现象翻正,见 §4.5.4);
 - **默认行为零变化**:36 组(2CTA + 1CTA,280 个文件)的 CUBIN/PTX 与父 commit **逐字节相同**。
 
-### 4.5.4 版本与依赖快照(2026-10-22 实测)
+### 4.5.4 pack_gqa:把 GQA 的 q-head 折进反向的 Q tile(#2967)
+
+上游 commit `bc52a40`(2026-10-23,`[CuTe, SM100] Unify hd256 backward (4/7)`,10 files +709/−116)。这是 hd256 反向统一系列的第 4 步,但机制上独立成篇:**SM100 反向的 GQA 从"一个 Q head 一个 tile + 跨 group fp32 归约"改为"一个 KV head 一个 tile,qh 个 Q head 折进 tile 的行维"**——正是 §4.5.3 里"通用内核还没做的那个 kernel 内 q-head 循环"的补法(循环不在 kernel 内做,而是折进行维由 MMA 天然吃下)。
+
+#### ① 问题与代价:原来 GQA 反向是怎么做的
+
+GQA(`num_head/num_head_kv = qh > 1`)时,SM100 反向原路径是**一个 Q head 一个 tile**:同一 KV head 的 qh 个 Q head 各自算出自己那一份 dK/dV 贡献,再跨 group 归约。代价三条:
+
+1. **K/V 被读 qh 次**——K/V 是反向的访存大头(反向要重算 P,每 tile 都要 K/V);
+2. **dK/dV 必须落 fp32 累加缓冲**(HBM),再加**每张量一趟 postprocess kernel**(fp32→bf16)+ **semaphore 握手**(`cp.reduce.async.bulk` 的完成信号);
+3. 归约走 **cluster 内跨 CTA 通信**,压在 dQ 归约链旁边抢资源。
+
+前向早已有解:`pack_gqa` 把 qh 个 Q head 折进 **Q tile 的行维**(packed 行 r = 第 `r % qh` 个 head、第 `r // qh` 个 token 的行),一个 tile 就覆盖一个 KV head 的全部 Q head。本 commit 把这套搬到反向。
+
+| | unpacked(原路径) | packed(#2967) |
+|---|---|---|
+| tile 划分 | 一个 Q head 一个 tile | 一个 KV head 一个 tile,行维含全部 qh 个 Q head |
+| K/V 加载 | 每 KV head 读 **qh 次** | 每 KV head 读 **1 次** |
+| dK/dV 累加 | fp32 HBM 累加缓冲 + `cp.reduce.async.bulk` 跨 CTA 归约 | **留在 TMEM**,组内 direct store |
+| postprocess | dK/dV 各一趟 fp32→bf16 kernel | **无**(dK/dV 不需要;接口里 `dKV_postprocess = qhead_per_kvhead > 1 and not use_dedicated_hd256_kernel and not bwd_pack_gqa`) |
+| semaphore | dK/dV 归约握手 | **无 dK/dV semaphore**;deterministic 模式只剩每 `(KV head, packed m block)` 一个 dQ semaphore 槽 |
+| LSE/dPsum/dQaccum | 按 Q head 分配 | **按 KV head 分配、按 packed 行序存放** |
+| dQ 写出 | postprocess 读 dQaccum | 直接经 `pack_gqa_layout` 视图 `(b, (qh, s), h_kv, d)` 写 dQ,**没有 unpack pass** |
+
+即"packed 省掉的四件事":**K/V 重复加载、fp32 dK/dV 累加缓冲、per-tensor postprocess kernel、dK/dV semaphore 握手**。
+
+#### ② 机制推导:改动落在哪几层
+
+- **张量视图层**:Q / dO(以及 2CTA 的转置视图)都变成 per-head 张量的 `pack_gqa_layout` 视图;`(qh, seqlen)` 这个行模式作为**额外一维 TMA box**。`make_packgqa_tiled_tma_atom`(pack_gqa.py)先把 head/dim 并成一维再 group 回 `((qh, seqlen), d, nheads_kv, b)`——**保持与原来相同的 TMA 维数**(源码注释:`for (seqlen, d, nheads, b) layout, we still have 4D TMA after packing`;直接 pack 成 `((qh, seqlen), d, nheads_kv, b)` 会变成 5D),box 是 `((qh, tile_m // qh), tile_n)`,并要求 `tile_m % qh == 0`。
+- **派生缓冲层**:LSE / dPsum / dQaccum 按 KV head 分配、按 packed 行序存放(kernel 用 1-D bulk copy 加载 LSE/dPsum)。preprocess 用新枚举 `PackGQA.PACKED_ROW_OUTPUTS` 写它们并把 packed dQaccum 清零(见 ③ 代码)。
+- **varlen 层**:`SeqlenInfo` **保持 token 空间**(review 后撤掉了 q_scale 参数侵入),新增 `seqlen_info.sequence_row_offset(token_offset, batch_idx, rows_per_token, tile_rows, padded)` 把 cu_seqlens 的 token 偏移换算成 per-KV-head scratch 的存储行偏移:先 `× rows_per_token`(=qh)scale,再按同样的 `cute.assume(..., divby=tile_rows)` 对齐 pad 到 tile 边界。load / dQ-reduce 的 varlen 分支、preprocess、postprocess 都调它。
+- **mask / 调度层**:`block_info`、转置 mask、deterministic 锁值都吃 `qhead_per_kvhead_packgqa`(packed 行 r 的 token 位置是 `r // qh`,位置上限按 qh 放大);**反向的 KV tile scheduler 保持 1**(packing 只动 M 维语义,不动 KV 遍历)。
+- **数值口径**:dQ 与 unpacked 路径**逐 bit 相同**;dK/dV **差 1 ulp**(packed 是"一次 bf16 TMEM 累加",unpacked 是 fp32 atomics + postprocess,舍入路径不同);deterministic 模式可逐 bit 重复;`FLASH_ATTENTION_BWD_PACK_GQA=0` 时 36 组配置矩阵的 **CUBIN/PTX 与父 commit 逐字节相同**(不开启就零影响)。
+
+#### ③ 可复现代码
+
+**启用条件**(interface.py,决定"能不能用"):
+
+```python
+bwd_pack_gqa = (
+    bwd_pack_gqa_request                                   # 未设 tile_n 测试旋钮
+    and not use_dedicated_hd256_kernel                     # hd256 专用内核路径不参与
+    and qhead_per_kvhead > 1
+    and m_block_size % qhead_per_kvhead == 0               # qh 必须整除 tile_m
+    and block_sparse_tensors is None
+    and score_mod is None
+    and mask_mod is None
+    and learnable_sink is None
+)
+```
+
+通过的 qh ∈ {2,4,8,16,32,64,128}。环境变量 `FLASH_ATTENTION_BWD_PACK_GQA=0/1/auto` 可强制覆盖(0=关、1=开、auto/未设=交给启发式;`utils.py::_get_bwd_pack_gqa_override`,非法值直接 assert)。
+
+**preprocess 的三态枚举**(flash_bwd_preprocess.py,决定 LSE/dPsum/dQaccum 写去哪):
+
+```python
+class PackGQA(enum.Enum):
+    OFF = "off"
+    # per query head, written through the same packed views (MLA backward)
+    PER_QHEAD_OUTPUTS = "per_qhead_outputs"
+    # allocated per KV head in packed row order, qhead_per_kvhead rows per token
+    # (the SM100 backward's pack_gqa, NOTE [bwd pack_gqa] in pack_gqa.py)
+    PACKED_ROW_OUTPUTS = "packed_row_outputs"
+```
+
+**启发式两道闸**(interface.py::_bwd_pack_gqa_heuristic,决定"该不该用",缺一不可):
+
+```python
+qh = num_head // num_head_kv
+kv_tile = n_block_size * cluster_size
+n_blocks_kv = (seqlen_k + kv_tile - 1) // kv_tile
+slots = max(1, num_sms // cluster_size)
+
+# 闸 1:关键路径——最长 packed CTA 的迭代数 vs 平均每个 cluster slot 的活
+packed_max_iters = qh * ((seqlen_q + m_block_size - 1) // m_block_size)
+mean_q = total_q / max(batch_size, 1) if varlen else seqlen_q
+mean_k = total_k / max(batch_size, 1) if varlen else seqlen_k
+total_iters = (batch_size * num_head * math.ceil(mean_k / kv_tile)
+               * math.ceil(mean_q / m_block_size) * (0.5 if causal else 1.0))
+if packed_max_iters > 1.25 * total_iters / slots:
+    return False
+
+# 闸 2:毛收益 vs wave 量化损失
+def wave_loss(num_ctas):
+    waves = num_ctas / num_sms
+    return (math.ceil(waves) - waves) / math.ceil(waves)
+
+ctas_unpacked = batch_size * num_head    * n_blocks_kv * cluster_size
+ctas_packed   = batch_size * num_head_kv * n_blocks_kv * cluster_size
+gain = 0.25 * 2048 / max(seqlen_q, 1)
+if causal or local:
+    gain *= 0.6; gain -= 0.02
+return gain > wave_loss(ctas_packed) - wave_loss(ctas_unpacked)
+```
+
+**两道闸的因果**:packing 把 tile 数除以 qh(每 tile 的省:K/V 只读一次、dK/dV 留 TMEM、免 fp32 累加与 postprocess),但付出两种调度代价——①单个 packed tile 要循环 **qh 倍的 Q 行**,网格变小时**长尾 CTA 无法被短 CTA 填满**(闸 1);②网格小 qh 倍,**wave 量化损失**(最后一个不满的波)占比变大(闸 2)。毛收益随 seqlen_q 变小(B200 实测 2k ~25%、8k ~7%),而 3.5 波的 packed 网格损失 ~13%——`gain = 0.25 * 2048 / seqlen_q` 就是这条"2k 时 25%、8k 时 6.25%"的经验曲线,causal/local 的 `×0.6 −0.02` 是"tile 不均匀、长 packed tile 尾部更难配平"的保守余量。
+
+**闸 1 是被一个实测反例逼出来的(工程教训)**:原本只有闸 2。MQA(16/1)hd256 在**一条 8k causal 序列**(varlen 包里还混 16 条短序列)上,B200 实测 **packed 3946 µs vs unpacked 2297 µs**——wave-loss 规则仍然选了 packing,因为 wave 损失只看"网格有多大",看不到"最长那个 CTA 有多长"。补上闸 1 后,varlen 用**平均序列长**做分母,所以"一长串短序列混一条长序列"的 ragged 包会保持 unpacked。启发式抽成独立函数 `_bwd_pack_gqa_heuristic` 也是为了可单测。
+
+#### ④ 实测数据(B200 @1400 MHz,两轮交替,vs unpacked 路径)
+
+| 配置 | 2k | 8k | 32k |
+|---|---|---|---|
+| hd128 GQA(8/2、16/4、32/8、64/8) | **+13…26%** | +0…10% | +0…5% |
+| hd256 通用内核 vs 专用内核(8/4、16/4、16/8) | **+4…10%** | **+1…11%** | — |
+
+启发式让 hd128 8/2@8k 和 causal 32k 留在 unpacked。测试:`tests/cute/test_flash_attn_bwd_pack_gqa.py`(packed vs unpacked vs FP64 eager:hd 64/128/256,GQA 8/2、16/4、32/4、MQA,dense 与含空序列的 varlen,local、softcap、deterministic、causal)**480 passed / 96 skipped**;全量 `test_flash_attn_output` + d=256 varlen 子集 + hd256 文件 **18,032 passed / 29 failed / 9,416 skipped**(27,477 ids,5 GPU 3h16m)——29 个失败中 18 个是 has_learnable_sink 的 dSink 容差问题(父 commit 同样失败、ids 相同),11 个是 `test_hd256_varlen_scheduler.py` 断言"非确定性调用可 bit 重复"(父 commit 32 个的子集),均非本 commit 引入。另有专门的边界测试:packed K/V 在 `cu_seqlens_k + seqused_k` / dense `(b,s,h,d)+seqused_k` 下,`seqused_k` 之后填 NaN(K/V/both 三种),要求 dQ/dK/dV 有限、等于干净 packed 跑,干净 packed 又等于 unpacked(hdim 64/128,以及通用内核上的 256)——即 §4.5.1 那套 NaN 污染防线在 packed 网格上重新覆盖了一遍。
+
+#### ⑤ 实践要点
+
+- **什么时候强制开/关**:GQA 且 seqlen_q 短(≤2k 收益最大 13–26%)、网格够大(波数多、wave 损失小)→ 默认启发式就会开;想对照实验用 `FLASH_ATTENTION_BWD_PACK_GQA=0/1`。qh 不整除 tile_m、或用了 mask_mod/score_mod/block sparsity/learnable_sink → 自动退回 unpacked,这些组合**目前就是不支持**,别指望环境变量强开(强开只覆盖启发式,不覆盖硬条件)。
+- **varlen ragged 包为什么不 pack**:启发式闸 1 用平均序列长估关键路径,"一条长序列 + 一堆短序列"的包里,最长 packed CTA 的迭代数远超平均 slot 工作量,长 tile 串行化(实测 3946 vs 2297 µs)——这类包保持 unpacked 是对的,不是启发式失灵。
+- **deterministic 的代价**:仍有 dQ semaphore(每 `(KV head, packed m block)` 一槽),但 dK/dV 不再有 semaphore/postprocess;deterministic 模式可逐 bit 重复。
+- **数值预期管理**:开 pack_gqa 后 dK/dV 与旧路径差 1 ulp(bf16 TMEM 累加 vs fp32 atomics),dQ 逐 bit 相同——训练 loss 曲线出现 ulp 级偏移是预期行为(呼应 §6 checklist 第 5 条"exact 但非 bitwise")。
+- **对照 §4.5.3 的读法**:旧的"GQA 2k 慢 22–29%"(#2966 口径,hd256 24/4,通用内核 vs 专用内核)与本节的"+13…26%"(#2967 口径,hd128 8/2·16/4·32/8·64/8 与 hd256 8/4·16/4·16/8,packed vs unpacked)**不是同一个 benchmark 从负翻正**,而是同一现象(通用内核缺 q-head 循环)的修复方向:根因补上后,通用内核在 GQA 小序列上不再结构性落后。
+
+### 4.5.5 版本与依赖快照(2026-10-23 实测,`bc52a40`)
 
 | 组件 | 版本 | 备注 |
 |---|---|---|
@@ -547,6 +663,7 @@ head_dim=256 原本走独立的 dQ / dKdV 双内核,现在可以合并到通用 
 | FA3(Hopper) | `3.0.1`(`hopper/__init__.py`) | `flash_attn_3` 包;`hopper/` 长期 beta 的状态未变 |
 | FA4(CuTe DSL) | PyPI 包名 `flash-attn-4`,setuptools-scm 动态版本,当前 tag `fa4-v4.0.0.beta36` | 依赖 `nvidia-cutlass-dsl>=4.6.2`、`quack-kernels>=0.5.3`、`apache-tvm-ffi` |
 | 同期修复 | #2984 paged KV cache 的 CUDA graph 捕获(csrc 侧 12 行)、#3007 给 FA4/FA2 入口补 CUDA graph 捕获-重放测试、#2758 SM120 自动 `num_splits` | 都是"能上线"级的小改动,不是算法变化 |
+| 同期实质改动 | **#2967 反向 pack_gqa**(见 §4.5.4,10 files +709/−116,hd128 GQA 2k +13…26%) | 不是算法变化,但改的是反向数据流与派生缓冲布局,量级远超上面的小修 |
 
 > **读源码的顺序建议**:先看 `config.py`(调度决策的数据形态)→ `interface.py`(host 侧选型/校验/workspace 上界)→ `flash_fwd_sm90.py` / `flash_fwd_sm100.py`(producer:descriptor 与流水)→ 再看 `flash_bwd_*`。FA4 论文给的算法框架没变,但"合法且不崩"的边界条件全在这几层里。
 
@@ -611,7 +728,7 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
 23. **block-sparse / 特殊 producer 路径要单独过一遍 fence**:主路径加的 acquire fence 往往在另一条 producer 函数里到不了(FA4 #3071 的实际坑),持久 CTA 会用上一序列的 extent。
 24. **调优配置用"不可变 + 校验,不归一化"的数据结构**:FA4 的 `FwdConfig` 就是范式——非法组合直接抛错,选择器纯 host 计算(不读 tensor / 不同步 / 不分配),每个特性一条支持谓词供选择与校验共用。
 25. **"偶发非法地址"的测试写法**:先关 caching allocator 单序列子进程复现;再把被测 tensor 放到 VMM 映射尾部、后面留保留未映射 guard range,做到"改前必 fault、改后必过"。否则测试在有 allocator 时 100% 假通过。
-26. **hd256 这类极端 head_dim 要先看资源账**:FA4 的 hd256 反向 TMEM 正好占满 512 列、SMEM 用掉 232,448 B 中的 231,424 B;这种配置下"少一次等待"(如删掉 dQaccum 别名握手)就是 17% 的差别,而 GQA 小序列反而可能退 22–29%——按 shape 分派,别一套配置通吃。
+26. **hd256 这类极端 head_dim 要先看资源账**:FA4 的 hd256 反向 TMEM 正好占满 512 列、SMEM 用掉 232,448 B 中的 231,424 B;这种配置下"少一次等待"(如删掉 dQaccum 别名握手)就是 17% 的差别,而 GQA 小序列反而可能退 22–29%(**#2966 旧口径,当时无反向 pack_gqa;#2967 折 q-head 进 Q tile 后翻正为 +13…26%,见 §4.5.4**)——按 shape 分派,别一套配置通吃。
 
 ---
 
@@ -640,6 +757,7 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
   - #2983 / #3012 / #3013 / #3071:未用量 K/V 尾行的 NaN 污染防治(前向 V TMA 上界 → 反向 K/V/Kt → SM90 对齐 → 改用 per-CTA GMEM descriptor)https://github.com/Dao-AILab/flash-attention/pull/3071
   - #2732:typed forward config(`FwdConfig` / `FwdHeuristicInputs`)https://github.com/Dao-AILab/flash-attention/pull/2732
   - #2965 / #2966:hd256 反向统一到通用 SM100 内核(opt-in)https://github.com/Dao-AILab/flash-attention/pull/2966
+  - #2967(commit bc52a40):反向 pack_gqa——GQA 的 q-head 折进 Q tile,启发式 `_bwd_pack_gqa_heuristic` 两道闸 https://github.com/Dao-AILab/flash-attention/pull/2967
   - #2984 paged KV cache 的 CUDA graph 捕获修复、#3007 FA4/FA2 的 CUDA graph 捕获-重放测试、#2758 SM120 自动 `num_splits`
 - CuTe DSL 侧:`TensorMapManager` / `TensorMapUpdateMode`(GMEM |=在设备端改 descriptor)与 `prims.tensormap_replace` 见 CUTLASS 仓库 `python/CuTeDSL/cutlass/tensor_utils/tensormap.py`、`python/CuTeDSL/cutlass/experimental/primitives/nvvm_wrapper.py`;CUTLASS v4.8.1 的 release note 明确修了 `tensormap_replace` 在 descriptor 被缩小后的越界风险(可用 `keep_oob_fetch_window=True` 退回旧行为)——**这是 FA 侧 per-CTA 写法的上游前提**
 - 相关:CUTLASS 领域的 WGMMA/TMA/epilogue 篇(同硬件特性,跨参考,见 [cutlass/concepts/hopper-wgmma.md](../../cutlass/concepts/hopper-wgmma.md))

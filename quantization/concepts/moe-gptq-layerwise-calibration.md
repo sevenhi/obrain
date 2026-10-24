@@ -264,6 +264,7 @@ python examples/hf_ptq/hf_ptq.py \
 - [PTQ:GPTQ / AWQ / SmoothQuant](ptq-gptq-awq-smoothquant.md)——**算法与推导**在本篇之外的这篇;本篇只讲 **MoE + 大规模工程的落地**,不讲闭式解的来历。
 - [2-bit 权重量化前沿:QuIP# / AQLM](two-bit-weight-frontier.md)——IQ1/IQ2 recipe 的 2-bit 端,GTPQ 与 imatrix 谁管哪部分权重在那里有算法侧讨论;本篇给出"为什么 imatrix 单独不够"(只加权搜索、不做误差补偿,只能补 53–63%)。
 - [structured-pruning-minitron-puzzletron](structured-pruning-minitron-puzzletron.md)——另一条也依赖"逐层"的路线:**逐层校准 vs 逐块蒸馏**,两者都把"整模型驻留"换成"一层/一块驻留",是本域之外同构的工程手法。
+- [MoE 的专家并行 PTQ 校准](expert-parallel-ptq-calibration.md)——**多卡维度的正交问题**:本篇的逐层解决"显存 × 层数",EP 解决"显存 × 卡数 + 校准 token 的覆盖面"。两者可叠加——本篇逐层校准里每一层的前向仍然可以是 DP=EP;那篇的核心是"专家 amax 必须见到全局 token 池",正是本篇"专家是 MoE 绝大部分权重"的另一面。
 - [computer-vision/frameworks/onnx-tensorrt-deployment](../../computer-vision/frameworks/onnx-tensorrt-deployment.md)——部署侧视角:量化 checkpoint 如何被导出、被 TensorRT / vLLM 的 kernel 选中。
 
 ## 溯源

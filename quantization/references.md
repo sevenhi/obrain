@@ -47,6 +47,9 @@ date: 2026-09
 - ModelOpt model_calib API(gptq / imatrix / local_hessian / layerwise_calibrate)— https://nvidia.github.io/Model-Optimizer/reference/generated/modelopt.torch.quantization.model_calib.html
 - ModelOpt 源码 calib_utils.py(update_hessian / GPTQHelper / _hessian_offload_device)— https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt/torch/quantization/utils/calib_utils.py
 - ModelOpt 源码 hf_ptq.py(LAYERWISE_CALIB_TOKENS=8192)— https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/hf_ptq/hf_ptq.py
+- ModelOpt DP=EP 专家并行 PTQ 传输(PR #2738,21 PR 系列第 1 块)— https://github.com/NVIDIA/Model-Optimizer/pull/2738
+- ModelOpt `modelopt/torch/utils/moe.py`(a2a_moe / torch_a2a 注册)— https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt/torch/utils/moe.py
+- transformers Expert parallelism 文档 — https://huggingface.co/docs/transformers/en/expert_parallelism
 - ModelOpt 剪枝示例(支持矩阵、超参建议、端到端教程)— https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/pruning/README.md
 - ModelOpt Puzzletron 示例(MIP sweep、runtime 延迟约束、AnyModel)— https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/puzzletron/README.md
 - ModelOpt 剪枝指南(mtp.prune 统一 API)— https://nvidia.github.io/Model-Optimizer/guides/3_pruning.html

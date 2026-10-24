@@ -64,6 +64,7 @@ date: 2026-09
 - hd256 反向统一到通用 SM100 内核(opt-in 灰度)— https://github.com/Dao-AILab/flash-attention/pull/2966
 - CUTLASS v4.8.1 release notes(`tensormap_replace` 缩小 descriptor 的越界修复 + `keep_oob_fetch_window` 退回开关;CUDA 已知问题页链接)— https://github.com/NVIDIA/cutlass/releases/tag/v4.8.1
 - CUTLASS CuTeDSL `TensorMapManager` 源码(GMEM/SMEM 两种 update 模式与 fence 语义)— https://github.com/NVIDIA/cutlass/blob/main/python/CuTeDSL/cutlass/tensor_utils/tensormap.py
+- 反向 pack_gqa:把 GQA 的 q-head 折进 Q tile(免 fp32 dK/dV 归约与 postprocess;含 `_bwd_pack_gqa_heuristic` 两道闸)— https://github.com/Dao-AILab/flash-attention/pull/2967
 
 ## attention sink 后续研究(延伸,均 curl 200)
 

@@ -158,6 +158,46 @@ speculative_config={"method": "ngram", "num_speculative_tokens": 5, "prompt_look
 2. **Adaptive Verification(自适应验证)**:不再静态定 γ,而是每步对每个 (request, position) 草稿槽位按「生存概率 = 各位置置信度连乘」打分,按全局预算录取——高置信请求保留整块、低置信请求提前截断。预算来自启动时 profiling 的成本模型。目前 DSpark-only,且**强制 full cudagraph、不支持 LoRA/流水线并行**。
 3. **Per-Request Acceptance Metrics**:`--per-request-spec-decode-metrics summary|detailed` 在响应 `metrics.speculative_decoding` 里回每请求的 `mean_acceptance_length` / `draft_acceptance_rate` / `acceptance_histogram` 等,用于实测调参(见 §5 表怎么来的)。
 
+### 3.5 验收口径:为什么不能从日志抓「Mean acceptance length」
+
+**结论先行**:vLLM 周期打印的 `SpecDecoding metrics: Mean acceptance length: X.XX` **只覆盖最近一个 logging interval,不是整场均值**,不能当验收基准;验收应从 `/metrics` 的累计计数器自己算。
+
+#### 机制:日志行是「打完即清零」的窗口值
+
+`vllm/v1/spec_decode/metrics.py` 里两条聚合路径的行为完全不同:
+
+- `SpecDecodingLogging` 按 **logging interval** 聚合:`observe()` 把每个 scheduler step 的 `num_drafts / num_draft_tokens / num_accepted_tokens / num_accepted_tokens_per_pos` 追加进 list;`log()` 对 list 求和后算 `mean_acceptance_length = 1 + num_accepted_tokens / num_drafts`,**打印完最后一步是 `self.reset()` 把 list 全部清空**(且 `num_drafts` 为空时直接 return,连日志都不打)。所以每行日志只代表「上次打印以来」的窗口——用小样本(如 8 条 smoke prompt)去 grep 这一行,抽到的可能是抖动很大的一段,或恰好没有请求的空窗。
+- `SpecDecodingProm` 用 `prometheus_client.Counter` 注册**只增不减**的累计计数器,`counter_specs` 为 `vllm:spec_decode_num_drafts` / `vllm:spec_decode_num_draft_tokens` / `vllm:spec_decode_num_accepted_tokens`(Counter 导出时加 `_total` 后缀,`/metrics` 里实际名字见下),永不清零。
+
+`SpecDecodingProm` 的 docstring 给了两个 PromQL 公式,**注意分母不同**:
+
+```
+drafts   = vllm:spec_decode_num_drafts_total           # 发生了多少次投机
+accepted = vllm:spec_decode_num_accepted_tokens_total  # 累计接受了多少草稿 token
+接受率(α)   = accepted / vllm:spec_decode_num_draft_tokens_total  # 分母是草稿 token 数
+平均接受长度 = 1 + accepted / drafts                              # 分母是投机次数,+1 惯例含 bonus token(同 §1.3)
+```
+
+可复现取数:压测结束后抓一次 `/metrics`,取上面三个计数器按公式即得**开服至今的整场均值**;要区间口径就用 PromQL `rate(...[$interval])` 相除(同一公式)。ModelOpt 的 smoke 脚本正是这样改的(PR #2930 修的第 4 个问题:「acceptance length 只覆盖最后几秒」)。
+
+#### 三种取数方式对比
+
+| 方式 | 覆盖范围 | 适用场景 |
+|---|---|---|
+| 日志行 `Mean acceptance length` | 仅最近一个 logging interval(`log()` 末尾 `reset()` 清零) | 人肉观察趋势/抖动;**不做验收** |
+| `/metrics` 累计计数器 | 进程启动至今(Counter 只增不减) | 验收门禁、整场均值——自己算 `1 + accepted/drafts` |
+| per-request 响应字段 | 单请求 | 逐请求诊断/调参,见 §3.4 第 3 条 `--per-request-spec-decode-metrics`(此处不重复) |
+
+#### 三条可复用的门禁规则(从 PR #2930 的 smoke 脚本硬化提炼)
+
+1. **设了阈值就必须评估它**:设了最低接受长度阈值,但 `/metrics` 里没有任何 draft 计数(说明根本没走投机路径,如 draft 没加载成功)时,**必须判 FAIL**,而不是「没解析到指标就跳过检查」——从未被评估的阈值不得通过。原脚本的 bug 正是「从不投机的 drafter 反而 PASS」。
+2. **上一次运行的结果不能被当成本次的**:启动前先 `rm -f` 结果 JSON;结果文件在 `trap ... EXIT` 里写,且**参数校验放在 trap 设好之后**——这样即使配置非法(`NUM_SPEC_TOKENS` / `SERVER_TIMEOUT` 非正整数、`MIN_ACCEPTANCE_LENGTH` 非有限数),留下的也是本次的 `invalid_config` 失败记录,而不是上次的成功记录。
+3. **stage 字段是排障主键**:结果 JSON 带 `stage ∈ {invalid_config, starting, draft_missing, server_died, server_timeout, serving, completed}`,下游 gate 一眼区分「不可服务」与「可服务但低于阈值」;进入 `serving` 阶段先预置 `reason="exited while sending test prompts"`,中途崩了也有原因可查。
+
+两条脚本级细节一并记住:除法用 python 做、分母为 0 时输出 `?`(`ratio()` 帮助函数),别用 `bc`——部分镜像没有它,且旧写法在 `bc` 失败时退化成 `echo 0`,把「测量失败」静默变成「0 tok/s」;直接拼进 JSON 的数值参数用 `^[1-9][0-9]*$` 校验(`08` 带前导零不是规范 JSON number,会破坏配置)。
+
+**边界**:本节门禁/脚本实践来自 ModelOpt 的实验 launcher(`tools/launcher/common/specdec/vllm_smoke_test.sh`,PR #2930,2026-10-23),**不是 vLLM 官方 API**;vLLM 侧的机制依据是 `vllm/v1/spec_decode/metrics.py`(核对 HEAD `b74ac0bc61d8`,2026-08-28)。
+
 ---
 
 ## 4. 实践要点(checklist + 坑)
@@ -196,4 +236,6 @@ speculative_config={"method": "ngram", "num_speculative_tokens": 5, "prompt_look
 - **Survey**(Heming Xia et al.) — https://arxiv.org/abs/2401.07851
 - **vLLM 官方文档 speculative_decoding/**(README 方法速选表、draft_model / eagle / mtp / n_gram / dynamic_speculative_decoding / adaptive_verification / acceptance_metrics / speculators 各子页):https://docs.vllm.ai/en/latest/features/spec_decode.html
 - **源码一手实读**:`vllm/model_executor/models/registry.py`(main, `_SPECULATIVE_DECODING_MODELS` 行 596;MLP Speculator 行 667-669 注释禁用)—— https://github.com/vllm-project/vllm
+- **验收口径**:NVIDIA/Model-Optimizer PR #2930 *launcher: harden the vLLM smoke test and newest-checkpoint selection*(2026-10-23)— https://github.com/NVIDIA/Model-Optimizer/pull/2930
+- **源码一手实读(§3.5)**:`vllm/v1/spec_decode/metrics.py`(`SpecDecodingLogging.log()` 末尾 `self.reset()`;`SpecDecodingProm` docstring 的接受率与 mean-acceptance-length 两个 PromQL 公式、`counter_specs` 指标名)—— 核对 HEAD `b74ac0bc61d8b8f74848664b1a3b4e878f047861`(2026-08-28),只读克隆 `~/zhanbin/repos/vllm-project/vllm`
 - **库内交叉**:[continuous-batching.md](continuous-batching.md)(decode 访存受限背景)、[paged-attention.md](paged-attention.md)(KV cache 分页,验证阶段增量 KV 的底座)、[v1-architecture.md](v1-architecture.md)(batch queue 异步调度与 SD 的交互)、[attention-backend-selection.md](../practices/attention-backend-selection.md)(adaptive verification 要求 backend 容忍 device 决定的 query 长度)。

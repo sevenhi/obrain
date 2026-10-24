@@ -13,7 +13,7 @@ source:
   - "pdf: Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 引用[66]并设附录 B.5 专节比较;online softmax/lazy softmax 前驱) | arXiv:2112.05682"
   - "pdf: Online normalizer calculation for softmax (Milakov & Gimelshein, FA1 引用[60], online softmax 最早出处) | arXiv:1805.02867 | https://arxiv.org/abs/1805.02867 (2026-09 实测 200)"
   - "code: github.com/Dao-AILab/flash-attention | Star 24.7k"
-  - "code: github.com/Dao-AILab/flash-attention CuTe 后端源码一手实读 (HEAD bc52a40, 2026-10-23) | flash_attn/cute/config.py、interface.py、flash_fwd_sm90.py、flash_fwd_sm100.py、flash_bwd_sm100.py、flash_bwd_preprocess.py、flash_bwd_postprocess.py、pack_gqa.py、seqlen_info.py、buffer 相关的 tensormap workspace 逻辑"
+  - "code: github.com/Dao-AILab/flash-attention CuTe 后端源码一手实读 (HEAD 98c1cee, 2026-10-24) | flash_attn/cute/config.py、interface.py、flash_fwd_sm90.py、flash_fwd_sm100.py(NOTE [SM100 forward coordinate spaces])、tile_scheduler.py(NOTE [SM100 forward work coordinates] / CLC 与 static persistent 的坐标契约)、flash_bwd_sm100.py、flash_bwd_preprocess.py、flash_bwd_postprocess.py、pack_gqa.py、seqlen_info.py、buffer 相关的 tensormap workspace 逻辑"
   - "code: github.com/NVIDIA/cutlass | cutlass/tensor_utils/tensormap.py 的 TensorMapManager / TensorMapUpdateMode(GMEM 模式)"
 date: 2026-10
 ---
@@ -461,7 +461,7 @@ FA4(2026,MLSys,arXiv:2603.05451)聚焦 **Blackwell(B200/GB200)**:瞄准"张量�
 
 ---
 
-## 4.5 2026-10 的 CuTe 后端工程增量(上游 10-12 → 10-23,HEAD `bc52a40`)
+## 4.5 2026-10 的 CuTe 后端工程增量(上游 10-12 → 10-24,HEAD `98c1cee`)
 
 FA4 的 CuTe DSL 后端(同时服务 Hopper/SM90 与 Blackwell/SM100)在 2026-10 有一批**不是新算法、但决定"能不能上线"**的工程改动。它们比论文更能说明真实部署里会踩什么,故单列一节。
 
@@ -655,7 +655,112 @@ return gain > wave_loss(ctas_packed) - wave_loss(ctas_unpacked)
 - **数值预期管理**:开 pack_gqa 后 dK/dV 与旧路径差 1 ulp(bf16 TMEM 累加 vs fp32 atomics),dQ 逐 bit 相同——训练 loss 曲线出现 ulp 级偏移是预期行为(呼应 §6 checklist 第 5 条"exact 但非 bitwise")。
 - **对照 §4.5.3 的读法**:旧的"GQA 2k 慢 22–29%"(#2966 口径,hd256 24/4,通用内核 vs 专用内核)与本节的"+13…26%"(#2967 口径,hd128 8/2·16/4·32/8·64/8 与 hd256 8/4·16/4·16/8,packed vs unpacked)**不是同一个 benchmark 从负翻正**,而是同一现象(通用内核缺 q-head 循环)的修复方向:根因补上后,通用内核在 GQA 小序列上不再结构性落后。
 
-### 4.5.5 版本与依赖快照(2026-10-23 实测,`bc52a40`)
+### 4.5.5 调度坐标契约:CLC 2CTA 张冠李戴(#3034)
+
+上游 commit `98c1cee`(2026-10-24,`[CuTe, SM100] Fix CLC tile coordinates and make forward work-tile coordinates logical`,4 files +284/−59)。它是**这一类 bug 的教科书形态**:不是算错公式,而是**两套坐标系被混着用**,而且错的那一侧只在 CLC + 2CTA 这一种调度组合下才暴露。
+
+#### ① 症状与根因:两个 CTA 拿到了不同的 tile
+
+SM100 前向的行地址由这一条式子决定(commit 原文):
+
+```
+rows = (m_block * q_stage + stage) * cta_group_size + mma_tile_coord_v
+```
+
+也就是说 `m_block` 必须是 **cluster 级的逻辑 tile 编号**,`cta_group_size` 与 `mma_tile_coord_v` 已经负责把 CTA 内的行折进去。而在 CLC(Cluster Launch Control,见 [cutlass tile-scheduler](../../cutlass/concepts/tile-scheduler.md))路径上:
+
+1. CLC 调度器在代码里**被算作 persistent**(`is_persistent` 为真),所以前向传下去的是 **`use_cluster_idx=False`** 且 **CTA 级 `num_block`**(改动前那行是 `_num_block_divisor = cta_tiler[0] * (cta_group_size if not is_persistent and cta_group_size > 1 else 1)`);
+2. `clc_work_to_coords` 于是在 `use_cluster_idx=False` 分支里自己做 per-CTA 映射:`block_idx = block_idx * cluster_shape_m + block_in_cluster_idx()`;
+3. 两步叠加的结果是**每个 CTA 拿到 `block_idx * 2 + rank`**——两个 CTA 认为自己在**两个不同的 work tile** 上,而 2CTA MMA 是一条指令横跨两个 CTA 的 M 维。**于是 MMA 把不同 tile 的 Q 行拼在一起做了一次 attention**,O/LSE 都写到了错误的行。
+
+数值表现:GB300 上,CLC(`FA_CLC=1`)跑 **K-only varlen + packed GQA + hd128**,**max error 0.39**(相对 ~1 量级的输出,基本等于随机),修完**与非 CLC 内核逐 bit 相等**。
+
+顺带把一条既有注释的**病因**说清了:`flash_attn/cute/interface.py:1128`(2026-10-06 起)写着 `CLC does not map hd256 2CTA tiles correctly (wrong output, traps, hangs)` 并把 `hd256 + 2CTA` 排除在 CLC 之外——本 commit 明确"两个 CTA 拿到不同 tile 也是这条排除的成因之一",但**排除保留不动**(见 ④)。
+
+#### ② 修法:把"逻辑坐标"写成显式契约,而不是就地打补丁
+
+作者没有在 CLC 分支里改那一行乘法,而是把**契约**写清楚,再做统一:
+
+- **调度器只发"逻辑 work tile"**:无论 grid / static persistent / CLC 哪一种策略,一个 work tile 都是 `m_block_size * cta_group_size * q_stage` 行,cluster 内两个 CTA 拿到**同一个** `(work_m, head, batch, split)`;
+- 统一 `num_work_m = ceil_div(eff_seqlen_q, cta_tiler[0] * cta_group_size)`(原来按 `is_persistent` 分叉),`use_cluster_idx = (cta_group_size > 1)` **不再看是否 persistent**;
+- `StaticPersistentTileScheduler.create` 在 `use_cluster_idx` 时**直接把 `num_block` 当 cluster 数**(不再 `ceil_div` 一次),因为它的唯一调用者就是前向;
+- `clc_work_to_coords` **删掉 per-CTA 映射**,并加断言:cluster 化的 grid 必须 `use_cluster_idx`;
+- LPT(causal/local 的最长处理时间优先)反转也随之简化成 `num_block - 1 - block_idx`(旧代码要在 `cluster_shape_m > 1 and not use_cluster_idx` 时先除一次)。
+
+核心是一个**唯一的行映射函数**(`flash_fwd_sm100.py`,导出给 host 侧测试):
+
+```python
+# NOTE [SM100 forward coordinate spaces]
+#   physical CTA / CLC response
+#        |  scheduler(NOTE [SM100 forward work coordinates], tile_scheduler.py)
+#   (work_m, head, batch, split)        cluster 内每个 CTA 相同
+#        |  work_q_block(work_m, stage, cta_rank)
+#   q_block                             R 行的块号
+#        |  * R + row_in_cta
+#   q_row                               batch 内有效行(在 pack_gqa 下为 packed 行)
+def work_q_block(work_m, stage, cta_rank, *, q_stage: int, cta_group_size: int):
+    return (work_m * q_stage + stage) * cta_group_size + cta_rank
+```
+
+**行序不变量的显式写法**:`(row_in_cta, cta_rank, stage, work_m) : (1, R, R*C, R*C*S)`。三条维度相乘就是 work tile 的行数,把 `R=128, C=S=2, work_m=0` 代进去就是源码注释里的那张表:
+
+| | CTA 0 | CTA 1 |
+|---|---|---|
+| stage 0 | 0..127 | 128..255 |
+| stage 1 | 256..383 | 384..511 |
+
+自检一下:work_m=1、stage=0、rank=0 → `(1*2+0)*2+0 = 4` → 行 512,正好接在 511 之后 ✓;而按 `(row_in_cta, cta_rank, stage, work_m)` 的 strides 算 `row + 128*rank + 256*stage + 512*work_m` 也对得上 → 两套写法等价,不变量成立。
+
+**"谁用哪个坐标系"也一起写进注释**(这是本 commit 最有复用价值的部分):
+
+| 使用者 | 用什么坐标 | 为什么 |
+|---|---|---|
+| TMA Q / O 的 `cute.local_tile` | `work_m` | 一个 box 覆盖 `q_stage * m_block_size` 行,再按 stage/CTA 切 |
+| LSE、非 TMA 的 Q/O 下标 | 本 CTA 的 `q_block` | 直接算行偏移,不需要 cluster 概念 |
+| mask / score_mod | `q_block(work_m, stage, **0**)` | `thr_mma` 的 partition **已经**含了本 CTA 的行,再传 rank 会加两次 |
+| block-sparse 的 stage 终点 | `(work_q_block(work_m, stage, 0) + C) * R` | 一个 stage 跨 C 个 CTA |
+| learnable sink 的 packed 行 | `_q_block(work_m, stage, mma_tile_coord_v) * R + tidx` | sink 按 packed q-head 取行 |
+| `aux_tensors` 的边界判定 | `m_tile_end = (q_block + C) * m_block_size` | 只有边缘 tile 需要 wrap 越界 index |
+
+#### ③ 测试怎么写才抓得住这类 bug
+
+这类错误**不会被单点数值测试抓到**(每个 shard 单独看都"像对"的,错的是行的归属),因此本 commit 补了两层:
+
+**a) host 侧的纯 Python 行映射检查**(`tests/cute/test_fwd_work_coords.py`,不需要 GPU kernel):参数化 `cta_group_size ∈ {1,2} × q_stage ∈ {1,2} × seqlen_q ∈ {1,127,128,129,511,1000}`,断言四件事:
+
+```python
+work_rows = 128 * cta_group_size * q_stage
+num_work_m = ceil_div(seqlen_q, work_rows)
+# 1) 行不重叠且覆盖:每个 q_row 只被一个 (work_m, stage, cta_rank) 拥有
+assert q_row not in owner
+assert sorted(owner) == list(range(num_work_m * work_rows))
+# 2) 有效行恰好是 0..seqlen_q-1(不多不少)
+assert sorted(r for r in owner if r < seqlen_q) == list(range(seqlen_q))
+# 3) 尾行只出现在最后一个 work tile(不允许中间的 tile 有空洞)
+assert all(owner[r][0] == num_work_m - 1 for r in owner if r >= seqlen_q)
+# 4) rank 只加一次:q_block(rank) == q_block(rank=0) + rank
+```
+
+**这就是"能用 CPU 验的不变量就别上 GPU 验"**——坐标契约的正确性是纯组合问题,`4`(2×2 的 cta_group_size × q_stage) `× 6` 个序列长就穷举完了,而 GPU 测试只能抽样。
+
+**b) 强制调度策略的覆盖测试**(`test_flash_attn_work_tiles_cover_q`):`policy ∈ {grid, static_persistent, clc} × 1CTA/2CTA × q_stage {1,2} × epilogue {corr_epi, tma_o} × causal {False,True}`,方法是在 `FlashAttentionForwardSm100.__init__` 上 monkeypatch 强制 `use_clc_scheduler` / `is_static_persistent` / `use_2cta_instrs` / `q_stage`(**并换一个新的 `JITCache`**,否则编译缓存会让"强制"失效),然后用 **NaN 预填的 O 和 LSE** 与参考实现比——NaN 预填是关键:漏写的行不会被旧值掩盖,直接暴露成 NaN。另有 `test_flash_attn_clc_2cta_matches_default` 对 FA_CLC=1 做**逐 bit** 对比(dense Q + `seqused_k`、varlen K + 半个 cluster 的尾 tile)。
+
+#### ④ 为什么 hd256 2CTA 的 CLC 依然禁着
+
+commit 原话:`This was also the cause of the hd256 2CTA CLC exclusion, which stays in place here.` 即:坐标混用是**已知的一类**根因,但 hd256 一侧**还有别的问题**(trap/hang,不只是错数),所以 `interface.py` 的 `and not (is_hdim256 and use_2cta_instrs)` 保留。实践含义:**不要把这次修复当成"hd256 2CTA + CLC 可以开了"**。
+
+同时注意 CLC 的**默认状态**:`utils.py:64` 是 `_fa_clc_enabled = os.environ.get("FA_CLC", "0") == "1"` → **默认关**;`interface.py:1124` 还会在 varlen MHA、dense non-causal、hd256+2CTA 三种情形下把它关掉(注释给的理由是 L2 抖动与 work-stealing 开销)。所以要复现本 bug 也必须显式 `FA_CLC=1`。
+
+#### ⑤ 实践要点(可迁移到任何 cluster/2CTA 内核)
+
+- **一个 tile 只能有一个编号空间**。cluster 化之后,`num_block`(逻辑 tile 数)与 grid size(物理 CTA 数)是**两个数**,关系是 `physical_x = C * cluster_slot + cta_rank`。凡是"调度器发号"的地方都要问一句:这个号是 CTA 的还是 tile 的?本 bug 就是 `num_block` 用 CTA 口径、内核按 tile 口径解码。
+- **persistent 与 cluster 是两个正交属性**。旧代码把 `use_cluster_idx` 绑在 `not is_persistent` 上(因为"非 persistent 的 grid 才是按 CTA 数的"),而 CLC 恰好"既 persistent 又 cluster 化"——两个属性一交叉,绑定的假设就破了。**把互不相关的条件做成一个布尔量,迟早会在某个交叉组合上错**。
+- **行映射函数要能被 host 侧单测**。`work_q_block` 单独导出 + 纯 Python 穷举,是这次能在没有 GPU 迭代的情况下把契约钉死的直接原因;反之,把映射写在 `@cute.jit` 的 kernel 体里就只能靠 GPU 抽样。
+- **`thr_mma` 已经含 rank 时,给 mask/score_mod 传 rank=0**(否则行偏移加两次)。凡"同一行号既被 tile 级代码用、又被 warp 级 partition 用"的接口,都要在注释里写清谁已经加过了。
+- **一个共享 work tile 的 CTA 群必须看到同一个 `is_valid_tile`**:cluster 内一个 CTA 判定无效、另一个继续跑,等于让硬件做半条 MMA。
+- **验证顺序**:先 CPU 穷举不变量 → 再强制策略的 GPU 覆盖测试(NaN 预填输出)→ 最后才是性能;本次改动**没有性能数字**(纯正确性修复),别在引用时给它编加速比。
+
+### 4.5.6 版本与依赖快照(2026-10-24 实测,`98c1cee`)
 
 | 组件 | 版本 | 备注 |
 |---|---|---|
@@ -664,6 +769,7 @@ return gain > wave_loss(ctas_packed) - wave_loss(ctas_unpacked)
 | FA4(CuTe DSL) | PyPI 包名 `flash-attn-4`,setuptools-scm 动态版本,当前 tag `fa4-v4.0.0.beta36` | 依赖 `nvidia-cutlass-dsl>=4.6.2`、`quack-kernels>=0.5.3`、`apache-tvm-ffi` |
 | 同期修复 | #2984 paged KV cache 的 CUDA graph 捕获(csrc 侧 12 行)、#3007 给 FA4/FA2 入口补 CUDA graph 捕获-重放测试、#2758 SM120 自动 `num_splits` | 都是"能上线"级的小改动,不是算法变化 |
 | 同期实质改动 | **#2967 反向 pack_gqa**(见 §4.5.4,10 files +709/−116,hd128 GQA 2k +13…26%) | 不是算法变化,但改的是反向数据流与派生缓冲布局,量级远超上面的小修 |
+| 本轮新增 | **#3034 CLC 2CTA 坐标修复**(见 §4.5.5,4 files +284/−59;`git describe` = `fa4-v4.0.0.beta36-7-g98c1cee`) | 纯正确性修复(GB300 hd128 K-only varlen packed GQA:max error 0.39 → 逐 bit 相等),**无性能数字** |
 
 > **读源码的顺序建议**:先看 `config.py`(调度决策的数据形态)→ `interface.py`(host 侧选型/校验/workspace 上界)→ `flash_fwd_sm90.py` / `flash_fwd_sm100.py`(producer:descriptor 与流水)→ 再看 `flash_bwd_*`。FA4 论文给的算法框架没变,但"合法且不崩"的边界条件全在这几层里。
 
@@ -729,6 +835,7 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
 24. **调优配置用"不可变 + 校验,不归一化"的数据结构**:FA4 的 `FwdConfig` 就是范式——非法组合直接抛错,选择器纯 host 计算(不读 tensor / 不同步 / 不分配),每个特性一条支持谓词供选择与校验共用。
 25. **"偶发非法地址"的测试写法**:先关 caching allocator 单序列子进程复现;再把被测 tensor 放到 VMM 映射尾部、后面留保留未映射 guard range,做到"改前必 fault、改后必过"。否则测试在有 allocator 时 100% 假通过。
 26. **hd256 这类极端 head_dim 要先看资源账**:FA4 的 hd256 反向 TMEM 正好占满 512 列、SMEM 用掉 232,448 B 中的 231,424 B;这种配置下"少一次等待"(如删掉 dQaccum 别名握手)就是 17% 的差别,而 GQA 小序列反而可能退 22–29%(**#2966 旧口径,当时无反向 pack_gqa;#2967 折 q-head 进 Q tile 后翻正为 +13…26%,见 §4.5.4**)——按 shape 分派,别一套配置通吃。
+27. **cluster/2CTA 内核先画清坐标系再写代码**:逻辑 work tile 数、物理 CTA 数(`physical_x = C * cluster_slot + cta_rank`)、以及 CTA 内行偏移是三个不同的数;把"是不是 persistent"和"要不要 cluster 索引"合成一个布尔量一定会在交叉组合上翻车(CLC 恰好"既 persistent 又 cluster 化",FA4 #3034 就是这么错的——两个 CTA 拿到不同 tile,2CTA MMA 把不同 tile 的 Q 行拼在一起,max error 0.39)。行映射抽成可被 host 侧纯 Python 穷举的独立函数,别埋在 `@cute.jit` kernel 体里(见 §4.5.5)。**另:`thr_mma` 的 partition 已含 CTA rank,mask/score_mod 要传 rank=0**,否则行偏移加两次。
 
 ---
 
@@ -758,6 +865,7 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
   - #2732:typed forward config(`FwdConfig` / `FwdHeuristicInputs`)https://github.com/Dao-AILab/flash-attention/pull/2732
   - #2965 / #2966:hd256 反向统一到通用 SM100 内核(opt-in)https://github.com/Dao-AILab/flash-attention/pull/2966
   - #2967(commit bc52a40):反向 pack_gqa——GQA 的 q-head 折进 Q tile,启发式 `_bwd_pack_gqa_heuristic` 两道闸 https://github.com/Dao-AILab/flash-attention/pull/2967
+  - #3034(commit 98c1cee,2026-10-24):CLC tile 坐标修复 + 前向 work tile 坐标逻辑化(`work_q_block` / NOTE [SM100 forward coordinate spaces] / NOTE [SM100 forward work coordinates];GB300 CLC 2CTA hd128 varlen packed GQA max error 0.39 → 逐 bit 相等)https://github.com/Dao-AILab/flash-attention/pull/3034
   - #2984 paged KV cache 的 CUDA graph 捕获修复、#3007 FA4/FA2 的 CUDA graph 捕获-重放测试、#2758 SM120 自动 `num_splits`
 - CuTe DSL 侧:`TensorMapManager` / `TensorMapUpdateMode`(GMEM |=在设备端改 descriptor)与 `prims.tensormap_replace` 见 CUTLASS 仓库 `python/CuTeDSL/cutlass/tensor_utils/tensormap.py`、`python/CuTeDSL/cutlass/experimental/primitives/nvvm_wrapper.py`;CUTLASS v4.8.1 的 release note 明确修了 `tensormap_replace` 在 descriptor 被缩小后的越界风险(可用 `keep_oob_fetch_window=True` 退回旧行为)——**这是 FA 侧 per-CTA 写法的上游前提**
 - 相关:CUTLASS 领域的 WGMMA/TMA/epilogue 篇(同硬件特性,跨参考,见 [cutlass/concepts/hopper-wgmma.md](../../cutlass/concepts/hopper-wgmma.md))

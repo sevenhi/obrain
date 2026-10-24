@@ -227,8 +227,9 @@ python examples/hf_ptq/hf_ptq.py \
 | 产物 | **1.444 TB(3.4× 更小)**:92 个层 shard + tail + index |
 | recipe 覆盖 | 路由专家 NVFP4(MSE 搜静态 weight scale + 动态 input scale)、self-attn q/k/v/o(23 层)FP8 W8A8、linear-attn/gated-delta 含 conv1d(69 层)FP8 W8A8、KV cache FP8 cast、MTP/router/shared experts/lm_head/embeddings 保持 BF16 |
 
-两个值得记住的数字细节:
+量级参照(给"要不要上这条路"做判断用):**550–671B 级模型在单卡上约 40–47 分钟**跑完逐层校准+导出,2.4 T 是 3 h 04 m——也就是说墙钟大致随参数量线性涨,**单卡能不能扛取决于"最大的那一层",不是参数总量**。
 
+两个值得记住的数字细节:
 - 全部 **141,312**(92×512×3)个专家投影**各自带 `input_scale` 与 `weight_scale`**,vLLM 才会选 **FlashInfer 的 TRT-LLM NVFP4 MoE kernel** 而不是 emulation 回退——**scale 元数据的完整度直接决定服务端落到哪个 kernel**;
 - GPU 显存随每层权重 materialize 上升、释放回落,**92 层无漂移**;这个"平顶包络"正是"峰值与深度无关"的证据,反过来说:**新模型跑前几层时如果地板持续爬升,说明有东西该释放没释放**。
 - 正确性口径很窄也别放大:**逐层导出 == 全模型导出**。四个模型上两条路径逐张量、逐 config 一致(35B MoE 123,513 个张量、30B 74,163 个,0 mismatch),`weight_map` 每一项都指向持有该张量的 shard,vLLM 两边贪心生成完全相同。它**不**代表精度更好、也不代表这份 recipe 复现了官方 checkpoint 的数值。
@@ -265,6 +266,7 @@ python examples/hf_ptq/hf_ptq.py \
 - [2-bit 权重量化前沿:QuIP# / AQLM](two-bit-weight-frontier.md)——IQ1/IQ2 recipe 的 2-bit 端,GTPQ 与 imatrix 谁管哪部分权重在那里有算法侧讨论;本篇给出"为什么 imatrix 单独不够"(只加权搜索、不做误差补偿,只能补 53–63%)。
 - [structured-pruning-minitron-puzzletron](structured-pruning-minitron-puzzletron.md)——另一条也依赖"逐层"的路线:**逐层校准 vs 逐块蒸馏**,两者都把"整模型驻留"换成"一层/一块驻留",是本域之外同构的工程手法。
 - [MoE 的专家并行 PTQ 校准](expert-parallel-ptq-calibration.md)——**多卡维度的正交问题**:本篇的逐层解决"显存 × 层数",EP 解决"显存 × 卡数 + 校准 token 的覆盖面"。两者可叠加——本篇逐层校准里每一层的前向仍然可以是 DP=EP;那篇的核心是"专家 amax 必须见到全局 token 池",正是本篇"专家是 MoE 绝大部分权重"的另一面。
+- [vLLM fake-quant 验收](vllm-fakequant-eval-export.md)——本篇的下游:逐层导出的产物要在没有内核的引擎里评测时,走 `mtq.fold_weight` 把权重折进 BF16 + 两个 sidecar 的路径;两条链共用同一个 `fold_weight` 语义(顺序量化器/SVDQuant 折叠缺陷的修复同时影响两边)。
 - [computer-vision/frameworks/onnx-tensorrt-deployment](../../computer-vision/frameworks/onnx-tensorrt-deployment.md)——部署侧视角:量化 checkpoint 如何被导出、被 TensorRT / vLLM 的 kernel 选中。
 
 ## 溯源

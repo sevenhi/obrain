@@ -10,7 +10,7 @@ source:
   - "pdf: MEGABYTE | arXiv:2305.07185 NeurIPS 2023"
   - "pdf: Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 前驱) | arXiv:2112.05682"
   - "pdf: FlashAttention FA1/FA2/FA3/FA4 | arXiv:2205.14135 / 2307.08691 / 2407.08608 / 2603.05451(详细 source 见 implementation/flash-attention-implementation.md frontmatter)"
-  - "code: github.com/Dao-AILab/flash-attention | Star 24.7k;CuTe 后端 HEAD bc52a40(2026-10-23)一手实读"
+  - "code: github.com/Dao-AILab/flash-attention | Star 24.7k;CuTe 后端 HEAD 98c1cee(2026-10-24,#3034 CLC 2CTA 坐标修复)一手实读"
 date: 2026-10
 ---
 

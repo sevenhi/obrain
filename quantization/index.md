@@ -13,8 +13,9 @@ source:
   - "pdf: Minitron(激活幅度结构化剪枝 + 知识蒸馏)| arXiv:2407.14679;实战版 arXiv:2408.11796"
   - "pdf: Puzzle(异构剪枝 NAS + MIP,即 Puzzletron 论文)| arXiv:2411.19146"
   - "code: NVIDIA/Model-Optimizer 剪枝示例与 PR #2922(2026-10-23,Megatron-Core 26.10 兼容)| https://github.com/NVIDIA/Model-Optimizer"
-  - "code: NVIDIA/Model-Optimizer MoE 逐层 GPTQ 链(PR #2840 逐专家 Hessian → #2864 加速 → #2877 设备修复;#2943 AutoQuant 探测修复;commit f29bb60)| https://github.com/NVIDIA/Model-Optimizer/pull/2864;仓库 HEAD 已到 0638a27(2026-10-24)"
+  - "code: NVIDIA/Model-Optimizer MoE 逐层 GPTQ 链(PR #2840 逐专家 Hessian → #2864 加速 → #2877 设备修复;#2943 AutoQuant 探测修复;commit f29bb60)| https://github.com/NVIDIA/Model-Optimizer/pull/2864;仓库 HEAD 已到 fb3ccd0(2026-10-24)"
   - "code: NVIDIA/Model-Optimizer PR #2738 DP=EP 专家并行 PTQ 传输(2026-10-24 合并,21 个 PR 的第 1 块)| https://github.com/NVIDIA/Model-Optimizer/pull/2738"
+  - "code: NVIDIA/Model-Optimizer PR #2889 vLLM fake-quant 导出改走 Megatron-Bridge(commit fb3ccd0e65bc,2026-10-24;`mtq.fold_weight` 顺序量化器/SVDQuant 折叠修复 + 前置校验 + TP/EP/PP/VLM + NLL 实测)| https://github.com/NVIDIA/Model-Optimizer/pull/2889"
   - "web: ModelOpt 公告 *Quantizing a 4.9 TB Qwen3.8 Model on a Single GPU*(2026-09-28,逐层校准/逐层导出/单卡生产数据)| https://nvidia.github.io/Model-Optimizer/announcements/20260928-single-gpu-ptq.html"
   - "web: vLLM Quantization | https://docs.vllm.ai/en/latest/features/quantization/ | 阅读日期 2026-09-27"
 date: 2026-10
@@ -24,7 +25,7 @@ date: 2026-10
 
 ## 一句话定位
 
-> 领域索引。定位:**LLM/NN 的量化与压缩**——权重/KV cache 量化的算法侧(混合精度、低比特、误差分析方法)+ 权重压缩的两条结构路线(稀疏+量化混合表示/低秩分解 = 不动形状压表示;**结构化剪枝 + 蒸馏 = 直接改形状砍参数**)。2026-09 由原 `llm-inference` 域下的论文笔记目录(papers/)升级而来;同月批C扩充后定位从「量化算法」扩为「量化与压缩」(SpQR=量化+稀疏混合路线,LSTM 低秩=分解/剪枝路线);2026-10 补 Minitron/Puzzletron,把「剪枝」从「只有理论/低秩」补到「有完整工程链路(打分→剪→蒸馏→量化→部署)」。
+> 领域索引。定位:**LLM/NN 的量化与压缩**——权重/KV cache 量化的算法侧(混合精度、低比特、误差分析方法)+ 权重压缩的两条结构路线(稀疏+量化混合表示/低秩分解 = 不动形状压表示;**结构化剪枝 + 蒸馏 = 直接改形状砍参数**)+ 量化产物的**验收侧**(fake-quant:在缺内核的引擎里把"量化方案"与"量化内核"拆开分别评测)。2026-09 由原 `llm-inference` 域下的论文笔记目录(papers/)升级而来;同月批C扩充后定位从「量化算法」扩为「量化与压缩」(SpQR=量化+稀疏混合路线,LSTM 低秩=分解/剪枝路线);2026-10 补 Minitron/Puzzletron,把「剪枝」从「只有理论/低秩」补到「有完整工程链路(打分→剪→蒸馏→量化→部署)」;同月再补 vLLM fake-quant 验收,把「算完怎么落地」补到「落地后怎么评」。
 
 ## 条目索引
 
@@ -41,8 +42,9 @@ date: 2026-10
 | [结构化剪枝 + 知识蒸馏:Minitron / Puzzletron](concepts/structured-pruning-minitron-puzzletron.md) | concept | 改结构而非改位宽:1024 样本纯前向激活幅度打分 → 按轴剪(深度/神经元/头/embedding/MoE/mamba)→ KL 蒸馏在 <3% token 量上恢复。15B→8B 只用 94B token(40× 更少)、MMLU +16%;Puzzletron 用块级局部蒸馏 + MIP 搜异构逐层架构(Llama-70B→51B,单卡 H100 2.17× 吞吐、保留 98.4%);含 Mamba hybrid 剪枝的三处状态一致性坑 |
 | [大规模 MoE 的 GPTQ 工程化](concepts/moe-gptq-layerwise-calibration.md) | concept | 算法之外的落地三件事:HF fused MoE 逐专家 Hessian(旧版直接跳过专家,而专家是 MoE 的绝大部分权重)、一层 13–23 GiB/整模型 638–945 GiB 迫使逐层校准、逐层一开三处白等暴露(多余 max 前向 / Hessian 被 65% 阈值赶去 CPU / batch=1 每样本重跑专家循环)。逐层 GPTQ 20 h→44 min;4.892 TB 模型单卡 GB300 3 h 04 m、峰值 141.7 GB |
 | [MoE 的专家并行 PTQ 校准(DP=EP all-to-all 传输)](concepts/expert-parallel-ptq-calibration.md) | concept | 复现要每 rank 整模型、FSDP2 又把专家 gather 回来;DP=EP 让稠密层走数据并行、专家分片、token 走 all-to-all,关键是**专家 amax 覆盖全局 token 池**。plain NCCL + 定序 combine 保证逐位可复现(旧 index_add_ 版 27% 的 input scale 与单卡不同);缓冲早释放峰值 2122→706 MiB |
+| [vLLM fake-quant 验收](concepts/vllm-fakequant-eval-export.md) | concept | 没有 kernel 的格式(NVFP4 on Hopper / GGML IQ2 / 自研)怎么评测:权重量化器用 `mtq.fold_weight` 折进 BF16(量化器禁用、buffer 清空),激活/KV 量化器留给运行时 QDQ + 两个 sidecar(`quantizer_state.pth` / 版本化 `quant_recipe.yaml`);顺序量化器与 SVDQuant 折叠的两处静默错、校验前移、TP/EP/PP/VLM 导出、MoE 路由翻转把 0.016 差异放大 |
 
-**共同心法(十一篇一条线)**:压缩误差不是均匀分布的——HyQuant 按 attention mass 分精度、SpQR 按敏感度分位宽、LSTM 篇按谱结构(核范数)分压缩方式、GPTQ/AWQ/SmoothQuant 与 KV cache 篇按误差补偿/激活敏感/离群迁移分预算、QuIP#/AQLM 与 KVQuant/KVTuner 用旋转消 outlier / 多码本加和 / layer-wise 精度对把 2-bit 联合压缩推进到极限、Minitron/Puzzletron 按激活幅度与逐层重要性决定砍哪一维;**都是"把预算花在杠杆点上",而非全局均匀砍**。而 Minitron/Puzzletron 是唯一**改结构**的一条线(其余都在改表示精度),所以它的精度恢复不靠微调而靠 teacher 蒸馏。MoE GPTQ 工程化篇则是这九篇的**落地影子**:一旦模型大到"专家 Hessian 一层就是 22 GiB",算法本身的优劣退居其次,**显存预算与校准协议成了决定能不能跑完的变量**——这与 Minitron/Puzzletron 用"逐块"代替"整模型"是同一种工程直觉。专家并行 PTQ 校准篇(DP=EP all-to-all)是第二个落地影子,且它的心法不是"把预算花在杠杆点上",而是**校准统计量的覆盖面也是精度变量**:专家 amax 只看到一个 rank 的 token 切片就是系统性偏差——与"逐层 vs 整模型"是同一种工程直觉的另一个维度,逐层解决"显存 × 层数",EP 解决"显存 × 卡数 + 校准 token 的覆盖面",两者可叠加。
+**共同心法(十二篇一条线)**:压缩误差不是均匀分布的——HyQuant 按 attention mass 分精度、SpQR 按敏感度分位宽、LSTM 篇按谱结构(核范数)分压缩方式、GPTQ/AWQ/SmoothQuant 与 KV cache 篇按误差补偿/激活敏感/离群迁移分预算、QuIP#/AQLM 与 KVQuant/KVTuner 用旋转消 outlier / 多码本加和 / layer-wise 精度对把 2-bit 联合压缩推进到极限、Minitron/Puzzletron 按激活幅度与逐层重要性决定砍哪一维;**都是"把预算花在杠杆点上",而非全局均匀砍**。而 Minitron/Puzzletron 是唯一**改结构**的一条线(其余都在改表示精度),所以它的精度恢复不靠微调而靠 teacher 蒸馏。MoE GPTQ 工程化篇则是这九篇的**落地影子**:一旦模型大到"专家 Hessian 一层就是 22 GiB",算法本身的优劣退居其次,**显存预算与校准协议成了决定能不能跑完的变量**——这与 Minitron/Puzzletron 用"逐块"代替"整模型"是同一种工程直觉。专家并行 PTQ 校准篇(DP=EP all-to-all)是第二个落地影子,且它的心法不是"把预算花在杠杆点上",而是**校准统计量的覆盖面也是精度变量**:专家 amax 只看到一个 rank 的 token 切片就是系统性偏差——与"逐层 vs 整模型"是同一种工程直觉的另一个维度,逐层解决"显存 × 层数",EP 解决"显存 × 卡数 + 校准 token 的覆盖面",两者可叠加。**vLLM fake-quant 验收篇是第三个落地影子,心法又换了一个维度:把量化拆成"能折的"与"不能折的"**——静态的权重一律折进 BF16 让产物退化成普通 checkpoint,动态的激活/KV 只能以"参数 + 运行时 QDQ"的形式跟着走;于是"某个格式有没有 kernel"不再是能不能评测的前提,**"量化方案的精度"与"量化内核的精度"第一次被拆成两件可分别测量的事**。
 
 ## 相关条目(跨域互链)
 
@@ -53,7 +55,7 @@ date: 2026-10
 ## 扩展位(待补充候选)
 
 - 已补充:GPTQ / AWQ / SmoothQuant(算法侧统一篇)、KV cache 量化(KIVI + vLLM 工程视角)、2-bit 权重前沿(QuIP# / AQLM)、KV cache 极低比特前沿(KVQuant / KVTuner)。
-- 已补:FP8/FP4 硬件原生格式(2026-10)、结构化剪枝 + 蒸馏 Minitron/Puzzletron(2026-10)。
+- 已补:FP8/FP4 硬件原生格式(2026-10)、结构化剪枝 + 蒸馏 Minitron/Puzzletron(2026-10)、vLLM fake-quant 验收路径(2026-10-24,PR #2889:折叠 + sidecar + Megatron-Bridge 导出)。
 - 待补充:BitsAndBytes/NF4/QLoRA 机制篇;GGUF/k-quant/imatrix 体系(2026-10 已部分覆盖:`imatrix` 的 `E[x²]` 加权搜索与 `[gptq, imatrix]` 组合语义见 [MoE GPTQ 工程化篇](concepts/moe-gptq-layerwise-calibration.md));激活量化独立篇(W4A8/LLM.int8() 离群值);QuaRot/SpinQuant/QTIP 旋转家族;W4A16 vs W8A8 kernel 成熟度(Marlin/Machete);BitNet b1.58 training-aware 对比;各 GPU 架构实测基准;**剪枝与量化叠加的联合搜索**(剪完再量化的 scale 重校准、剪枝感知的量化粒度选择);**稀疏化(Wanda/SparseGPT 的非结构化/Semi-structured 路线)**与剪枝的对比(一个是 mask 不动 shape、一个是真改 shape);**EP PTQ 的后续 20 个 PR**([4/21] DistributionPlan 与分片加载、[13/21] 起的模型 spec 与不 gather 导出)——本篇目前只覆盖已合并的传输层 [1/21]。
 
 ## 溯源

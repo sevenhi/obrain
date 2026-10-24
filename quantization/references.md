@@ -42,6 +42,12 @@ date: 2026-09
 - ModelOpt PR #2877(fused NVFP4 GPTQ kernel 按张量所在 GPU 启动,2026-10-23 合并)— https://github.com/NVIDIA/Model-Optimizer/pull/2877
 - ModelOpt PR #2945(Hessian 按实测 headroom 放置 + 逐层 batch 探测,**open 未合并**)— https://github.com/NVIDIA/Model-Optimizer/pull/2945
 - ModelOpt PR #2943(AutoQuant 自动 batch 探测复现打分负载,2026-10-23 合并)— https://github.com/NVIDIA/Model-Optimizer/pull/2943
+- ModelOpt PR #2889(vLLM fake-quant 导出改走 Megatron-Bridge:权重折叠 + 两个 sidecar + TP/EP/PP/VLM,commit fb3ccd0,2026-10-24 合并)— https://github.com/NVIDIA/Model-Optimizer/pull/2889
+- ModelOpt PR #2888(vLLM reload 版本化 `quant_recipe.yaml`,已合并)— https://github.com/NVIDIA/Model-Optimizer/pull/2888
+- Megatron-Bridge PR #6565(写 `quantizer_state.pth` + `quant_recipe.yaml` 的能力;ModelOpt CI 钉 `1d9caf7324`)— https://github.com/NVIDIA-NeMo/Megatron-Bridge/pull/6565
+- ModelOpt 源码 `quant_module.py`(`_fold_weight_quantizer`:逐成员折叠 / 禁用 / 清 buffer)— https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt/torch/quantization/nn/modules/quant_module.py
+- ModelOpt 源码 `vllm_fakequant_megatron.py`(`check_mcore_vllm_fakequant_quantizers` 前置校验 + sidecar gather/merge)— https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt/torch/export/plugins/vllm_fakequant_megatron.py
+- ModelOpt 源码 `fakequant_worker.py`(vLLM 侧恢复 → fold_weight → 校验无残留权重量化器)— https://github.com/NVIDIA/Model-Optimizer/blob/main/examples/vllm_serve/fakequant_worker.py
 - ModelOpt 公告《Quantizing a 4.9 TB Qwen3.8 Model on a Single GPU》(2026-09-28)— https://nvidia.github.io/Model-Optimizer/announcements/20260928-single-gpu-ptq.html
 - 逐层导出示例 recipe(nvfp4_experts_only-kv_fp8_layerwise_export.yaml)— https://github.com/NVIDIA/Model-Optimizer/blob/main/modelopt_recipes/general/ptq/nvfp4_experts_only-kv_fp8_layerwise_export.yaml
 - ModelOpt model_calib API(gptq / imatrix / local_hessian / layerwise_calibrate)— https://nvidia.github.io/Model-Optimizer/reference/generated/modelopt.torch.quantization.model_calib.html

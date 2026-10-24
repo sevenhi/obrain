@@ -5,7 +5,7 @@ tags: [computer-vision, nerf, vit, cnn, reparameterization, inference, onnx, ten
 source:
   - "web: ONNX Runtime 官方文档 | https://onnxruntime.ai/docs/ | 阅读日期 2026-10-23(最新发布 1.31.0)"
   - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/ | 阅读日期 2026-10-23(当前版 11.4.0)"
-  - "code: NVIDIA Model Optimizer | github.com/NVIDIA/Model-Optimizer(原仓库名 TensorRT-Model-Optimizer 会 301 重定向到此) + 文档站 https://nvidia.github.io/Model-Optimizer/ | 阅读日期 2026-10-24(commit 0638a27;PR #2922 剪枝适配 Megatron-Core 26.10;PR #2943 AutoQuant 自动 batch 探测改为复现打分负载;PR #2738 起 DP=EP 专家并行 PTQ 逐步落地;PR #2930 硬化 specdec smoke test)"
+  - "code: NVIDIA Model Optimizer | github.com/NVIDIA/Model-Optimizer(原仓库名 TensorRT-Model-Optimizer 会 301 重定向到此) + 文档站 https://nvidia.github.io/Model-Optimizer/ | 阅读日期 2026-10-25(commit fb3ccd0;PR #2889 vLLM fake-quant 导出改走 Megatron-Bridge——本 commit 改的是 LLM 量化导出链,落地在 quantization 域;PR #2922 剪枝适配 Megatron-Core 26.10;PR #2943 AutoQuant 自动 batch 探测;PR #2738 DP=EP 专家并行 PTQ;PR #2930 硬化 specdec smoke test)"
 date: 2026-10
 ---
 

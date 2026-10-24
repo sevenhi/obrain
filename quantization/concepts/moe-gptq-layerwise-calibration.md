@@ -142,6 +142,8 @@ def _layerwise_calib_batch_size(calib_seq, num_samples):
 
 显式传 `--batch_size` 仍然直通(要旧行为就传 `--batch_size 1`)。
 
+公告侧的实测补充:**batch 1 → 8 把墙钟砍掉大约一半**,代价是激活 `input_scale` 有细微变化(权重、`weight_scale`、`weight_scale_2` 仍逐位相同)。所以 batch 是单次运行里**最大的性能杠杆**,同时也是校准协议的一部分——见 §5 对这条因果链的更正。
+
 ### 4.4 第四个坑:每个专家都打一行日志
 
 每个专家的 GPTQ helper 都会打自己 Hessian 加权误差,而这**要两次 weight×Hessian matmul + 一次主机同步**——GLM-5.3-Flash 一层 576 次。修复:专家级 helper `log_mse=False`,改由 `gptq()` 每个 experts 模块打一行"更新了多少专家、多少专家没被校准覆盖";dense 层保留原日志。

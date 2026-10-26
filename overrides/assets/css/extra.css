@@ -67,6 +67,11 @@
   --md-typeset-table-color: var(--m3-outline);
   --md-text-font-family: 'Inter', system-ui, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
   --md-code-font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* header 被改造成浅色毛玻璃底(见 .md-header 的 backdrop-filter),
+     Material 默认 --md-primary-bg-color 是白字(为深色 header 设计),这里必须反转为深色文字,
+     否则亮色模式下就是白底白字。暗色模式在下面的 slate 块里单独覆盖回浅色。 */
+  --md-primary-bg-color: var(--m3-on-surface);
+  --md-primary-bg-color--light: var(--m3-on-surface-variant);
 }
 
 /* ===== Dark mode: remap --m3-* only ===== */

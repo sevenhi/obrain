@@ -224,7 +224,7 @@ GPUModelRunner.execute_model()
 
 ## 6. 与上游主题的咬合
 
-- **调度器 ↔ KV cache**:Scheduler 通过 KVCacheManager(唯一入口)操作分页块——调度决策(KV cache 装得下吗)直接决定能否接纳请求([paged-attention.md](paged-attention.md#5-v1-里的落地blockpool--引用计数--内容哈希));
+- **调度器 ↔ KV cache**:Scheduler 通过 KVCacheManager(唯一入口)操作分页块——调度决策(KV cache 装得下吗)直接决定能否接纳请求([paged-attention.md](paged-attention.md#5-v1-blockpool));
 - **执行层 ↔ 连续批处理**:Worker 不自己排批,只消费 SchedulerOutput;每步全量重排发生在 EngineCore,Worker 无状态地跑([continuous-batching.md](continuous-batching.md));
 - **异步 ↔ 吞吐**:独立进程让"CPU 调度"与"GPU 算"能并行,配合异步下发把调度延迟藏进计算(本章 §2)。
 

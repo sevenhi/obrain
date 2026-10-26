@@ -32,7 +32,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-v32-diff.tree.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="V3 → V3.2 的结构 diff 树"></iframe>
+        loading="eager" title="V3 → V3.2 的结构 diff 树"></iframe>
 </div>
 
 
@@ -161,7 +161,7 @@ u_t = Attn( h_t, { c_s : I_{t,s} ∈ Top-k( I_{t,:} ) } )
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-dsa-pipeline.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DSA 完整数据流"></iframe>
+        loading="eager" title="DSA 完整数据流"></iframe>
 </div>
 
 
@@ -211,7 +211,7 @@ def forward(self, x, qr, start_pos, freqs_cis, mask):
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-mla-two-paths.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="MLA.forward 的两条路径"></iframe>
+        loading="eager" title="MLA.forward 的两条路径"></iframe>
 </div>
 
 
@@ -255,7 +255,7 @@ else:                       # MQA decode(长序列,真稀疏路径)
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-v32-stack.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="V3.2-Exp 全模型结构"></iframe>
+        loading="eager" title="V3.2-Exp 全模型结构"></iframe>
 </div>
 
 

@@ -38,7 +38,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-spec-draft-verify.workflow.html"
         style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="投机解码:draft 串行猜 + 目标模型并行验证"></iframe>
+        loading="eager" title="投机解码:draft 串行猜 + 目标模型并行验证"></iframe>
 </div>
 
 ```
@@ -67,7 +67,7 @@ E[每步 token 数] = (1 − α^(γ+1)) / (1 − α)
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-spec-timeline.waterfall.html"
         style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="投机解码的耗时结构对比"></iframe>
+        loading="eager" title="投机解码的耗时结构对比"></iframe>
 </div>
 
 ```
@@ -88,7 +88,7 @@ E[每步 token 数] = (1 − α^(γ+1)) / (1 − α)
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-spec-five-routes.workflow.html"
         style="width:100%;height:680px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="五条草稿路线的选择路径"></iframe>
+        loading="eager" title="五条草稿路线的选择路径"></iframe>
 </div>
 
 | 路线 | 代表 | 草稿来源 | 特点 / 代价 |
@@ -151,7 +151,7 @@ speculative_config={"method": "ngram", "num_speculative_tokens": 5, "prompt_look
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-spec-dynamic-adaptive.workflow.html"
         style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="dynamic SD 与 adaptive verification 的干预点"></iframe>
+        loading="eager" title="dynamic SD 与 adaptive verification 的干预点"></iframe>
 </div>
 
 1. **Dynamic Speculative Decoding(动态投机)**:`num_speculative_tokens_per_batch_size` 按并发区间动态调 γ。为什么需要:验证阶段有效 batch = BS×K,一旦越过临界点 SD 反而拖慢 decode(TPOT)。适用:同部署波动并发、RL rollout 尾部长尾请求。

@@ -58,6 +58,14 @@ SR 的论点:生产路由需要**同时推理多个正交信号维度**,且不�
 
 ### 2.2 架构图(mermaid)
 
+> 下图是 SR 三层架构:信号 → 决策 → 选择 → 插件,回答「这条请求该由谁答、在哪答、怎么答」如何在一次调用里被决定。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-sr-three-layer.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Semantic Router 三层架构"></iframe>
+</div>
+
 ```mermaid
 flowchart LR
     subgraph Client["调用方"]
@@ -88,6 +96,14 @@ flowchart LR
 
 ### 2.3 决策流(一次请求)
 
+> 下图是一次请求的决策流时序:信号层只陈述事实,决策层按 priority 求值布尔树,选择层打分,插件链做前后处理。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-sr-decision-flow.sequence.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="一次请求的决策流"></iframe>
+</div>
+
 ```mermaid
 sequenceDiagram
     participant C as Client
@@ -114,6 +130,14 @@ sequenceDiagram
 ---
 
 ## 3. 信号层:十三类异构信号
+
+> 下图把十三类信号按五大家族分层:启发式、语义学习型、安全合规、会话记忆、模型侧,回答「信号层到底能探到哪些事实」。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-sr-signal-types.tree.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="十三类异构信号的分层"></iframe>
+</div>
 
 信号规则 `ρ = (类型 τ, 规则名 n, 评估函数 f)`,f 输出 `(匹配位, 置信度∈[0,1])`。`pkg/decision/engine.go` 的 `SignalMatches` 直接列出了信号家族:
 
@@ -159,6 +183,14 @@ routing:
 ## 4. 决策层:布尔规则树 + 优先级
 
 ### 4.1 Decision 模型(paper `sections/decision_engine.tex`)
+
+> 下图是决策布尔规则树:叶子引用信号规则名、复合走 AND/OR/NOT,回答「任意路由策略为什么都能合成、冲突又怎么解」。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-sr-boolean-tree.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="决策布尔规则树:AND/OR/NOT"></iframe>
+</div>
 
 一个决策 `d = (名字, 布尔公式 φ, 候选模型集, 插件配置, 优先级)`。规则节点是**表达式树**:
 
@@ -258,6 +290,14 @@ model_catalog:
 ---
 
 ## 6. 旁路/插件位置:它站在哪里
+
+> 下图是 SR 的四种部署形态:独立网关、Envoy extproc 旁路、K8s Ingress 层、CLI 管理,以及「不接管 agent 循环」这条边界。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-sr-deployment.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="SR 的四种部署形态"></iframe>
+</div>
 
 SR 作为**可编程决策层**,部署形态灵活:
 

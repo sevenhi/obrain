@@ -16,6 +16,17 @@ date: 2026-10
 
 ## 1. 为什么复现和纯 FSDP2 都不行
 
+> 下图把三条路线(复现 / 纯 FSDP2 / DP=EP)按显存与 amax 覆盖面并排对照,回答「为什么两条现成路都不成立、DP=EP 好在哪」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-ep-ptq-three-routes.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="三条路线对比"></iframe>
+</div>
+
+
+
 PR 正文的原话:"Calibrating a large MoE has no good option today."两条现成路线各自的死因不同,要分开看:
 
 | 路线 | 显存 | 前向开销 | 精度(amax 覆盖面) |
@@ -29,6 +40,17 @@ FSDP2 那条要特别说清:PR 正文的措辞是 "gathers every expert on every
 DP=EP 的具体分工:**dense 层 + router 数据并行**(每 rank 跑自己的 batch),**routed experts 按 rank 分片**(EP),token 经 all-to-all dispatch 到拥有目标专家的 rank、算完再 combine 回来。专家矩阵乘留在 transformers 自己的 `_grouped_linear` 上——[3/21] 会在那里像单进程一样挂上 ModelOpt 的 per-expert quantizer。
 
 ## 2. 机制:四步流程 + 八个必须做对的细节
+
+> 下图把 dispatch → 本地专家 → combine 的四步流程画出来,回答「两次 all-to-all 分别传什么、路由权重为什么不上路」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-ep-ptq-four-steps.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="DP=EP 四步流程"></iframe>
+</div>
+
+
 
 入口是 `a2a_moe(group, hidden_states, topk_idx, topk_weights, num_local_experts, expert_fn)`(moe.py:54)。四步主流程:
 
@@ -59,6 +81,17 @@ out_rows[pair_rows_sorted] = send_back               # 放回 (token, slot) 序;
 out[t] = Σ_slot topk_weights[t, slot] * out_rows[t, slot]   # 本地权重、固定次序:view(n, top_k, H).sum(1)
 ```
 
+
+> 下图把八个细节里三条对应真实事故的(计数 wait / int32 溢出 / index_add_ 不定序)画成对照,回答「为什么这些不显眼的代码存在」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-ep-ptq-eight-details.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="八个细节对应的真实事故"></iframe>
+</div>
+
+
 以下八个细节每一条都能在 `moe.py` 里指到行,且大多对应 PR incident 表里的真实事故:
 
 **① -1 槽位不发送。**router 的 top-k 输出可能有"未选中"的占位槽(expert id = -1),`pair_rows = (exp >= 0).nonzero()` 先把它们滤掉,只为真实 (token, expert) 对排传输。combine 时这些槽位的行补零,保证每个 token 的 top_k 结果在内存里相邻。
@@ -78,6 +111,17 @@ out[t] = Σ_slot topk_weights[t, slot] * out_rows[t, slot]   # 本地权重、�
 **⑧ 梯度要过得去。**AutoQuantize 靠梯度打分,所以构造计算图且输入 `requires_grad` 时,collective 换成 `torch.distributed.nn.functional.all_to_all_single`(反向就是反向 all-to-all);纯前向走普通 `dist.all_to_all_single`。切片路径同理分叉:需要梯度时用 `torch.cat` 拼接(in-place `copy_` 会破坏 backward,cat 的高峰值对梯度打分的少量 token 可接受);纯前向时**原地写回**输出切片,省一份 `[rows, H]` 峰值——校准里最大的缓冲就是它。边界情况:"某个 rank 一个 token 都没发"(路由槽全 -1 或干脆没 token)也要跑一次反向 all-to-all,否则对端在反向里等死;单测给 group 设 10 s 超时,退化会失败而不是挂住。
 
 ## 3. 与 transformers 的接法:`register_torch_a2a()`
+
+> 下图把 register_torch_a2a 的两个 style 与 lazy 注册、版本兼容坑、bias 分片归成树,回答「传输层怎么接进 stock transformers 的 EP 基础设施」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-ep-ptq-register-transformers.tree.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="register_torch_a2a 接法"></iframe>
+</div>
+
+
 
 传输层不是独立框架,而是**注册进 stock transformers 的 EP 基础设施**(parallel style 概念见 transformers *Expert parallelism* 文档),且用法是内部的——PR 明说 "Internal to the expert-parallel loader ([9/21]); nothing to call directly"。
 
@@ -105,6 +149,17 @@ out[t] = Σ_slot topk_weights[t, slot] * out_rows[t, slot]   # 本地权重、�
 三条 incident(计数交换竞争、int32 溢出、`index_add_` 不定序)都发生在真实模型的 EP 校准中,不是构造用例——这是"正确性优先的传输层"里那些不显眼代码的存在理由。注意本 PR **不报吞吐数字**:传输是 plain NCCL,定位就不是追吞吐(见 §7 与 DeepEP 的分野)。
 
 ## 5. 21 个 PR 的分期与当前可用边界
+
+> 下图把 21 个 PR 的分期压成三段并标出当前边界,回答「现在到底能不能用 EP PTQ、别把半成品写成已支持」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-ep-ptq-21-prs.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="21 个 PR 的分期与边界"></iframe>
+</div>
+
+
 
 PR 正文明确:这是给 `examples/hf_ptq` 加 EP PTQ(torchrun 下)的系列 **1/21**,按顺序合并:
 

@@ -26,7 +26,7 @@ PD 分离（Prefill/Decode Disaggregation）把 **compute-bound 的 prefill** �
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-pd-topology.architecture.html"
         style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="PD 分离的基本拓扑与两池资源画像"></iframe>
+        loading="eager" title="PD 分离的基本拓扑与两池资源画像"></iframe>
 </div>
 
 | 阶段 | 计算形态 | 瓶颈 | 典型指标 |
@@ -101,7 +101,7 @@ Splitwise 的贡献是把 phase splitting 落到共享集群（甚至同一 GPU 
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-pd-request-path.dataflow.html"
         style="width:100%;height:460px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="一条请求的 PD 五段路径"></iframe>
+        loading="eager" title="一条请求的 PD 五段路径"></iframe>
 </div>
 
 下图把同一条路径画成状态机:新增的「KV 传输中」是唯一能「传了一半」的状态,所以它必须有超时与降级出口,而不能只有成功出口——**这四条降级边就是 PD 比单体多出来的故障面**:
@@ -109,7 +109,7 @@ Splitwise 的贡献是把 phase splitting 落到共享集群（甚至同一 GPU 
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-pd-request-states.lifecycle.html"
         style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="PD 下一条请求的状态机与降级路径"></iframe>
+        loading="eager" title="PD 下一条请求的状态机与降级路径"></iframe>
 </div>
 
 ### 2.3 vLLM 侧落地形态（按 2026-10 文档快照）
@@ -130,7 +130,7 @@ Splitwise 的贡献是把 phase splitting 落到共享集群（甚至同一 GPU 
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-pd-decision.workflow.html"
         style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="该不该上 PD 分离的四道门"></iframe>
+        loading="eager" title="该不该上 PD 分离的四道门"></iframe>
 </div>
 
 | 流量/部署特征 | 建议 | 理由 |

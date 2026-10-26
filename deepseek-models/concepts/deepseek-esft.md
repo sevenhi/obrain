@@ -32,7 +32,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/dm-esft-why-waste.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="MoE 全量微调的三重浪费与 ESFT 的三步解法"></iframe>
+        loading="eager" title="MoE 全量微调的三重浪费与 ESFT 的三步解法"></iframe>
 </div>
 
 **谱系位置**:DeepSeekMoE(见 [deepseek-moe.md](deepseek-moe.md))提出「细粒度专家分割 + 共享专家隔离」,论证了专家会自然专精;ESFT 是这个思想的**微调端兑现**——既然专家已专精,微调就只训任务相关的专家。这是 DeepSeek MoE 谱系里「训练方法」一支的代表作(2024-07,arXiv:2407.01906),早于 R1 的 RL 路线。
@@ -48,7 +48,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/dm-esft-three-stages.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="ESFT 三阶段:打分 → 选专家 → 特化训练"></iframe>
+        loading="eager" title="ESFT 三阶段:打分 → 选专家 → 特化训练"></iframe>
 </div>
 
 ```
@@ -79,7 +79,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/dm-esft-top-p.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="top_p 累积裁剪:每层选出承担 20% 激活分数的头部专家"></iframe>
+        loading="eager" title="top_p 累积裁剪:每层选出承担 20% 激活分数的头部专家"></iframe>
 </div>
 
 ```python
@@ -106,7 +106,7 @@ PyTorch 优化器只收集 `nn.Parameter`;`buffer` 是随模型保存但不参�
 <div class="archify-figure">
 <iframe src="../../../diagrams/dm-esft-param-buffer.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="冻结的实现:parameter 与 buffer 互换"></iframe>
+        loading="eager" title="冻结的实现:parameter 与 buffer 互换"></iframe>
 </div>
 
 ```python
@@ -143,7 +143,7 @@ model, tokenizer = load_esft_model("deepseek-ai/ESFT-vanilla-lite", adapter_dir)
 <div class="archify-figure">
 <iframe src="../../../diagrams/dm-esft-adapter-storage.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="adapter 的存储红利与加载一致性校验"></iframe>
+        loading="eager" title="adapter 的存储红利与加载一致性校验"></iframe>
 </div>
 
 ---
@@ -174,7 +174,7 @@ ep_size: 2                      # train_ep.py 的专家并行度
 <div class="archify-figure">
 <iframe src="../../../diagrams/dm-esft-route-position.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="五条微调路线各自的定位,ESFT 站在哪一格"></iframe>
+        loading="eager" title="五条微调路线各自的定位,ESFT 站在哪一格"></iframe>
 </div>
 
 | 路线 | 训什么 | 适合 | 与 ESFT 关系 |

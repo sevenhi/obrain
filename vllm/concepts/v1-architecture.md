@@ -26,7 +26,7 @@ date: 2026-09
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-v1-three-layers.architecture.html"
         style="width:100%;height:760px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="vLLM V1 三层架构"></iframe>
+        loading="eager" title="vLLM V1 三层架构"></iframe>
 </div>
 
 ```
@@ -89,7 +89,7 @@ EngineCore.step()                            # core.py:597 (每步:schedule 本�
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-v1-async-schedule.sequence.html"
         style="width:100%;height:700px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="同步 step 与异步调度的时间线对比"></iframe>
+        loading="eager" title="同步 step 与异步调度的时间线对比"></iframe>
 </div>
 
 **SchedulerOutput 字段(调度器→执行层的\"指令\",理解三层如何协作的关键)**:
@@ -143,7 +143,7 @@ API 层与采样层的展开分别见 [api-server-openai-compat.md](api-server-o
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-v1-init-chain.workflow.html"
         style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="EngineCore 初始化五步链"></iframe>
+        loading="eager" title="EngineCore 初始化五步链"></iframe>
 </div>
 
 1. `register_all_kvcache_specs` + `get_kv_cache_specs()`:收集模型每层对 KV cache 的需求(block_size、head 数等);
@@ -204,7 +204,7 @@ GPUModelRunner.execute_model()
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-v1-executor-choice.tree.html"
         style="width:100%;height:520px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Executor 三选一与并行维度"></iframe>
+        loading="eager" title="Executor 三选一与并行维度"></iframe>
 </div>
 
 | Executor | 场景 | 机制 |
@@ -250,7 +250,7 @@ GPUModelRunner.execute_model()
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-v1-request-journey.sequence.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="一条请求从 HTTP 到 SSE 的五段旅程"></iframe>
+        loading="eager" title="一条请求从 HTTP 到 SSE 的五段旅程"></iframe>
 </div>
 
 **① 请求入口**:一条 `POST /v1/chat/completions` 进入 FastAPI 路由层,路由只做返回形态分流,真实逻辑在 `OpenAIServingChat`;`to_sampling_params` 把请求参数映射成引擎侧 `SamplingParams`(三级回退 + 校验),再经 `AsyncLLM.generate()` 交给引擎进程([api-server-openai-compat.md](api-server-openai-compat.md))。

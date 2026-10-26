@@ -62,6 +62,17 @@ output = probabilities @ V          # [B, H, S, D]
 
 ## 2. 核心思想:相对 vanilla FlashAttention 只有两个扩展
 
+> 下图把 score_mod/mask_mod 经 torch.compile 落到 Triton 或 FA4 内核的下降链画成交互流程(与本节下方 mermaid 同一内容,交互版),回答「用户函数到底怎么变成融合内核」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-flexattention-pipeline.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="FlexAttention 编译流水线"></iframe>
+</div>
+
+
+
 FA4 博客把它总结得非常干净(来源:FA4 博客 "FlexAttention recap" 节):
 
 1. **pre-softmax 分数的逐点修改**(pointwise modifications to pre-softmax scores),允许**任意从全局内存加载**(arbitrary loads from global memory)→ 用户接口就是 `score_mod`;
@@ -193,6 +204,17 @@ def document_masking(b, h, q_idx, kv_idx):
 
 ### 4.1 为什么 score_mod 和 mask_mod 要分开
 
+> 下图拆开博客 FAQ 给的两层理由:语义上不可判定 + 效率上根本不同,回答「mask 只是 score_mod 的特例,为什么必须独立成 API」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-scoremod-maskmod-why-split.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="score_mod 与 mask_mod 为什么分开"></iframe>
+</div>
+
+
+
 签名几乎一样,只是**没有 score 参数**:
 
 ```python
@@ -269,6 +291,17 @@ BlockMask 元数据内存 = `[B, H, Q_LEN//BLOCK_SIZE, KV_LEN//BLOCK_SIZE]` 量�
 
 ### 5.1 直觉图
 
+> 下图把 full / partial / empty 三类 block 的判定与各自待遇画成流程,回答「一个 S×S block 落进哪一类、分别省不省计算」。几何算例(full=15 / partial=6 / empty=21,共 42 块)见下方正文校正。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-blockmask-three-classes.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="BlockMask 三类 block"></iframe>
+</div>
+
+
+
 把 S×S 的 mask 按 BLOCK_SIZE(默认 128)切格子。**只有整格全被 mask 才算 sparse**——这对齐硬件「连续加载+连续计算」的偏好(源码 BlockMask docstring:「somewhat of a cross in-between BCSR and a non-sparse format」)。以 causal 为例:
 
 ```mermaid
@@ -339,6 +372,17 @@ block_sparse_tensors = BlockSparseTensorsTorch(
 ---
 
 ## 6. 底层编译器概念:Triton 与 CuTeDSL
+
+> 下图回答「为什么 Blackwell 上 Triton 不够用、CuTeDSL 补上什么」:块级抽象把线程/内存细节藏起来,深度异步流水线 + warp 特化超出其表达能力。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-triton-vs-cutedsl.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Triton vs CuTeDSL"></iframe>
+</div>
+
+
 
 这是理解「FlexAttention 为什么能既灵活又快」的关键一层:**你写的 score/mask 函数最终要变成某种 GPU 编程语言写成的内核代码**。目前有两个目标语言。
 
@@ -453,6 +497,17 @@ out = flex_flash(q, k, v, block_mask=block_mask)
 
 ### 7.3 原理:两个「flex 化」钩子插进 FA4 流水线
 
+> 下图回答「flex 化到底改了什么」:块稀疏钩子决定哪些 tile 进队列,score/mask mod 钩子在 softmax warp 里逐点应用,两个扩展都不新增阶段。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-fa4-two-hooks.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="FA4 的两个 flex 钩子"></iframe>
+</div>
+
+
+
 FA4 博客 "Flexifying FlashAttention-4" 节的心智模型:**FlashAttention 每个 SM 处理一个 KV tile 队列;flex 化 = 加两个钩子**——块稀疏决定**哪些 tile 进队列**(跳过 empty、标记 partial),score/mask mod 作为**逐点操作在 softmax warp 里应用**。两个扩展都用 CuTeDSL 实现,内联进同一条异步流水线,前向反向都有。
 
 **score 修改(前向)**:S tile 从 TMEM 取回寄存器后,本来就要算 row max/sum 并生成 P tile——score/mask mod 趁数据驻留 RMEM 时顺手应用,**不新增阶段**,保持 TCGEN(tensor core)与 SFU(exp)工作的重叠。全局捕获 tensor 统一打包成 `aux_tensors` 列表传入(不用给内核穿 N 个变参),按需发射加载并与消费 S 的既有 stage 一起调度。
@@ -474,6 +529,17 @@ def score_mod(score_ssa, batch_idx, head_idx, q_idx=..., kv_idx=...,
 (这一层由 Inductor 自动生成,普通 FlexAttention 用户不需要手写;想直接对 FA4 仓库编程时才用得上,详见 Colfax 指南。)
 
 ### 7.4 性能数字与限制
+
+> 下图把五个 BACKEND 枚举(AUTO/TRITON/FLASH/TRITON_DECODE/FLYDSL)的挑选路径画成决策流,回答「默认用哪个、什么场景才换 FLASH」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-backend-selection.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="BACKEND 五个枚举怎么挑"></iframe>
+</div>
+
+
 
 **性能**(全部来源:FA4 博客 Results 节,基准脚本 `attention-gym/benchmarks/flex_perf.py`;GB200=Blackwell、H200=Hopper):
 
@@ -502,6 +568,17 @@ _Backend: TypeAlias = Literal["AUTO", "TRITON", "FLASH", "FLYDSL", "TRITON_DECOD
 - `"TRITON_DECODE"`:Triton flex_decoding 内核(解码场景,仅短序列+特定配置可用);
 - `"FLASH"`:**实验性**,FA4 CuTeDSL 内核,需另装 flash 包;
 - `"FLYDSL"`:实验性,ROCm gfx950 BF16 的 FlyDSL 前后向内核,不支持的配置回落 Triton。
+
+
+> 下图把 §7.4 列出的八条 FLASH 后端已知限制(截至 2026-10)按主题归成树,回答「上 FLASH 之前要核对哪些坑」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-fa4-limits.tree.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="FLASH 后端已知限制"></iframe>
+</div>
+
 
 **已知限制**(来源:FA4 博客 Limitations 节 + attention-gym 示例文档字符串 + PyTorch Inductor 源码,截至 2026-10):
 

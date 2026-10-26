@@ -31,7 +31,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 
 <iframe src="../../diagrams/vllm-index.architecture.html"
         style="width:100%;height:640px;border:1px solid #ddd;border-radius:8px"
-        loading="lazy" title="vLLM 推理引擎架构交互图"></iframe>
+        loading="eager" title="vLLM 推理引擎架构交互图"></iframe>
 
 ## 关键事实速记
 

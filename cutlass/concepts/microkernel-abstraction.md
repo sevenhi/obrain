@@ -30,7 +30,7 @@ CPU 世界有 BLIS:核心 microkernel 是**单线程 agent 发 SIMD 指令**,多
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-blis-formula-breaks.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="BLIS 三条公式在 GPU 上的失效点"></iframe>
+        loading="eager" title="BLIS 三条公式在 GPU 上的失效点"></iframe>
 </div>
 
 
@@ -77,7 +77,7 @@ CUTLASS 3.x = 对不变量建接口(Atom/TiledMMA/Collective 概念),对变化�
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-two-level-microkernel.tree.html"
         style="width:100%;height:800px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="五层 API 与两级 microkernel"></iframe>
+        loading="eager" title="五层 API 与两级 microkernel"></iframe>
 </div>
 
 
@@ -104,7 +104,7 @@ CUTLASS 3.x = 对不变量建接口(Atom/TiledMMA/Collective 概念),对变化�
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-atom-generation-layouts.workflow.html"
         style="width:100%;height:760px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="三代 MMA Atom 的线程布局差异"></iframe>
+        loading="eager" title="三代 MMA Atom 的线程布局差异"></iframe>
 </div>
 
 
@@ -149,7 +149,7 @@ template <> struct MMA_Traits<SM80_16x8x8_F32F16F16F32_TN> {
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-tiledmma-three-knobs.workflow.html"
         style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="TiledMMA 的三个旋钮"></iframe>
+        loading="eager" title="TiledMMA 的三个旋钮"></iframe>
 </div>
 
 
@@ -211,7 +211,7 @@ for (int k = 0; k < size<1>(tCrA); ++k)
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-collective-dispatch-policy.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Collective 的 dispatch policy 演进"></iframe>
+        loading="eager" title="Collective 的 dispatch policy 演进"></iframe>
 </div>
 
 

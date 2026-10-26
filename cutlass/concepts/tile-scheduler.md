@@ -32,7 +32,7 @@ GEMM 的输出矩阵被切成很多 tile。**TileScheduler(调度器)决定每�
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-scheduler-persistent-vs-naive.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="tile-based 尾批空闲 vs persistent 循环领活"></iframe>
+        loading="eager" title="tile-based 尾批空闲 vs persistent 循环领活"></iframe>
 </div>
 
 
@@ -95,7 +95,7 @@ CUTLASS 3.x(NVIDIA 技术博客,2025-07-16)把 GEMM 实现组织成**五层概�
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-splitk-vs-streamk.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="split-K 与 Stream-K 的切法差异"></iframe>
+        loading="eager" title="split-K 与 Stream-K 的切法差异"></iframe>
 </div>
 
 
@@ -115,7 +115,7 @@ CUTLASS 3.x(NVIDIA 技术博客,2025-07-16)把 GEMM 实现组织成**五层概�
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-grouped-scheduler.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Grouped 调度的领活循环"></iframe>
+        loading="eager" title="Grouped 调度的领活循环"></iframe>
 </div>
 
 
@@ -144,7 +144,7 @@ while (pv.next_tile()) {        // 领下一个 tile
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-raster-order-l2.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="rasterization order 与 L2 局部性"></iframe>
+        loading="eager" title="rasterization order 与 L2 局部性"></iframe>
 </div>
 
 
@@ -164,7 +164,7 @@ while (pv.next_tile()) {        // 领下一个 tile
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-clc-vs-static.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Hopper 静态 persistent vs Blackwell CLC"></iframe>
+        loading="eager" title="Hopper 静态 persistent vs Blackwell CLC"></iframe>
 </div>
 
 
@@ -186,7 +186,7 @@ Blackwell(SM100)的 **persistent cluster(Cluster Launch Control, CLC)** 机制�
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-scheduler-decision.lifecycle.html"
         style="width:100%;height:780px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="TileScheduler 选型决策路径"></iframe>
+        loading="eager" title="TileScheduler 选型决策路径"></iframe>
 </div>
 
 

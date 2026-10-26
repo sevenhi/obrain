@@ -32,7 +32,7 @@ TensorRT 的典型入口是 PyTorch/其他框架导出 ONNX，再由 ONNX parser
 <div class="archify-figure">
 <iframe src="../../../diagrams/cv-two-routes.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="两条部署路线怎么选:ORT 当基线,TRT 要深优化"></iframe>
+        loading="eager" title="两条部署路线怎么选:ORT 当基线,TRT 要深优化"></iframe>
 </div>
 
 
@@ -43,7 +43,7 @@ TensorRT 的典型入口是 PyTorch/其他框架导出 ONNX，再由 ONNX parser
 <div class="archify-figure">
 <iframe src="../../../diagrams/cv-deploy-pipeline.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="可复现部署流水线:五个阶段,每段都留版本信息"></iframe>
+        loading="eager" title="可复现部署流水线:五个阶段,每段都留版本信息"></iframe>
 </div>
 
 
@@ -76,7 +76,7 @@ TensorRT 数值回归 + 目标硬件 benchmark
 <div class="archify-figure">
 <iframe src="../../../diagrams/cv-export-decisions.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="导出阶段三个决策:契约、动态 shape、算子缺口"></iframe>
+        loading="eager" title="导出阶段三个决策:契约、动态 shape、算子缺口"></iframe>
 </div>
 
 
@@ -181,7 +181,7 @@ def test_save_external_data_preserves_tensor_boundaries(tmp_path, last_byte):
 <div class="archify-figure">
 <iframe src="../../../diagrams/cv-numeric-layers.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="数值正确性的分层定位:五级比较,从图到任务指标"></iframe>
+        loading="eager" title="数值正确性的分层定位:五级比较,从图到任务指标"></iframe>
 </div>
 
 ### 分层比较
@@ -251,7 +251,7 @@ TensorRT serialized engine 对版本和硬件有兼容限制；不要默认一�
 <div class="archify-figure">
 <iframe src="../../../diagrams/cv-engine-manifest.tree.html"
         style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="TensorRT 发布包里到底该装什么"></iframe>
+        loading="eager" title="TensorRT 发布包里到底该装什么"></iframe>
 </div>
 
 

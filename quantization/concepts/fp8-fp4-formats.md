@@ -19,7 +19,7 @@ date: 2026-10
 
 <iframe src="../../../diagrams/fp8-fp4-formats.dataflow.html"
         style="width:100%;height:640px;border:1px solid #ddd;border-radius:8px"
-        loading="lazy" title="FP8/FP4 量化数据流交互图"></iframe>
+        loading="eager" title="FP8/FP4 量化数据流交互图"></iframe>
 
 ## 1. 为什么是「格式」而不只是「位宽」
 

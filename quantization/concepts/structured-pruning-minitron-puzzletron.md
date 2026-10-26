@@ -30,6 +30,17 @@ Puzzletron(Puzzle 论文的工程化)把「同构剪枝(每层一样宽)」升�
 
 ## 1. 为什么值得做:一组能自己验算的数字
 
+> 下图把 Minitron 主线画成流程(打分发分 → 结构化剪 → 蒸馏恢复),回答「一个大模型怎么剪出一族小模型、为什么蒸馏是精度恢复的主体」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-minitron-pipeline.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Minitron 主线流程"></iframe>
+</div>
+
+
+
 同一个 4B 尺寸,三种造法在 iso-compute(等算力)下的对比(Minitron 论文 Table 11):
 
 | 造法 | 训练 token | HellaSwag | MMLU |
@@ -51,6 +62,17 @@ Puzzletron(Puzzle 论文的工程化)把「同构剪枝(每层一样宽)」升�
 成本账(论文 §4.1 自述口径,可复算):三模型族的每步 FLOP 正比于参数数,从头训 `(4.4+2.5+1.2)e17 × steps`;用剪枝则是 `(4.4 + 2.5/40 + 1.2/40)e17 × steps`,比值 ≈ (4.4+2.5+1.2)/(4.4+0.0625+0.03) = 8.1/4.49 ≈ **1.8×**——与论文宣称的 1.8× 一致。
 
 ## 2. 机制一:重要性怎么算(纯前向,不用梯度)
+
+> 下图把三宽度轴打分式与深度轴候选指标并排,回答「不用梯度怎么给参数定重要性、宽度轴与深度轴分别用什么指标」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-minitron-importance-scoring.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="重要性打分(宽度 vs 深度)"></iframe>
+</div>
+
+
 
 ### 2.1 为什么不用梯度/Taylor
 
@@ -109,6 +131,17 @@ L 个头剪到 K 个时,后半段保留的头各自「吸收」一个被删头�
 
 ## 4. 机制三:蒸馏损失的构成与取舍
 
+> 下图把 L = L_CLM + L_logits + α·L_is 的三项与实测取舍画出来,回答「哪一项该留、哪一项该省、α 该取常数还是动态」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-minitron-distill-loss.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="蒸馏损失的构成与取舍"></iframe>
+</div>
+
+
+
 总损失:
 
 ```
@@ -135,6 +168,17 @@ L_is     = (1/l) Σ_{k∈H} Σ_i Loss_k(h_teacher^{k,i}, h_student^{k,i})
 解法:**先用约 100B token 对自己的蒸馏集轻量微调 teacher**(LR 取原训练峰值 LR 的 **1/5**、120 步 warmup、batch 与衰减 schedule 照旧),再以它为师。实测这一步显著抬高学生精度;teacher 自身下游指标有升有降(数据集 ⇒ 分布迁移的正常代价)。也试过「teacher correction 与学生蒸馏并行」,与「先修正完再蒸馏」打平。
 
 ## 5. Puzzletron:从「同构剪枝」到「逐层异构 + MIP」
+
+> 下图把 Puzzletron 的三板斧(逐层异构搜索 + 块级局部蒸馏 + MIP 全局选优)串成闭环,回答「组合爆炸的异构搜索为什么可行」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-puzzletron-hetero-mip.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Puzzletron:异构 + BLD + MIP"></iframe>
+</div>
+
+
 
 ### 5.1 异构为什么值得
 
@@ -229,6 +273,17 @@ mtp.prune(unwrapped, mode="mcore_minitron", constraints=constraints,
 一个有说服力的官方实例:Qwen3-8B(36 层,ffn 12288,hidden 4096)→ 6B(24 层,ffn 9216,hidden 3584);Llama-3.1-8B → 4.5B(16 层);Nemotron-H-8B(ffn 21504,hidden 4096,mamba 128 头)→ 4B(ffn 12288,hidden 3072,mamba 112 头)。
 
 ## 7. 2026-10-23 上游变更:Mamba hybrid 剪枝的三处「状态一致性」坑
+
+> 下图把三处状态一致性坑(派生缓存 / 层列表索引 / 逐层 config 副本)与附带 dataclass 小坑归成树,回答「剪完结构之后还要同步哪些对齐状态」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-minitron-mamba-state-consistency.tree.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Mamba hybrid 剪枝状态一致性"></iframe>
+</div>
+
+
 
 ModelOpt PR #2922 把 Minitron(Mamba hybrid)与 Puzzletron 修到兼容 Megatron-Core / Megatron-Bridge 26.10(NeMo 26.10 容器带这些改动;在 26.08 上每个修复都是 no-op)。它改的三个文件恰好是**「剪枝 = 改结构」这件事最典型的三种翻车方式**,对任何自己写结构裁剪的人都适用:
 

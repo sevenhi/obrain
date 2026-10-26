@@ -32,7 +32,7 @@ V1 的采样是一条**单趟 GPU 管线**(`vllm/v1/sample/sampler.py` 的 `Samp
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-sampler-order.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Sampler 的步骤为什么必须排成这样"></iframe>
+        loading="eager" title="Sampler 的步骤为什么必须排成这样"></iframe>
 </div>
 
 ```
@@ -79,7 +79,7 @@ pad 用 `make_tensor_with_pad(pad=vocab_size)`:词表内不存在 id=vocab_size,
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-token-bin-count.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="分桶计数:一次 scatter 同时算出次数和出现过"></iframe>
+        loading="eager" title="分桶计数:一次 scatter 同时算出次数和出现过"></iframe>
 </div>
 
 - `output_bin_counts`:**出现次数**(frequency 用);
@@ -94,7 +94,7 @@ pad 用 `make_tensor_with_pad(pad=vocab_size)`:词表内不存在 id=vocab_size,
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-penalty-math.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="三个惩罚算子的数学:乘性一个加性两个"></iframe>
+        loading="eager" title="三个惩罚算子的数学:乘性一个加性两个"></iframe>
 </div>
 
 ```python
@@ -146,7 +146,7 @@ token 只要出现在 prompt **或** output(掩码并集)就施加;未出现乘 
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-sync-free-sampling.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="把 CPU-GPU 同步从采样算法里挤出去"></iframe>
+        loading="eager" title="把 CPU-GPU 同步从采样算法里挤出去"></iframe>
 </div>
 
 带请求级种子(`SamplingParams.seed`)的行逐行 `q[i].exponential_(generator=...)` 覆写(TODO(woosuk):逐行慢,待优化);`use_fp64_gumbel` 走 float64 噪声路径。`flashinfer_sample`(:475)基于**拒绝采样**免排序,作者注明"统计等价但不保证与 native 输出逐位一致"——换后端别期待逐位可复现。
@@ -166,7 +166,7 @@ CUDA → FlashInfer(受 `VLLM_USE_FLASHINFER_SAMPLER` 与算力门控 `flashinfe
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-sampling-params-fallback.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="请求参数没写时默认值从哪来:三级回退"></iframe>
+        loading="eager" title="请求参数没写时默认值从哪来:三级回退"></iframe>
 </div>
 
 **三级回退**(`chat_completion/protocol.py:661` `ChatCompletionRequest.to_sampling_params`):每个参数为 `None` 时依次取 ① 请求字段 → ② 服务器默认 `default_sampling_params`(模型 `generation_config.json`)→ ③ 协议内建 `_DEFAULT_SAMPLING_PARAMS`(如 `"repetition_penalty": 1.0`,protocol.py:629)。另有:`stop_token_ids` 与服务端默认(如 gpt-oss 的 `</call>`)`dict.fromkeys` 去重合并;`echo=True` 时继承 `prompt_logprobs=top_logprobs`;最终统一 `SamplingParams.from_optional(...)`(sampling_params.py:382-391)把可选项归一成具体值。

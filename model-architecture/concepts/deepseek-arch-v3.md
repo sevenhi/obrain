@@ -27,7 +27,7 @@ DeepSeek-V3 仍是标准 decoder-only Transformer,顶层结构为 `Embedding →
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-v3-stack.workflow.html"
         style="width:100%;height:520px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DeepSeek-V3 全模型结构"></iframe>
+        loading="eager" title="DeepSeek-V3 全模型结构"></iframe>
 </div>
 
 ```
@@ -169,7 +169,7 @@ class MLA(nn.Module):
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-v3-mla-absorb.workflow.html"
         style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="MLA:naive 展开 vs absorb 吸收"></iframe>
+        loading="eager" title="MLA:naive 展开 vs absorb 吸收"></iframe>
 </div>
 
 ---
@@ -223,7 +223,7 @@ P_i = (1/T) Σ_t s'_{i,t} ,  s'_{i,t} = s_{i,t}/Σ_j s_{j,t}
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-v3-auxfree.lifecycle.html"
         style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="aux-loss-free 负载均衡的训练闭环"></iframe>
+        loading="eager" title="aux-loss-free 负载均衡的训练闭环"></iframe>
 </div>
 
 ### 4.4 专家分组 + 节点受限路由(Node-Limited Routing)
@@ -235,7 +235,7 @@ P_i = (1/T) Σ_t s'_{i,t} ,  s'_{i,t} = s_{i,t}/Σ_j s_{j,t}
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-v3-node-limited.architecture.html"
         style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="V3 sigmoid 路由与节点受限"></iframe>
+        loading="eager" title="V3 sigmoid 路由与节点受限"></iframe>
 </div>
 
 ### 4.5 MoE 模块结构(源码)
@@ -270,7 +270,7 @@ class MoE(nn.Module):
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-v3-mtp.dataflow.html"
         style="width:100%;height:400px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="MTP 模块的数据流"></iframe>
+        loading="eager" title="MTP 模块的数据流"></iframe>
 </div>
 
 ```
@@ -373,7 +373,7 @@ L_MTP = (λ / D) Σ_{k=1}^D L_MTP^k                              (25)
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-v3-vs-v2-diff.tree.html"
         style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="V2 → V3 的代际 diff"></iframe>
+        loading="eager" title="V2 → V3 的代际 diff"></iframe>
 </div>
 
 | 维度 | V2 | **V3** | 动因 |

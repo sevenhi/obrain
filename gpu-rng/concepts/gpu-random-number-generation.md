@@ -44,7 +44,7 @@ Salmon 等人的关键翻转:传统 PRNG 是"复杂 f + 平凡 g",counter-based 
 <div class="archify-figure">
 <iframe src="../../../diagrams/rng-counter-based.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="counter-based 的关键翻转:状态退化成计数器,复杂度全压到 b_k 上"></iframe>
+        loading="eager" title="counter-based 的关键翻转:状态退化成计数器,复杂度全压到 b_k 上"></iframe>
 </div>
 
 
@@ -80,7 +80,7 @@ counter: s_n = (s + 1) mod 2^p          u_{k,n} = h_j(b_k(n))  // f 只是计数
 <div class="archify-figure">
 <iframe src="../../../diagrams/rng-philox-round.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Philox-4×32 的一轮:两个乘子 + Weyl 序列推 key,重复 10 轮"></iframe>
+        loading="eager" title="Philox-4×32 的一轮:两个乘子 + Weyl 序列推 key,重复 10 轮"></iframe>
 </div>
 
 
@@ -93,7 +93,7 @@ Saito/Matsumoto 的路子正相反——**不抛弃 F2-linear 递推,而是把�
 <div class="archify-figure">
 <iframe src="../../../diagrams/rng-thread-vs-block.architecture.html"
         style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="MTGP 反着走:不是一线程一 generator,而是一个 block 共享一个大状态"></iframe>
+        loading="eager" title="MTGP 反着走:不是一线程一 generator,而是一个 block 共享一个大状态"></iframe>
 </div>
 
 
@@ -124,7 +124,7 @@ Saito/Matsumoto 的路子正相反——**不抛弃 F2-linear 递推,而是把�
 <div class="archify-figure">
 <iframe src="../../../diagrams/rng-mtgp-recursion.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="MTGP 递推里哪一段能并行:i = 0 … N−M−1"></iframe>
+        loading="eager" title="MTGP 递推里哪一段能并行:i = 0 … N−M−1"></iframe>
 </div>
 
 ### 2.1 Philox-4×32 单轮(S-box)伪码
@@ -149,7 +149,7 @@ Saito/Matsumoto 的路子正相反——**不抛弃 F2-linear 递推,而是把�
 <div class="archify-figure">
 <iframe src="../../../diagrams/rng-curand-state-reuse.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="cuRAND 的正确用法:state 存 global,跨 launch 复用"></iframe>
+        loading="eager" title="cuRAND 的正确用法:state 存 global,跨 launch 复用"></iframe>
 </div>
 
 
@@ -193,7 +193,7 @@ __global__ void gen(curandStatePhilox4_32_10_t* s, float* out) {
 <div class="archify-figure">
 <iframe src="../../../diagrams/rng-picker.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="选型决策:先问「要可复现」还是「要超长周期」"></iframe>
+        loading="eager" title="选型决策:先问「要可复现」还是「要超长周期」"></iframe>
 </div>
 
 ### 3.1 SC11 counter-based 性能/内存表(节选,cpB=cycles per byte,越低越快)

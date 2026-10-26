@@ -38,7 +38,7 @@ R1 的赌注是:**只给模型「最终答案对/错」这种便宜的规则信�
 <div class="archify-figure">
 <iframe src="../../../diagrams/dm-r1-grpo-step.workflow.html"
         style="width:100%;height:730px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="GRPO 单个训练步的数据流"></iframe>
+        loading="eager" title="GRPO 单个训练步的数据流"></iframe>
 </div>
 
 
@@ -96,7 +96,7 @@ optimizer.step()                  # 一个 step 内所有问题累积完再更�
 <div class="archify-figure">
 <iframe src="../../../diagrams/dm-r1-reward-choices.tree.html"
         style="width:100%;height:820px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="训练信号的三种来源与取舍"></iframe>
+        loading="eager" title="训练信号的三种来源与取舍"></iframe>
 </div>
 
 
@@ -132,7 +132,7 @@ optimizer.step()                  # 一个 step 内所有问题累积完再更�
 <div class="archify-figure">
 <iframe src="../../../diagrams/dm-r1-four-stages.lifecycle.html"
         style="width:100%;height:820px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="R1 四阶段流水线与 R1-Zero 旁支"></iframe>
+        loading="eager" title="R1 四阶段流水线与 R1-Zero 旁支"></iframe>
 </div>
 
 
@@ -156,7 +156,7 @@ optimizer.step()                  # 一个 step 内所有问题累积完再更�
 <div class="archify-figure">
 <iframe src="../../../diagrams/dm-r1-distill-vs-rl.workflow.html"
         style="width:100%;height:730px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="蒸馏 vs 直接 RL:同底座的对照"></iframe>
+        loading="eager" title="蒸馏 vs 直接 RL:同底座的对照"></iframe>
 </div>
 
 
@@ -210,7 +210,7 @@ vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-32B \
 <div class="archify-figure">
 <iframe src="../../../diagrams/dm-r1-lineage.timeline.html"
         style="width:100%;height:740px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="R1 推理谱系时间轴"></iframe>
+        loading="eager" title="R1 推理谱系时间轴"></iframe>
 </div>
 
 

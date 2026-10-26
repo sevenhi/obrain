@@ -30,7 +30,7 @@ date: 2026-09
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-epilogue-fusion-io.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="融合到底省了什么:同一次 GEMM 的两条写回路线"></iframe>
+        loading="eager" title="融合到底省了什么:同一次 GEMM 的两条写回路线"></iframe>
 </div>
 
 - 主循环把 `C` 的 tile 累加在 **registers**(片上,快)里;
@@ -57,7 +57,7 @@ CUTLASS 里 epilogue 的经典语义是**线性组合 + 逐元素变换**:
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-epilogue-standard-form.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="epilogue 的标准形式"></iframe>
+        loading="eager" title="epilogue 的标准形式"></iframe>
 </div>
 
 ```
@@ -97,7 +97,7 @@ D = alpha * accumulator + beta * C
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-softmax-vs-layernorm.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="softmax 融合是三次 kernel launch,不是一次写出"></iframe>
+        loading="eager" title="softmax 融合是三次 kernel launch,不是一次写出"></iframe>
 </div>
 
 - softmax 需要对**整行**先做 reduction(求 max/scale)才知道归一化因子——这天然跨多个 tile;
@@ -122,7 +122,7 @@ D = alpha * accumulator + beta * C
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-epilogue-api-generations.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="两代 C++ API 加一代 Python API:epilogue 怎么写"></iframe>
+        loading="eager" title="两代 C++ API 加一代 Python API:epilogue 怎么写"></iframe>
 </div>
 
 - **2.x 的主机制是 thread-level fusion functor**:`cutlass::epilogue::thread::LinearCombination*` 系列(如 `LinearCombinationReLU`)。经典示例 `12_gemm_bias_relu` / `35_gemm_softmax` / `37_gemm_layernorm` 都是这一路——已对照源码确认它们用老式 thread epilogue(如 `cutlass::epilogue::thread::ScaleType::NoBetaScaling`)。所以这些示例**不是用 EVT**。

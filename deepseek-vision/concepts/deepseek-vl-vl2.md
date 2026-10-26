@@ -28,7 +28,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/dv-vl-to-vl2-evolution.timeline.html"
         style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DeepSeek-VL 到 VL2 的九个月演进"></iframe>
+        loading="eager" title="DeepSeek-VL 到 VL2 的九个月演进"></iframe>
 </div>
 
 ---
@@ -42,7 +42,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/dv-vl-hybrid-dual-tower.dataflow.html"
         style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DeepSeek-VL 的 Hybrid 双塔数据流"></iframe>
+        loading="eager" title="DeepSeek-VL 的 Hybrid 双塔数据流"></iframe>
 </div>
 
 DeepSeek-VL 的核心设计动机写在论文标题里——「Towards Real-World Vision-Language Understanding」:真实场景的输入是**高分辨率、信息密集**的(网页截图、PDF、图表、公式、科学文献),而 vision encoder 面临一个两难:
@@ -106,7 +106,7 @@ DeepSeek-VL 的解法是**「低塔出语义、高塔出细节」的 Hybrid(混�
 <div class="archify-figure">
 <iframe src="../../../diagrams/dv-vl2-dynamic-tiling.workflow.html"
         style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DeepSeek-VL2 的动态分块流程"></iframe>
+        loading="eager" title="DeepSeek-VL2 的动态分块流程"></iframe>
 </div>
 
 VL2 相对 VL 有两大(论文原文)到三大升级:
@@ -122,7 +122,7 @@ VL2 相对 VL 有两大(论文原文)到三大升级:
 <div class="archify-figure">
 <iframe src="../../../diagrams/dv-vl2-moe-variants.tree.html"
         style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DeepSeek-VL2 三变体与参数口径"></iframe>
+        loading="eager" title="DeepSeek-VL2 三变体与参数口径"></iframe>
 </div>
 
 | 变体 | 激活参数 | hidden_size | 专家数 | 每 token 专家 | 共享专家 |

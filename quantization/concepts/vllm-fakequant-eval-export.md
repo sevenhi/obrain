@@ -24,6 +24,17 @@ date: 2026-10
 
 ## 1. 为什么需要这条路:量化评测的三重门槛
 
+> 下图把三重门槛(格式有 kernel / 引擎能吃 / 口径一致)与 fake-quant 的绕法并排,回答「为什么要把权重折进 BF16、把激活量化留在运行时」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-fakequant-three-gates.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="fake-quant 绕开的三重门槛"></iframe>
+</div>
+
+
+
 想回答"这个量化 checkpoint 掉了多少精度",正常路径要满足三件事同时成立:格式有 kernel、引擎能吃、评测口径一致。缺一样就卡住:
 
 | 场景 | 卡在哪 | fake-quant 怎么绕 |
@@ -41,6 +52,17 @@ date: 2026-10
 > 一句话:**fake-quant 验的是"量化方案",不是"量化内核"**。QAD 训练完想快速判定"这套 recipe 值不值得上真 kernel",它是最便宜的一关;要出"实际部署精度"的结论,还得补一轮真 kernel 对照。
 
 ## 2. 机制①:权重折叠(`mtq.fold_weight`)——把量化器变成一次矩阵改写
+
+> 下图把折叠的逐成员改写链画成数据流,回答「量化器怎么变成一次矩阵改写、三处修复分别修了什么静默错」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-fakequant-fold-weight.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="权重折叠 mtq.fold_weight"></iframe>
+</div>
+
+
 
 折叠的本质是一次**前向等价的原地改写**:把 `y = Q(w)·x`(Q 是 fake quant,即 `dequant(quant(w))`)改写成 `y = w'·x`,其中 `w' = Q(w)`。之后量化器被禁用,前向直接用存下来的权重——**产物在数值上等价于"量化后立刻反量化"**,但形式上是一个普通 BF16 权重。
 
@@ -77,6 +99,17 @@ PR #2889 改的就是这段的三处细节,每一处都对应一个"折叠完仍
 
 ## 3. 机制②:sidecar——动不了的量化器怎么活到运行时
 
+> 下图把 vLLM 侧恢复顺序画成流程,回答「sidecar 的恢复顺序为什么不能乱、最后那个 raise 为什么是范式」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-fakequant-sidecar-restore.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="sidecar 恢复顺序"></iframe>
+</div>
+
+
+
 激活量化器作用于 forward 的中间张量,KV-cache 量化器作用于运行时写入的 cache,**都无法离线折进权重**。所以导出产物是"BF16 权重 + 一份按 HF 命名登记的量化器状态":
 
 | sidecar | 内容 | 谁写 | 谁读 |
@@ -106,6 +139,17 @@ for name, module in model.named_modules():
 **为什么"权重全折完就可以用 stock vLLM"?** 因为权重-only 格式(如 IQ2)在折叠后没有任何量化器保持启用 → 不写 sidecar → 导出物就是纯 BF16 权重。PR 实测 IQ2_XXS 的 Qwen3-0.6B 折叠前后 Megatron 侧 logits **逐位相同**,stock `vllm serve` 直接吃。这也说明**"没有 sidecar"不是缺产物,而是产物形态正确的信号**。
 
 ## 4. 机制③:为什么要换到 Megatron-Bridge 导出
+
+> 下图把换 Megatron-Bridge 换来的三件能力与「校验前移」并排,回答「为什么换导出器、拒绝清单为何在动权重之前统一拒掉」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-fakequant-mbridge-export.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Megatron-Bridge 导出"></iframe>
+</div>
+
+
 
 旧实现(`#2873` 引入的 `--vllm_fakequant_export`)走 ModelOpt 自家 Megatron exporter,支持面窄。换到 Megatron-Bridge 后多出三件实质能力:
 
@@ -139,6 +183,17 @@ def export_vllm_fakequant(bridge, model, export_dir):
 - **`--export_extra_modules`(Medusa/EAGLE/MTP)与 fake-quant 导出互斥**。
 
 ## 5. 实测数据(PR #2889 自述,两轮口径)
+
+> 下图把 per-token NLL 的 0.016 差异拆到根因,回答「为什么 dense 能压到 0.0002、MoE 上却被放大到 0.016」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-fakequant-nll-diff.tree.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="MoE 路由翻转放大差异"></iframe>
+</div>
+
+
 
 | 模型(NVFP4 W4A4 + FP8 KV) | 并行度一致性 | 与旧导出器/源权重 |
 |---|---|---|

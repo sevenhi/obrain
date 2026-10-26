@@ -42,7 +42,7 @@ DeepGEMM 的设计目标是一条:**单一 kernel、极致性能、代码可读*
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-dg-jit-flow.dataflow.html"
         style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DeepJIT:安装期零编译,首次调用才出 CUBIN"></iframe>
+        loading="eager" title="DeepJIT:安装期零编译,首次调用才出 CUBIN"></iframe>
 </div>
 
 所有 kernel 都通过 **DeepJIT** 在**运行时**编译(NVCC → CUBIN → CUDA Driver API 加载),所以**安装阶段不需要编译 CUDA**。这带来两个好处:
@@ -66,7 +66,7 @@ JIT 缓存键由:extra_signature + NVCC 版本 hash + 生效编译 flag + post_h
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-dg-grouped-gemm.workflow.html"
         style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="grouped GEMM 只 group M:三个变体各管什么场景"></iframe>
+        loading="eager" title="grouped GEMM 只 group M:三个变体各管什么场景"></iframe>
 </div>
 
 不同于 CUTLASS 的传统 grouped GEMM,**DeepGEMM 只 group M 轴**(N、K 必须固定)——因为 MoE 里各 expert 共享同一 hidden/intermediate 形状,只有 token 数(即 M)不同:
@@ -82,7 +82,7 @@ JIT 缓存键由:extra_signature + NVCC 版本 hash + 生效编译 flag + post_h
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-dg-mega-moe.workflow.html"
         style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Mega MoE:五个阶段收进一个 kernel 的一次启动"></iframe>
+        loading="eager" title="Mega MoE:五个阶段收进一个 kernel 的一次启动"></iframe>
 </div>
 
 Mega MoE 把 **EP dispatch + linear 1 + linear 2(FP8×FP4 或 FP8×FP8)+ SwiGLU + EP combine** 融合进一个 mega-kernel,**重叠 NVLink 通信与 tensor core 计算**。需要多进程启动 + 对称内存(PyTorch ≥ 2.9):
@@ -111,7 +111,7 @@ deep_gemm.fp8_fp4_mega_moe(y, transformed_l1, transformed_l2, buffer)
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-dg-sparse-mqa.workflow.html"
         style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="两个打分环节别混:全量 MQA 打分 → 选块 → 稀疏 MQA 重打分"></iframe>
+        loading="eager" title="两个打分环节别混:全量 MQA 打分 → 选块 → 稀疏 MQA 重打分"></iframe>
 </div>
 
 **NVIDIA 侧 2026-09-30(v2.8.1,#462)已引入「稀疏 MQA 打分」内核族,10-14 v2.8.2 做 stride 对齐等修复;Ascend 侧 Public Release 2026/10 加入**,扩展 MQA 评分到**稀疏 KV 上下文**场景(DSA/Lightning Indexer 的索引环节,配合 DeepSelect 选出的稀疏块):
@@ -143,7 +143,7 @@ deep_gemm.fp8_fp4_mega_moe(y, transformed_l1, transformed_l2, buffer)
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-dg-backend-mapping.architecture.html"
         style="width:100%;height:520px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="同 API 两后端:每个抽象在两边各落到什么"></iframe>
+        loading="eager" title="同 API 两后端:每个抽象在两边各落到什么"></iframe>
 </div>
 
 昇腾版新建独立仓 **DeepGEMM-Ascend**,**包名 `deep_gemm` 不变、API 对齐**,把同一套「轻量 GEMM 内核」搬到昇腾。机制细节见 [deepgemm-ascend.md](deepgemm-ascend.md),这里只列对照结论:

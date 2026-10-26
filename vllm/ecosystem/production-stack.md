@@ -44,6 +44,14 @@ README 明确的三个卖点:
 
 ### 2.1 三大组件
 
+> 下图是 Helm 一键栈的部署拓扑:应用只改 base_url,Router 分流、LMCache 复用 KV、Prometheus/Grafana 观测,回答「三件套各管什么」。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-prodstack-topology.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Production Stack 部署拓扑"></iframe>
+</div>
+
 ```mermaid
 flowchart TB
     subgraph Client["客户端应用"]
@@ -86,6 +94,14 @@ flowchart TB
 | **LoRA** | `loraAdapters` / `loraController` | 适配器热插拔(可选) |
 
 ### 2.2 单机 → 集群的迁移路径
+
+> 下图是单机到集群的渐进迁移路径:加 Router 水平扩展 → 开 LMCache → 加观测 → 实验 PD 分离,每步应用都只改 base_url。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-prodstack-migration.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="单机 → 集群的迁移路径"></iframe>
+</div>
 
 ```mermaid
 flowchart LR
@@ -151,6 +167,14 @@ servingEngineSpec:
 效果:KV cache 从 GPU 显存卸到 CPU(乃至磁盘),**多轮对话 / 共享前缀**再次进来时可直接命中,而不是重算。教程见 `tutorials/05-offload-kv-cache.md`。
 
 ### 3.3 PD 分离拓扑
+
+> 下图是 values-16 的 PD 分离拓扑:prefill 作 kv_producer、decode 作 kv_consumer,以及 NIXL 传输与镜像匹配这两个必须成对的点。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-prodstack-pd-disagg.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="PD 分离拓扑(prefill/decode + NIXL)"></iframe>
+</div>
 
 `tutorials/assets/values-16-disagg-prefill.yaml` 用 NIXL 把 prefill 与 decode 拆开:
 
@@ -263,6 +287,14 @@ Production Stack 自带 Router(镜像 `lmcache/lmstack-router`),能力包括:
 
 ## 5. LMCache 分层缓存
 
+> 下图是 LMCache 的 L0/L1/L2 三层:GPU 当前 batch、CPU 近会话、磁盘/远端跨实例,以及命中时如何逐层回读而不重算。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-prodstack-lmcache.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="LMCache 分层缓存:L0/L1/L2"></iframe>
+</div>
+
 LMCache 在引擎 KV 之上再加一层「可卸载、可共享」的缓存,典型分层:
 
 | 层 | 介质 | 容量 | 延迟 | 用途 |
@@ -282,6 +314,14 @@ LMCache 在引擎 KV 之上再加一层「可卸载、可共享」的缓存,典�
 ---
 
 ## 6. 监控 Dashboard
+
+> 下图是监控读数心法:Running/Pending/KV Usage/Hit Rate 三组信号如何定位「算不过来、显存瓶颈、复用没吃到」并决定动作。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-prodstack-dashboard.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="监控读数心法:定位瓶颈"></iframe>
+</div>
 
 Grafana 面板直接回答「服务健不健康、卡在哪」:
 

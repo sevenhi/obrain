@@ -45,7 +45,7 @@ DeepGEMM 原版(deepseek-ai/DeepGEMM)是 DeepSeek 的轻量 GEMM 库:单一 kern
 
 <iframe src="../../../diagrams/deepgemm-ascend.workflow.html"
         style="width:100%;height:640px;border:1px solid #ddd;border-radius:8px"
-        loading="lazy" title="DeepGEMM-Ascend 工作流交互图"></iframe>
+        loading="eager" title="DeepGEMM-Ascend 工作流交互图"></iframe>
 
 - BF16 / FP8 / FP4 GEMM;
 - MQA logits(多查询注意力 logits 计算);

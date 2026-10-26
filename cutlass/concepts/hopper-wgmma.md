@@ -40,7 +40,7 @@ date: 2026-09
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-wgmma-vs-mma.workflow.html"
         style="width:100%;height:700px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Ampere mma.sync 与 Hopper wgmma:操作数从哪来、谁在发指令"></iframe>
+        loading="eager" title="Ampere mma.sync 与 Hopper wgmma:操作数从哪来、谁在发指令"></iframe>
 </div>
 
 | 操作数 | 允许位置 | 备注 |
@@ -98,7 +98,7 @@ TiledMMA tiled_mma = make_tiled_mma(
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-gmma-layout-atoms.tree.html"
         style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="8 种 canonical GMMA layout atom:MN-major / K-major × 4 档 swizzle"></iframe>
+        loading="eager" title="8 种 canonical GMMA layout atom:MN-major / K-major × 4 档 swizzle"></iframe>
 </div>
 
 WGMMA 对 sA/sB 的 SMEM **shape 和 stride 都有额外约束**,且随 swizzle 模式变化——`(bM,bK):(1,bM)` 这种"顺手"的布局一般**不合法**。
@@ -168,7 +168,7 @@ tCrC: ptr[16b](0x7feee1fffbe0) o ((_2,_2,_8),_2,_2):((_1,_2,_4),_32,_64)
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-gmma-descriptor.architecture.html"
         style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="core matrix 与 matrix descriptor 的 5 个参数"></iframe>
+        loading="eager" title="core matrix 与 matrix descriptor 的 5 个参数"></iframe>
 </div>
 
 wgmma 把 atom tile wA(64×K)/wB(N×K)切成 **core matrix**:每个 core matrix 在 **strided 方向长 8、contiguous 方向长 16 字节**;**wA = 8×2 个 core matrix,wB = 2×(N/8) 个**。
@@ -199,7 +199,7 @@ No swizzle : Swizzle<0,4,3> o smem_ptr o ((8,m),(T,2)):((1T,SBO),(1,LBO))   LBO=
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-wgmma-fragments.dataflow.html"
         style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="tCsA / tCrA / tCrC:哪些是真数据、哪些是描述符"></iframe>
+        loading="eager" title="tCsA / tCrA / tCrC:哪些是真数据、哪些是描述符"></iframe>
 </div>
 
 `cute::gemm` 最内层调 atom 的 `fma`,就是内联 PTX:
@@ -226,7 +226,7 @@ asm volatile(
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-wgmma-sync.workflow.html"
         style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="wgmma 的同步三件套:mainloop 里的正确顺序"></iframe>
+        loading="eager" title="wgmma 的同步三件套:mainloop 里的正确顺序"></iframe>
 </div>
 
 wgmma 是异步指令,同步不当的后果:**(a) 隐蔽 race、(b) 编译器把 wgmma 串行化(性能大跌)、(c) 未定义行为**。
@@ -303,7 +303,7 @@ dim3 dimBlock(cute::size(tiled_mma));            // 128 = 1 warpgroup
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-wgmma-value.tree.html"
         style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="WGMMA 为什么值这套复杂度:三条可查的收益"></iframe>
+        loading="eager" title="WGMMA 为什么值这套复杂度:三条可查的收益"></iframe>
 </div>
 
 Colfax Part 1 本身无性能数字(评论区作者也确认:量化收益看 FA3 论文),以下是可验证的公开数据:

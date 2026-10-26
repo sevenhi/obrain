@@ -58,7 +58,7 @@ GPU 上做一次矩阵乘 `C(M×N) = A(M×K) · B(K×N)`,不是把整块矩阵�
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-three-level-tiling.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="三层 tiling 的嵌套循环"></iframe>
+        loading="eager" title="三层 tiling 的嵌套循环"></iframe>
 </div>
 
 
@@ -114,7 +114,7 @@ for (cta_n = 0; cta_n < GemmN; cta_n += CtaTileN)        // 每个 threadblock_y
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-mainloop-epilogue.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="mainloop 与 epilogue 的数据流"></iframe>
+        loading="eager" title="mainloop 与 epilogue 的数据流"></iframe>
 </div>
 
 
@@ -168,7 +168,7 @@ TMA 相对 `cp.async` 的核心优势是**bulk 整块搬 + 硬件协调 + 不占
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-multistage-pipeline.waterfall.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="多级流水:搬与算重叠"></iframe>
+        loading="eager" title="多级流水:搬与算重叠"></iframe>
 </div>
 
 
@@ -194,7 +194,7 @@ stage 3:  [copy A3/B3 → smem buf0]  [mma B2]    // buf0 已被算完,可复用
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-warp-specialization.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Warp 特化:producer / consumer"></iframe>
+        loading="eager" title="Warp 特化:producer / consumer"></iframe>
 </div>
 
 
@@ -222,7 +222,7 @@ pipelining 让"谁先谁后"变复杂,正确性靠两种同步保证:
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-streamk-vs-tile.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="tile-based vs Stream-K"></iframe>
+        loading="eager" title="tile-based vs Stream-K"></iframe>
 </div>
 
 
@@ -256,7 +256,7 @@ pipelining 让"谁先谁后"变复杂,正确性靠两种同步保证:
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-layout-algebra.tree.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="CuTe Layout 代数"></iframe>
+        loading="eager" title="CuTe Layout 代数"></iframe>
 </div>
 
 

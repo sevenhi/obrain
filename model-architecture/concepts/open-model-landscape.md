@@ -36,7 +36,7 @@ date: 2026-09
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-open-model-timeline.timeline.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="开源模型谱系的架构时间线"></iframe>
+        loading="eager" title="开源模型谱系的架构时间线"></iframe>
 </div>
 
 ```
@@ -63,7 +63,7 @@ GPT-2 (2019, open-weight) / GPT-3 (2020, 闭源 API)          ← decoder-only +
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-open-model-lineage.tree.html"
         style="width:100%;height:700px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="开源 LLM 谱系树"></iframe>
+        loading="eager" title="开源 LLM 谱系树"></iframe>
 </div>
 
 | 维度 | 共识(2023 后几乎全员) | 分化点(各家选择) |
@@ -89,7 +89,7 @@ GPT-2 (2019, open-weight) / GPT-3 (2020, 闭源 API)          ← decoder-only +
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-moe-accounting.workflow.html"
         style="width:100%;height:680px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="MoE 的路由、负载均衡与成本账"></iframe>
+        loading="eager" title="MoE 的路由、负载均衡与成本账"></iframe>
 </div>
 
 MoE 把每层(或部分层)的 FFN 换成 N 个并行「专家」(每个专家就是一套独立 SwiGLU FFN 权重),外加一个 router(门控网络)对每个 token 选 top-K 个专家:
@@ -121,7 +121,7 @@ DeepSeekMoE 论文(arXiv:2401.06066)针对 GShard 式「粗专家 top-K」的专
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-v2-v3-combo.dataflow.html"
         style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DeepSeek-V2/V3 的 MoE + MLA 组合"></iframe>
+        loading="eager" title="DeepSeek-V2/V3 的 MoE + MLA 组合"></iframe>
 </div>
 
 - **V2**(2024-05):236B 总 / 21B 激活,128K 上下文,8.1T tokens;attention 用 **MLA**(KV 低秩压缩,cache 省 93.3%、吞吐 5.76×,对比同系 dense 67B),训练成本较 67B dense 省 42.5%;
@@ -169,7 +169,7 @@ MoE 推理的痛点不是算力而是**权重搬运与专家分布**:47B/671B �
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-open-model-choice.workflow.html"
         style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="开源模型选型决策路径"></iframe>
+        loading="eager" title="开源模型选型决策路径"></iframe>
 </div>
 
 > ⚠ **快照框定**:以下选型准则基于本谱系收录到 2024-12 的模型;Qwen3、DeepSeek-R1/V4 等未纳入,**2025-26 谱系见续篇 [open-model-landscape-2025-2026.md](open-model-landscape-2025-2026.md)**,选型以 HF 当日 config 为准(见下方「看 config 四件套」)。

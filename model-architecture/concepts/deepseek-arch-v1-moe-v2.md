@@ -27,7 +27,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-ds-gen-stack.workflow.html"
         style="width:100%;height:680px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="V1 / DeepSeekMoE / V2 三代骨架对照"></iframe>
+        loading="eager" title="V1 / DeepSeekMoE / V2 三代骨架对照"></iframe>
 </div>
 
 | 维度 | V1-7B | V1-67B | DeepSeekMoE-16B | DeepSeekMoE-145B | V2 |
@@ -133,7 +133,7 @@ class LlamaMLP(nn.Module):
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-ds-moe-route.workflow.html"
         style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="MoE 层内部:共享专家 + 路由专家"></iframe>
+        loading="eager" title="MoE 层内部:共享专家 + 路由专家"></iframe>
 </div>
 
 ```
@@ -227,7 +227,7 @@ MLA 的出发点：MHA 的 KV cache 是 `每层 2 × heads × head_dim`，长上
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-ds-mla-kv.dataflow.html"
         style="width:100%;height:430px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="MLA 的 KV cache:576 维 vs 32768 维"></iframe>
+        loading="eager" title="MLA 的 KV cache:576 维 vs 32768 维"></iframe>
 </div>
 
 ```python
@@ -295,7 +295,7 @@ class DeepseekV2Attention(nn.Module):
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-ds-decouple-rope.workflow.html"
         style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="解耦 RoPE 的反证链"></iframe>
+        loading="eager" title="解耦 RoPE 的反证链"></iframe>
 </div>
 
 3. **Q 也低秩**（省训练参数/显存）：`q_a_proj(5120→1536) → q_b_proj(1536→128×192)`，1536 << 5120，降低激活显存。
@@ -307,7 +307,7 @@ class DeepseekV2Attention(nn.Module):
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-ds-kv-compare.architecture.html"
         style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="MHA / GQA / MLA 的 KV cache 对比"></iframe>
+        loading="eager" title="MHA / GQA / MLA 的 KV cache 对比"></iframe>
 </div>
 
 | 方案 | 每层每 token 的 KV 维度 |
@@ -387,7 +387,7 @@ class DeepseekV2MoE(nn.Module):
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-ds-v2-group-route.workflow.html"
         style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="V2 分组受限贪心路由的两级选择"></iframe>
+        loading="eager" title="V2 分组受限贪心路由的两级选择"></iframe>
 </div>
 
 - **路由分数**：softmax 后**不归一化**，而是乘 `routed_scaling_factor=16.0`（放大信号）。

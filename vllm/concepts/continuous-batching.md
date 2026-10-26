@@ -35,7 +35,7 @@ date: 2026-09
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-static-vs-continuous.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="静态批 vs 连续批的浪费对比"></iframe>
+        loading="eager" title="静态批 vs 连续批的浪费对比"></iframe>
 </div>
 
 **静态批处理**:把一组请求积累起来一次性跑完,全部生成结束,再接纳下一组。
@@ -61,7 +61,7 @@ date: 2026-09
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-token-budget-model.tree.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="统一 token 预算模型覆盖的五种情况"></iframe>
+        loading="eager" title="统一 token 预算模型覆盖的五种情况"></iframe>
 </div>
 
 V1 调度器**不区分"prefill 阶段"和"decode 阶段"**(这是和网上大量 V0 资料的本质区别)。源码注释(`scheduler.py:502-511`)原话:
@@ -93,7 +93,7 @@ V1 调度器**不区分"prefill 阶段"和"decode 阶段"**(这是和网上大�
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-scheduler-two-queues.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="每步 schedule() 的双队列调度"></iframe>
+        loading="eager" title="每步 schedule() 的双队列调度"></iframe>
 </div>
 
 Scheduler 维护两个队列,V1 调度顺序(scheduler.py:548 起,先 RUNNING 后 WAITING):
@@ -122,7 +122,7 @@ schedule() 每步:
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-chunked-prefill-timeline.waterfall.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="chunked prefill 与不切块的 step 时间轴对比"></iframe>
+        loading="eager" title="chunked prefill 与不切块的 step 时间轴对比"></iframe>
 </div>
 
 **为什么需要**:不需要 chunk 时,一个长 prefill 会吃掉整步预算,decode 请求被挤到后面,延迟飙升、GPU 利用率被一次大矩阵乘主导。
@@ -172,7 +172,7 @@ HuggingFace(TNG,24×H100 自托管集群)的实测博客把"为什么需要 chun
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-enginecore-step.sequence.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="EngineCore.step() 的消息时序"></iframe>
+        loading="eager" title="EngineCore.step() 的消息时序"></iframe>
 </div>
 
 V1 的连续批处理由 EngineCore 的 step 循环驱动(`core.py:597` `step()`):
@@ -200,7 +200,7 @@ EngineCore.step()                        # core.py:597(行号以 597 为准,v1-a
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-request-lifecycle.lifecycle.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="请求在 V1 调度器里的状态流转"></iframe>
+        loading="eager" title="请求在 V1 调度器里的状态流转"></iframe>
 </div>
 
 连续批处理能"每步任意增减请求",**前提是 KV cache 能按 token 数精确分配/释放**——这正是 PagedAttention 的分页块池给的:

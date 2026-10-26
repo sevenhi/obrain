@@ -31,3 +31,123 @@
     {{ super() }}
   </div>
 {% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+  /* archify 图自适应高度
+     ------------------------------------------------------------
+     图是独立 HTML(交互式 SVG),内容高度差异极大:实测 232 张里
+     108 张 <=400px、42 张 >720px。写死 height:720px 会让一半的图
+     留出 300+ px 空白,另一半被截断要内部二次滚动。
+     这里按 iframe 内真实内容高度逐张设定,并在窗口尺寸变化时重算。
+     同源部署(站点自带 diagrams/)可直接读 contentDocument;
+     若将来图托管到别的域,读不到就退回 CSS 的默认高度。 */
+  (function () {
+    var MIN_H = 320, MAX_H = 2400, PAD = 24;
+
+    function fit(frame) {
+      var d;
+      try { d = frame.contentDocument; } catch (e) { return; }
+      if (!d || !d.body) return;
+      var svg = d.querySelector('svg');
+      if (!svg) return;                       /* 未渲染完,lazy 图很常见 —— 等 load 事件再算 */
+      var svgH = svg.getBoundingClientRect().height;
+      if (!svgH || svgH < 40) return;
+
+      /* archify 页面结构:body > .toolbar(absolute, 44px) + .container(static)
+         + .archify-toast(fixed,不占流)。svg 只是 .container 的一部分,
+         container 里还叠着 svg 上方的步骤标题/卡片区 —— 实测 container
+         1018px 而 svg 仅 445px,只按 svg 算会把图切掉一大半。
+         正确基准是 .container 的高度(svg + 上方卡片 + 下方图例)。
+         仍不能用 body.scrollHeight:iframe 高度会反过来撑大它,自举循环。 */
+      /* archify 页面结构:html > body{padding:32px} > .toolbar(absolute,44px)
+         + .container(static) + .archify-toast(fixed,不占流)。
+         三处都要算对,否则图被切:
+         ① svg 只是 .container 的一部分(上方还有步骤标题/卡片区,实测
+            container 1018px 而 svg 仅 445px),不能用 svg 高度;
+         ② .container 的 rect 不含子元素 margin 溢出(.cards 底边比它多 32px);
+         ③ body 自己有 32px 上下 padding(共 64px),也不在 container 里。
+         所以基准取 body 的边框盒高度 —— body 没有设 height,由内容撑开,
+         iframe 高度不会反过来影响它,不存在自举循环。
+         (绝不能用 body.scrollHeight:那个值会被 iframe 高度撑大。) */
+      var root = d.documentElement;
+      var bh = d.body.getBoundingClientRect().height;
+      var h = Math.max(bh, root.scrollHeight - (root.clientHeight ? 0 : 0));
+      var target = Math.round(h + PAD);
+      target = Math.max(MIN_H, Math.min(MAX_H, target));
+      frame.style.height = target + 'px';
+      frame.dataset.fitted = '1';
+    }
+
+    function fitAll() {
+      var frames = document.querySelectorAll('.archify-figure iframe');
+      for (var i = 0; i < frames.length; i++) fit(frames[i]);
+    }
+
+    function init() {
+      fitAll();
+      /* lazy 加载 + JS 绘图:图要滚到附近才渲染,load 事件也常早于 SVG 落进 DOM。
+         用「加载事件 + 持续轮询 + IntersectionObserver」三重兜底。
+         轮询不设固定次数上限(只设 3 分钟安全阀):页面底部/末张图常常要
+         滚到才加载,固定窗口一旦用完就永久停在兜底高度,实测每页最后一张
+         最容易被漏掉。拿到有效高度后 dataset.fitted='1',轮询自然停止。 */
+      var frames = document.querySelectorAll('.archify-figure iframe');
+      for (var i = 0; i < frames.length; i++) {
+        (function (f) {
+          f.addEventListener('load', function () {
+            fit(f);
+            setTimeout(function(){ fit(f); }, 300);
+            setTimeout(function(){ fit(f); }, 1200);
+          });
+          var ticks = 0;
+          var timer = setInterval(function () {
+            if (f.dataset.fitted === '1' || ++ticks > 360) { clearInterval(timer); return; }
+            fit(f);
+          }, 500);
+          /* 进入视口(提前 800px 预判)立刻测,并延时补一次 */
+          if ('IntersectionObserver' in window) {
+            var io = new IntersectionObserver(function (es) {
+              es.forEach(function (e) {
+                if (e.isIntersecting) {
+                  fit(f);
+                  setTimeout(function(){ fit(f); }, 700);
+                  setTimeout(function(){ fit(f); }, 1800);
+                  /* 图被之后的自适应撑开页面顶部挤出视口时,上面两次可能还没测到;
+                     再补一次长延时,确保"进过一次视口"就一定能完成测量。 */
+                  setTimeout(function(){ fit(f); }, 4000);
+                }
+              });
+            }, { rootMargin: '800px' });
+            io.observe(f);
+          }
+        })(frames[i]);
+      }
+      setTimeout(fitAll, 900);
+      setTimeout(fitAll, 2400);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else { init(); }
+
+    var t;
+    window.addEventListener('resize', function () {
+      clearTimeout(t); t = setTimeout(fitAll, 200);
+    });
+
+    /* Material navigation.instant 是 SPA 跳转,页面不重载,需重算。
+       注:早期版本这里有个 reviveEmpty() 会检测"body 空"就重设 src -- 那是错的:
+       lazy iframe 在未进入视口时 body 本来就是空的,重设 src 反而把正常待加载
+       的图弄成永久失败(实测 gemm-tiling 第 6 张被改写 src 后再也加载不出来)。
+       已删除,只依赖加载事件 + 轮询 + IntersectionObserver。 */
+    if (typeof document$ !== 'undefined' && document$.subscribe) {
+      document$.subscribe(function () {
+        setTimeout(fitAll, 120);
+        setTimeout(fitAll, 900);
+        setTimeout(fitAll, 2500);
+      });
+    }
+  })();
+  </script>
+{% endblock %}

@@ -40,7 +40,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-v3-parallel-primitives.architecture.html"
         style="width:100%;height:520px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="六种并行原语:各切什么、通信什么、V3 用不用"></iframe>
+        loading="eager" title="六种并行原语:各切什么、通信什么、V3 用不用"></iframe>
 </div>
 
 
@@ -85,7 +85,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-v3-3d-partition.architecture.html"
         style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="V3 训练的三维切分:PP16 × EP64 × ZeRO-1 DP"></iframe>
+        loading="eager" title="V3 训练的三维切分:PP16 × EP64 × ZeRO-1 DP"></iframe>
 </div>
 
 
@@ -149,7 +149,7 @@ MTP(多 token 预测,D=1,预测额外 1 个 token)不只是损失函数上的改
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-v3-dualpipe-schedule.waterfall.html"
         style="width:100%;height:600px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DualPipe vs 1F1B:气泡从哪来、被谁填掉"></iframe>
+        loading="eager" title="DualPipe vs 1F1B:气泡从哪来、被谁填掉"></iframe>
 </div>
 
 
@@ -176,7 +176,7 @@ MTP(多 token 预测,D=1,预测额外 1 个 token)不只是损失函数上的改
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-v3-deepep-dispatch.workflow.html"
         style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DeepEP 的 dispatch 与 combine:token 怎么跨节点找 expert、怎么回来"></iframe>
+        loading="eager" title="DeepEP 的 dispatch 与 combine:token 怎么跨节点找 expert、怎么回来"></iframe>
 </div>
 
 
@@ -202,7 +202,7 @@ MTP(多 token 预测,D=1,预测额外 1 个 token)不只是损失函数上的改
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-v3-a2a-timeline.waterfall.html"
         style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="一层之内:计算、all-to-all、PP 通信与 SM 划分怎么叠"></iframe>
+        loading="eager" title="一层之内:计算、all-to-all、PP 通信与 SM 划分怎么叠"></iframe>
 </div>
 
 
@@ -228,7 +228,7 @@ SM 划分: 计算 SM 跑 GEMM | 通信 SM(20)跑 IB/NVLink 转发| 同卡并发
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-v3-memory-budget.tree.html"
         style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="每卡显存账:四类占用各由谁来摊"></iframe>
+        loading="eager" title="每卡显存账:四类占用各由谁来摊"></iframe>
 </div>
 
 

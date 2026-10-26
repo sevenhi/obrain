@@ -45,6 +45,14 @@ vLLM Router 是面向大规模 vLLM 部署的**轻量高性能请求转发层**(
 
 ## 2. 请求路径
 
+> 下图是 Router 的请求路径:中间件(鉴权/WASM/请求 ID)→ 策略 → 结合服务发现选 worker,回答「一个请求怎么走到该去的副本」。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-router-request-path.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Router 请求路径"></iframe>
+</div>
+
 ```mermaid
 flowchart LR
     C[客户端] -->|POST /v1/chat/completions| R[vLLM Router]
@@ -104,6 +112,14 @@ PD 路由的原理、传输层与监控口径见库内 [PD 分离清单](../prac
 
 ### 3.1 consistent_hash:会话粘滞
 
+> 下图是 consistent_hash 的 11 级 hash key 优先级:从 Header 一路降到 body 再到底 fallback,回答「同一会话凭什么一直打同一 worker」。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-router-consistenthash.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="consistent_hash 的 11 级 hash key 优先级"></iframe>
+</div>
+
 **做什么**:同一 session/user 的请求始终打到同一 worker,保住该 worker 上的 KV。
 
 **Hash key 优先级**(高 → 低,共 11 级):
@@ -162,6 +178,14 @@ vllm-router --policy cache_aware \
 
 ### 3.5 策略选择决策树
 
+> 下图是策略选择决策树:先问要不要会话亲和,再问是否负载敏感,把四类策略各自落到最合适场景。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-router-strategy-tree.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="负载均衡策略选择决策树"></iframe>
+</div>
+
 ```mermaid
 flowchart TD
     S[开始选策略] --> Q1{需要会话亲和?}
@@ -184,6 +208,14 @@ flowchart TD
 ---
 
 ## 4. PD 分离路由
+
+> 下图是 PD 分离模式的一次请求时序:请求先落 prefill 池产出 KV,再经 NIXL/NCCL/Mooncake 传 decode,由 decode 流式输出。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-router-pd-sequence.sequence.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="PD 分离模式的一次请求时序"></iframe>
+</div>
 
 ### 4.1 三种 connector 形态
 
@@ -274,6 +306,14 @@ pip install vllm-router
 ```
 
 ### 6.2 企业级开关
+
+> 下图是熔断状态机:Closed → Open → HalfOpen,回答「连续失败几次断开、多久后试探、怎样恢复」这套企业级容错逻辑。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-router-circuit-breaker.lifecycle.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="熔断状态机:Closed → Open → HalfOpen"></iframe>
+</div>
 
 ```bash
 vllm-router \

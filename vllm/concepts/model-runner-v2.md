@@ -41,7 +41,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-persistent-batch.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Persistent Batch 生命周期"></iframe>
+        loading="eager" title="Persistent Batch 生命周期"></iframe>
 </div>
 
 
@@ -79,7 +79,7 @@ idx: 0   1   2   3  ... 1023            query_start_loc  [0, 5, 9, ...]
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-async-snapshot.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="async barrier vs 快照"></iframe>
+        loading="eager" title="async barrier vs 快照"></iframe>
 </div>
 
 
@@ -139,7 +139,7 @@ return pp_size
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-staged-write.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="StagedWriteTensor 五步"></iframe>
+        loading="eager" title="StagedWriteTensor 五步"></iframe>
 </div>
 
 
@@ -204,7 +204,7 @@ class UvaBufferPool:
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-gumbel-sampling.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Gumbel-max 采样"></iframe>
+        loading="eager" title="Gumbel-max 采样"></iframe>
 </div>
 
 
@@ -245,7 +245,7 @@ def gumbel_noised_argmax(logits, keys, mask, seed, pos, temp, USE_FP64):
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-cudagraph-dispatch.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="CudaGraphManager.dispatch"></iframe>
+        loading="eager" title="CudaGraphManager.dispatch"></iframe>
 </div>
 
 

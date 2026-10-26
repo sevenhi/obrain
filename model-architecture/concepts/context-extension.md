@@ -29,7 +29,7 @@ RoPE 用「按位置旋转 Q/K」编码相对距离,但**旋转角频率 θ_d = 
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-rope-fail-mode.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="RoPE 为什么会崩:一条从波长到 logit 离群的因果链"></iframe>
+        loading="eager" title="RoPE 为什么会崩:一条从波长到 logit 离群的因果链"></iframe>
 </div>
 
 ### 1.1 RoPE 的频率结构(回顾)
@@ -58,7 +58,7 @@ PI 论文 Table 4 实测:把 LLaMA 直接在长序列上微调 **10000+ batch,�
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-ctx-unified-map.tree.html"
         style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="四代方法的统一视角:所有方法都在改这两个函数之一"></iframe>
+        loading="eager" title="四代方法的统一视角:所有方法都在改这两个函数之一"></iframe>
 </div>
 
 
@@ -118,7 +118,7 @@ HF `rope_scaling={"type": "dynamic"}` 是它的动态版(推理时按当前长�
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-yarn-by-parts.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="NTK-by-parts 的分段:r_d 落在哪一档,决定插值还是保持原样"></iframe>
+        loading="eager" title="NTK-by-parts 的分段:r_d 落在哪一档,决定插值还是保持原样"></iframe>
 </div>
 
 
@@ -198,7 +198,7 @@ context: 8192(初始预训练)→ 六阶段渐进拉到 131072
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-ctx-timeline.timeline.html"
         style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="上下文扩展的方法演进:从位置插值到逐维搜索"></iframe>
+        loading="eager" title="上下文扩展的方法演进:从位置插值到逐维搜索"></iframe>
 </div>
 
 ### 3.1 开源模型横向(arXiv:2309.00071**v3** Table 7;滑窗 PPL,S=256,Proof-pile 128k 文档截断评测,越低越好)
@@ -257,7 +257,7 @@ v3 把「同算力比质量」提到了正文主表——这是评估一个扩�
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-ctx-picker.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="部署侧选型:这是一棵决策树,不是流水线"></iframe>
+        loading="eager" title="部署侧选型:这是一棵决策树,不是流水线"></iframe>
 </div>
 
 

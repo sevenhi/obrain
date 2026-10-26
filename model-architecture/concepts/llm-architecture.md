@@ -41,7 +41,7 @@ date: 2026-09
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-llm-norm-lineage.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="归一化三次挪动:post-norm → pre-norm → RMSNorm"></iframe>
+        loading="eager" title="归一化三次挪动:post-norm → pre-norm → RMSNorm"></iframe>
 </div>
 
 
@@ -75,7 +75,7 @@ RMSNorm(x)   = x / RMS(x) · g,   RMS(x) = sqrt(mean(x²) + ε)   # 不减均值
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-llm-swiglu-ffn.workflow.html"
         style="width:100%;height:760px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="SwiGLU 与标准 FFN 的结构差异"></iframe>
+        loading="eager" title="SwiGLU 与标准 FFN 的结构差异"></iframe>
 </div>
 
 
@@ -111,7 +111,7 @@ LLaMA(Meta AI,2023-02)证明**只用公开数据**就能训出第一梯队基础
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-llm-token-budget.workflow.html"
         style="width:100%;height:730px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="从 Kaplan 到 LLaMA:推理预算如何进入 scaling law"></iframe>
+        loading="eager" title="从 Kaplan 到 LLaMA:推理预算如何进入 scaling law"></iframe>
 </div>
 
 
@@ -188,7 +188,7 @@ LLaMA(Meta AI,2023-02)证明**只用公开数据**就能训出第一梯队基础
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-llm-positional-encoding.workflow.html"
         style="width:100%;height:820px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="位置编码四条路线对比"></iframe>
+        loading="eager" title="位置编码四条路线对比"></iframe>
 </div>
 
 
@@ -235,7 +235,7 @@ softmax( q·kᵀ − m·|i−j| )      # m 为每个 head 预设的固定斜率(
 <div class="archify-figure">
 <iframe src="../../../diagrams/ma-llm-evolution.timeline.html"
         style="width:100%;height:760px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="GPT-3 → LLaMA → Llama 2/3 演进时间轴"></iframe>
+        loading="eager" title="GPT-3 → LLaMA → Llama 2/3 演进时间轴"></iframe>
 </div>
 
 

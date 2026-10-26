@@ -27,7 +27,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/dv-ocr-two-gen.tree.html"
         style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DeepSeek-OCR 与 OCR-2 的结构对照"></iframe>
+        loading="eager" title="DeepSeek-OCR 与 OCR-2 的结构对照"></iframe>
 </div>
 
 ---
@@ -41,7 +41,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/dv-ocr-optical-compression.dataflow.html"
         style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DeepSeek-OCR 的光学压缩数据流"></iframe>
+        loading="eager" title="DeepSeek-OCR 的光学压缩数据流"></iframe>
 </div>
 
 论文的起点是 LLM 长文本处理的 O(n²) 账单:**一段文字用 text token 表示很长(千 token 级),但放进一张图用 vision token 表示很短(几十到几百 token)**。一张包含整页文档的图,vision token 数远少于等价文本 token 数——所以「用视觉当压缩介质」能拿到远高于文本的压缩比。这就是标题 **Contexts Optical Compression(上下文的光学压缩)** 的含义。
@@ -80,7 +80,7 @@ DeepSeek-OCR 的结构只有两个组件(论文原话):**DeepEncoder + DeepSeek3
 <div class="archify-figure">
 <iframe src="../../../diagrams/dv-ocr-compression-curve.workflow.html"
         style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="压缩比与解码精度的对应关系"></iframe>
+        loading="eager" title="压缩比与解码精度的对应关系"></iframe>
 </div>
 
 - **压缩比 <10× 时,解码(OCR)精度 97%**;压缩比 20× 时仍 ~60%——即「1 个 vision token 顶 20 个 text token」仍能保住 60% 精度,这是 LLM 长文本压缩/记忆遗忘研究的重要信号。
@@ -111,7 +111,7 @@ DeepSeek-OCR 的结构只有两个组件(论文原话):**DeepEncoder + DeepSeek3
 <div class="archify-figure">
 <iframe src="../../../diagrams/dv-ocr2-causal-flow.workflow.html"
         style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Visual Causal Flow:光栅顺序 vs 因果重排"></iframe>
+        loading="eager" title="Visual Causal Flow:光栅顺序 vs 因果重排"></iframe>
 </div>
 
 OCR-2 的动机是一个认知观察:**传统 VLM 把 visual token 按光栅顺序(左上→右下)固定送入 LLM,配固定位置编码**;但人类看复杂版面的文档不是光栅扫描,而是**遵循语义、受逻辑结构驱动、有因果性的顺序扫读**(先标题、再正文块、再图表…)。OCR-2 让 encoder 自己模拟这种「因果顺序」。
@@ -179,7 +179,7 @@ OCR-2 的动机是一个认知观察:**传统 VLM 把 visual token 按光栅顺�
 <div class="archify-figure">
 <iframe src="../../../diagrams/dv-ocr-deploy-path.workflow.html"
         style="width:100%;height:700px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DeepSeek-OCR 系部署链路与坑"></iframe>
+        loading="eager" title="DeepSeek-OCR 系部署链路与坑"></iframe>
 </div>
 
 - **环境**:cuda11.8 + torch2.6.0 + vllm-0.8.5(README 指定);transformers 推理用 `trust_remote_code=True` + `flash_attention_2`。

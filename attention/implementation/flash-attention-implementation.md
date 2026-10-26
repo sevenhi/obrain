@@ -41,7 +41,7 @@ attention 的瓶颈不是计算,是**内存搬运**:标准实现要把 N×N 的 
 
 <iframe src="../../../diagrams/flash-attention-implementation.architecture.html"
         style="width:100%;height:640px;border:1px solid #ddd;border-radius:8px"
-        loading="lazy" title="FlashAttention 四代内核架构交互图"></iframe>
+        loading="eager" title="FlashAttention 四代内核架构交互图"></iframe>
 
 ---
 
@@ -54,7 +54,7 @@ attention 的瓶颈不是计算,是**内存搬运**:标准实现要把 N×N 的 
 <div class="archify-figure">
 <iframe src="../../../diagrams/fa-standard-attention-hbm.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="标准 Attention 的 HBM 访存瓶颈"></iframe>
+        loading="eager" title="标准 Attention 的 HBM 访存瓶颈"></iframe>
 </div>
 
 标准 attention 分三步,**每一步都把中间矩阵写进 HBM 再读回**:
@@ -80,7 +80,7 @@ O = P @ V              # [N,d] 输出
 <div class="archify-figure">
 <iframe src="../../../diagrams/fa-why-not-tiling.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="softmax 不可分块的因果链"></iframe>
+        loading="eager" title="softmax 不可分块的因果链"></iframe>
 </div>
 
 矩阵乘法可以 tiling 是因为**加法按块可结合**(C 的每个输出 tile = 相关 A/B tile 的部分和累加)。但 **self-attention 里有 softmax,它不结合**:
@@ -102,7 +102,7 @@ softmax(合并整个 S 行) ≠ 合并各块单独算的 softmax
 <div class="archify-figure">
 <iframe src="../../../diagrams/fa-online-softmax.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Online Softmax 增量更新流程"></iframe>
+        loading="eager" title="Online Softmax 增量更新流程"></iframe>
 </div>
 
 online softmax 的关键:维护**每行各两个标量(即 m、l 是长度为 Br 的行向量)**(running max `m`、running sum `l`),遍历 K/V 块时增量更新,并对已累加的旧输出做 rescale,最终得到**精确**的行 softmax。**注意不是单个全局标量——每行独立维护**。
@@ -122,7 +122,7 @@ online softmax 的关键:维护**每行各两个标量(即 m、l 是长度为 Br
 <div class="archify-figure">
 <iframe src="../../../diagrams/fa-fa1-tiling.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="FA1 双层 tiling 循环结构"></iframe>
+        loading="eager" title="FA1 双层 tiling 循环结构"></iframe>
 </div>
 
 > ⚠ 循环顺序说明:论文 Algorithm 1 的**外层是 K/V 块、内层遍历 Q 块**(FA2 才翻成内/外层)。下面为了直观按"外层 Q、内层 K/V"展示(**简化变体**,逻辑等价、更贴合"每行输出遇到的 KV 序列");要对读论文,注意其外层是 K/V 块。
@@ -197,7 +197,7 @@ FA2 逐个解决。
 <div class="archify-figure">
 <iframe src="../../../diagrams/fa-fa2-defer-divide.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="FA1 每步除 ℓ vs FA2 推迟除 ℓ"></iframe>
+        loading="eager" title="FA1 每步除 ℓ vs FA2 推迟除 ℓ"></iframe>
 </div>
 
 **FA1 的写法**(每次加载新 K/V 块,rescale + 除行和):
@@ -232,7 +232,7 @@ FA2 逐个解决。
 <div class="archify-figure">
 <iframe src="../../../diagrams/fa-warp-partition.architecture.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="FA1 split-KV vs FA2 按 Q 行切"></iframe>
+        loading="eager" title="FA1 split-KV vs FA2 按 Q 行切"></iframe>
 </div>
 
 **FA1 的 warp 划分**(4 warp 各算不同 K/V block,需合并):
@@ -269,7 +269,7 @@ Warp 3:  Q rows 96-127 → ...
 <div class="archify-figure">
 <iframe src="../../../diagrams/fa-splitq-vs-splitkv.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="切 Q 免归并 vs 切 KV 需归并"></iframe>
+        loading="eager" title="切 Q 免归并 vs 切 KV 需归并"></iframe>
 </div>
 
 **容易混淆的关键结构**:FA2 论文的 threadblock 级序列并行是**沿 Q 行切**——`grid ≈ (num_q_blocks, batch, nheads)`,每个 block 算一段 **Q 行**,各行 softmax 独立,**block 之间"no communication at all"、根本不需要 reduction kernel**。这正是 FA2 在论文 §3.2 明确宣称的新增并行维:"The first version of FlashAttention parallelizes over batch size and number of heads... we now additionally parallelize over the sequence length dimension."——即 **FA1 只沿 batch×heads 并行,序列长而 batch×heads 少时喂不满 GPU;FA2 才新增沿序列维(把 Q 切块)的并行**。在此基础上,FA2 的另一关键改进在 **block 内部**:把 warp 划分从"各 warp 按 K/V 段切"(要跨 warp 合并)改成"各 warp 按 Q 行切"(行间独立、免通信),并利用 **Q 行天然可独立计算**这一性质充分并行:
@@ -349,7 +349,7 @@ FA3 换成 Hopper 的**异步指令**(异步 WGMMA + TMA),让"发起"和"等待�
 <div class="archify-figure">
 <iframe src="../../../diagrams/fa-fa3-async-pipeline.waterfall.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="FA3 三层异步重叠时序"></iframe>
+        loading="eager" title="FA3 三层异步重叠时序"></iframe>
 </div>
 
 **异步 WGMMA(warp-group MMA)**:Hopper 的 `wgmma` 由**一个 warp group(4 warps = 128 线程)异步发起**:
@@ -405,7 +405,7 @@ Stage4 WGMMA:                           |P0V0|
 <div class="archify-figure">
 <iframe src="../../../diagrams/fa-fp8-precision.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="FP8 block quantization + incoherent processing"></iframe>
+        loading="eager" title="FP8 block quantization + incoherent processing"></iframe>
 </div>
 
 利用 Hopper FP8 Tensor Core。**FA3 的 FP8 不是简单把 QK 换 E4M3 就完事**(部署时最常见的坑),核心是两项保精度技术:
@@ -472,7 +472,7 @@ FA4 的 CuTe DSL 后端(同时服务 Hopper/SM90 与 Blackwell/SM100)在 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/fa-nan-pollution.sequence.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="NaN 污染因果链与前向/反向路径"></iframe>
+        loading="eager" title="NaN 污染因果链与前向/反向路径"></iframe>
 </div>
 
 现网 KV cache 是**复用**的:paged/ragged 布局里 `[seqlen_k, tile_n)` 这段"本序列用不到的行"保留的是上一轮或 padding 的脏数据,完全可能是 NaN。直觉认为"mask 掉就没事",但**mask 只能让系数为 0,消不掉乘法本身**:
@@ -782,7 +782,7 @@ commit 原话:`This was also the cause of the hd256 2CTA CLC exclusion, which st
 <div class="archify-figure">
 <iframe src="../../../diagrams/fa-backward-recompute.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="反向重算:算力换显存"></iframe>
+        loading="eager" title="反向重算:算力换显存"></iframe>
 </div>
 
 TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统计量、反向重算**:

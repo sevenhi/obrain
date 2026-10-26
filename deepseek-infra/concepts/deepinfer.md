@@ -50,7 +50,7 @@ Q&A 解释:KV cache 管理与负载均衡与内部基础设施深度耦合,设�
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-epd-topology.architecture.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DeepInfer 部署形态:EPD 分离 + Wide-EP"></iframe>
+        loading="eager" title="DeepInfer 部署形态:EPD 分离 + Wide-EP"></iframe>
 </div>
 
 
@@ -89,7 +89,7 @@ Q&A 解释:KV cache 管理与负载均衡与内部基础设施深度耦合,设�
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-engine-layers.architecture.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="引擎实现分层"></iframe>
+        loading="eager" title="引擎实现分层"></iframe>
 </div>
 
 
@@ -122,7 +122,7 @@ CUDA Graph runner + TileLang/DeepGEMM/FlashMLA/DeepEP 内核
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-normal-voting.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="NORMAL 引擎同型投票"></iframe>
+        loading="eager" title="NORMAL 引擎同型投票"></iframe>
 </div>
 
 
@@ -166,7 +166,7 @@ if (!any_scheduled) return _schedule_decode(acquire);
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-zos-overlap.waterfall.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="零开销调度 ZOS 的 CPU/GPU 重叠"></iframe>
+        loading="eager" title="零开销调度 ZOS 的 CPU/GPU 重叠"></iframe>
 </div>
 
 
@@ -217,7 +217,7 @@ else:
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-zos-seqlens-fix.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="滞后 seqlens 的 GPU 侧修正"></iframe>
+        loading="eager" title="滞后 seqlens 的 GPU 侧修正"></iframe>
 </div>
 
 
@@ -262,7 +262,7 @@ nextn=5、ZOS 开:额外 5+6+5=16 个位置。KV block 表按 runtime_max_model_
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-dspark-varlen.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DSpark 动态验证长度"></iframe>
+        loading="eager" title="DSpark 动态验证长度"></iframe>
 </div>
 
 
@@ -304,7 +304,7 @@ V4.1 的层分两段:前 `n_prefill_layer` 层是 producer(全量 prefill),其�
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-swa-bounded-replay.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="SWA bounded replay 命中判定"></iframe>
+        loading="eager" title="SWA bounded replay 命中判定"></iframe>
 </div>
 
 
@@ -327,7 +327,7 @@ V4.1 的层分两段:前 `n_prefill_layer` 层是 producer(全量 prefill),其�
 <div class="archify-figure">
 <iframe src="../../../diagrams/di-kv-tiers.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="KV cache 三级存储"></iframe>
+        loading="eager" title="KV cache 三级存储"></iframe>
 </div>
 
 

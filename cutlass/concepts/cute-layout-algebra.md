@@ -32,7 +32,7 @@ CuTe(CUTLASS 3.x 的核心库)用三个递进抽象把"硬件上怎么铺数据�
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-layout-to-index.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Layout 把逻辑坐标翻译成内存偏移"></iframe>
+        loading="eager" title="Layout 把逻辑坐标翻译成内存偏移"></iframe>
 </div>
 
 > **一个 `Layout` 是从坐标空间到线性内存索引的映射**,本质是"怎么把多维数组摊平成一维地址"。
@@ -67,7 +67,7 @@ Layout colMajor = Layout<Shape<_4,_8>, Stride<_1,_4>>{};   // (m,n) → m + n*4 
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-layout-composition.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="composition(A,B) 的官方例演算"></iframe>
+        loading="eager" title="composition(A,B) 的官方例演算"></iframe>
 </div>
 
 **验证**:可复现 = 有输入、有运算、有输出。上面给的 `A=(6,2):(8,2)`, `B=(4,3):(3,1)` ⟹ `A∘B = ((2,2),3):((24,2),8)` 是官方文档原例,可在 CuTe 里 `print_layout` 验证。
@@ -91,7 +91,7 @@ Layout colMajor = Layout<Shape<_4,_8>, Stride<_1,_4>>{};   // (m,n) → m + n*4 
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-mma-atom-traits.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Atom = Operation + MMA_Traits"></iframe>
+        loading="eager" title="Atom = Operation + MMA_Traits"></iframe>
 </div>
 
 硬件 mma 指令是架构相关的(Ampere 的 `m16n8k16`、Hopper 的 `wgmma`…)。CuTe 把每条指令包装成**Atom** = **Operation struct**(具体 PTX 指令)+ **MMA_Traits struct**(元信息):
@@ -152,7 +152,7 @@ LayoutC_TV: ((_4,_8),(_2,_2)):((_32,_1),(_16,_8))
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-tiled-mma-layers.tree.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="CuTe 抽象层级"></iframe>
+        loading="eager" title="CuTe 抽象层级"></iframe>
 </div>
 
 单个 Atom 的粒度太细(一条指令)。**TiledMMA** 把多个 Atom **平铺(tile)和交织(interleave)**,构造更大、可复制的微内核:
@@ -166,7 +166,7 @@ LayoutC_TV: ((_4,_8),(_2,_2)):((_32,_1),(_16,_8))
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-tiledmma-partition.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="TiledMMA 最小用法四步"></iframe>
+        loading="eager" title="TiledMMA 最小用法四步"></iframe>
 </div>
 
 ```cpp

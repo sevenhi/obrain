@@ -32,7 +32,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/cv-detection-core-difficulty.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="检测难在哪:输出数量不定、位置任意、大小悬殊"></iframe>
+        loading="eager" title="检测难在哪:输出数量不定、位置任意、大小悬殊"></iframe>
 </div>
 
 - 分类输出固定 K 维;检测输出是「不定长集合」(每张图 0~几百个物体)→ 必须设计「怎么把不定数量的预测对齐到不定数量的真值」。
@@ -52,7 +52,7 @@ date: 2026-10
 <div class="archify-figure">
 <iframe src="../../../diagrams/cv-faster-mask-rcnn.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Faster R-CNN 到 Mask R-CNN"></iframe>
+        loading="eager" title="Faster R-CNN 到 Mask R-CNN"></iframe>
 </div>
 
 **Mask R-CNN(arXiv:1703.06870)** 在 Faster R-CNN 上**并行**加一条掩码分支(不是串行——先框后掩码会伤精度),为每个实例输出像素级掩码;同框架还能直接扩展人体关键点。ResNet-101 下 mask AP 35.7、5fps,拿下当年 COCO 三项全冠。一个工程细节:掩码分支用 RoIAlign 替代 RoIPool 消除量化误差,这是掩码质量的关键(论文 §3)。
@@ -86,7 +86,7 @@ DETR(DEtection TRansformer)把检测视为**直接集合预测(set prediction)**
 <div class="archify-figure">
 <iframe src="../../../diagrams/cv-detr-set-prediction.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="DETR 用匈牙利匹配替掉 anchor 与 NMS"></iframe>
+        loading="eager" title="DETR 用匈牙利匹配替掉 anchor 与 NMS"></iframe>
 </div>
 
 官方 README:R50 骨干 **42.0 box AP(COCO val5k)**,与 Faster R-CNN 打平但 **FLOPs 减半、参数量相同**;推理只需 50 行 PyTorch。代价:训练收敛慢(500 epoch,是 Faster R-CNN 的十几倍),小目标弱(后续 Deformable DETR 缓解,本篇不展开)。掩码侧 DETR 还能统一做全景分割(R50 PQ 43.4,论文 Table 5 / 官方 panoptic 权重)。
@@ -100,7 +100,7 @@ SAM 回答的问题不是「这是什么类」而是「你指哪我割哪」。�
 <div class="archify-figure">
 <iframe src="../../../diagrams/cv-sam-three-parts.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="SAM 的三段式:重编码器跑一次,轻解码器交互多次"></iframe>
+        loading="eager" title="SAM 的三段式:重编码器跑一次,轻解码器交互多次"></iframe>
 </div>
 
 - **重图像编码器**:MAE 预训练的 **ViT-H**(632M 参数的 ViT,见 [ViT 基础篇](vision-transformer-basics.md)),对整图算一次 embedding——贵但可摊销;
@@ -148,7 +148,7 @@ masks, _, _ = predictor.predict(point_coords=pts, point_labels=lbls)  # 交互�
 <div class="archify-figure">
 <iframe src="../../../diagrams/cv-three-paradigms-inference.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="推理期三条路线的对齐流程"></iframe>
+        loading="eager" title="推理期三条路线的对齐流程"></iframe>
 </div>
 
 ```text

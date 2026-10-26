@@ -65,6 +65,14 @@ AIBrix 是 vLLM 生态里面向**生产集群**的控制面:它不替换 vLLM �
 
 ### 2.3 控制面架构
 
+> 下图把控制面架构拆成两条路径:流量路径(客户端→Gateway→vLLM Pod)与控制路径(Operator→Pod),回答「流量给谁、副本怎么管」两个问题。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-aibrix-controlplane.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="AIBrix 控制面:流量路径与控制路径分离"></iframe>
+</div>
+
 ```mermaid
 flowchart TB
     subgraph Client["客户端 / 业务方"]
@@ -153,6 +161,14 @@ spec:
 
 ### 3.2 GPU 感知扩缩容:`PodAutoscaler`
 
+> 下图是 PodAutoscaler 的扩缩容循环:为什么不用 CPU 而要直读 gpu_cache_usage_perc,以及缩容为什么要过 cooldown。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-aibrix-autoscale.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="PodAutoscaler 的 GPU 感知扩缩容循环"></iframe>
+</div>
+
 `samples/autoscaling/kpa.yaml`——不看 CPU,直接盯 `gpu_cache_usage_perc`:
 
 ```yaml
@@ -189,6 +205,14 @@ spec:
 
 ### 3.3 LoRA 多租户:`ModelAdapter`
 
+> 下图是 ModelAdapter 的生命周期:Pending → Scheduled → Running,以及 replicas 只允许省略或 1 这一约束落在哪一步。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-aibrix-lora-adapter.lifecycle.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="ModelAdapter 的 LoRA 分发生命周期"></iframe>
+</div>
+
 ```yaml
 apiVersion: model.aibrix.ai/v1alpha1
 kind: ModelAdapter
@@ -207,6 +231,14 @@ spec:
 生命周期:`Pending → (Scheduled) → Running / Failed`;`replicas` 只支持省略(全部匹配 Pod)或 `1`(单 Pod)。
 
 ### 3.4 PD 分离编排:`StormService`
+
+> 下图回答 StormService 如何把 prefill/decode 做成两个 role 并靠 NIXL 传输 KV——以及只配角色不配传输时退化成什么。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-aibrix-pd-storm.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="StormService 的 PD 分离编排"></iframe>
+</div>
 
 `samples/quickstart/pd-model.yaml` 把 prefill/decode 做成同一资源的两个 role,并带上 NIXL KV 传输:
 
@@ -249,6 +281,14 @@ PD 路由与传输语义的通用背景,见库内 [PD 分离清单](../practices
 ---
 
 ## 4. Gateway 路由算法速查
+
+> 下图是路由算法的选型思路:按「共享前缀/多轮」与「异构混部/负载不均」两个特征,把十余种算法归到各自适用场景。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-aibrix-routing-algo.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Gateway 路由算法选型"></iframe>
+</div>
 
 `pkg/plugins/gateway/algorithms/` 源码中的算法(节选):
 

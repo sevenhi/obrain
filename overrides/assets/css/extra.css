@@ -931,3 +931,79 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ============================================================
+   archify 交互图容器
+   ============================================================
+   height 由 overrides/main.html 里的脚本按图内真实内容逐张设定
+   (实测 232 张图 svg 高度从 121 到 2073px,固定 720px 会让一半
+   留白 300+px、另一半被截断)。这里的 560px 只是 JS 未生效前的
+   兜底值 --js-fit-height 标记出"已自适应"状态,便于排查。 */
+.archify-figure {
+  margin: 1.6rem 0 2rem;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.archify-figure iframe {
+  display: block;
+  width: 100%;
+  height: 560px;
+  border: 1px solid var(--m3-outline-variant);
+  border-radius: 14px;
+  background: var(--m3-surface-lowest);
+  transition: height 0.2s var(--m3-ease, ease);
+}
+
+.archify-figure iframe[data-fitted] {
+  transition: none;   /* 自适应后不要动画,否则页面高度抖动 */
+}
+
+/* 图上方那句引导文字:贴紧图,弱化但不隐形 */
+.md-typeset .archify-figure + p,
+.md-typeset blockquote + .archify-figure {
+  margin-top: 0.6rem;
+}
+
+/* 未完成自适应测量的图(用户快速跳转/锚点直达时,lazy iframe 可能尚未
+   进入视口)—— 加一道柔和的呼吸底色,提示"这里有一张图,滚近会加载",
+   避免读者误以为空白/损坏。图一旦测量完成(data-fitted=1)提示自动消失。 */
+.archify-figure iframe:not([data-fitted]) {
+  background-image: linear-gradient(
+    100deg,
+    var(--m3-surface-low) 30%,
+    var(--m3-surface) 50%,
+    var(--m3-surface-low) 70%
+  );
+  background-size: 200% 100%;
+  animation: ob-figure-loading 1.6s ease-in-out infinite;
+}
+
+@keyframes ob-figure-loading {
+  0%   { background-position: 150% 0; }
+  100% { background-position: -50% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archify-figure iframe:not([data-fitted]) { animation: none; }
+}
+
+/* 锚点跳转/scrollIntoView 时,固定 header(49px)会盖住目标标题的首行。
+   Material 默认 scroll-padding-top 是 auto(等于 0)。
+   这里留出 header 高度 + 一点呼吸空间。 */
+html {
+  scroll-padding-top: calc(var(--md-header-height, 49px) + 1.2rem);
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* 标题自身的 scroll-margin,覆盖 h1-h4 的锚点落位 */
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4 {
+  scroll-margin-top: calc(var(--md-header-height, 49px) + 1.2rem);
+}

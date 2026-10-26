@@ -79,7 +79,7 @@ date: 2026-09
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-build-decision.workflow.html"
         style="width:100%;height:660px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="构建路径怎么选:header-only 用 vs 构建示例"></iframe>
+        loading="eager" title="构建路径怎么选:header-only 用 vs 构建示例"></iframe>
 </div>
 
 ```bash
@@ -131,7 +131,7 @@ cmake .. -DCUTLASS_ENABLE_CUBLAS=OFF -DCUTLASS_ENABLE_CUDNN=OFF
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-arch-suffix.lifecycle.html"
         style="width:100%;height:520px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="少一个 a 后缀会发生什么:sm_90 vs sm_90a 的两种命运"></iframe>
+        loading="eager" title="少一个 a 后缀会发生什么:sm_90 vs sm_90a 的两种命运"></iframe>
 </div>
 
 CUTLASS 是 header-only,自己写 kernel 时**只需把 include 路径指对 + 开两个 flags**,不需要整个 CMake 工程:
@@ -164,7 +164,7 @@ nvcc -std=c++17 \
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-minimal-gemm-path.dataflow.html"
         style="width:100%;height:620px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="Minimal GEMM:五层 CuTe 抽象怎么展开成 6 条 PTX"></iframe>
+        loading="eager" title="Minimal GEMM:五层 CuTe 抽象怎么展开成 6 条 PTX"></iframe>
 </div>
 
 算子:单条 `SM80_16x8x8_F16F16F16F16_TN` mma 指令,算 16×8×8 的 `C = A*B`(或 `C = A*B + C`);一个 block、32 线程(1 warp)、无 SMEM、无分级 tiling。组件对应关系:
@@ -269,7 +269,7 @@ SASS(SM90)全程序仅 34 条,核心同样 6 条:`LDG.E`×3 → `HMMA.1688.F16` 
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-collective-builder.sequence.html"
         style="width:100%;height:640px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="CollectiveBuilder 的推导链:你给准则,它填模板"></iframe>
+        loading="eager" title="CollectiveBuilder 的推导链:你给准则,它填模板"></iframe>
 </div>
 
 CUTLASS 3.x 推荐 `CollectiveBuilder`——**给出高层准则,底层参数自动推导**,避免手拼一堆模板。下面是根据示例 49 源码整理的**真实签名骨架**(`CollectiveBuilder` 的第二个实参是算符类别 `OpClassTensorOp`,不是 DispatchPolicy——后者是 builder 的**推导产物**,这正是"自动推导"的体现):
@@ -368,7 +368,7 @@ make cutlass_profiler -j16
 <div class="archify-figure">
 <iframe src="../../../diagrams/cl-build-pitfalls.tree.html"
         style="width:100%;height:520px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="CUTLASS 4.8.1 已知问题:三类「不报错但算错数」的坑"></iframe>
+        loading="eager" title="CUTLASS 4.8.1 已知问题:三类「不报错但算错数」的坑"></iframe>
 </div>
 
 v4.8.1(2026-10-15 记入 CHANGELOG,2026-10-20 打 tag;相对 v4.8.0 只有 2 个 commit、16 个文件,属**补丁版**)在 release note 里明确列了三类"会算错数"的坑,都是**编译器/指令级**的,不会在 API 层报错:

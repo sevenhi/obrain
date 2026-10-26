@@ -61,6 +61,14 @@ vLLM-Omni **不是另起炉灶的推理引擎**,而是「vLLM + 全模态 stage 
 
 ### 3.1 架构图(mermaid)
 
+> 下图是 stage 流水线的线性视角:入口 → Orchestrator → Thinker/Talker/Code2Wav 三阶段,级间 payload/KV 经 OmniConnector 直传。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-omni-stage-pipeline.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="vLLM-Omni 的 stage 流水线"></iframe>
+</div>
+
 ```mermaid
 flowchart TB
     subgraph Client["客户端"]
@@ -106,6 +114,14 @@ flowchart TB
 
 ### 3.2 一条 Qwen3-Omni 请求的时序(异步 chunk)
 
+> 下图是 Qwen3-Omni 异步 chunk 的时序:Talker/Code2Wav 在 Thinker 还在解码时就消费已到 chunk,级间重叠把 TTFP 压下来。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-omni-qwen3-async.sequence.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Qwen3-Omni 一次请求的异步 chunk 时序"></iframe>
+</div>
+
 ```mermaid
 sequenceDiagram
     participant C as Client
@@ -128,6 +144,14 @@ sequenceDiagram
 **要点**:async chunk 的价值是**级间重叠**——Talker/Code2Wav 在 Thinker 还在解码时就消费已到的 chunk,把「首包音频时间 TTFP」压下来;同步路径(`async_chunk: false`)则等上游完成再启动下游,吞吐实现更简单但交互延迟差。
 
 ### 3.3 层次关系(继承链)
+
+> 下图是继承链:双工层如何叠在轮次栈之上、只扩展不反向依赖,回答「双工为什么不污染 turn-based 路径」。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-omni-inheritance.tree.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="双工叠在轮次栈之上的继承链"></iframe>
+</div>
 
 `docs/design/fullduplex.md` 给出清晰的「双工叠在轮次栈之上、永不反向依赖」:
 
@@ -154,6 +178,14 @@ Orchestrator → Orchestrator(turn admission) → DuplexOrchestrator(+ SessionMa
 
 ### 4.2 解法:会话归引擎所有(engine-owned)
 
+> 下图是 engine-owned session 的结构:同一份会话暴露给三类消费者,身份/账本/租约/绑定由 DuplexSessionRunner 统一持有。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-omni-fullduplex-session.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="engine-owned session:会话归引擎所有"></iframe>
+</div>
+
 `DuplexOrchestrator` 内的 **DuplexSessionManager** 管准入/背压/租约回收,每个 **DuplexSessionRunner** 持有一份 `DuplexEngineSession`(唯一状态所有者)。同一份会话暴露给三类消费者:
 
 1. OpenAI Realtime WebSocket 路由(`/v1/realtime?duplex=1`);
@@ -179,6 +211,14 @@ omni.close_session(...)
 ---
 
 ## 5. AR/DiT 统一 paged KV 与跨阶段传输
+
+> 下图是跨阶段传输的三种 connector:共享内存同节点手递手、Mooncake AR→DiT KV handoff、NIXL 跨节点 READ,货物不落地序列化。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-omni-kv-transfer.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="跨阶段 KV/payload 传输:三种 connector"></iframe>
+</div>
 
 ### 5.1 两套「分页 KV」不是一回事
 

@@ -29,7 +29,7 @@ vLLM 的量化是"**一条分派链 + 三个决策点**":用户/checkpoint 声�
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-quant-dispatch-chain.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="vLLM 量化分派链:从 config.json 到 kernel 的六步"></iframe>
+        loading="eager" title="vLLM 量化分派链:从 config.json 到 kernel 的六步"></iframe>
 </div>
 
 ```
@@ -102,7 +102,7 @@ def get_quantization_config(quantization):
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-quant-by-layer.architecture.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="一个 Config 管三类层:get_quant_method() 的三路分派"></iframe>
+        loading="eager" title="一个 Config 管三类层:get_quant_method() 的三路分派"></iframe>
 </div>
 
 
@@ -123,7 +123,7 @@ def get_quantization_config(quantization):
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-int4-packing.dataflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="int4 权重怎么塞进 int32:GPTQ 与 AWQ 的打包链"></iframe>
+        loading="eager" title="int4 权重怎么塞进 int32:GPTQ 与 AWQ 的打包链"></iframe>
 </div>
 
 ### 4.1 GPTQ — 注册 + 打包 + 降级
@@ -148,7 +148,7 @@ def get_quantization_config(quantization):
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-awq-batch-heuristic.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="AWQ 的性能分水岭:numel() ≥ 256 就换内核"></iframe>
+        loading="eager" title="AWQ 的性能分水岭:numel() ≥ 256 就换内核"></iframe>
 </div>
 
 
@@ -185,7 +185,7 @@ FP16_MATMUL_HEURISTIC_CONDITION = x.shape[:-1].numel() >= 256   # auto_awq.py:92
 <div class="archify-figure">
 <iframe src="../../../diagrams/vm-fp8-quantkey.workflow.html"
         style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
-        loading="lazy" title="FP8 的三层降级:量化粒度 → 激活策略 → 硬件兜底"></iframe>
+        loading="eager" title="FP8 的三层降级:量化粒度 → 激活策略 → 硬件兜底"></iframe>
 </div>
 
 - **块量化**(DeepSeek:权重 128×128;激活动态 per-token-group)→ `kFp8Static128BlockSym` + `kFp8Dynamic128Sym`,且 **`assert not act_q_static`(块量化强制动态激活)**;scale 参数名**特意用 `weight_scale_inv`**(`:348-349`,注释明确 "intentional for deepseekv3")。

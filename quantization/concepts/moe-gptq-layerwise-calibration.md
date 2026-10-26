@@ -24,6 +24,17 @@ date: 2026-10
 
 ## 1. 为什么"逐专家 Hessian"不是可选优化
 
+> 下图回答「旧实现为什么跳过 MoE 专家、修复后怎么做到 bit-exact 等价 dense」:3-D 权重 + per-expert 量化器被 is_quantized_linear 挡掉,修复为逐专家建 GPTQHelper 并靠 input quantizer hook 分桶。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-moe-gptq-per-expert-hessian.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="逐专家 Hessian 的修复机制"></iframe>
+</div>
+
+
+
 GPTQ 的每一步都围绕 Hessian `H = 2·XᵀX`(输入激活的二阶矩,`in_features × in_features`)展开:量化第 q 列时按 `[H⁻¹]_qq` 判定该列多敏感,并把误差沿 `[H⁻¹]_:,q` 摊到还没量化的列上。**没有 H,GPTQ 就退化成 RTN。**
 
 而 HF 新式 MoE 的权重布局是两个 3-D 参数:
@@ -46,6 +57,17 @@ mlp.down_proj             # [num_experts, hidden, intermediate]
 
 ## 2. 内存公式:一层 MoE 的 Hessian 有多大(可自己算)
 
+> 下图把 Hessian 大小的计算链画成数据流(dim → 每投影 → 每专家 → 每层 → 整模型),回答「一层 MoE 的 Hessian 为什么能到 13–23 GiB、整模型 638–945 GiB」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-moe-gptq-memory-formula.dataflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="一层 MoE 的 Hessian 有多大"></iframe>
+</div>
+
+
+
 每个专家的每个投影贡献一个 `in_features² × 4 B` 的 fp32 Hessian。所以一层的专家 Hessian ≈ `num_experts × Σ_proj 4·in²`,整模型再乘层数:
 
 | 模型(PR #2840 口径) | 每专家 | 每 MoE 层 | 整模型 |
@@ -56,6 +78,17 @@ mlp.down_proj             # [num_experts, hidden, intermediate]
 复算校验:512×27.9 MB = 13.3 GiB ✓;288×83.9 MB = 22.5 GiB ✓;26.2 MB 也正好是 PR #2864 里"每次 hook 调用拷 26 MB 到主机"的那个矩阵。**结论**:638–945 GiB 的 Hessian 不可能和 BF16 权重一起常驻——这就是为什么 IQ 系列 recipe 默认开 `layerwise`,也是 `gptq()` 在分配前先报大小、超了就警告的原因。
 
 ## 3. 逐层校准:一次 loop interchange 换来"一层驻留"
+
+> 下图把常规校准与逐层校准的循环结构画成对照,回答「一次 loop interchange 怎么把整模型驻留降成一层驻留、为什么边界激活才 ~2 GiB」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-moe-gptq-layerwise-loop.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="逐层校准的 loop interchange"></iframe>
+</div>
+
+
 
 公告把机制说得很干净——不是新算法,是**把数据在外、深度在内的循环换成深度在外、数据在内**:
 
@@ -105,6 +138,17 @@ for layer in model.layers:
 - 逐层导出会把内存里的模型留在 export 形态,所以 `hf_ptq.py` 自动替你加 `--skip_generate`。
 
 ## 4. 三处"白等":逐层 GPTQ 慢的真正原因
+
+> 下图把三处白等(没人用的前向 / Hessian 被赶到 CPU / batch=1)与各自修复一一对应,回答「权重更新只占 9 s、整层却要 25 min 的时间去了哪」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-moe-gptq-three-waits.workflow.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="三处白等与修复"></iframe>
+</div>
+
+
 
 原始症状很反直觉:一个 Qwen 形状的层,**GPTQ 的权重更新只占 9 s**,而整层 GPTQ 要 ~25 min。时间全在**前向**上,PR #2864 拆出三个各自独立的原因:
 
@@ -194,6 +238,17 @@ batch 16 vs batch 1 的 KL 没有直接对照(那批 batch-1 运行反复被抢�
 #2945 给出的替换措辞(可直接对照当前线上公告的差异):`input_scale` 变动是因为**不同的 batch 形状让激活的规约/取整路径不同**("a different batch shape rounds the activations differently"),并明确补一句 **"Padding does not change: `hf_ptq.py` pads every calibration sample to the same length whatever the batch size."**
 
 ### 5.1 逐层 batch 默认值的三段演进(版本敏感,必须钉死)
+
+> 下图把同一行代码在三个版本里的三种语义画成树,回答「逐层 batch 默认值为什么是『默认值会咬人』的教科书案例」。
+
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-moe-gptq-batch-evolution.tree.html"
+        style="width:100%;height:720px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="逐层 batch 默认值三段演进"></iframe>
+</div>
+
+
 
 同一行代码在三个版本里有三种语义,这是"默认值会咬人"的教科书案例:
 

@@ -5,7 +5,7 @@ tags: [vllm, continuous-batching, scheduler, decode, prefill, chunked-prefill, t
 source:
   - "pdf: PagedAttention 论文 (SOSP 2023) | arXiv:2309.06180 — Figure 3 吞吐对比 (Orca 等 baseline, 2-4x)"
   - "web: vLLM Blog — Easy, Fast, and Cheap LLM Serving with PagedAttention | https://vllm-project.github.io/2023/06/20/vllm.html"
-  - "code: vLLM V1 源码(commit b74ac0bc6) 一手实读 (经 notes 提炼,notes 已删,以源码 commit 为准)"
+  - "code: vLLM V1 源码一手实读 | https://github.com/vllm-project/vllm/tree/b74ac0bc6 | (经 notes 提炼,notes 已删,以源码 commit 为准)"
   - "web: 学习笔记:LLM大模型推理优化-Chunk Pre-fill | https://mp.weixin.qq.com/s/6YUgjMfWYdvryRP-gzppMQ (微信文章)"
   - "web: vLLM Optimization 文档(Chunked Prefill 节) | https://docs.vllm.ai/en/latest/configuration/optimization/"
   - "web: vLLM V1 Guide(Chunked Prefill V1/V0 差异) | https://docs.vllm.ai/en/latest/usage/v1_guide/"

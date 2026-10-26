@@ -5,8 +5,8 @@ tags: [deepseek, harness, node, node-api, napi, v8, addon, native, electron, int
 date: 2026-10-12
 source:
   - "code: dsh-node-addon-require-builtin 源码 | https://github.com/deepseek-ai/dsh-node-addon-require-builtin | master@a58d3599(0.1.9), 2026-10-12 | ↑primary"
-  - "web: node_addon_require_builtin 主 README | 同上 | 2026-10-12"
-  - "web: docs/architecture.md | 同上 | 2026-10-12"
+  - "web: node_addon_require_builtin 主 README | https://github.com/deepseek-ai/dsh-node-addon-require-builtin#readme | 2026-10-12"
+  - "web: docs/architecture.md | https://github.com/deepseek-ai/dsh-node-addon-require-builtin/blob/master/docs/architecture.md | 2026-10-12"
 ---
 
 # dsh-node-addon-require-builtin — 不亮 `--expose-internals` 拿到 Node 私有 `requireBuiltin` 的原生插件

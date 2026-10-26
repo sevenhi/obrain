@@ -3,8 +3,8 @@ title: GPU 随机数生成:counter-based(Philox)与 F2-linear(MTGP)两条路
 type: concept
 tags: [gpu, rng, prng, philox, mtgp, curand, counter-based, monte-carlo, cuda]
 source:
-  - "pdf: Parallel Random Numbers: As Easy as 1, 2, 3 (Salmon/Moraes/Dror/Shaw, SC11 Best Paper) | DOI 10.1145/2063384.2063405 | Parallel Random Numbers: As Easy as 1, 2, 3.pdf (primary, counter-based)"
-  - "pdf: Variants of Mersenne Twister Suitable for Graphic Processors (Saito/Matsumoto) | arXiv:1005.4973 | Variants of Mersenne Twister Suitable for Graphic Processors.pdf (primary, MTGP)"
+  - "pdf: Parallel Random Numbers: As Easy as 1, 2, 3 (Salmon/Moraes/Dror/Shaw, SC11 Best Paper) | https://www.thesalmons.org/john/random123/papers/random123sc11.pdf | ACM DL 版 DOI 10.1145/2063384.2063405(需订阅) (primary, counter-based)"
+  - "pdf: Variants of Mersenne Twister Suitable for Graphic Processors (Saito/Matsumoto) | https://arxiv.org/abs/1005.4973 | (primary, MTGP)"
   - "web: Random123 官方站(DEShawResearch) | https://www.thesalmons.org/john/random123/"
   - "web: MTGP 官方站(広島大 松本实验室) | https://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/MTGP/"
   - "web: cuRAND Host API / Device API Overview (CUDA Toolkit 文档) | https://docs.nvidia.com/cuda/curand/host-api-overview.html ; https://docs.nvidia.com/cuda/curand/device-api-overview.html"

@@ -3,7 +3,7 @@ title: vLLM 采样与惩罚机制:从 OpenAI 参数到 GPU kernel 的闭环
 type: concept
 tags: [vllm, sampling, penalties, repetition-penalty, top-k, top-p, openai-api, sampler]
 source:
-  - "code: vLLM V1 源码 (commit b74ac0bc6, v0.28.1rc0-40) | vllm/v1/sample/ + vllm/sampling_params.py + entrypoints/openai/chat_completion/protocol.py 一手实读 (经 notes 提炼)"
+  - "code: vLLM V1 源码一手实读 (v0.28.1rc0-40) | https://github.com/vllm-project/vllm/tree/b74ac0bc6 | vllm/v1/sample/ + vllm/sampling_params.py + entrypoints/openai/chat_completion/protocol.py (经 notes 提炼)"
   - "web: vLLM docs — SamplingParams | https://docs.vllm.ai/en/latest/api/vllm/sampling_params/"
   - "web: OpenAI API Reference — Create chat completion (penalty 参数语义) | https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create/"
 date: 2026-09

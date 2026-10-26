@@ -71,15 +71,20 @@ date: 2026-09
 - Semantic Router — https://github.com/vllm-project/semantic-router | arXiv:2510.08731 / arXiv:2510.26835
 - AIBrix — https://github.com/vllm-project/aibrix | arXiv:2504.03648
 - Production Stack — https://github.com/vllm-project/production-stack
+- LMCache(production-stack KV cache offload 后端)— https://github.com/LMCache/LMCache
 - vLLM Router — https://github.com/vllm-project/router
 - LLM Compressor — https://github.com/vllm-project/llm-compressor
 - compressed-tensors — https://github.com/vllm-project/compressed-tensors
 - Speculators — https://github.com/vllm-project/speculators
 - DeepSpec(deepseek-ai 草稿模型训练/评测全栈,speculators 篇对照源)— https://github.com/deepseek-ai/DeepSpec | arXiv:2607.05147
 - Vime — https://github.com/vllm-project/vime
+- slime(THUDM,Vime 的上游训练栈)— https://github.com/THUDM/slime
 - GuideLLM — https://github.com/vllm-project/guidellm
+- vllm-bench(压测工具,已并入主线 rust/src/bench)— https://github.com/vllm-project/vllm-bench
+- perf-eval(YAML recipe 驱动的 CI 精度+性能评测)— https://github.com/vllm-project/perf-eval
 - recipes — https://github.com/vllm-project/recipes
 - vllm-ascend — https://github.com/vllm-project/vllm-ascend
 - vllm-metal — https://github.com/vllm-project/vllm-metal
 - vllm-gaudi / vllm-neuron / tpu-inference / vllm-xpu-kernels / vllm-openvino — https://github.com/vllm-project
-- agentic-api / humming / afd-plugin / dllm-plugin / gguf-plugin / bnb-plugin — https://github.com/vllm-project
+- agentic-api / humming / dllm-plugin / gguf-plugin / bnb-plugin — https://github.com/vllm-project
+- afd-plugin(注意力后端插件示例,hardware-plugins 篇一手实读)— https://github.com/vllm-project/afd-plugin

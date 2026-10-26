@@ -3,7 +3,7 @@ title: OREPA — 在线卷积重参数化(训练期即合并)
 type: concept
 tags: [reparameterization, cnn, repvgg, dbb, training-efficiency, orepa]
 source:
-  - "pdf: OREPA 论文全文 | arXiv:2204.00826 CVPR 2022 (浙大 + 阿里云) | Online Convolutional Re-parameterization.pdf ↑primary"
+  - "pdf: OREPA 论文全文 | https://arxiv.org/abs/2204.00826 | CVPR 2022 (浙大 + 阿里云) ↑primary"
   - "web: OREPA 官方 PyTorch 实现 | https://github.com/JUGGHM/OREPA_CVPR2022 (抓取 2026-09-21)"
   - "web: RepVGG(重参数化前驱,VGG 式训练多分支/推理单 3×3) | arXiv:2101.03697 CVPR 2021 (抓取 2026-09-21)"
   - "web: DBB/Diverse Branch Block(重参数化前驱,Inception 式多分支) | arXiv:2103.13425 CVPR 2021 (抓取 2026-09-21)"

@@ -3,7 +3,7 @@ title: vLLM API Server 与 OpenAI 兼容层:薄路由 + 状态注入 + 条件化
 type: concept
 tags: [vllm, api-server, openai-compatible, fastapi, sse, entrypoints, serving, async-engine]
 source:
-  - "code: vLLM V1 源码 (commit b74ac0bc6, v0.28.1rc0-40) | vllm/entrypoints/ + vllm/v1/engine/async_llm.py 一手实读 (经 notes 提炼)"
+  - "code: vLLM V1 源码一手实读 (v0.28.1rc0-40) | https://github.com/vllm-project/vllm/tree/b74ac0bc6 | vllm/entrypoints/ + vllm/v1/engine/async_llm.py (经 notes 提炼)"
   - "web: vLLM docs — OpenAI-Compatible Server | https://docs.vllm.ai/en/stable/serving/online_serving/openai_compatible_server/"
   - "web: vLLM PR #52131 [Frontend] Move api_server.py out of openai folder | https://github.com/vllm-project/vllm/pull/52131"
   - "web: vLLM PR #52309 [Frontend] Consolidate entrypoint middleware | https://github.com/vllm-project/vllm/pull/52309"

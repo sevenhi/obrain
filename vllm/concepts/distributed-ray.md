@@ -3,7 +3,7 @@ title: vLLM 分布式执行与 Ray 集成:从 Executor 到通信组
 type: concept
 tags: [vllm, distributed, ray, executor, tp, pp, parallel-state, ncl]
 source:
-  - "code: vLLM V1 源码 (commit b74ac0bc6, v0.28.1rc0-40) | vllm/v1/executor/ + vllm/distributed/ 一手实读 (经 notes 提炼)"
+  - "code: vLLM V1 源码一手实读 (v0.28.1rc0-40) | https://github.com/vllm-project/vllm/tree/b74ac0bc6 | vllm/v1/executor/ + vllm/distributed/ (经 notes 提炼)"
   - "web: vLLM docs — Parallelism and Scaling | https://docs.vllm.ai/en/latest/serving/parallelism_scaling/"
 date: 2026-09
 ---

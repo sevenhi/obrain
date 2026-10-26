@@ -6,7 +6,7 @@ source:
   - "pdf: Efficient Memory Management for LLM Serving with PagedAttention | Kwon et al. 2023 | arXiv:2309.06180 (SOSP 2023)"
   - "web: vLLM Blog — Easy, Fast, and Cheap LLM Serving with PagedAttention | https://vllm-project.github.io/2023/06/20/vllm.html"
   - "web: zeroentropy.dev — PagedAttention: vLLM's OS-style KV cache memory manager | https://zeroentropy.dev/concepts/paged-attention/"
-  - "code: vLLM V1 源码(commit b74ac0bc6) 一手实读 (经 notes 提炼,notes 已删,以源码 commit 为准)"
+  - "code: vLLM V1 源码一手实读 | https://github.com/vllm-project/vllm/tree/b74ac0bc6 | (经 notes 提炼,notes 已删,以源码 commit 为准)"
 date: 2026-09
 ---
 

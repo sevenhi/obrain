@@ -3,7 +3,7 @@ title: vLLM 量化:GPTQ / AWQ / FP8 的注册、分派与内核集成
 type: concept
 tags: [vllm, quantization, gptq, awq, fp8, moe, kv-cache, model-executor]
 source:
-  - "code: vLLM V1 源码 (commit b74ac0bc6, v0.28.1rc0-40) | vllm/model_executor/layers/quantization/ 一手实读 (经 notes 提炼)"
+  - "code: vLLM V1 源码一手实读 (v0.28.1rc0-40) | https://github.com/vllm-project/vllm/tree/b74ac0bc6 | vllm/model_executor/layers/quantization/ (经 notes 提炼)"
   - "web: vLLM docs — Quantization | https://docs.vllm.ai/en/latest/features/quantization/"
 date: 2026-09
 ---

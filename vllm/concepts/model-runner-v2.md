@@ -3,9 +3,9 @@ title: Model Runner V2(MRV2):vLLM 执行层的重设计——持久 batch 解耦
 type: concept
 tags: [vllm, model-runner, mrv2, persistent-batch, async-scheduling, cuda-graph, uva, triton, sampling, gumbel, speculative-decoding, kv-cache]
 source:
-  - "code: vLLM 源码一手实读 (main v0.32.1rc0-353-g2d40c0609, 2026-10-22) | vllm/config/vllm.py(use_v2_model_runner 判定)、vllm/v1/worker/gpu_worker.py、vllm/v1/worker/gpu/{model_runner.py, states.py, buffer_utils.py, cudagraph_utils.py, input_batch.py, sample/gumbel.py, sample/logprob.py}"
+  - "code: vLLM 源码一手实读 (main @2d40c0609, 2026-10-22 抓取) | https://github.com/vllm-project/vllm/tree/2d40c0609 | vllm/config/vllm.py(use_v2_model_runner 判定)、vllm/v1/worker/gpu_worker.py、vllm/v1/worker/gpu/{model_runner.py, states.py, buffer_utils.py, cudagraph_utils.py, input_batch.py, sample/gumbel.py, sample/logprob.py}"
   - "web: vLLM Model Runner V2 Design Document | https://docs.vllm.ai/en/latest/design/model_runner_v2/ | 2026-10-23 实抓(与仓库 docs/design/model_runner_v2.md 逐字一致,206 行)"
-  - "code: vLLM 文档源文件 | docs/design/model_runner_v2.md,首次提交 #35819(2026-03-02)"
+  - "code: vLLM 文档源文件 docs/design/model_runner_v2.md | https://github.com/vllm-project/vllm/blob/main/docs/design/model_runner_v2.md | 首次提交 PR https://github.com/vllm-project/vllm/pull/35819 (2026-03-02)"
   - "web: vLLM 官方文档首页 | https://docs.vllm.ai/en/latest/ | 2026-10-23 实测 200"
 date: 2026-10
 ---

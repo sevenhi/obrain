@@ -3,7 +3,7 @@ title: CCNN — 连续卷积核:一个 CNN 通吃任意长度/分辨率/维度
 type: concept
 tags: [cnn, continuous-convolution, long-range-dependency, kernel-generator, implicit-representation, s4]
 source:
-  - "pdf: CCNN workshop 论文全文 | arXiv:2206.03398 ICML 2022 Workshop on Continuous Time Methods (Romero, Knigge, Gu et al.) | Towards a General Purpose CNN for Long Range Dependencies in ND.pdf ↑primary"
+  - "pdf: CCNN workshop 论文全文 | https://arxiv.org/abs/2206.03398 | ICML 2022 Workshop on Continuous Time Methods (Romero, Knigge, Gu et al.),正式版见 arXiv:2301.10540 ↑primary"
   - "web: CCNN 正式版论文 | arXiv:2301.10540 ICLR 2023 (Modelling Long Range Dependencies in ND) (抓取 2026-09-21)"
   - "web: CCNN 官方 PyTorch 实现 | https://github.com/david-knigge/ccnn (抓取 2026-09-21)"
   - "web: FlexConv(前驱,可微 kernel 大小) | arXiv:2110.08059 ICLR 2022 (抓取 2026-09-21)"

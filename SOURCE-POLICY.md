@@ -25,6 +25,10 @@ date: 2026-09
 | `wiki` | 页面标题 + 稳定页面 URL | `wiki: 某某页面 | https://wiki.example.org/...` |
 | `code` | 仓库/项目 URL + 文件路径 | `code: TF BFCAllocator | https://github.com/tensorflow/tensorflow/...` |
 | `technote` | 标题 + 可访问 URL | `technote: 某某设计文档 | https://...` |
+| `paper` | 论文(arXiv/期刊均可,与 pdf 混用) | `paper: DeepSeek-V3 | https://arxiv.org/abs/2412.19437` |
+| `arXiv` | arXiv 预印本专指 | `arXiv: DeepSeek-OCR | https://arxiv.org/abs/2510.15266` |
+
+> 登记说明(2026-10 补):早期 8 篇条目已大量使用 `paper:`(20 条)/`arXiv:`(8 条)前缀,按「登记例外、不回改」原则收录进本表。新写条目两者皆可用;与 `pdf:` 的差异:`pdf:` 强调载体是 PDF 文件(含 arXiv PDF 里的章节定位),`paper:`/`arXiv:` 只做文献身份登记。
 
 标识符的意义:同一类型资料可能多次出现(不同版本、不同发布页面),稳定标识符和原始 URL 让不同设备、不同时间都能重新定位来源。不要在 source 中写本机绝对路径、家目录路径、挂载点、文件名或“本地副本”字段。
 

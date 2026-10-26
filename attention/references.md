@@ -34,6 +34,8 @@ date: 2026-09
 - StreamingLLM 项目页(MIT Han Lab)— https://hanlab.mit.edu/projects/streamingllm
 - StreamingLLM 代码 — https://github.com/mit-han-lab/streaming-llm
 - SpAtten 代码(SpinalHDL RTL + PyTorch 算法)— https://github.com/mit-han-lab/spatten
+- Rabe & Staats 官方 JAX 实现(FA1 前驱,memory_efficient_attention 目录,含 colab 复现)— https://github.com/google-research/google-research/tree/master/memory_efficient_attention
+- Rabe & Staats PyTorch 复现(lucidrains)— https://github.com/lucidrains/memory-efficient-attention-pytorch
 - FlashAttention 官方实现仓库(含 FA1/FA2 kernel 与 `benchmarks/`)— https://github.com/Dao-AILab/flash-attention
 - MEGABYTE 官方仓库已失效(github.com/facebookresearch/megabyte → 404,2026-09-21 实测);第三方参考实现 — https://github.com/lucidrains/MEGABYTE-pytorch
 - Transformer 官方原始代码(tensor2tensor,已归档,后继 Trax)— https://github.com/tensorflow/tensor2tensor

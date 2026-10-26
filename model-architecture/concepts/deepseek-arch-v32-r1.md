@@ -5,7 +5,7 @@ tags: [deepseek, v3.2, dsa, sparse-attention, lightning-indexer, mla, moe, r1, r
 series: deepseek-model-evolution
 source:
   - "code: inference/model.py(v32_model.py)| https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/tree/main/inference"
-  - "paper: DeepSeek-V3.2-Exp(DeepSeek_V3_2.pdf)| https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/blob/main/DeepSeek_V3_2.pdf"
+  - "paper: DeepSeek-V3.2-Exp 技术报告 | https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/blob/main/DeepSeek_V3_2.pdf"
   - "paper: DeepSeek-V3.2(arXiv:2512.02556)| https://arxiv.org/abs/2512.02556"
   - "paper: DeepSeek-V3(arXiv:2412.19437)| https://arxiv.org/abs/2412.19437"
   - "paper: DeepSeek-R1(arXiv:2501.12948)| https://arxiv.org/abs/2501.12948"

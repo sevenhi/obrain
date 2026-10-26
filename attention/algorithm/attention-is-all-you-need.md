@@ -36,11 +36,29 @@ Transformer(原论文《Attention Is All You Need》,Vaswani et al., NIPS 2017)�
 
 ### 1.2 缩放点积注意力:为什么要除 √d_k
 
+> 下图把缩放点积注意力的一次前向拆成「打分 → 缩放 → 归一化 → 加权」四步,并说明 √d_k 缩放为什么不可省:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-aiayn-scaled-dot.dataflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="缩放点积注意力:打分到加权的四步链"></iframe>
+</div>
+
+
 Attention(Q,K,V) = softmax(QKᵀ/√d_k)V。Q 是"我要找什么",K 是"我是什么",V 是"我携带的信息";点积算 query 与每个 key 的兼容度,softmax 归一成权重,对 V 加权求和。
 
 **缩放因子 √d_k 的推导**(原论文脚注 4):设 q、k 分量独立、均值 0 方差 1,则 q·k = Σqᵢkᵢ 的方差是 d_k。d_k 大时点积量级 ~√d_k,把 softmax 推进饱和区(梯度极小)。**除以 √d_k 把方差拉回 1**,保住梯度。对比 additive attention(前馈网络算兼容度):理论复杂度相近,但点积可以直接用高度优化的 matmul 库实现,**实践中快得多、省内存得多**——这是工程选择压倒理论优雅的经典案例。d_k 小时两者性能相当,d_k 大时不缩放的点积反而输给 additive(饱和),缩放是补丁。
 
 ### 1.3 多头:为什么要 h 份 64 维而不是 1 份 512 维
+
+> 下图对比单头加权平均与多头并行拆分:为什么要 h 份低维投影各自 attend,而不是 1 份全维度:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-aiayn-multihead.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="多头注意力:h 份低维投影并行"></iframe>
+</div>
+
 
 单头 attention 的输出是 value 的**加权平均**——平均会抹掉信息,模型只能表达"一种"关注模式。多头把 Q/K/V 用 h 组不同的学习投影各自降到 d_k=d_v=d_model/h 维,并行做 h 次 attention,拼接后再过 Wᴼ 投影:
 
@@ -59,6 +77,15 @@ PE(pos,2i) = sin(pos/10000^(2i/d_model)),PE(pos,2i+1) = cos(pos/10000^(2i/d_mode
 波长构成 2π → 10000·2π 的几何级数。**选择理由**:对任意固定偏移 k,PE_{pos+k} 可表示为 PE_pos 的线性函数 → 模型容易学会"按相对位置 attend"。消融(Table 3 行 E):learned positional embedding 与正弦几乎同分(dev BLEU 25.7 vs 25.8),选正弦是因为**理论上可外推到比训练更长的序列**(后续 RoPE/ALiBi 的相对位置编码路线取代了它,见 [llm-architecture](../../model-architecture/concepts/llm-architecture.md) 篇)。
 
 ### 1.5 整体结构:encoder-decoder + 三种 attention 用法
+
+> 下图把三种 attention 用法与因果掩码并排:encoder 全双向、decoder 因果掩码、cross-attention 查源端全序列:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-aiayn-mask.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="三种 attention 用法与因果掩码"></iframe>
+</div>
+
 
 - **Encoder**:N=6 层,每层两个子层(多头 self-attention → position-wise FFN),每个子层套残差 + LayerNorm:`LayerNorm(x + Sublayer(x))`(post-norm;LLaMA 时代改为 pre-norm + RMSNorm)。全模型子层与 embedding 统一输出 d_model=512,残差才能直通。
 - **Decoder**:N=6 层,比 encoder 多第三个子层——对 encoder 输出做 cross-attention(Q 来自 decoder 前一层,K/V 来自 encoder)。decoder self-attention 加**因果掩码**(非法连接置 −∞ 再 softmax),配合输出 embedding 右移一位,保证位置 i 的预测只依赖 <i 的已知输出(autoregressive 性质)。

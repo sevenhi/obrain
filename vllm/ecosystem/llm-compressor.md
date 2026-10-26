@@ -34,6 +34,14 @@ LLM Compressor 属于「训练之后、推理之前」的中间层。与库内�
 
 ### 2.1 Modifier：算法原语
 
+下图把「Modifier = 算法原语、Recipe = 算法编排、Pipeline = 校准数据怎么流」三者关系画出来：Recipe 是 Modifier 的有序列表，Pipeline 决定校准数据以什么粒度穿过模型。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-llmc-three-abstractions.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="三大抽象：Modifier / Recipe / Pipeline"></iframe>
+</div>
+
 `Modifier` 是「对模型做一次状态改变」的算法单元。库内 `src/llmcompressor/modifiers/README.md` 把它们分成三类：
 
 | 类别 | 代表 | 是否需要校准数据 | 作用 |
@@ -70,6 +78,14 @@ Pipeline 决定校准 batch 如何穿过模型、Modifier 在哪些 hook 点收�
 - **data_free / independent**：无校准或层间独立的特殊路径。
 
 选错 Pipeline 通常表现为显存爆掉或校准统计错误，而不是报错——这是最隐蔽的一类坑。
+
+下图是 Pipeline 与 Modifier 的匹配关系：GPTQ/SparseGPT 走 sequential、SmoothQuant/FP8 RTN 走 basic、纯权重量化走 data_free，以及每种「选错」的后果。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-llmc-pipeline-match.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Pipeline 与 Modifier 的匹配"></iframe>
+</div>
 
 Pipeline 与算法的匹配关系：
 
@@ -121,6 +137,14 @@ flowchart TB
 ```
 
 对应 `entrypoints/oneshot.py` 的三阶段生命周期：**Preprocessing**（模型与 tokenizer 初始化、embedding untie）→ **Model optimization**（Recipe 驱动的校准与压缩）→ **Postprocessing**（保存）。
+
+下图是 oneshot 的三阶段生命周期：Preprocessing → Model optimization → Postprocessing，以及最隐蔽的失败分支——选错 Pipeline 导致的 OOM/统计错误。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-llmc-oneshot-lifecycle.lifecycle.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="oneshot 三阶段生命周期"></iframe>
+</div>
 
 ## 4. 真实 Recipe 示例
 
@@ -212,6 +236,14 @@ Y = (X · diag(s)^{-1}) · (diag(s) · W)  ≈  X̂ · Ŵ
 
 **LLM Compressor 是「怎么压」，compressed-tensors 是「压完怎么存」**。二者是上下游，不是可选替代：
 
+下图是「压完怎么存」这条链路：llmcompressor 与 AutoAWQ/ModelOpt 都收敛到 compressed-tensors 统一格式，再由 vLLM/SGLang 按 quantization_config 分派 kernel。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-llmc-ct-save.dataflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="compressed-tensors 保存与加载"></iframe>
+</div>
+
 ```mermaid
 flowchart LR
     LLMC["llmcompressor<br/>算法与校准"] -->|save_pretrained<br/>save_compressed=True| CT["compressed-tensors<br/>统一 checkpoint 格式"]
@@ -289,6 +321,14 @@ README 明确支持 DDP 与 disk offloading，`examples/` 下有对应目录：
 | `quantizing_moe/` | MoE 专家层/路由差异化处理 | GLM、Qwen MoE、Kimi-K3 等 |
 
 生产 checkpoint（README「Model highlights」）反复出现同一模式：**MoE 专家层压到 FP4/FP8，router、embedding、output head、MTP 头保留原精度**。这是精度与体积的经验平衡，不是算法硬性要求。
+
+下图是生产 checkpoint 的精度分层：体积大头（MoE 专家层）压到低比特，对量化敏感的部件（router、embedding、output head、MTP 头）保留原精度。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-llmc-precision-split.tree.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="生产 checkpoint 的精度分层"></iframe>
+</div>
 
 ### 7.2 与量化原理条目的分工
 

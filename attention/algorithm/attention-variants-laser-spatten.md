@@ -26,6 +26,15 @@ date: 2026-09
 
 ### 1.1 机制原理:梯度为什么在 attention 里变小
 
+> 下图对比标准 softmax attention 与 LASER 的反向梯度:Jacobian 为什么每一项都乘概率 a、LASER 如何把它换成 ~1−a₁ 级:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-laser-gradient.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="LASER:softmax 梯度饱和与指数变换"></iframe>
+</div>
+
+
 softmax 的反向传播(Lemma 3.1):前向 a = softmax(ã),反向 ∂ℓ/∂ã = (diag(a) − aaᵀ)·∂ℓ/∂a,**Jacobian 元素 ∂a_j/∂ã_i = a_j(1{i=j} − a_i)——每一项都乘了概率 a**。序列长 N 时典型 a ~ O(1/N) 且实测极度长尾:预训练一个 2.2B 模型时观察到 **~80% 的注意力概率 <10⁻³,~20% <10⁻⁷** → Jacobian 相应地小,W_Q/W_K/W_V 及更底层的梯度信号被系统性削弱。N=2 特例最直观:∂o₁/∂ã₁₁ = (v₁−v₂)·σ(ã₁₁−ã₁₂)(1−σ(ã₁₁−ã₁₂)),σ 饱和到 0/1 时梯度归零——经典 sigmoid 饱和问题的 attention 版。
 
 ### 1.2 LASER 的定义与低饱和证明
@@ -43,6 +52,15 @@ N=2、d=1 时输出 o₁ = log(α₁e^{v₁} + (1−α₁)e^{v₂}),Jacobian:
 极限情形 e^{v₁} ≫ e^{v₂} 时 ≈ **1−α₁**,不再有 α 乘子——概率再小,梯度也不随之消失(低饱和)。且 log-sum-exp 是 max 的可微逼近(Lemma 3.2):max(v₁+log a₁₁, v₂+log a₁₂) ≤ o₁ ≤ 同式 + log2 → **LASER ≈ "带注意力偏置的 soft-max 检索"**,从值集合里挑最大者而非加权平均;这也解释了它与 Veličković et al. 的 sharp-distribution 表达力研究同源(尖分布利于检索,但标准 softmax 的尖分布以梯度消失为代价——LASER 两者兼得)。
 
 ### 1.3 可复现细节:Log-Weighted-Sum-Exp trick
+
+> 下图展示 Log-Weighted-Sum-Exp trick 的「只改输入输出、不改 kernel」三段流水:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-laser-logsumexp.dataflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="LASER 的 Log-Weighted-Sum-Exp trick"></iframe>
+</div>
+
 
 exp(V) 直接算会溢出,log-sum-exp trick 又需要改 attention 内部。**LASER 的解法:只改输入输出,不改 kernel**:
 
@@ -91,6 +109,15 @@ GPT-2 剖析:attention 占端到端延迟 >50%,却只有 ~10% FLOPs;其中 **~73
 
 ### 2.2 可复现细节:级联剪枝算法
 
+> 下图把 SpAtten 的级联 token/head 剪枝与渐进量化三条机制并排:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-spatten-cascade.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="SpAtten:级联剪枝与渐进量化"></iframe>
+</div>
+
+
 **重要性分数(全部在线累计、input-dependent,无可训练剪枝参数——这是与 weight pruning 的本质区别)**:
 
 ```
@@ -124,6 +151,15 @@ remained_head  = top-k(s_h, h×(1−p_h))    # 级联: 一次剪除, 层间继�
 - **对今天的意义**:SpAtten 是"稀疏 attention 加速器"路线的代表(2021);通用 GPU 上的同思想后代是各类动态稀疏 attention kernel,而"attention 是访存受限"这一诊断被 FlashAttention 用 IO-aware tiling 在通用硬件上解决(见 [flash-attention-implementation](../implementation/flash-attention-implementation.md))——**同一个 profiling 结论,专用硬件与通用内核两条路线**。
 
 ## 3. 两条线索的交汇点
+
+> 下图把 LASER / SpAtten / StreamingLLM 归结到同一个底层事实——softmax 后注意力概率极度长尾:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-laser-spatten-longtail.tree.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="同一长尾分布的三侧推论"></iframe>
+</div>
+
 
 | | LASER | SpAtten |
 |---|---|---|

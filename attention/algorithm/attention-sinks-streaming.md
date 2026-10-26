@@ -32,6 +32,15 @@ date: 2026-09
 
 ### 1.2 attention sink 的因果链
 
+> 下图还原 attention sink 从「softmax 强制和为 1」到「开头 token 被训成垃圾桶」的因果链,并附两个判别实验:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-sink-causal-chain.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="attention sink 的因果链"></iframe>
+</div>
+
+
 ```
 softmax 要求 Σ attention = 1
    → query 与所有 token 都不强匹配时,注意力无处可去
@@ -58,6 +67,15 @@ StreamingLLM 要求模型用**相对位置编码**(RoPE/ALiBi),且位置编号�
 ## 2. 可复现细节
 
 ### 2.1 cache 布局
+
+> 下图展示 StreamingLLM 的 KV cache 两段布局(sink 区 + rolling 区)与滚动更新、位置重编号:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-sink-cache-layout.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="StreamingLLM 的 KV cache 布局与滚动"></iframe>
+</div>
+
 
 ```
 KV cache (总大小 = 预训练窗口, 如 2048):
@@ -100,6 +118,15 @@ def get_slim_paged_cache(cache, sink_size=4, recent_size=1020):
 ## 3. 数据对比
 
 ### 3.1 PPL(20K token 长文,Llama-2-13B,PG19 首书)
+
+> 下图把三种基线(Dense / Window / 滑窗重计算)与 StreamingLLM 并排,看它们各自「死在哪一头」:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/at-sink-baselines.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="三种基线 vs StreamingLLM"></iframe>
+</div>
+
 
 | 方法 | PPL | 复杂度/token |
 |---|---|---|

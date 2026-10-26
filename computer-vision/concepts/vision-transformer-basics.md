@@ -29,6 +29,15 @@ ViT 的全部改动只有三步:①**patchify**——把 224×224 图像切成 1
 
 ### 1. 输入流水线:patchify + 位置编码 + [CLS]
 
+> 下图按顺序走完 ViT 的输入流水线:切 patch、线性投影、拼 [CLS] 与位置编码、过 encoder、取 [CLS] 分类:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-vit-patchify.dataflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="ViT 输入流水线:patchify + [CLS] + 位置编码"></iframe>
+</div>
+
+
 论文 §3.1(Fig.1)的公式化流程,对 224×224 输入、P=16:
 
 ```text
@@ -59,6 +68,15 @@ x ∈ R^(224×224×3)
 
 ### 3. 数据敏感性:ViT 的成败分水岭(论文 Table 2/5 原数)
 
+> 下图对比小数据端与大图像数据端两条命运:CNN 先验是免费午餐还是天花板,ViT 何时反超:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-vit-why-data.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="ViT 的数据敏感性:归纳偏置的账单"></iframe>
+</div>
+
+
 | 预训练数据 | 模型 | ImageNet top-1 |
 |---|---|---|
 | JFT-300M(私有 3 亿图) | ViT-H/14 | **88.55%**(论文最佳;ImageNet-ReaL 90.72%、CIFAR-100 94.55%) |
@@ -70,6 +88,14 @@ x ∈ R^(224×224×3)
 论文 Fig.4 的横轴是预训练数据量:小数据端 CNN 在上,大数据端 ViT 反超且**没有饱和迹象**。因果解释(论文 §4.1):CNN 的局部性/等变先验在小数据上是「免费午餐」,大数据上反而成天花板;ViT 无先验,小数据吃亏、大数据受益。另一条正交结论(Table 2 原数):ViT-H/14 预训练只花 **2.5k TPUv3-core-days**,不到 BiT-L(9.9k)的 1/3、Noisy Student(12.3k)的 1/5——大数据下 ViT 不仅更准还更省训练算力。
 
 **DeiT(arXiv:2012.12877)把门槛打下来**:只用 ImageNet-1k,86M 参数(结构=ViT-B)训 **3 天内单机**达 **83.1% top-1**(single-crop);外加一个**蒸馏 token**([CLS] 旁再加一个 [DIST] token 学教师网络,CNN 当教师也行),最高 **85.2%**。训练配方(强增强 RandAug/Mixup + 正则 Repeated Aug/stochastic depth)比架构更重要——「数据饥饿」可以靠配方缓解,不必真有 3 亿图。
+
+> 下图拆开 DeiT 的「蒸馏 token + 强增强配方」两条腿,看它如何只用 ImageNet-1k 就追平大数据 ViT:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cv-vit-deit.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="DeiT:蒸馏 token + 配方,把 ViT 平民化"></iframe>
+</div>
 
 ### 4. ViT 与本库其它篇的关系(跨域一致性)
 

@@ -86,6 +86,14 @@ gguf_metal = "vllm_metal.gguf.vllm_integration:register"
 
 **约定**:platform 插件的 `register()` 是个**探测函数**——不是我的硬件就返回 `None`,是我的就返回 Platform 类的 **全限定类名字符串**(不是类对象,方便跨进程/懒加载)。
 
+下图是 entry points 两条通道的分工:platform_plugins 换平台(探测 + 返回 Platform 类全名 + 解析 worker/attention),general_plugins 补能力(算子/格式/模型,平台仍是主线)。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-hwp-entrypoints.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="entry points 两条通道"></iframe>
+</div>
+
 ---
 
 ## 2. 插件加载路径(mermaid)
@@ -114,6 +122,14 @@ flowchart TD
 ```
 
 关键约束(vllm/platforms/__init__.py):**out-of-tree 平台插件同时激活 ≥2 个直接报错**;builtin 同理。多卡异构不是设计目标,「一台机器一个加速卡族」。
+
+下图是插件加载路径:进程启动先查 CPU 优先,再经 entry_points 发现插件,逐个 register 探测;恰一个命中才激活,多个命中直接 RuntimeError,无命中回落到 UnspecifiedPlatform。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-hwp-load-path.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="插件加载路径与单激活约束"></iframe>
+</div>
 
 ---
 
@@ -158,6 +174,14 @@ if parallel_config.worker_cls == "auto":
 ```
 
 即 **worker_cls 不是写死一个字符串**,而是「硬件画像(310p / A3 / A5…) → 默认 Worker」的映射;这是比「一个 Platform 一个 Worker」更细的一层。
+
+下图是 vllm-ascend 的 worker_cls 分派:worker_cls=auto 时先判 xlite,否则按硬件画像(310p/A3/A5)映射到默认 Worker,而不是写死一个字符串。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-hwp-worker-dispatch.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="worker_cls 硬件画像分派"></iframe>
+</div>
 
 ---
 
@@ -235,6 +259,14 @@ flowchart LR
     style WK fill:#1a3d5c,stroke:#2b6cb0,color:#fff
     style BACK fill:#3d2a1a,stroke:#b0702b,color:#fff
 ```
+
+下图回答「谁负责什么」：调度/批处理/PagedAttention API 复用主线，插件仓只接管 Worker 与 Attention Backend 两个插槽，不重写引擎。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-hwp-responsibility.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="主线 vs 插件仓谁负责什么"></iframe>
+</div>
 
 ---
 

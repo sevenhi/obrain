@@ -55,9 +55,25 @@ flowchart TB
 - **rollout (vLLM + router)**：起 vLLM 引擎并路由请求；`--custom-generate-function-path` 可在 generate 外包一层多轮循环、工具调用、沙盒交互、verifier 奖励；
 - **data buffer**：桥梁模块，管理 prompt 初始化、custom data 与 rollout 生成方法，agentic 工作流也走同一接口。
 
+下图把 Vime 三大块画成闭环：Megatron 训练侧、vLLM+router rollout 侧，以及中间的 Data Buffer 与权重同步这两条接缝。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-vime-architecture.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Vime 三大块：训练 / rollout / Data Buffer"></iframe>
+</div>
+
 ## 3. 同步 vs 异步训练
 
 入口只有两个文件，差别就在**采样和训练是否重叠**。
+
+下图对比同步（train.py 串行）与异步（train_async.py 预取重叠）两条路径，重点看异步里「先 ray.get 掉在飞 generate 再 update_weights」这一步——省掉它就会得到静默污染的 off-policy 数据。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-vime-sync-vs-async.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="同步 vs 异步训练"></iframe>
+</div>
 
 ### 3.1 同步：`train.py`
 
@@ -163,6 +179,14 @@ train.py: train
 
 ## 5. 权重同步：闭环里最脏的一段
 
+下图是一个 rollout_id 的训练-采样闭环时序：Data Buffer → RolloutManager → vLLM → rm_hub → Megatron Actor → 权重同步回推。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-vime-train-loop.sequence.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="一个 rollout_id 的训练-采样闭环"></iframe>
+</div>
+
 Megatron 参数布局 ≠ vLLM 加载布局，且 rollout 可能与训练分卡、分机、甚至独立集群。`vime/backends/megatron_utils/update_weight/` 提供四种路径：
 
 | 文件 | 传输方式 | 适用 |
@@ -171,6 +195,14 @@ Megatron 参数布局 ≠ vLLM 加载布局，且 rollout 可能与训练分卡�
 | `update_weight_from_distributed.py` | 分布式集合通信 | 多节点训练 |
 | `update_weight_from_disk.py` | 落盘再加载 | 训练/推理环境隔离 |
 | `update_weight_from_disk_delta.py` | **磁盘增量** | 分离部署的大模型，只推 delta |
+
+下图是权重同步的四种路径（tensor / distributed / disk / disk_delta），按「训练与 rollout 是否同集群、模型多大」来选。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-vime-weight-sync.tree.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="权重同步的四种路径"></iframe>
+</div>
 
 进阶能力见 `docs/advanced/`：PD 分离（prefill/decode 资源不同）、外部 rollout 引擎（serving 独立环境、无 NCCL group）、delta weight sync。注意：**不同 GPU 型号/厂商仍需模型格式、精度与 vLLM 硬件支持兼容**，不是「落盘就万能」。
 
@@ -258,6 +290,14 @@ def my_generate_rollout(...):
 rollout 显存 ≈ 权重 + KV cache(gpu-memory-utilization) + workspace
 总需求 = 训练 + rollout （分卡时各算各的）
 ```
+
+下图是训练与 rollout 两边的显存组成，以及 --colocate / --offload / 外部 serving 三个拓扑开关之间的制约。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-vime-memory-topology.dataflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="训练与 rollout 的显存组成"></iframe>
+</div>
 
 PD 分离（`docs/advanced/pd-disaggregation.md`）把 prefill 与 decode 拆到不同资源池，适合多轮 agent：prefill 吃算力、decode 吃带宽，比例随任务变化。
 

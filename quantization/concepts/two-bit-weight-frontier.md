@@ -35,6 +35,15 @@ QuIP 的核心洞察:**量化受益于「不相干」(incoherent)的权重与 He
 
 ### 2.2 QuIP# 三招(2402.04396,ICML 2024)
 
+> 下图串起 QuIP# 三招的流水:RHT 非相干 → E8P 格码 → fine-tuning → 推理 dequant:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-quip-sharp-pipeline.dataflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="QuIP# 三招:旋转消灭 outlier + 格码本 + 微调"></iframe>
+</div>
+
+
 1. **随机 Hadamard 变换(RHT)替换普通正交阵**。Hadamard 阵可用快速 Walsh-Hadamard(FWHT,O(n log n),无显式矩阵乘法)实现,快且理论上 μ 界更好;对角加随机 ±1 缩放(即 `H·diag(s)`)是「随机化」来源,避免固定 Hadamard 与某类数据的偶然对齐。文中对比:纯 FFT 稍差但仍可用(Table 1:Hadamard vs Fourier,2-7B 8.22 vs 8.30)。
 2. **E8 格码本(向量量化)**。incoherent 处理后的权重呈「球状 sub-Gaussian」分布,天然适合**格码**。E8 是 8 维最优单位球填充格:
    ```
@@ -50,6 +59,15 @@ QuIP 的核心洞察:**量化受益于「不相干」(incoherent)的权重与 He
 ## 3. AQLM:多码本加和(Additive Quantization)
 
 ### 3.1 机制
+
+> 下图拆开 AQLM 的「多码本加和」表示与「输入自适应 + 跨层联合」的学习方式:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-aqlm-additive.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="AQLM:多码本加和(Additive Quantization)"></iframe>
+</div>
+
 
 AQLM 把经典信息检索里的 Multi-Codebook Quantization(MCQ)泛化到 LLM 权重。核心思想:**每个权重不再映射到单一量化点,而是写成 M 个码本条目之和**:
 
@@ -67,6 +85,15 @@ M 个码本各含 2^B 个向量,一个权重 = M 个向量的逐元素和 → �
 **AQLM 是第一个在 <3-bit 区间「精度 vs 模型体积」Pareto 最优的方案**,2-bit 下通常 ≥ QuIP#(两篇论文各自在自家设置下略胜,见 §5 交叉核对)。同时提供 GPU/CPU 的快速 kernel,2×8-bit 码本在 GPU 上相对 FP16 加速 1.2~3×,CPU 上 2.7~4×。
 
 ## 4. 两条相反路线:QuIP# vs SpQR(一句话锚点)
+
+> 下图并排 2-bit 以下处理 outlier 的两条对跖路线——SpQR 隔离保留、QuIP# 旋转消解:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/qt-two-bit-outlier-routes.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="2-bit 以下处理 outlier 的两条对跖路线"></iframe>
+</div>
+
 
 > **SpQR 保留 outlier 到 16-bit,QuIP# 旋转消灭 outlier**——这是 2-bit 以下处理 outlier 的两条对跖路线。SpQR 认为 outlier 有结构(行/列/head/RoPE 条纹),值得单独高精度存(CSR);QuIP# 认为 outlier 是「权重没对齐」的症状,用旋转把它抹平到 uniform 分布。前者是「隔离并利用」,后者是「预处理消解」。(SpQR 详见 [spqr-sparse-quantized.md](spqr-sparse-quantized.md))
 

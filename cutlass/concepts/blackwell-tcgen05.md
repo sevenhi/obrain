@@ -25,6 +25,15 @@ date: 2026-10
 
 ## 1. 机制:与 Hopper wgmma 的关键区别
 
+> 下图并排 Hopper wgmma 与 Blackwell tcgen05,点出「执行粒度升到 CTA-group、累加器搬进 TMEM」两个结构性变化:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-tcgen05-vs-wgmma.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="tcgen05 vs Hopper wgmma:两个结构性变化"></iframe>
+</div>
+
+
 | 维度 | Hopper wgmma(SM90) | Blackwell tcgen05/UMMA(SM100) |
 |---|---|---|
 | 执行粒度 | warpgroup(4 warps = 128 线程) | **CTA-group**(单 CTA 或 2-CTA cluster) |
@@ -42,9 +51,26 @@ date: 2026-10
 
 **`cta_group::2` = 2-CTA MMA**:两个相邻 CTA 组成 cluster 协同发射同一条 MMA,把 M 维切成上下两半各自算,累加器 D 写进拼接的 TMEM。这是 FA4「2-CTA MMA」的指令基础(应用侧收益见 [../../attention/implementation/flash-attention-implementation.md](../../attention/implementation/flash-attention-implementation.md) §4:TMEM 容量加倍、smem 带宽减半)。
 
+> 下图展示 2-CTA MMA 的协作:两个相邻 CTA 各算 M 维一半,累加器写进拼接 TMEM,这是 FA4 的指令基础:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-tcgen05-2cta.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="2-CTA MMA:cta_group::2 的协作"></iframe>
+</div>
+
 ---
 
 ## 2. CuTe atom:真实文件与命名
+
+> 下图展开 SM100_MMA_* atom 命名空间:TF32/F16BF16 × SS/TS × SCALED/SPARSE × 2x1SM 的组合:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-tcgen05-atom-naming.tree.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="SM100_MMA_* atom 命名空间"></iframe>
+</div>
+
 
 **文件位置**(不是 SM90 那套 `SM90_64x64x16_*`):
 
@@ -88,6 +114,15 @@ asm volatile(
 ---
 
 ## 3. TMEM:tensor memory(非通用寄存器文件)
+
+> 下图走一遍 TMEM 的「分配 → 累加 → 释放」生命周期,并给出 128×512 规格与「为什么搬进 TMEM」的理由:
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/cl-tcgen05-tmem.dataflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="TMEM 分配生命周期"></iframe>
+</div>
+
 
 **TMEM(tensor memory)是 Blackwell 新增的片上存储,专为 tensor core 累加器设计**——精确表述是「tensor memory(非通用寄存器文件)」,不要理解成「另一块通用 shared memory 或寄存器堆」。
 

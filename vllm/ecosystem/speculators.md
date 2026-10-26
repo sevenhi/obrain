@@ -67,6 +67,14 @@ flowchart LR
 
 补充：早期/研究向草稿头还有 MLP、LSTM draft 等轻量结构（库内 [LSTM 低秩压缩](../../quantization/concepts/lstm-lowrank-compression.md) 是另一条压缩线索）；Speculators 当前主推上表中与 vLLM 生产部署对齐的算法。`src/speculators/models/` 下每个算法一个子包（`eagle3/`、`mtp/`、`dflash/`、`dspark/`、`peagle/`、`xpress/`），共享 `SpeculatorModel` 基类与 `GreedyTokenProposal` 提议配置。
 
+下图是草稿模型家族五种结构：吃 verifier 多层 aux hidden states 的 EAGLE-3 / P-EAGLE，模型原生 MTP 头，以及块内并行的 DFlash / DSpark。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-spec-family.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="草稿模型家族五种结构"></iframe>
+</div>
+
 EAGLE-3 的关键结构（`models/eagle3/core.py`）示意：
 
 ```python
@@ -91,6 +99,14 @@ class Eagle3DraftModel(DraftVocabMixin, SpeculatorModel):
 - **逐位置交叉熵**（对齐 verifier 的 next-token 分布）；
 - **步权重复合权重**（MTP 的 `step_weight_beta`）：第 k 步 loss 权重 ∝ β^k，靠前位置更重要；
 - **confidence / Markov 辅助头**（DSpark）：显式预测接受概率，训练时对齐接受率形态。
+
+下图是训练目标的转变：朴素做法只降 token 级 perplexity，Speculators 真正对齐的是「每个位置是否被接受」——靠 step_weight_beta 与 confidence 头，最后落在接受率/接受长度这两个硬指标上。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-spec-loss-target.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="训练目标：对齐会被接受"></iframe>
+</div>
 
 期望接受长度与接受率的关系（与 [投机解码](../concepts/speculative-decoding.md) 同一公式）：
 
@@ -124,6 +140,14 @@ flowchart TB
 ```
 
 **离线 vs 在线**：离线把 hidden states 存盘后关掉 vLLM 再训（省 GPU、可复用数据）；在线训练时 vLLM 与 Trainer 并存，hidden states 经 `--vllm-endpoint` 或 `hs_connectors`（文件/Mooncake 后端）实时传输，适合多机无共享存储的场景。
+
+下图是训练全流程 Step 0-6：response regeneration → vLLM 抽 hidden states → prepare-data → 离线/在线两条路径 → 训练 → 导出/缝合 → vLLM 部署。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-spec-pipeline.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="训练全流程：数据到部署"></iframe>
+</div>
 
 ### 4.2 真实训练脚本（离线 EAGLE-3，节选自 `examples/train/eagle3_llama3_8b_ultrachat_offline_5k.sh`）
 
@@ -222,6 +246,14 @@ d2t: draft token → verifier token     （验证前把草稿 id 换回 verifier
 
 训练日志里 `--draft-vocab-size`、`--on-missing raise|generate` 控制映射缺失时的行为：`raise` 要求映射完备（生产推荐），`generate` 允许现场补全（探索用）。映射错误的典型症状是 loss 正常但接受率恒为 0。
 
+下图是 draft 与 verifier 词表不一致时的 t2d / d2t 双向映射：训练时标签对齐走 t2d，验证前把草稿 id 换回 verifier id 走 d2t。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-spec-vocab-map.dataflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="词表映射 t2d / d2t"></iframe>
+</div>
+
 ### 4.8 训练超参经验
 
 | 超参 | 示例值 | 影响 |
@@ -247,6 +279,14 @@ d2t: draft token → verifier token     （验证前把草稿 id 换回 verifier
 | 典型场景 | 首次打通、算法对比 | 领域微调、大规模持续训练 |
 
 脚本注释里的实测数据可以当量级参考：5k 样本离线 EAGLE-3 全流程约 9.5 分钟（2×H100）；MTP 在线微调 + 缝合约 7 分钟（2×H200）。真正的成本在「数据是否是目标模型生成、样本量是否够」。
+
+下图是在线 vs 离线在 hidden states、GPU 用法、数据复用三个维度的取舍，帮助判断该选哪条路径。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-spec-online-vs-offline.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="在线 vs 离线怎么选"></iframe>
+</div>
 
 ## 5. 与 DeepSpec 对比
 

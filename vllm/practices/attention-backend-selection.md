@@ -33,6 +33,14 @@ V1 的 attention 抽象(backend.py)由三个类构成:
 
 **注册机制(registry.py)**:`AttentionBackendEnum`(registry.py:34)枚举所有 backend,值为默认类路径;模块级函数 `register_backend()`(registry.py:243)通过 `_ATTN_OVERRIDES` 字典(registry.py:239)把某个 backend 名**覆盖/绑定**到自定义实现;`CUSTOM`(registry.py:130,value=None)是第三方/custom backend 的占位枚举,使用前须先 register。**枚举本身没有 `.register()` 方法**。**这是 V1 的新机制,不是 V0 的 `registerAttentionBackend`/`BackendMetadata`**(V0 概念已弃用)。
 
+下图是 V1 注意力三件套抽象：AttentionBackend(ABC) 声明能力并给出前向/构造器实现，CommonAttentionMetadata 共享元数据，AttentionMetadataBuilder 从调度输出构造各 backend 所需 metadata。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-attn-three-classes.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="V1 注意力三件套抽象"></iframe>
+</div>
+
 ---
 
 ## 2. 默认分派链路(无 ATTN_BACKEND 环境变量)
@@ -58,6 +66,14 @@ get_attn_backend(head_size, dtype, kv_cache_dtype, use_mla, ...)   # selector.py
 2. **量化 KV cache 会影响优先级**:例如 SM100 MLA + FP8 KV 时,`FLASHINFER_MLA_SPARSE` 排在 `FLASHMLA_SPARSE` 前(FlashInfer 对 FP8 KV 更好);BF16 KV 且 head 数 ≤16 时也优先 FlashInfer(FlashMLA 有 padding)。
 3. **显式指定无效会硬报错**:选定的 backend `validate_configuration` 不过 → 抛 `ValueError`,不会静默回退。
 4. **`--block-size` 会排挤高优先级 backend**:若用户指定了 block size 导致某些 backend 因「block_size not supported」被排除,vLLM 会打 warning 提示可去掉 `--block-size` 让自动选。
+
+下图是默认分派链路：get_attn_backend → _get_backend_priorities 排优先级 → 逐个 validate_configuration 过滤 → 选最小 priority 的合法 backend；显式指定不过则直接 ValueError。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-attn-dispatch-chain.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="默认分派链路"></iframe>
+</div>
 
 ---
 
@@ -102,6 +118,14 @@ MLA 族(DeepSeek MLA / sparse MLA,`vllm/v1/attention/backends/mla/` 子包):
 - **FlashMLA 是 NVIDIA + 昇腾双平台 backend**,不是昇腾专属(NVIDIA 侧 sparse decode 410 TFLOPS、昇腾侧 sparse prefill 410 TFlops,见 [deepseek-infra FlashMLA](../../deepseek-infra/concepts/flashmla.md))。
 - V4/V4.1 的稀疏 MLA 走**模型驱动 backend**(`vllm.models.deepseek_v4*`),与通用 MLA backend 分名注册,避免 V4.1 模型解析到 V4.0 后端类。
 
+下图是 backend 枚举分族：通用 dense、MLA 族、ROCM 系列、平台/量化专用，以及 CUSTOM 占位——注意整个枚举里没有 TRT-LLM backend。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-attn-backend-enum.tree.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="backend 枚举分族"></iframe>
+</div>
+
 ---
 
 ## 4. 选型对比表
@@ -121,6 +145,14 @@ MLA 族(DeepSeek MLA / sparse MLA,`vllm/v1/attention/backends/mla/` 子包):
 - **FP8 KV**:dense 走各 backend 的 FP8 内核;MLA 场景 FP8 KV 时 `FLASHINFER_MLA_SPARSE` 优先级高于 `FLASHMLA_SPARSE`(registry 注释引 issue #35807 基准)。
 - **长上下文**:FlashInfer 与 FlashMLA 各有稀疏/长序优化;FLASH_ATTN 靠 SplitKV(`--flash-attn-max-num-splits-for-cuda-graph`)。
 - **稀疏注意力**:DeepSeek V4 稀疏 MLA 有专门 `FLASHMLA_SPARSE_DSV4*` / `FLASHINFER_MLA_SPARSE_DSV4*` 模型驱动 backend;MiniMax M3 有 `CUTLASS_MSA` / `TRITON_MSA`;与 DeepSelect 出 indices 的 DSA 链路对接(见 [deepseek-infra](../../deepseek-infra/index.md))。
+
+下图是各 backend 的平台 / 启动条件 / 特征对比与常见坑：FLASH_ATTN 是通用 dense 主力、FLASHINFER 在 SM100 非 MLA 时优先、MLA 族服务低秩压缩，量化 KV 会翻转优先级。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-attn-selection-pitfalls.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="选型对比与常见坑"></iframe>
+</div>
 
 ---
 

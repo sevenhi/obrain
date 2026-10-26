@@ -82,6 +82,14 @@ GuideLLM 官方对比表里,inference-perf / genai-bench / llm-perf 等都缺「
 - `kind=max_requests,n=1000`
 - 过饱和自动停止(over-saturation stopping):吞吐不再上升只加延迟时提前收手
 
+下图是七种负载形态 Profile：从功能验证（synchronous）到稳态加压（concurrent/throughput/constant/poisson），再到容量规划主力 sweep 与拐点检测 knee。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-guidellm-profiles.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="七种负载形态 Profile"></iframe>
+</div>
+
 ---
 
 ## 3. 报告维度:TTFT / ITL(≈TPOT) / 吞吐
@@ -97,6 +105,14 @@ GuideLLM 官方对比表里,inference-perf / genai-bench / llm-perf 等都缺「
 | Token Metrics | prompt/output token 分布 | 校准负载是否像生产 |
 
 **SLO Attainment 语义**(metrics.md 原文要点):分母是**可评测且未被时长限制截断**的请求;报错算不达标;非流式后端上 TTFT 之类无法评测的目标会被剔除。它是比率、不随测量窗口漂移——适合做发布门禁。
+
+下图是报告维度全景：TTFT / ITL(≈TPOT) / E2E 延迟是分布不是均值，SLO Attainment 是容量红线，Request Goodput 才是有效吞吐。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-guidellm-metrics.tree.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="报告维度：TTFT / ITL / SLO / Goodput"></iframe>
+</div>
 
 控制台结果分三块:**Benchmarks Metadata**(配置快照)→ **Benchmarks Info**(每个 profile 一张表:类型/时长/请求成功-未完成-错误)→ **Metrics**(延迟分布与分位数)。文件报告可用 `GenerativeBenchmarksReport` 重载回 Python 继续分析。
 
@@ -123,6 +139,14 @@ flowchart TD
     style I fill:#1a3d5c,stroke:#2b6cb0,color:#fff
     style M fill:#1a4d2e,stroke:#2e8b57,color:#fff
 ```
+
+下图是单次评测的执行流程：从部署目标服务、定义 Scenario，到 Request Loader 载入数据、Scheduler 按 Profile 发压、逐请求采样时间线，最后汇总统计并输出容量决策。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-guidellm-run-flow.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="一次评测的执行流程"></iframe>
+</div>
 
 ---
 
@@ -239,6 +263,14 @@ from guidellm.benchmark import benchmark_generative_text
 ## 8. 容量规划怎么落地(建议流程)
 
 1. **定 SLO**:先写清 TTFT/ITL 目标与分位数(P99/P95)——没有 SLO 的 benchmark 只是好看的数字;
+
+下图是容量规划的六步落地:先定 SLO、再贴近生产造负载,sweep 找拐点后在 70-80% 拐点确认,归档报告并把 SLO Attainment 做成 CI 门禁。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-guidellm-capacity-plan.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="容量规划六步"></iframe>
+</div>
 2. **造负载**:prompt/output token 长度分布尽量贴生产(别全用 256/128);
 3. **sweep 加压**:找到「吞吐不再涨、延迟开始飞」的拐点;
 4. **在 70–80% 拐点做定速率/泊松确认**:这是上线安全区;

@@ -44,6 +44,14 @@ else:                         支持自定义 qualname 字符串 → resolve_obj
 
 **Ray 路径独有的开销/能力**:placement group 调度、bundle 级 GPU 绑定、rank 重排、driver→worker 环境变量同步、TCP rendezvous 地址下发。**mp 路径这些都在本机内完成**——明白这一点,部署时选后端的判断依据就清楚了:单节点多卡用 mp(无 Ray 开销),跨节点才用 Ray。
 
+下图是 Executor 抽象与后端分派:一层 Executor(ABC) 按 distributed_executor_backend 分派到 UniProc / Multiproc / RayDistributed 三条后端,各自对应单卡 / 单节点多卡 / 跨节点。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-ray-executor-dispatch.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Executor 抽象与三条后端"></iframe>
+</div>
+
 **非阻塞两段式执行(Ray executor 的 execute_model)**:`execute_model`(ray_executor.py 约 400 行起)在 `uses_sampler` 且有调度 token 时**暂存 scheduler_output**、直接返回预置的 `COMPLETED_NONE_FUTURE`(ray_executor.py:46),真正的前向延迟到 `sample_tokens()` 触发——把"下发调度"与"执行前向"拆成两段,支持非阻塞式调度(引擎侧异步调度的配套机制,见 [v1-architecture.md](v1-architecture.md) §2)。
 
 ---
@@ -69,6 +77,14 @@ else:                         支持自定义 qualname 字符串 → resolve_obj
 
 **物理 GPU 排序还有一个隐藏坑**(`ray_executor.py` 注释引用 issue #5590):物理 ID 转成整数排序,否则 **GPU 数 > 9 时字符串排序会出错**(`"10" < "9"`)。
 
+下图是 Worker 创建与 rank 重排：Ray 落卡不确定，创建顺序 ≠ 逻辑 rank；拿到各 worker IP 后按「driver 同节点优先、worker 数少者优先、IP 小者优先」显式 adjust_rank，保证 TP 组内通信局部性。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-ray-rank-rerank.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="Worker 创建与 Rank 重排"></iframe>
+</div>
+
 ### 2.3 节点拓扑收集与环境传播
 
 - 经 `ray.get(worker.get_node_and_physical_gpu_ids.remote())` 收集节点与物理 GPU;`n_nodes != n_ips` 抛 `RuntimeError`(要求每节点 IP 唯一,提示查 `VLLM_HOST_IP`)。
@@ -87,6 +103,14 @@ else:                         支持自定义 qualname 字符串 → resolve_obj
 4. **PP×TP 二维编址**:`pp_tp_workers[pp_rank][tp_rank]`,`rank = pp_rank * tensor_parallel_size + tp_rank`(**TP 连续、PP 分块**,例 PP=2/TP=4 → `[[0,1,2,3],[4,5,6,7]]`)。
 
 worker 侧进入 `vllm/distributed/parallel_state.py` 的 `init_distributed_environment`(`:1586`)建 `torch.distributed` 进程组,再 `initialize_model_parallel`(`:1751`)划 TP/PP 组。
+
+下图是通信组初始化调用链：driver_ip 拼 TCP rendezvous 地址，固定序列 init_worker → init_device → load_model，再按 PP×TP 二维编址（rank = pp_rank*TP + tp_rank）划分。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-ray-commgroup-init.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="通信组初始化调用链"></iframe>
+</div>
 
 ### 已验证的边界(诚实标注)
 
@@ -124,6 +148,14 @@ worker 侧进入 `vllm/distributed/parallel_state.py` 的 `init_distributed_envi
 | 编排开销 | 无 | 低 | placement group + rank 重排 |
 
 **选型判断**:单卡 UniProc;单节点多卡优先 Multiproc(免 Ray 开销);跨节点才 Ray。**PP 在 Multiproc 与 Ray 下均支持**(`supports_pp=True`);仅 UniProc 单进程不支持 PP。
+
+下图是三种执行器的对比：进程模型、uses_ray、supports_pp、编排开销一目了然——单卡 UniProc、单节点多卡 Multiproc、跨节点才 Ray。
+
+<div class="archify-figure">
+<iframe src="../../../diagrams/vm-ray-executor-compare.workflow.html"
+        style="width:100%;height:560px;border:1px solid rgba(0,0,0,.08);border-radius:14px"
+        loading="eager" title="三种执行器对比"></iframe>
+</div>
 
 ---
 

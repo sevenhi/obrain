@@ -2,6 +2,18 @@ site_name: obrain
 docs_dir: .site
 site_dir: site
 use_directory_urls: true        # 默认值,显式写出;iframe 路径规则依赖它
+
+# 排除 diagrams 重资产(247MB,通过 iframe 以 /diagrams/ 加载,由部署层符号链接直供)。
+# 注意:mkdocs 的配置键是 exclude_docs(gitignore 语法),不是 exclude_patterns。
+# dot 目录(.archify/.sources)默认已排除,无需列出。
+exclude_docs: |
+  diagrams/**/*.html
+  diagrams/**/*.json
+
+# 中文全文搜索:默认 en 分词对中文无效(整段成一个 token),lang: zh 需 venv 已装 jieba
+plugins:
+  - search:
+      lang: zh
 theme:
   name: material
   custom_dir: overrides

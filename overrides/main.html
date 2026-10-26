@@ -131,22 +131,30 @@
       document.addEventListener('DOMContentLoaded', init);
     } else { init(); }
 
-    var t;
-    window.addEventListener('resize', function () {
-      clearTimeout(t); t = setTimeout(fitAll, 200);
-    });
+    /* 以下 window 级监听挂在全局对象上,而 navigation.instant 每次 SPA 跳转
+       都会重执行本脚本 —— 不加守卫会逐次累积(N 次导航后一次跳转触发 3N 次
+       fitAll)。守卫只罩全局监听;init() 必须留在守卫外:SPA 跳转后新页面的
+       iframe 是全新 DOM 元素,需要重新挂 load/轮询/IO 监听。 */
+    if (!window.__obFitInit) {
+      window.__obFitInit = 1;
 
-    /* Material navigation.instant 是 SPA 跳转,页面不重载,需重算。
-       注:早期版本这里有个 reviveEmpty() 会检测"body 空"就重设 src -- 那是错的:
-       lazy iframe 在未进入视口时 body 本来就是空的,重设 src 反而把正常待加载
-       的图弄成永久失败(实测 gemm-tiling 第 6 张被改写 src 后再也加载不出来)。
-       已删除,只依赖加载事件 + 轮询 + IntersectionObserver。 */
-    if (typeof document$ !== 'undefined' && document$.subscribe) {
-      document$.subscribe(function () {
-        setTimeout(fitAll, 120);
-        setTimeout(fitAll, 900);
-        setTimeout(fitAll, 2500);
+      var t;
+      window.addEventListener('resize', function () {
+        clearTimeout(t); t = setTimeout(fitAll, 200);
       });
+
+      /* Material navigation.instant 是 SPA 跳转,页面不重载,需重算。
+         注:早期版本这里有个 reviveEmpty() 会检测"body 空"就重设 src -- 那是错的:
+         lazy iframe 在未进入视口时 body 本来就是空的,重设 src 反而把正常待加载
+         的图弄成永久失败(实测 gemm-tiling 第 6 张被改写 src 后再也加载不出来)。
+         已删除,只依赖加载事件 + 轮询 + IntersectionObserver。 */
+      if (typeof document$ !== 'undefined' && document$.subscribe) {
+        document$.subscribe(function () {
+          setTimeout(fitAll, 120);
+          setTimeout(fitAll, 900);
+          setTimeout(fitAll, 2500);
+        });
+      }
     }
   })();
   </script>

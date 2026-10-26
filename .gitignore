@@ -34,3 +34,6 @@ diagrams/*.finalize-summary.json
 diagrams/*.delivery.json
 diagrams/*.browser-check.json
 diagrams/*.visual-check.json
+
+# archify 可渲染产物(HTML 可随时从 markdown 重生成,不入库)
+diagrams/*.html

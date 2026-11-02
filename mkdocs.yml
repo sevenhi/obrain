@@ -9,6 +9,8 @@ use_directory_urls: true        # 默认值,显式写出;iframe 路径规则依�
 exclude_docs: |
   diagrams/**/*.html
   diagrams/**/*.json
+  DIAGRAM-INDEX.md
+  DEPLOY.md
 
 # 中文全文搜索:默认 en 分词对中文无效(整段成一个 token),lang: zh 需 venv 已装 jieba
 plugins:

@@ -62,7 +62,7 @@ date: 2026-10
 - **[`deepseek-models/`](../deepseek-models/index.md)**:本域 DeepSeek 网络结构四篇的**领域侧互补**——结构篇讲 MHA→MLA、dense→MoE「怎么变」,领域篇讲数学(GRPO/自验证)、定理证明(Lean 4)、代码(FIM/MoE)、MoE 数据评测「怎么做出来」。DeepSeekMoE 结构在本域 [deepseek-arch-v1-moe-v2](concepts/deepseek-arch-v1-moe-v2.md),数据/评测侧在 [deepseek-models/concepts/deepseek-moe.md](../deepseek-models/concepts/deepseek-moe.md)。
 - **残差/连接拓扑的下一步(跨域)**:本域各篇默认的残差连接在 2025-26 被 Hyper-Connections(HC,把残差流扩成 n 条并互相混合)和 mHC(把混合矩阵投影到 Birkhoff 双随机多面体以恢复恒等映射)改写——机制、Sinkhorn 参数化、重算/流水工程与 DeepGEMM 融合内核见 [`deepseek-infra/concepts/mhc-manifold-hyper-connections.md`](../deepseek-infra/concepts/mhc-manifold-hyper-connections.md)。它是「pre-norm 残差为何十年不变」这条线的第一个系统性挑战。
 
-## 扩展位(2026-10 全库审查待补)
+## 已知缺口
 
 - ~~hybrid-linear-attention~~(已入库)
 - MoE 路由对照(expert-choice/capacity/token dropping vs aux-loss-free)

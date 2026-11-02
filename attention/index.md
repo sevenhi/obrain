@@ -123,6 +123,10 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
 - mask 每元素应用有 15-20% 退化 → BlockMask 区分 full(免 mask)/partial(需 mask)/empty(整块跳过);causal ~50% 稀疏,不吃稀疏白慢 2×;
 - FLASH(FA4 CuTeDSL)后端 2026-03 上线:compute-bound 比 Triton 快 1.2-3.2×、前向 ~95% FA3;代价是实验性+限制(SM100 BLOCK_SIZE=(256,128)、捕获标量须 dynamic=False、捕获 buffer 不支持求梯度)。
 
+## 已知缺口
+
+- 暂无登记缺口;新增条目时在此登记后再移入条目索引。
+
 ## 溯源
 
 > 外部链接索引见 [references.md](references.md);精选论文:

@@ -53,7 +53,7 @@ date: 2026-10
 - [attention/flash-attention-implementation](../attention/implementation/flash-attention-implementation.md)——FA3 的 FP8 block-quantize(Q/K/V 分块量化 + incoherent processing)是"量化进 attention kernel"的实例;HyQuant 的 dequantize-in-attention 同属此路线。
 - SpQR 的推理 kernel(稀疏 CSR matmul + dense 3/4-bit matmul)是 CUTLASS 域 GEMM 定制的应用场景(参见 [cutlass/](../cutlass/index.md))。
 
-## 扩展位(待补充候选)
+## 已知缺口
 
 - 已补充:GPTQ / AWQ / SmoothQuant(算法侧统一篇)、KV cache 量化(KIVI + vLLM 工程视角)、2-bit 权重前沿(QuIP# / AQLM)、KV cache 极低比特前沿(KVQuant / KVTuner)。
 - 已补:FP8/FP4 硬件原生格式(2026-10)、结构化剪枝 + 蒸馏 Minitron/Puzzletron(2026-10)、vLLM fake-quant 验收路径(2026-10-24,PR #2889:折叠 + sidecar + Megatron-Bridge 导出)。

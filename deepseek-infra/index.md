@@ -116,7 +116,7 @@ date: 2026-10
 
 ---
 
-## 扩展位(2026-10 全库审查待补)
+## 已知缺口
 
 - ~~training-parallelism-v3~~(已入库)
 - fp8-training-stack(细粒度 scaling、UE8M0、训练侧 DeepGEMM)

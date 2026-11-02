@@ -61,6 +61,10 @@ date: 2026-10
 - **[`computer-vision/`](../computer-vision/index.md)**:本域的视觉编码器(SigLIP/SAM/VQ)与 computer-vision 的表示(NeRF)/部署(TRT-ViT)是「理解内容」与「跑得高效」两件事;CCNN 连续卷积核([cnn-long-range-nd](../computer-vision/concepts/cnn-long-range-nd.md))与 VL 的 hybrid encoder 同为「怎么高效表示视觉信号」的两个答案。VL 用的 SAM-B 编码器机制见 [object-detection-segmentation](../computer-vision/concepts/object-detection-segmentation.md) §SAM,SigLIP/Janus 的 ViT patchify/CLS/视觉 token 机制底座见 [vision-transformer-basics](../computer-vision/concepts/vision-transformer-basics.md)。
 - **[`vllm/`](../vllm/index.md)**:DeepSeek-OCR 已被上游 vLLM 官方支持([model-registry](../vllm/concepts/model-registry.md) 同属推理侧)。
 
+## 已知缺口
+
+- 暂无登记缺口;新增条目时在此登记后再移入条目索引。
+
 ---
 
 ## 溯源

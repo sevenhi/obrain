@@ -53,6 +53,10 @@ date: 2026-10
 - **[`deepseek-infra/`](../deepseek-infra/index.md)**:本域 deepseek-harness 是 DeepSeek 的 agent 工具,与 infra 域(算子/昇腾栈)同属「非模型」工具侧,但按简报归入本域工具节。**ESFT 双视角**:操作流程/脚本/实践坑在 [deepseek-infra/concepts/esft.md](../deepseek-infra/concepts/esft.md),机制/源码/谱系定位在本域 [deepseek-esft](concepts/deepseek-esft.md),两篇互链不重复;EPLB/LPLB(部署侧动专家)对照见 infra 域。
 - **[`vllm/`](../vllm/index.md)**:Coder/Coder-V2 官方推荐 vLLM/SGLang 高吞吐推理;MoE 代码模型的专家并行/MLA 在引擎侧兑现;R1-Distill 系列的本地服务(vllm serve)同样走 vLLM。
 
+## 已知缺口
+
+- 暂无登记缺口;新增条目时在此登记后再移入条目索引。
+
 ## 溯源
 
 - 外部链接索引见 [references.md](references.md)。

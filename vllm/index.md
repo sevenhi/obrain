@@ -108,7 +108,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 - **内核底座**:[`cutlass/`](../cutlass/index.md)——本域优化注意力内核的 FA 族与 `CUTLASS_MLA` backend 均构建于 CUTLASS/CuTe 之上(自底向上依赖);CUTLASS tiling/Tensor Core 机制见其概念篇。
 - **同源改造的生产引擎**:[`deepinfer`](../deepseek-infra/concepts/deepinfer.md)——DeepSeek 基于 vLLM 重写的单模型生产推理框架(V4.1-Flash)。保留 paged KV + 连续批处理两条不变量,换掉 Scheduler(C++ 化)、加 ZOS/EPLB/DSpark/YoCo 三级 KV;两边的机制对照表在该篇 §14。**注意它已把 `vllm/distributed/eplb/` 的思路原生内置并与自身 ZOS 耦合**,不能拿「EPLB 是 DeepInfer 独有」当差异点。
 
-## 扩展位(2026-10 全库审查待补)
+## 已知缺口
 
 - **生态待补**:agentic-api、compressed-tensors 格式规范、afd-plugin、humming JIT、MSA/FlashKDA/tml-fa4 内核专篇、production-stack 监控清单。
 - 结构化输出/guided decoding(xgrammar/llguidance、grammar bitmask 与调度重叠)

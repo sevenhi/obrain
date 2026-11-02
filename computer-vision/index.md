@@ -42,6 +42,10 @@ date: 2026-10
 - [attention/](../attention/index.md)——NeRF/TRT-ViT 都涉及「访存而非算力是瓶颈」的判断,与 FA 的 IO-aware 分析同一方法论;ViT encoder 层与 DETR 交叉注意力的机制源头是 [attention-is-all-you-need](../attention/algorithm/attention-is-all-you-need.md)。
 - [quantization/](../quantization/index.md)——与 OREPA 同属「模型压缩/加速」工具箱(重参数化 vs 量化,正交可叠加)。
 
+## 已知缺口
+
+- 暂无登记缺口;新增条目时在此登记后再移入条目索引。
+
 ## 溯源
 
 - 外部链接索引见 [references.md](references.md)。

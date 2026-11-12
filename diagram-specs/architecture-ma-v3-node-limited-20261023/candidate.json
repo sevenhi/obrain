@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "V3 的 sigmoid 路由 + 节点受限:两次分组,一个为了均衡一个为了通信",
+    "subtitle": "256 个路由专家按 8 个一组分成 32 组;第一层分组是为了「最多只落到 4 个节点」(M=4,压通信),第二层才是组内选 8 个专家。注意 group_scores = topk(2).sum(-1) 这个细节:算组得分时取组内 top-2 求和,不是取 max",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-v3-node-limited.architecture.html",
+    "viewBox": [
+      1040,
+      600
+    ]
+  },
+  "components": [
+    {
+      "id": "h",
+      "type": "frontend",
+      "label": "hidden u_t(7168 维)",
+      "sublabel": "每 token 一次路由",
+      "pos": [
+        400,
+        40
+      ],
+      "size": [
+        280,
+        58
+      ]
+    },
+    {
+      "id": "sig",
+      "type": "security",
+      "label": "sigmoid 亲和度",
+      "sublabel": "s_i = Sigmoid(u_tᵀ e_i),非 softmax",
+      "pos": [
+        40,
+        176
+      ],
+      "size": [
+        230,
+        64
+      ]
+    },
+    {
+      "id": "bias",
+      "type": "security",
+      "label": "+ bias 项 b_i",
+      "sublabel": "aux-loss-free 的载体",
+      "pos": [
+        400,
+        176
+      ],
+      "size": [
+        230,
+        64
+      ]
+    },
+    {
+      "id": "grp",
+      "type": "backend",
+      "label": "按 8 个一组分 32 组",
+      "sublabel": "n_expert_groups=8 个逻辑组",
+      "pos": [
+        760,
+        176
+      ],
+      "size": [
+        230,
+        64
+      ]
+    },
+    {
+      "id": "gscore",
+      "type": "database",
+      "label": "组得分 = 组内 top-2 之和",
+      "sublabel": "group_scores = topk(2).sum(-1)",
+      "pos": [
+        760,
+        320
+      ],
+      "size": [
+        230,
+        68
+      ]
+    },
+    {
+      "id": "ngroup",
+      "type": "security",
+      "label": "选 top-4 组",
+      "sublabel": "n_limited_groups=4 → 最多 4 节点",
+      "pos": [
+        400,
+        320
+      ],
+      "size": [
+        230,
+        68
+      ]
+    },
+    {
+      "id": "topk",
+      "type": "cloud",
+      "label": "组内取 top-8",
+      "sublabel": "K_r=8;归一化 × route_scale 2.5",
+      "pos": [
+        40,
+        320
+      ],
+      "size": [
+        230,
+        68
+      ]
+    },
+    {
+      "id": "comm",
+      "type": "backend",
+      "label": "通信成本被压住",
+      "sublabel": "token 只需跨 ≤4 个节点",
+      "pos": [
+        760,
+        470
+      ],
+      "size": [
+        230,
+        64
+      ]
+    },
+    {
+      "id": "bal",
+      "type": "backend",
+      "label": "负载仍然均衡",
+      "sublabel": "靠 bias 项,不靠 aux loss",
+      "pos": [
+        400,
+        470
+      ],
+      "size": [
+        230,
+        64
+      ]
+    },
+    {
+      "id": "out",
+      "type": "database",
+      "label": "8 个专家的加权和",
+      "sublabel": "+ 1 个共享专家的输出",
+      "pos": [
+        40,
+        470
+      ],
+      "size": [
+        230,
+        64
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "第一层分组:为通信(节点数 ≤ 4)",
+      "wraps": [
+        "grp",
+        "ngroup"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "第二层分组:为均衡(组内 top-8)",
+      "wraps": [
+        "topk",
+        "bias"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "h",
+      "to": "sig",
+      "label": "过 256 个专家向量",
+      "labelAt": [
+        400,
+        140
+      ],
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "c2",
+      "from": "sig",
+      "to": "bias",
+      "label": "只加在选路上",
+      "variant": "emphasis",
+      "labelAt": [
+        335,
+        208
+      ]
+    },
+    {
+      "id": "c3",
+      "from": "bias",
+      "to": "grp",
+      "label": "按组归并",
+      "labelAt": [
+        695,
+        208
+      ]
+    },
+    {
+      "id": "c4",
+      "from": "grp",
+      "to": "gscore",
+      "label": "每组算一个分",
+      "labelAt": [
+        875,
+        300
+      ],
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "c5",
+      "from": "gscore",
+      "to": "ngroup",
+      "label": "只在 4 组内继续",
+      "variant": "emphasis",
+      "labelAt": [
+        695,
+        354
+      ]
+    },
+    {
+      "id": "c6",
+      "from": "ngroup",
+      "to": "topk",
+      "label": "候选池 4×8=32",
+      "variant": "emphasis",
+      "labelAt": [
+        335,
+        354
+      ]
+    },
+    {
+      "id": "c7",
+      "from": "topk",
+      "to": "out",
+      "label": "加权求和",
+      "labelAt": [
+        155,
+        450
+      ],
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "c8",
+      "from": "ngroup",
+      "to": "bal",
+      "label": "bias 保均衡",
+      "variant": "dashed",
+      "labelAt": [
+        515,
+        442
+      ],
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "c9",
+      "from": "gscore",
+      "to": "comm",
+      "label": "组数上限即节点上限",
+      "variant": "dashed",
+      "labelAt": [
+        875,
+        442
+      ],
+      "fromSide": "bottom",
+      "toSide": "top"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两次分组别混为一谈",
+      "items": [
+        "外层:n_expert_groups 把 256 专家分逻辑组,只为「最多落到 4 个节点」服务",
+        "内层:组内 top-8 才是真正的专家选择",
+        "V2 也有 8 组 / top-3 组,但那纯粹为了负载均衡,没有节点维度"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "为什么是 top-2 求和而不是 max",
+      "items": [
+        "取 max 会让「一个明星专家带整组上去」,组内其他专家白搭",
+        "top-2 求和让组得分反映「这组整体是否合适」",
+        "这是 V3 源码里的具体实现,不是论文公式层面的抽象"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "sigmoid 相对 softmax 的意义",
+      "items": [
+        "softmax 的分母把所有专家耦合在一起,单看一个分数没有绝对意义",
+        "sigmoid 给每个专家一个独立的亲和度,更适合「先比较再归一化」",
+        "归一化挪到 top-k 之后做,再乘 route_scale=2.5"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "收益的可验证形式",
+      "items": [
+        "通信:每 token 最多跨 4 节点 → 训练框架可实现近完全的计算-通信 overlap",
+        "均衡:bias 动态调,不掉 token",
+        "质量:aux loss 从 0.001 降到 0.0001 兜底,不再与主目标抢梯度"
+      ]
+    }
+  ]
+}

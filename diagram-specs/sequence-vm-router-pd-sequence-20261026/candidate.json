@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "PD 分离模式的一次请求时序",
+    "subtitle": "请求先落 prefill 池产出 KV+首 token,KV 经 NIXL/NCCL/Mooncake 传 decode,decode 流式输出",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-router-pd-sequence.sequence.html"
+  },
+  "participants": [
+    {
+      "id": "c",
+      "type": "frontend",
+      "label": "Client"
+    },
+    {
+      "id": "r",
+      "type": "backend",
+      "label": "Router"
+    },
+    {
+      "id": "p",
+      "type": "cloud",
+      "label": "Prefill Worker"
+    },
+    {
+      "id": "d",
+      "type": "cloud",
+      "label": "Decode Worker"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "c",
+      "to": "r",
+      "y": 180,
+      "label": "POST /v1/chat/completions"
+    },
+    {
+      "id": "m2",
+      "from": "r",
+      "to": "p",
+      "y": 260,
+      "label": "转发请求(含 kv_transfer_params)",
+      "note": "策略选择:prefill-policy"
+    },
+    {
+      "id": "m3",
+      "from": "p",
+      "to": "d",
+      "y": 340,
+      "label": "KV cache 传输(NIXL/NCCL/Mooncake)",
+      "variant": "emphasis",
+      "note": "prompt 前向:产出 KV + 首 token"
+    },
+    {
+      "id": "m4",
+      "from": "r",
+      "to": "d",
+      "y": 420,
+      "label": "按 decode-policy 绑定 decode 实例"
+    },
+    {
+      "id": "m5",
+      "from": "d",
+      "to": "c",
+      "y": 500,
+      "label": "流式返回 token",
+      "variant": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "三 connector 参数集不同",
+      "items": [
+        "NIXL:显式列 prefill/decode URL",
+        "NCCL:ZMQ 服务发现地址",
+        "Mooncake:查 bootstrap 注入 kv_transfer_params"
+      ]
+    }
+  ]
+}

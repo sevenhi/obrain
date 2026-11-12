@@ -1,0 +1,145 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DeepSeek-VL2 的动态分块:一张图切成候选网格里的多个 tile,再配一个全局视图",
+    "subtitle": "VL 的 1024² 是写死的;VL2 把「固定分辨率」换成「候选分辨率网格 + 全局视图」,所有 tile 过同一个可训 SigLIP SO400M,用 2D 位置标签拼回序列",
+    "locale": "zh-CN",
+    "output": "diagrams/dv-vl2-dynamic-tiling.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_img", "label": "输入与切分" },
+    { "id": "ln_glb", "label": "全局视图" },
+    { "id": "ln_enc", "label": "单塔编码(可训)" },
+    { "id": "ln_proj", "label": "投影" },
+    { "id": "ln_llm", "label": "语言骨干" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 选分辨率并切块", "fromCol": 0, "toCol": 2 },
+    { "id": "ph2", "label": "② 同一塔编码", "fromCol": 3, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "③ 拼序列并投影", "fromCol": 4, "toCol": 5 }
+  ],
+  "nodes": [
+    {
+      "id": "img",
+      "lane": "ln_img",
+      "col": 0,
+      "type": "database",
+      "label": "任意宽高比原图",
+      "sublabel": "长文档 / 宽表格 / 截图",
+      "icon": "database"
+    },
+    {
+      "id": "grid",
+      "lane": "ln_img",
+      "col": 1,
+      "type": "backend",
+      "label": "候选分辨率网格",
+      "sublabel": "23 种,384² → 384×3456",
+      "icon": "decision"
+    },
+    {
+      "id": "tiles",
+      "lane": "ln_img",
+      "col": 2,
+      "type": "backend",
+      "label": "切成多个 tile",
+      "sublabel": "带行列号,2D 分块",
+      "icon": "neutral"
+    },
+    {
+      "id": "global",
+      "lane": "ln_glb",
+      "col": 2,
+      "type": "database",
+      "label": "全局视图缩略图",
+      "sublabel": "整图下采样,放序列头部",
+      "icon": "neutral"
+    },
+    {
+      "id": "so400m",
+      "lane": "ln_enc",
+      "col": 3,
+      "type": "security",
+      "label": "SigLIP SO400M",
+      "sublabel": "27 层 / width 1152,可训",
+      "icon": "active"
+    },
+    {
+      "id": "tag",
+      "lane": "ln_enc",
+      "col": 4,
+      "type": "backend",
+      "label": "2D 位置标签拼序列",
+      "sublabel": "tile_tag=2D,全局在 head",
+      "icon": "neutral"
+    },
+    {
+      "id": "mlp",
+      "lane": "ln_proj",
+      "col": 5,
+      "type": "backend",
+      "label": "MLP projector",
+      "sublabel": "n_embed = 2560",
+      "icon": "backend"
+    },
+    {
+      "id": "moe",
+      "lane": "ln_llm",
+      "col": 5,
+      "type": "frontend",
+      "label": "DeepSeekMoE 骨干",
+      "sublabel": "MHA(config 实测)",
+      "icon": "frontend"
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "img", "to": "grid", "label": "按宽高比挑最近的网格", "role": "main" },
+    { "id": "e2", "from": "grid", "to": "tiles", "label": "每格切一块", "role": "main" },
+    { "id": "e3", "from": "grid", "to": "global", "label": "同时产一张缩略", "role": "branch" },
+    { "id": "e4", "from": "tiles", "to": "so400m", "label": "每块独立过同一塔", "role": "main" },
+    { "id": "e5", "from": "global", "to": "so400m", "label": "全局也过这塔", "role": "branch" },
+    { "id": "e6", "from": "so400m", "to": "tag", "label": "patch token + 行列号", "role": "main" },
+    { "id": "e7", "from": "tag", "to": "mlp", "label": "拼成长序列", "role": "main" },
+    { "id": "e8", "from": "mlp", "to": "moe", "label": "token 进稀疏 FFN", "role": "main", "route": "drop" }
+  ],
+  "mainPath": ["img", "grid", "tiles", "so400m", "tag", "mlp"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "「多图联合编码」的真实含义",
+      "items": [
+        "不是一次吃多张图,而是「一张图切多块」联合编码",
+        "23 种候选分辨率覆盖 384² 到 384×3456 的极端长宽比",
+        "global_view_pos = head:全局缩略图固定放序列最前面"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么单塔反而更强",
+      "items": [
+        "SO400M(width 1152,27 层)比 VL 的 SigLIP-L 更大,且可训",
+        "VL 的 SAM 高塔是「补细节的补丁」,分块后不再需要",
+        "塔从 2 个冻结 → 1 个可训,复杂度下降、表达力上升"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "坑:global_view_pos 是硬约定",
+      "items": [
+        "下游若手工拼 token 顺序,必须把全局视图放头部",
+        "顺序错位不报错,只掉点 —— 这类 bug 最难查",
+        "candidate_resolutions 决定分块方案,长文档可自定义组合"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "MoE 与注意力的口径要分开看",
+      "items": [
+        "论文写 MLA,开源 config 实测 use_mla=false + MHA",
+        "按 config 部署,套 MLA 假设会算错 KV cache",
+        "1.0/2.8/4.5B 的稀疏激活来自专家,与注意力形式无关"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "一张图看懂:主线 vs 插件仓谁负责什么",
+  "subtitle": "调度/PagedAttention 复用主线,插件只接管 Worker 与 Attention Backend 插槽",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-hwp-responsibility.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "core",
+   "label": "主线 vLLM"
+  },
+  {
+   "id": "slot",
+   "label": "插槽"
+  },
+  {
+   "id": "plugin",
+   "label": "插件仓"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "sch",
+   "lane": "core",
+   "col": 0,
+   "type": "backend",
+   "label": "调度/批处理",
+   "sublabel": "V1 引擎"
+  },
+  {
+   "id": "pa",
+   "lane": "core",
+   "col": 1,
+   "type": "backend",
+   "label": "PagedAttention API",
+   "sublabel": "统一接口"
+  },
+  {
+   "id": "wk",
+   "lane": "slot",
+   "col": 0,
+   "type": "backend",
+   "label": "Worker 插槽",
+   "sublabel": "引擎按类名实例化"
+  },
+  {
+   "id": "bk",
+   "lane": "slot",
+   "col": 1,
+   "type": "backend",
+   "label": "Attention Backend 插槽",
+   "sublabel": "可插拔"
+  },
+  {
+   "id": "asc",
+   "lane": "plugin",
+   "col": 0,
+   "type": "external",
+   "label": "vllm-ascend",
+   "sublabel": "昇腾 NPU"
+  },
+  {
+   "id": "met",
+   "lane": "plugin",
+   "col": 1,
+   "type": "external",
+   "label": "vllm-metal",
+   "sublabel": "Apple Silicon"
+  },
+  {
+   "id": "xk",
+   "lane": "plugin",
+   "col": 2,
+   "type": "external",
+   "label": "vllm-xpu-kernels",
+   "sublabel": "Intel GPU 内核"
+  }
+ ],
+ "edges": [
+  {
+   "from": "sch",
+   "to": "pa",
+   "label": "复用",
+   "variant": "emphasis"
+  },
+  {
+   "from": "sch",
+   "to": "wk",
+   "label": "复用"
+  },
+  {
+   "from": "pa",
+   "to": "bk",
+   "label": "插槽"
+  },
+  {
+   "from": "asc",
+   "to": "wk",
+   "label": "接管",
+   "variant": "emphasis"
+  },
+  {
+   "from": "met",
+   "to": "wk",
+   "label": "接管"
+  },
+  {
+   "from": "asc",
+   "to": "bk",
+   "label": "接管"
+  },
+  {
+   "from": "xk",
+   "to": "bk",
+   "label": "补内核",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "不重写",
+   "items": [
+    "调度、PagedAttention、OpenAI API 都复用主线",
+    "插件只回答:是不是我的卡,用哪个 Worker/Platform 类"
+   ]
+  }
+ ]
+}

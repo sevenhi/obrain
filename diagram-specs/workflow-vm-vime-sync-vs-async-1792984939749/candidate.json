@@ -1,0 +1,119 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "同步 vs 异步:采样与训练是否重叠",
+  "subtitle": "train.py 串行;train_async.py 预取下一轮采样与训练重叠",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-vime-sync-vs-async.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "sync",
+   "label": "同步 train.py"
+  },
+  {
+   "id": "asyn",
+   "label": "异步 train_async.py"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "s0",
+   "lane": "sync",
+   "col": 0,
+   "type": "backend",
+   "label": "采样 rollout",
+   "sublabel": "ray.get 等做完"
+  },
+  {
+   "id": "s1",
+   "lane": "sync",
+   "col": 1,
+   "type": "backend",
+   "label": "训练 async_train",
+   "sublabel": "actor/critic"
+  },
+  {
+   "id": "s2",
+   "lane": "sync",
+   "col": 2,
+   "type": "backend",
+   "label": "update_weights",
+   "sublabel": "推送 actor 权重"
+  },
+  {
+   "id": "a0",
+   "lane": "asyn",
+   "col": 0,
+   "type": "backend",
+   "label": "预取第 0 轮",
+   "sublabel": "generate.remote"
+  },
+  {
+   "id": "a1",
+   "lane": "asyn",
+   "col": 1,
+   "type": "backend",
+   "label": "收割上一轮+开下一轮",
+   "sublabel": "采样与训练重叠"
+  },
+  {
+   "id": "a2",
+   "lane": "asyn",
+   "col": 2,
+   "type": "backend",
+   "label": "先 ray.get 在飞请求",
+   "sublabel": "再 update_weights"
+  },
+  {
+   "id": "bad",
+   "lane": "asyn",
+   "col": 3,
+   "type": "backend",
+   "label": "竞态污染",
+   "sublabel": "半新半旧轨迹"
+  }
+ ],
+ "edges": [
+  {
+   "from": "s0",
+   "to": "s1",
+   "label": "串行",
+   "variant": "emphasis"
+  },
+  {
+   "from": "s1",
+   "to": "s2",
+   "label": "串行"
+  },
+  {
+   "from": "a0",
+   "to": "a1",
+   "label": "重叠",
+   "variant": "emphasis"
+  },
+  {
+   "from": "a1",
+   "to": "a2",
+   "label": "同步后才推",
+   "variant": "emphasis"
+  },
+  {
+   "from": "a2",
+   "to": "bad",
+   "label": "若省略 ray.get",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "rose",
+   "title": "异步的代价",
+   "items": [
+    "update_weights 前必须先同步在飞 generate",
+    "否则轨迹分布半新半旧,reward/advantage 被污染"
+   ]
+  }
+ ]
+}

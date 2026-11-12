@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "WGMMA 为什么值这套复杂度:三条可查的收益",
+    "subtitle": "一条 wgmma.m64n256k16 抵 128 条 Ampere m16n8k16,且操作数经 descriptor 直接从 SMEM 喂;省掉的是整层 ldmatrix/lds 搬数指令流",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-wgmma-value.tree.html"
+  },
+  "layout": { "direction": "right", "nodeW": 210, "gapX": 28, "gapY": 42 },
+  "nodes": [
+    { "id": "root", "label": "WGMMA 的收益", "sublabel": "三条,都可查" },
+    { "id": "flop", "label": "① 单指令工作量", "parent": "root", "sublabel": "m64n64k16 = 131,072 FLOPs" },
+    { "id": "flop32", "label": "= 32 条 m16n8k16", "parent": "flop", "sublabel": "m64n256k16 则 = 128 条" },
+    { "id": "flop_reg", "label": "累加器跨指令复用", "parent": "flop", "sublabel": "留在寄存器里" },
+    { "id": "mv", "label": "② 省掉搬数指令", "parent": "root", "sublabel": "SMEM→RMEM 那一层消失" },
+    { "id": "mv_ld", "label": "不再需要 ldmatrix", "parent": "mv", "sublabel": "SS 模式经 descriptor 取" },
+    { "id": "mv_issue", "label": "发射开销摊薄", "parent": "mv", "sublabel": "每 warp 各发 → 每 group 一条" },
+    { "id": "peak", "label": "③ 整卡代际峰值", "parent": "root", "sublabel": "官方 datasheet,dense FP16" },
+    { "id": "peak_a100", "label": "A100 SXM:312 TFLOPS", "parent": "peak", "sublabel": "3rd-gen TC,mma.sync" },
+    { "id": "peak_h100", "label": "H100 SXM:~1,000 TFLOPS", "parent": "peak", "sublabel": "4th-gen TC,wgmma + FP8" },
+    { "id": "peak_ratio", "label": "约 3.2× 代际提升", "parent": "peak", "sublabel": "H100 精确口径 989.4" },
+    { "id": "real", "label": "工程实效参照", "parent": "root", "sublabel": "别把估计当论文口径" },
+    { "id": "real_fa3", "label": "FA3 论文:BF16 1.5–2×", "parent": "real", "sublabel": "前向最高 740 TFLOPS" },
+    { "id": "real_pct", "label": "740/989 ≈ 75%", "parent": "real", "sublabel": "约为 dense 峰值四分之三" },
+    { "id": "real_est", "label": "2–3×? 是评论估计", "parent": "real", "sublabel": "带问号,非论文作者口径" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "省掉的确切是什么",
+      "items": [
+        "Ampere:SMEM → ldmatrix/lds → 寄存器 → mma.sync",
+        "Hopper SS:SMEM → descriptor → wgmma,中间无搬数",
+        "RS 模式(A 在寄存器)是另一选项,但 B 永远在 SMEM"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "代际数字的准确口径",
+      "items": [
+        "A100 312 dense / 624 sparse",
+        "H100 ~1000 dense / 2000 sparse(datasheet 取整)",
+        "每 TC 每周期算力:Hopper 1024 FLOPs,Blackwell 2048"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Blackwell 已不用 wgmma",
+      "items": [
+        "Blackwell 改用 tcgen05 / UMMA",
+        "wgmma 是 Hopper-only 的指令族",
+        "学它是为了读懂 FA3 与 SM90 kernel"
+      ]
+    }
+  ]
+}

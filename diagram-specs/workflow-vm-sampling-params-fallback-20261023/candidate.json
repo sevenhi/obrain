@@ -1,0 +1,70 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "请求参数没写时,默认值到底从哪来:三级回退",
+    "subtitle": "OpenAI 请求字段为 None 时不是直接吃硬编码默认值,而是先问模型自带的 generation_config,最后才落到协议内建常量。排查「为什么行为和文档不一样」先看这一层",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-sampling-params-fallback.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_src", "label": "① 取值来源(按优先级)" },
+    { "id": "ln_check", "label": "② 校验与归一" },
+    { "id": "ln_note", "label": "③ 排查时看这里" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "三级回退", "fromCol": 0, "toCol": 1 },
+    { "id": "p2", "label": "归一成具体值", "fromCol": 2, "toCol": 2, "variant": "emphasis" },
+    { "id": "p3", "label": "张量化入批", "fromCol": 3, "toCol": 3 }
+  ],
+  "nodes": [
+    { "id": "s1", "lane": "ln_src", "col": 0, "type": "backend", "label": "① 请求字段", "sublabel": "用户显式传的值", "icon": "start" },
+    { "id": "s2", "lane": "ln_src", "col": 1, "type": "backend", "label": "② 模型自带配置", "sublabel": "generation_config.json", "icon": "neutral" },
+    { "id": "s3", "lane": "ln_src", "col": 2, "type": "backend", "label": "③ 协议内建默认", "sublabel": "如 repetition=1.0", "icon": "neutral" },
+    { "id": "s4", "lane": "ln_check", "col": 2, "type": "security", "label": "from_optional 归一", "sublabel": "把 None 全部填实", "icon": "decision" },
+    { "id": "s5", "lane": "ln_check", "col": 3, "type": "security", "label": "校验后张量化", "sublabel": "SamplingMetadata 逐请求", "icon": "success" },
+
+    { "id": "n1", "lane": "ln_note", "col": 1, "type": "cloud", "label": "文档默认值可能不生效", "sublabel": "被模型配置覆盖", "icon": "none" },
+    { "id": "n2", "lane": "ln_note", "col": 2, "type": "cloud", "label": "温度 <1e-5 = 贪心", "sublabel": "强制清空 top_p/top_k/min_p", "icon": "none" },
+    { "id": "n3", "lane": "ln_note", "col": 3, "type": "cloud", "label": "同批可混不同参数", "sublabel": "每个参数都是 batch 张量", "icon": "none" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "s1", "to": "s2", "label": "为 None 才问下一级", "role": "main" },
+    { "id": "e2", "from": "s2", "to": "s3", "label": "仍缺才用内建常量", "role": "main" },
+    { "id": "e3", "from": "s3", "to": "s4", "label": "定完再归一", "role": "main" },
+    { "id": "e4", "from": "s4", "to": "s5", "label": "合法值才入批", "role": "main" },
+    { "id": "e5", "from": "s2", "to": "n1", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e6", "from": "s4", "to": "n2", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e7", "from": "s5", "to": "n3", "label": "", "variant": "dashed", "role": "async" }
+  ],
+  "mainPath": ["s1", "s2", "s3", "s4", "s5"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "校验里几条容易忽略的规则",
+      "items": [
+        "temperature 越界告警并 clamp 到 _MAX_TEMP",
+        "< _SAMPLING_EPS(1e-5) 视为贪心,强制 top_p=1.0 / top_k=0 / min_p=0",
+        "logit_bias clamp 到 [-100, 100];presence/frequency 必须落在 [-2, 2]"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两个额外的合并规则",
+      "items": [
+        "stop_token_ids 与服务端默认(如 gpt-oss 的 </call>)用 dict.fromkeys 去重合并",
+        "echo=True 时继承 prompt_logprobs = top_logprobs",
+        "seed=-1 归一成 None,stop/bad_words 去重保序"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "这条链最实用的排查价值",
+      "items": [
+        "「为什么行为和官方文档不一样」→ 先看模型自带 generation_config.json",
+        "「temperature=0 还传 top_k 为何不报错」→ 贪心路径会清空它",
+        "「一批请求能混不同参数吗」→ 能,全部张量化成逐请求 batch"
+      ]
+    }
+  ]
+}

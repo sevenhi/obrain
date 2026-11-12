@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "EngineCore.step() 的一步:调度、下发、取结果、更新计数",
+    "subtitle": "core.py:597 的 step() 每轮做五件事;关键是 execute_model 异步下发后,CPU 在 GPU 算的同时把 grammar bitmask 也准备好",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-enginecore-step.sequence.html"
+  },
+  "participants": [
+    { "id": "core", "type": "frontend", "label": "EngineCore", "sublabel": "step() 循环" },
+    { "id": "sched", "type": "backend", "label": "Scheduler", "sublabel": "schedule()" },
+    { "id": "exec", "type": "backend", "label": "Executor", "sublabel": "execute_model 异步" },
+    { "id": "gpu", "type": "database", "label": "GPU workers", "sublabel": "跑本步 batch" },
+    { "id": "gram", "type": "security", "label": "grammar bitmask", "sublabel": "与 GPU 计算重叠" }
+  ],
+  "segments": [
+    { "from": 160, "to": 420, "label": "调度:重排整个 batch" },
+    { "from": 436, "to": 620, "label": "下发与重叠" },
+    { "from": 636, "to": 780, "label": "回收并更新状态" }
+  ],
+  "messages": [
+    { "id": "m1", "from": "core", "to": "sched", "y": 168, "label": "has_requests() 为空则直接返回" },
+    { "id": "m2", "from": "sched", "to": "core", "y": 216, "label": "SchedulerOutput:本步要算的 token 与块", "variant": "return" },
+    { "id": "m3", "from": "core", "to": "exec", "y": 264, "label": "execute_model(non_block):不阻塞下发", "variant": "emphasis" },
+    { "id": "m4", "from": "exec", "to": "gpu", "y": 312, "label": "batch 交给 worker 执行" },
+    { "id": "m5", "from": "core", "to": "gram", "y": 360, "label": "同期算结构化输出 bitmask", "variant": "dashed", "note": "CPU 侧的活,和 GPU 计算并行" },
+    { "id": "m6", "from": "gpu", "to": "exec", "y": 452, "label": "GPU 跑完,model_output 就绪", "variant": "return" },
+    { "id": "m7", "from": "exec", "to": "core", "y": 500, "label": "future.result():才在这里阻塞", "variant": "return" },
+    { "id": "m8", "from": "core", "to": "sched", "y": 548, "label": "update_from_output:更新 num_computed_tokens" },
+    { "id": "m9", "from": "sched", "to": "core", "y": 596, "label": "完成/中止的请求移出,释放块", "variant": "return" },
+    { "id": "m10", "from": "core", "to": "sched", "y": 660, "label": "下一轮 step():再全量重排一次", "variant": "emphasis", "note": "循环的边界就在这里" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "每步全量重排",
+      "items": [
+        "不固定 batch 成员:完成/中止移出、新请求按预算进、运行中续 token",
+        "没有任何「批」的概念存活超过一步",
+        "这是连续批处理与静态批处理的根本区别"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "异步调度",
+      "items": [
+        "用 batch queue 缓存多个已调度 batch",
+        "GPU 跑 batch N 时,CPU 已在调度 batch N+1",
+        "所以 non_block 下发 + future.result() 放到最后才阻塞"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "请求生命周期",
+      "items": [
+        "add_request → waiting",
+        "被 schedule 选中 → running(分配 block)",
+        "每步续 token → FINISHED / ABORTED → free",
+        "抢占时:释放块进 LRU,computed 归零退回 waiting"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "行号口径",
+      "items": [
+        "core.py:597 是 step() 的行号(v1-architecture 篇同口径)",
+        "scheduler.py:502-511 是统一 token 预算模型的注释",
+        "源码 commit b74ac0bc6 为基准"
+      ]
+    }
+  ]
+}

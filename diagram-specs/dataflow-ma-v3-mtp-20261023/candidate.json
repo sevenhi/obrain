@@ -1,0 +1,254 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "MTP 模块:主模型的 hidden 加上「下一个 token 的 embedding」,再过一层 Transformer",
+    "subtitle": "D=1 即只预测额外 1 个 token。输入是拼接的两半(RMSNorm 后),经 M_k 投影到 2d→d,进一个 Transformer Block,再由共享输出头出 logits。关键在「顺序预测」:h_i^k 依赖 h_i^{k-1},不是并行独立头",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-v3-mtp.dataflow.html",
+    "viewBox": [
+      1080,
+      380
+    ]
+  },
+  "stages": [
+    {
+      "label": "① 两个输入"
+    },
+    {
+      "label": "② 归一化拼接"
+    },
+    {
+      "label": "③ 投影降维"
+    },
+    {
+      "label": "④ 一层 Transformer"
+    },
+    {
+      "label": "⑤ 共享输出头"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "h0",
+      "type": "frontend",
+      "label": "主模型 hidden h_i^0",
+      "sublabel": "第 i 个位置的末层输出",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "emb",
+      "type": "database",
+      "label": "Emb(t_{i+1})",
+      "sublabel": "与主模型共享 embedding",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "norm",
+      "type": "backend",
+      "label": "各自 RMSNorm",
+      "sublabel": "两半分别归一",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "cat",
+      "type": "backend",
+      "label": "concat 成 2d",
+      "sublabel": "[norm(h); norm(emb)]",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "mk",
+      "type": "security",
+      "label": "M_k 线性投影",
+      "sublabel": "ℝ^{d×2d},k 对应深度",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "hp",
+      "type": "backend",
+      "label": "h'^k ∈ ℝ^d",
+      "sublabel": "回到 hidden 维度",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "trm",
+      "type": "backend",
+      "label": "TRM_k 一层 Block",
+      "sublabel": "完整因果链,非并行头",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "hk",
+      "type": "cloud",
+      "label": "h_i^k",
+      "sublabel": "喂给下一深度的 k+1",
+      "stage": 3,
+      "row": 1
+    },
+    {
+      "id": "head",
+      "type": "security",
+      "label": "OutHead(共享)",
+      "sublabel": "与主模型 lm_head 同一份",
+      "stage": 4,
+      "row": 0
+    },
+    {
+      "id": "loss",
+      "type": "backend",
+      "label": "CE + λ 加权",
+      "sublabel": "λ 前 10T 0.3 / 后 0.1",
+      "stage": 4,
+      "row": 1
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "h0",
+      "to": "norm",
+      "label": "先归一",
+      "route": "straight",
+      "labelAt": [
+        315,
+        112
+      ]
+    },
+    {
+      "id": "f2",
+      "from": "emb",
+      "to": "cat",
+      "label": "查表后归一",
+      "route": "straight",
+      "labelAt": [
+        178,
+        322
+      ]
+    },
+    {
+      "id": "f3",
+      "from": "norm",
+      "to": "mk",
+      "label": "两半拼起来",
+      "route": "straight",
+      "variant": "emphasis",
+      "labelAt": [
+        421,
+        112
+      ]
+    },
+    {
+      "id": "f4",
+      "from": "cat",
+      "to": "mk",
+      "label": "一起进 M_k",
+      "route": "straight",
+      "variant": "emphasis",
+      "labelAt": [
+        352,
+        212
+      ]
+    },
+    {
+      "id": "f5",
+      "from": "mk",
+      "to": "hp",
+      "label": "降回 d 维",
+      "route": "straight",
+      "labelAt": [
+        620,
+        190
+      ]
+    },
+    {
+      "id": "f6",
+      "from": "mk",
+      "to": "trm",
+      "label": "进 Transformer",
+      "route": "straight",
+      "labelAt": [
+        637,
+        112
+      ]
+    },
+    {
+      "id": "f7",
+      "from": "trm",
+      "to": "head",
+      "label": "出 logits",
+      "route": "straight",
+      "labelAt": [
+        842,
+        112
+      ]
+    },
+    {
+      "id": "f8",
+      "from": "trm",
+      "to": "hk",
+      "label": "产出该深度表示",
+      "route": "straight",
+      "labelAt": [
+        845,
+        215
+      ]
+    },
+    {
+      "id": "f9",
+      "from": "head",
+      "to": "loss",
+      "label": "算交叉熵",
+      "route": "straight",
+      "labelAt": [
+        1030,
+        215
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "和 EAGLE 长得像,目标完全不同",
+      "items": [
+        "EAGLE 用这个结构做投机解码的草稿模型(为了推理加速)",
+        "V3 用它提升训练(密化信号 + 预规划表示)",
+        "V3 也承认可以反手当投机解码器用,但那是副产品"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "顺序预测 vs 并行独立头",
+      "items": [
+        "Gloeckle 式并行独立头:各深度互不依赖,同时预测多个位置",
+        "V3 是顺序的:h_i^k 依赖 h_i^{k-1} 与 Emb(t_{i+k})",
+        "所以每个深度都保留完整因果链——这是它更像「多步推理」的原因"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "参数共享是硬要求",
+      "items": [
+        "MTP 的 embedding 层与 output head 与主模型物理共享(共享参数 + 梯度)",
+        "所以 MTP 模块本身很轻(d 维投影 + 1 层 Block)",
+        "推理时可整体丢弃,主模型独立运行"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "公式对照(论文 21-25)",
+      "items": [
+        "h'^k = M_k[RMSNorm(h^{k-1}) ; RMSNorm(Emb(t_{i+k}))]   (21)",
+        "h^k = TRM_k(h'^k)   (22);P = OutHead(h^k)   (23)",
+        "L_MTP = (λ/D) Σ_k L_MTP^k,D=1 时就是单层"
+      ]
+    }
+  ]
+}

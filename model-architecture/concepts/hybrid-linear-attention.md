@@ -3,6 +3,7 @@ title: 混合线性注意力/SSM 架构:Mamba、RWKV、Gated DeltaNet 与 Qwen3-
 type: concept
 tags: [linear-attention, ssm, mamba, rwkv, gated-deltanet, griffin, jamba, qwen3-next, hybrid-architecture, state-space, recurrent, hybrid-linear-attention]
 source:
+  - "code: Mamba v2.2.2（A_log 参数与输入依赖的离散化 dA） | https://github.com/state-spaces/mamba/blob/8ffd905c91d207f5c0cc84fc2a2fb748655094f0/mamba_ssm/modules/mamba_simple.py | reviewed 2026-11-04"
   - "pdf: Mamba: Linear-Time Sequence Modeling with Selective State Spaces | arXiv:2312.00752 (Gu & Dao, 2023-12)"
   - "pdf: Transformers are SSMs: Generalized Models and Efficient Algorithms Through Structured State Space Duality (Mamba-2) | arXiv:2405.21060 (Dao & Gu, 2024-05)"
   - "pdf: RWKV: Reinventing RNNs for the Transformer Era | arXiv:2305.13048 (Peng et al., 2023-05)"
@@ -13,13 +14,14 @@ source:
   - "code: fla-org/flash-linear-attention(FLA,kernel 库;GDN 的 `chunk_gated_delta_rule` packed 输入 bug 在 0.5.2 修复)| https://github.com/fla-org/flash-linear-attention"
   - "code: NVIDIA/Model-Optimizer PR #2912(2026-10-23 合并:FLA 版本 × packed GDN 精度/可复现性实测表,practice 要点 0 的数据出处)| https://github.com/NVIDIA/Model-Optimizer/pull/2912"
 date: 2026-10
+reviewed: 2026-11-04
 ---
 
 # 混合线性注意力/SSM 架构:Mamba、RWKV、Gated DeltaNet 与 Qwen3-Next
 
 ## TL;DR
 
-softmax attention 之外的**第三条架构主轴**(前两条:MHA→GQA/MLA 的头共享、dense→MoE 的专家化)。核心动机是一笔两难账:**训练要能并行扫描**(GPU 吃满)、**推理要 O(1) 状态**(不随序列涨显存/延迟)——RNN 后者强前者弱,softmax attention 反之。线性注意力/SSM 家族用「核化或状态递推」把序列建模压成**线性复杂度 + 固定大小状态**,代价是**精确检索/召回能力弱**(attention 的 softmax 归一化天然做「尖锐聚焦」)。2025-26 的工程答案不是全线性,而是 **hybrid:少数 full attention 层 + 多数线性/SSM 层**——Qwen3-Next(Gated DeltaNet + full attention 混合 + 超稀疏 MoE)、Jamba/Zamba、Griffin 都是这个形态。**识别要点**:config 里出现 `mamba`、`n_layers_full_attention`、`layer_types` 混排,或 RWKV 的 `time_mix`/`time_decay`,即离开纯 softmax attention 谱系。
+softmax attention 之外的**序列混合路线**:线性注意力/选择性 SSM 用核化或递归状态,在固定模型宽度下获得线性全序列工作量与常数大小递归状态,并研究如何高效并行训练。hybrid 将递归层与 full 或 local attention 结合,用检索能力与状态成本作权衡;Qwen3-Next/Jamba 的 full-attention 层仍保存 O(n) KV,Griffin 的局部 attention 则按窗口预算。**常数状态是递归层性质,不是所有混合模型的性质**。config 中的 `layer_types`、`mamba`、`time_mix` 等只是识别入口,实际层型与状态还需对照 forward。
 
 ---
 
@@ -29,7 +31,11 @@ softmax attention 之外的**第三条架构主轴**(前两条:MHA→GQA/MLA 的
 |---|---|---|---|
 | softmax attention | O(n²) 可并行(全序列一次算) | 每步读全部 KV,O(n) 状态 | 强(直接内积定位) |
 | RNN/LSTM | 顺序递推,难并行 | **O(1) 状态**,每步常数 | 弱(信息挤进定长状态) |
-| 线性/SSM/hybrid | 多数可并行(线性复杂度) | O(1) 或 O(k) 状态 | 弱~中(靠 hybrid 补) |
+| 纯线性/SSM | 多数可并行(固定宽度下线性工作量) | O(1) 序列状态 | 依模型与任务而定 |
+| 局部窗口 hybrid | 递归层 + 窗口 attention | 固定窗口 k 时 O(k) KV + 固定递归状态 | 补近期检索 |
+| full-attention hybrid | 递归层 + full attention | full-attention 层仍有 O(n) KV | 用 KV 成本换检索能力 |
+
+**复杂度三口径**：固定宽度与层数,全序列训练/预填充、单步 decode、持久状态要分开。full attention 的三者分别随 n 为 O(n²)、O(n)、O(n);纯递归线性层为 O(n)、O(1)、O(1)。含固定数量 full-attention 层的 hybrid 仍有对应的二次总工作量与线性 KV,只降低系数,不会因多数层线性就变成全模型常数状态。训练激活、反传保存与临时 workspace 另计。
 
 softmax attention 的 O(n²) 在长上下文预训练是算力账单、在解码是**带宽账单**(KV cache 逐 token 线性涨,见库内 [`attention-heads-mha-mqa-gqa`](attention-heads-mha-mqa-gqa.md) 的带宽分析)。线性家族想把两条账单都砍掉。
 
@@ -39,7 +45,7 @@ softmax attention 的 O(n²) 在长上下文预训练是算力账单、在解码
 
 ### 2.1 线性注意力(核化)
 
-把 `softmax(QKᵀ)V` 换成 `φ(Q)φ(K)ᵀ V`,利用结合律改写为 `φ(Q)(φ(K)ᵀV)`——先算「状态」`S=φ(K)ᵀV` (d×d),再 `φ(Q)S`,复杂度 O(n·d²) 与序列长度无关。Performer 用随机特征近似 softmax 核;Linear Transformer(Schlag 2021)把它解释为**快速权重记忆系统**(fast weights)。问题:没有 softmax 归一化,长程检索/精确匹配明显变差。
+核化注意力以 `φ(Q)φ(K)ᵀ` 替代显式 softmax 权重,利用结合律先累计 `S=Σ φ(k)vᵀ`、归一化统计量 `z=Σ φ(k)`,再输出 `φ(q)ᵀS / (φ(q)ᵀz)`。因果版本仅累计当前及历史位置;这里假设特征维与 value 维均为 d。**全序列工作量 O(n·d²) 随 n 线性增长**,单步更新 O(d²)、状态 O(d²) 才与历史长度无关。Performer 用随机特征近似 softmax 核;Schlag 2021 从 fast-weight memory 解释线性 Transformer。不同核/更新规则的检索表现需具体评测,不能将其统称为“没有归一化”。
 
 ### 2.2 RWKV:时间混合的线性递推
 
@@ -47,7 +53,7 @@ RWKV-4 把 attention 的 QKV 换成**时间衰减加权的线性插值**(time mi
 
 ### 2.3 Mamba/S6 与 Mamba-2/SSD
 
-Mamba(S6)的突破是**选择性(输入依赖)的离散化步长 Δ、投影 B/C、衰减 A**——让「记住什么、忘掉什么」依赖当前 token,解决固定 LTI SSM(如 S4)不能做内容感知检索的问题;硬件上用**kernel 融合的并行扫描**(A 依赖输入后不能预计算卷积)。Mamba-2 揭示 **Structured State Space Duality (SSD)**:选择性 SSM 与一种(带掩码的)attention 形式对偶,可用矩阵乘分块实现,效率再上一台阶。**强项**:语言/音频/DNA 序列,长序列效率;**弱项**:需要精确 in-context 检索的任务,纯 Mamba 弱于 Transformer——这是 hybrid 的直接动因。
+Mamba(S6)让**Δ、B、C 依赖输入**,但连续状态参数 A 本身是可训练、非逐 token 生成的参数。官方实现 `A=-exp(A_log)`;离散化后 `A_bar=exp(ΔA)` 才随输入变化。这使系统不再是固定 LTI 卷积,实现采用融合扫描。Mamba-2 的 **Structured State Space Duality (SSD)** 将选择性 SSM 与特定掩码 attention 联系起来,用矩阵乘分块提高效率。固定状态具有长序列效率优势,但精确检索等任务仍需对照测试;这是探索 hybrid 的动机之一,不是所有任务的性能定理。
 
 ### 2.4 Griffin / Jamba / Zamba:混合层比例的实验
 
@@ -58,7 +64,7 @@ Mamba(S6)的突破是**选择性(输入依赖)的离散化步长 Δ、投影 B/C
 
 ### 2.5 Gated DeltaNet 与 Qwen3-Next
 
-Gated DeltaNet 在 Mamba-2 的 delta rule 形式上加**门控遗忘**,用可并行的 chunkwise 训练 + 线性推理;在检索类任务上优于纯 SSM。**Qwen3-Next** 把 Gated DeltaNet 与 full attention 混合(如大部分层 GDN、少数层 full attention),再配**超稀疏 MoE**(激活参数极低),代表 2025-26「hybrid 第三轴」进入旗舰开源模型的现实形态。库内 [`open-model-landscape-2025-2026`](open-model-landscape-2025-2026.md) 的谱系可对照。
+Gated DeltaNet 将 **DeltaNet 的 delta update 与门控遗忘结合**,并设计可并行的 chunkwise 训练算法;不应称为“Mamba-2 的 delta rule 形式”。原论文把 Mamba2 和 DeltaNet 作为不同对照,并探索与 Mamba2/滑窗 attention 的混合。**Qwen3-Next** 将 Gated DeltaNet 与 full attention 混合并配 MoE;full-attention 层仍保留随序列增长的 KV。具体层比例与服务支持应绑定 checkpoint/config,谱系见 [`open-model-landscape-2025-2026`](open-model-landscape-2025-2026.md)。
 
 ---
 
@@ -71,7 +77,7 @@ Gated DeltaNet 在 Mamba-2 的 delta rule 形式上加**门控遗忘**,用可并
 | 训练吞吐(长序列) | 优 | 良 | 差 |
 | 解码带宽(长上下文) | 优 | 良 | 差 |
 
-**工程含义**:长上下文、高吞吐、成本敏感(尤其 decode)的场景收益最大;强 RAG/精确 recall 的场景必须保留一定比例 full attention,或外挂检索。
+**工程含义**:长上下文 decode 是值得测试的场景;对精确 recall 要求高时,应比较 full/local hybrid 与外部检索的质量和成本,不能预设固定层比例是所有任务的必要条件。上表为选型假设,不是跨模型 benchmark 认证。
 
 ---
 
@@ -101,12 +107,12 @@ Gated DeltaNet 在 Mamba-2 的 delta rule 形式上加**门控遗忘**,用可并
    | 0.5.1 | 59% | 14.2% | 否 |
    | **0.5.2** | **0** | **0** | **是** |
 
-   对照:KDA(`chunk_kda`)在所有版本都正确(bf16 舍入内);**非 packed 训练在所有版本都精确**。所以「我的 GDN 模型训练不收敛/指标抖动」若用了 varlen packing,**先升级 FLA 再怀疑别的**(来源:NVIDIA/Model-Optimizer PR #2912,2026-10-23 合并;Megatron-LM main 当时仍 pin 0.5.1,ModelOpt 自带的 GDN 状态量化 kernel 锁 `fla-core==0.5.1`,同样中招)。
+   对照结论仅限该 PR 报告的版本与测试配置:其中 KDA(`chunk_kda`)及非 packed 对照在报告容差内通过,不等于“所有版本/输入都正确”。若 GDN varlen 训练出现异常,先固定 FLA/kernel/模型版本并比较 packed 与逐序列结果;升级后仍须回归。以上 PR/依赖 pin 为 2026-10 的来源快照,本次未重新复现其数值表或确认最新依赖。
 1. **先量检索需求**:若产品有精确 needle/QA,不要上全线性;hybrid 中 full attention 比例先保 1/8~1/4。
-2. **推理后端**:线性层 O(1) 状态是服务优势,但**主流推理引擎对 Mamba/GDN 的 kernel 支持远不如 attention 成熟**(vLLM 等对 Mamba 有实验支持,混合模型的调度/量化更复杂)——选型前查该模型的 runtime 支持矩阵。
+2. **推理后端**:按目标模型与引擎版本核对 Mamba/GDN、状态缓存、投机与量化支持;不要把旧版“实验支持”标签当当前所有实现的状态。
 3. **长上下文外推**:线性递推天然无位置相位崩溃(RoPE 外推问题),但训练长度之外的**分布**仍可能漂移;不要把「状态 O(1)」等同于「任意长度零退化」。
 4. **量化**:对 SSM 的 A/Δ/门控做低比特要小心时间常数精度;与 [`fp8-fp4-formats`](../../quantization/concepts/fp8-fp4-formats.md) 的硬件原生路径未必直接覆盖递推核。
-5. **与 KV cache 管理的关系**:hybrid 中 full attention 层仍有 KV cache(可走 PagedAttention),线性层无——显存预算按「最坏层」算。
+5. **与 KV cache 管理的关系**:预算应累加所有 full-attention 层 KV、窗口层 KV 与递归层状态,再加 batch/beam、副本、临时缓冲及分配器开销;不能只按一个“最坏层”估总显存。递归层没有随历史增长的 KV,但仍有状态,抢占/回滚时也需管理。
 
 ---
 

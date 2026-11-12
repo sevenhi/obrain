@@ -1,0 +1,113 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "容量规划六步",
+  "subtitle": "从定 SLO 到 CI 门禁的落地流程",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-guidellm-capacity-plan.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "def",
+   "label": "定义"
+  },
+  {
+   "id": "run",
+   "label": "执行"
+  },
+  {
+   "id": "gate",
+   "label": "门禁"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "slo",
+   "lane": "def",
+   "col": 0,
+   "type": "backend",
+   "label": "定 SLO",
+   "sublabel": "TTFT/ITL 目标+分位数"
+  },
+  {
+   "id": "data",
+   "lane": "def",
+   "col": 1,
+   "type": "backend",
+   "label": "造负载",
+   "sublabel": "贴近生产分布"
+  },
+  {
+   "id": "swp",
+   "lane": "run",
+   "col": 0,
+   "type": "frontend",
+   "label": "sweep 加压",
+   "sublabel": "找拐点"
+  },
+  {
+   "id": "conf",
+   "lane": "run",
+   "col": 1,
+   "type": "frontend",
+   "label": "70-80% 拐点确认",
+   "sublabel": "定速率/泊松"
+  },
+  {
+   "id": "arch",
+   "lane": "run",
+   "col": 2,
+   "type": "backend",
+   "label": "报告归档",
+   "sublabel": "JSON 进对象存储"
+  },
+  {
+   "id": "ci",
+   "lane": "gate",
+   "col": 0,
+   "type": "frontend",
+   "label": "SLO CI 门禁",
+   "sublabel": "低于阈值卡发布"
+  }
+ ],
+ "edges": [
+  {
+   "from": "slo",
+   "to": "data",
+   "label": "先写清目标",
+   "variant": "emphasis"
+  },
+  {
+   "from": "data",
+   "to": "swp",
+   "label": "贴近生产再压"
+  },
+  {
+   "from": "swp",
+   "to": "conf",
+   "label": "拐点确认"
+  },
+  {
+   "from": "conf",
+   "to": "arch",
+   "label": "归档对比"
+  },
+  {
+   "from": "arch",
+   "to": "ci",
+   "label": "做成门禁",
+   "variant": "emphasis"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "没有 SLO 的 benchmark",
+   "items": [
+    "只是好看的数字",
+    "先定 SLO,再谈容量"
+   ]
+  }
+ ]
+}

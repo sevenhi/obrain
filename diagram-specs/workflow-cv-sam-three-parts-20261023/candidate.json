@@ -1,0 +1,71 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "SAM 的三段式:重编码器跑一次,轻解码器交互多次",
+    "subtitle": "ViT-H 对整图算一次 embedding(贵但可摊销),提示编码器极便宜,掩码解码器在给定 embedding 后约 50ms 出一个掩码——所以能做成浏览器里可交互的基础模型",
+    "locale": "zh-CN",
+    "output": "diagrams/cv-sam-three-parts.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_freq", "label": "① 运行频次" },
+    { "id": "ln_part", "label": "② 组件" },
+    { "id": "ln_cost", "label": "③ 成本" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "每图一次", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "每提示一次", "fromCol": 1, "toCol": 2, "variant": "emphasis" },
+    { "id": "p3", "label": "输出", "fromCol": 3, "toCol": 3 }
+  ],
+  "nodes": [
+    { "id": "img", "lane": "ln_freq", "col": 0, "type": "database", "label": "整图输入", "sublabel": "set_image 时算一次", "icon": "start" },
+    { "id": "prompt", "lane": "ln_freq", "col": 1, "type": "external", "label": "点 / 框 / 掩码 / 文本", "sublabel": "每个提示独立进来", "icon": "neutral" },
+    { "id": "vit", "lane": "ln_part", "col": 0, "type": "backend", "label": "ViT-H 图像编码器", "sublabel": "MAE 预训练,632M 参数", "icon": "active" },
+    { "id": "penc", "lane": "ln_part", "col": 1, "type": "backend", "label": "提示编码器", "sublabel": "极便宜", "icon": "active" },
+    { "id": "mdec", "lane": "ln_part", "col": 2, "type": "backend", "label": "掩码解码器", "sublabel": "双向交叉注意力融合", "icon": "active" },
+    { "id": "out", "lane": "ln_part", "col": 3, "type": "backend", "label": "每提示 ≤3 个掩码", "sublabel": "附带 IoU 预测分数", "icon": "success" },
+    { "id": "c1", "lane": "ln_cost", "col": 0, "type": "cloud", "label": "贵但可摊销", "sublabel": "同图多次提示只算一次", "icon": "none" },
+    { "id": "c2", "lane": "ln_cost", "col": 2, "type": "cloud", "label": "浏览器 CPU 约 50ms", "sublabel": "论文引言演示", "icon": "none" },
+    { "id": "c3", "lane": "ln_cost", "col": 3, "type": "cloud", "label": "模糊感知", "sublabel": "3 个掩码头分监督不同答案", "icon": "none" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "img", "to": "vit", "label": "整图一次编码", "role": "main" },
+    { "id": "e2", "from": "prompt", "to": "penc", "label": "提示编码", "role": "main" },
+    { "id": "e3", "from": "vit", "to": "mdec", "label": "复用 embedding", "role": "main" },
+    { "id": "e4", "from": "penc", "to": "mdec", "label": "两路双向交叉注意力", "role": "main" },
+    { "id": "e5", "from": "mdec", "to": "out", "label": "一次出多个候选", "role": "main" },
+    { "id": "e6", "from": "vit", "to": "c1", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e7", "from": "mdec", "to": "c2", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e8", "from": "out", "to": "c3", "label": "", "variant": "dashed", "role": "async" }
+  ],
+  "mainPath": ["img", "vit", "mdec", "out"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么这个架构能成为「基础模型」",
+      "items": [
+        "重编码器贵但只跑一次,交互成本落在轻解码器上",
+        "所以能在浏览器 CPU 上做实时交互式分割",
+        "提示形式统一(点/框/掩码/文本),同一模型覆盖多种下游任务"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "「模糊感知」是什么",
+      "items": [
+        "一个提示可能对应多个有效答案(如衬衫上的人 vs 整个人)",
+        "训练时允许 3 个掩码头分别监督不同有效答案",
+        "推理时返回多个候选 + 各自 IoU 预测分数供选择"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "SAM 不做什么",
+      "items": [
+        "不输出类别:只管「分割什么形状」,「是什么」需外接分类器/CLIP",
+        "细结构(发丝/栅栏)与低对比度边界是论文自认的 limitation",
+        "文本提示仅初步结果(论文 §2.4);域外(医学/遥感)零样本性能参差"
+      ]
+    }
+  ]
+}

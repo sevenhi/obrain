@@ -1,0 +1,115 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "默认分派链路:自动选最小 priority 的合法 backend",
+  "subtitle": "get_attn_backend → get_valid_backends → min(candidates, key=priority)",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-attn-dispatch-chain.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "entry",
+   "label": "入口"
+  },
+  {
+   "id": "filter",
+   "label": "过滤"
+  },
+  {
+   "id": "pick",
+   "label": "选择"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "gab",
+   "lane": "entry",
+   "col": 0,
+   "type": "backend",
+   "label": "get_attn_backend()",
+   "sublabel": "head_size/dtype/use_mla"
+  },
+  {
+   "id": "cfg",
+   "lane": "entry",
+   "col": 1,
+   "type": "backend",
+   "label": "AttentionSelectorConfig",
+   "sublabel": "组装配置"
+  },
+  {
+   "id": "pri",
+   "lane": "filter",
+   "col": 0,
+   "type": "backend",
+   "label": "_get_backend_priorities",
+   "sublabel": "按平台/MLA/量化 KV 排优先级"
+  },
+  {
+   "id": "val",
+   "lane": "filter",
+   "col": 1,
+   "type": "backend",
+   "label": "validate_configuration",
+   "sublabel": "返回非法原因列表"
+  },
+  {
+   "id": "min",
+   "lane": "pick",
+   "col": 0,
+   "type": "frontend",
+   "label": "min(priority)",
+   "sublabel": "最小 priority=最高优先级"
+  },
+  {
+   "id": "err",
+   "lane": "pick",
+   "col": 1,
+   "type": "backend",
+   "label": "显式指定不过",
+   "sublabel": "ValueError,不静默回退",
+   "icon": "failure"
+  }
+ ],
+ "edges": [
+  {
+   "from": "gab",
+   "to": "cfg",
+   "label": "组装"
+  },
+  {
+   "from": "cfg",
+   "to": "pri",
+   "label": "排优先级",
+   "variant": "emphasis"
+  },
+  {
+   "from": "pri",
+   "to": "val",
+   "label": "逐个过滤"
+  },
+  {
+   "from": "val",
+   "to": "min",
+   "label": "合法候选",
+   "variant": "emphasis"
+  },
+  {
+   "from": "val",
+   "to": "err",
+   "label": "显式指定",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "amber",
+   "title": "要点",
+   "items": [
+    "优先级由 _get_backend_priorities 决定,非固定一张表",
+    "量化 KV cache 会影响优先级:FP8 KV 时 FlashInfer MLA 提前"
+   ]
+  }
+ ]
+}

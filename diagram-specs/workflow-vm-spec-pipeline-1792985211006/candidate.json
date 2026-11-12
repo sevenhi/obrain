@@ -1,0 +1,158 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "训练全流程:数据 → 训练 → 导出 → vLLM",
+  "subtitle": "Step 0-6,离线与在线两条 hidden states 路径",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-spec-pipeline.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "data",
+   "label": "数据侧"
+  },
+  {
+   "id": "train",
+   "label": "训练侧"
+  },
+  {
+   "id": "deploy",
+   "label": "部署侧"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "s0",
+   "lane": "data",
+   "col": 0,
+   "type": "backend",
+   "label": "response regeneration",
+   "sublabel": "用目标模型重写答案"
+  },
+  {
+   "id": "s1",
+   "lane": "data",
+   "col": 1,
+   "type": "frontend",
+   "label": "vLLM server",
+   "sublabel": "render + hidden states"
+  },
+  {
+   "id": "s2",
+   "lane": "data",
+   "col": 2,
+   "type": "backend",
+   "label": "prepare-data",
+   "sublabel": "chat template+loss mask"
+  },
+  {
+   "id": "off",
+   "lane": "train",
+   "col": 0,
+   "type": "backend",
+   "label": "离线落盘",
+   "sublabel": "关 vLLM 再训"
+  },
+  {
+   "id": "on",
+   "lane": "train",
+   "col": 1,
+   "type": "backend",
+   "label": "在线 hs_connectors",
+   "sublabel": "file/Mooncake"
+  },
+  {
+   "id": "tr",
+   "lane": "train",
+   "col": 2,
+   "type": "backend",
+   "label": "speculators.train",
+   "sublabel": "EAGLE-3/MTP"
+  },
+  {
+   "id": "ck",
+   "lane": "deploy",
+   "col": 0,
+   "type": "database",
+   "label": "checkpoint",
+   "sublabel": "HF 兼容"
+  },
+  {
+   "id": "st",
+   "lane": "deploy",
+   "col": 1,
+   "type": "backend",
+   "label": "stitch-mtp",
+   "sublabel": "缝回 verifier"
+  },
+  {
+   "id": "sv",
+   "lane": "deploy",
+   "col": 2,
+   "type": "frontend",
+   "label": "vllm serve",
+   "sublabel": "speculative_config"
+  }
+ ],
+ "edges": [
+  {
+   "from": "s0",
+   "to": "s1",
+   "label": "重写答案",
+   "variant": "emphasis"
+  },
+  {
+   "from": "s1",
+   "to": "s2",
+   "label": "prepare"
+  },
+  {
+   "from": "s2",
+   "to": "off",
+   "label": "hidden states 落盘",
+   "variant": "emphasis"
+  },
+  {
+   "from": "s2",
+   "to": "on",
+   "label": "--vllm-endpoint 实时抽",
+   "variant": "dashed"
+  },
+  {
+   "from": "off",
+   "to": "tr",
+   "label": "关 vLLM 再训"
+  },
+  {
+   "from": "on",
+   "to": "tr",
+   "label": "分卡边采边训"
+  },
+  {
+   "from": "tr",
+   "to": "ck",
+   "label": "保存"
+  },
+  {
+   "from": "ck",
+   "to": "st",
+   "label": "MTP 缝合"
+  },
+  {
+   "from": "st",
+   "to": "sv",
+   "label": "部署"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "离线 vs 在线",
+   "items": [
+    "离线:省 GPU、数据可复用,但需共享盘",
+    "在线:分卡、verifier 可随训练刷新"
+   ]
+  }
+ ]
+}

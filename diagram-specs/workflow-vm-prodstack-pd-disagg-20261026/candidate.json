@@ -1,0 +1,101 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "PD 分离拓扑(values-16):prefill 与 decode 拆开",
+    "subtitle": "prefill 作 kv_producer(sender),decode 作 kv_consumer(receiver),NIXL 成对传输;镜像须用 lmcache 集成版",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-prodstack-pd-disagg.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_pre",
+      "label": "① prefill 引擎"
+    },
+    {
+      "id": "ln_nixl",
+      "label": "② NIXL 传输"
+    },
+    {
+      "id": "ln_dec",
+      "label": "③ decode 引擎"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "pre",
+      "lane": "ln_pre",
+      "col": 0,
+      "type": "backend",
+      "label": "llama-prefill",
+      "sublabel": "kv_producer / sender"
+    },
+    {
+      "id": "nixl",
+      "lane": "ln_nixl",
+      "col": 1,
+      "type": "messagebus",
+      "label": "NIXL peer",
+      "sublabel": "peerPort 55555 / 1GB buffer"
+    },
+    {
+      "id": "dec",
+      "lane": "ln_dec",
+      "col": 2,
+      "type": "cloud",
+      "label": "llama-decode",
+      "sublabel": "kv_consumer / receiver"
+    },
+    {
+      "id": "bad",
+      "lane": "ln_dec",
+      "col": 2,
+      "type": "external",
+      "label": "配错镜像",
+      "sublabel": "vllm 版静默无 offload",
+      "yOffset": 120
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "pre",
+      "to": "nixl",
+      "label": "kvRole=kv_producer",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "nixl",
+      "to": "dec",
+      "label": "kvRole=kv_consumer",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "pre",
+      "to": "bad",
+      "label": "用错镜像→静默失败",
+      "role": "error",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "pre",
+    "nixl",
+    "dec"
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "两组必须成对",
+      "items": [
+        "kvRole 与 nixlRole 要成对,且网络可达",
+        "镜像必须 lmcache/vllm-openai,不是 vllm/vllm-openai",
+        "否则 KV 传不过去,PD 比混批更慢"
+      ]
+    }
+  ]
+}

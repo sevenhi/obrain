@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "8 种 canonical GMMA layout atom:MN-major / K-major × 4 档 swizzle",
+    "subtitle": "WGMMA 对 sA/sB 的 shape 与 stride 都有约束,「顺手」的 (bM,bK):(1,bM) 一般非法。实操上唯一保证兼容的构造方式,是从这 8 个 atom 里选一个喂给 tile_to_shape",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-gmma-layout-atoms.tree.html"
+  },
+  "layout": {
+    "direction": "right",
+    "nodeW": 200,
+    "gapX": 26,
+    "gapY": 40
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "GMMA layout atom",
+      "sublabel": "8 个,选一个"
+    },
+    {
+      "id": "mn",
+      "label": "MN-major(4 种)",
+      "parent": "root",
+      "sublabel": "A/B 在 MN 模连续"
+    },
+    {
+      "id": "mn_i",
+      "label": "Layout_MN_INTER_Atom",
+      "parent": "mn",
+      "sublabel": "无 swizzle,隐含 16B 边界"
+    },
+    {
+      "id": "mn_32",
+      "label": "Layout_MN_SW32_Atom",
+      "parent": "mn",
+      "sublabel": "32B:交换 2 个 16B 段"
+    },
+    {
+      "id": "mn_64",
+      "label": "Layout_MN_SW64_Atom",
+      "parent": "mn",
+      "sublabel": "64B:交换 4 个"
+    },
+    {
+      "id": "mn_128",
+      "label": "Layout_MN_SW128_Atom",
+      "parent": "mn",
+      "sublabel": "128B:交换 8 个"
+    },
+    {
+      "id": "k",
+      "label": "K-major(4 种)",
+      "parent": "root",
+      "sublabel": "A/B 在 K 模连续"
+    },
+    {
+      "id": "k_i",
+      "label": "Layout_K_INTER_Atom",
+      "parent": "k",
+      "sublabel": "无 swizzle"
+    },
+    {
+      "id": "k_32",
+      "label": "Layout_K_SW32_Atom",
+      "parent": "k",
+      "sublabel": "32B swizzle"
+    },
+    {
+      "id": "k_64",
+      "label": "Layout_K_SW64_Atom",
+      "parent": "k",
+      "sublabel": "64B swizzle"
+    },
+    {
+      "id": "k_128",
+      "label": "Layout_K_SW128_Atom",
+      "parent": "k",
+      "sublabel": "128B swizzle"
+    },
+    {
+      "id": "tile",
+      "label": "tile_to_shape(atom, (bM,bK,bP))",
+      "parent": "root",
+      "sublabel": "像 numpy.tile 一样列主序平铺",
+      "collapsed": true
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "命名里的数字是字节数",
+      "items": [
+        "atom 在 contiguous 方向的长度恒等于 swizzle 字节数",
+        "SW128 时 64 × sizeof(half) = 128B,命名由此而来",
+        "INTER 则是 16B 边界"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两条独立约束都要满足",
+      "items": [
+        "① MMA atom 的整除: bM 是 64 倍数、bN 是 N 倍数、bK 是 16 倍数",
+        "② swizzle 对 SMEM shape 的整除:各模要能被 atom tile 整除",
+        "少满足一条就编不过或行为未定义"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "手写布局 = 未定义行为温床",
+      "items": [
+        "碰巧能跑不代表合法",
+        "swizzle 模式还要与 TMA 加载侧一致",
+        "遇到嵌套 shape((_64,(_8,_2)))先按 (MMA,MMA_M,MMA_K,PIPE) 对号"
+      ]
+    }
+  ]
+}

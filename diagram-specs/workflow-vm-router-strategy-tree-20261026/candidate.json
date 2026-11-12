@@ -1,0 +1,167 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "负载均衡策略选择决策树",
+    "subtitle": "先问要不要会话亲和,再问是否负载敏感,四类策略各自落到最合适场景",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-router-strategy-tree.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_q1",
+      "label": "① 会话亲和"
+    },
+    {
+      "id": "ln_q2",
+      "label": "② 细分"
+    },
+    {
+      "id": "ln_res",
+      "label": "③ 策略"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "ln_q1",
+      "col": 0,
+      "type": "frontend",
+      "icon": "start",
+      "label": "开始选策略",
+      "sublabel": ""
+    },
+    {
+      "id": "q1",
+      "lane": "ln_q1",
+      "col": 0,
+      "type": "backend",
+      "icon": "decision",
+      "label": "需要会话亲和?",
+      "sublabel": "",
+      "yOffset": 110
+    },
+    {
+      "id": "q2",
+      "lane": "ln_q2",
+      "col": 1,
+      "type": "backend",
+      "icon": "decision",
+      "label": "多轮对话/KV 复用?"
+    },
+    {
+      "id": "q3",
+      "lane": "ln_q2",
+      "col": 1,
+      "type": "backend",
+      "icon": "decision",
+      "label": "负载敏感/长短差异大?",
+      "yOffset": 120
+    },
+    {
+      "id": "ch",
+      "lane": "ln_res",
+      "col": 2,
+      "type": "backend",
+      "label": "consistent_hash",
+      "sublabel": "聊天应用"
+    },
+    {
+      "id": "ca",
+      "lane": "ln_res",
+      "col": 2,
+      "type": "backend",
+      "label": "cache_aware",
+      "sublabel": "重复前缀",
+      "yOffset": 110
+    },
+    {
+      "id": "p2",
+      "lane": "ln_res",
+      "col": 2,
+      "type": "cloud",
+      "label": "power_of_two",
+      "sublabel": "复杂度差异大",
+      "yOffset": 220
+    },
+    {
+      "id": "rr",
+      "lane": "ln_res",
+      "col": 2,
+      "type": "external",
+      "label": "round_robin/random",
+      "sublabel": "批式/调试",
+      "yOffset": 330
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "start",
+      "to": "q1",
+      "label": "",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "q1",
+      "to": "q2",
+      "label": "是",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "q1",
+      "to": "q3",
+      "label": "否",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "q2",
+      "to": "ch",
+      "label": "是",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "q2",
+      "to": "ca",
+      "label": "否(缓存驱动)",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "q3",
+      "to": "p2",
+      "label": "是",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e7",
+      "from": "q3",
+      "to": "rr",
+      "label": "否",
+      "role": "branch",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "start",
+    "q1",
+    "q2",
+    "ch"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "最常见的错配",
+      "items": [
+        "多轮对话用 round_robin:每轮换 worker,前缀缓存全冷",
+        "该用 consistent_hash 却散到各副本,TTFT 变差"
+      ]
+    }
+  ]
+}

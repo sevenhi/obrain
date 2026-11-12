@@ -1,0 +1,156 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "选型准则:先定约束,再选模型 —— 五条互斥的入口",
+    "subtitle": "所有选型问题最终都落到「显存能不能装下总参」和「速度要不要激活参」这两问上;下面五条按最常见约束排列,顺序即优先级",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-open-model-choice.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_q", "label": "约束" },
+    { "id": "ln_dense", "label": "密集路线的答案" },
+    { "id": "ln_moe", "label": "稀疏路线的答案" },
+    { "id": "ln_warn", "label": "代价 / 坑", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 显存与速度谁更紧", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 分到具体模型", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "③ 附加约束", "fromCol": 4, "toCol": 5 }
+  ],
+  "nodes": [
+    {
+      "id": "q1",
+      "lane": "ln_q",
+      "col": 0,
+      "type": "backend",
+      "label": "显存紧、要快",
+      "sublabel": "单卡 / 端侧 / 低延迟",
+      "icon": "decision"
+    },
+    {
+      "id": "a1",
+      "lane": "ln_dense",
+      "col": 1,
+      "type": "backend",
+      "label": "选小 dense 或量化版",
+      "sublabel": "Mistral 7B、Qwen2.5 7B",
+      "icon": "success"
+    },
+    {
+      "id": "q2",
+      "lane": "ln_q",
+      "col": 2,
+      "type": "backend",
+      "label": "单/双卡装得下大权重",
+      "sublabel": "要高智能但卡不多",
+      "icon": "decision"
+    },
+    {
+      "id": "a2",
+      "lane": "ln_moe",
+      "col": 3,
+      "type": "backend",
+      "label": "选稀疏 MoE",
+      "sublabel": "Mixtral 47B(2×24G 可跑)、Qwen-MoE",
+      "icon": "success"
+    },
+    {
+      "id": "q3",
+      "lane": "ln_q",
+      "col": 4,
+      "type": "backend",
+      "label": "多卡集群、追开源最强",
+      "sublabel": "有 NVLink/IB",
+      "icon": "decision"
+    },
+    {
+      "id": "a3",
+      "lane": "ln_moe",
+      "col": 5,
+      "type": "backend",
+      "label": "DeepSeek-V3 671B",
+      "sublabel": "需专家并行,vLLM/SGLang 支持",
+      "icon": "success"
+    },
+    {
+      "id": "q4",
+      "lane": "ln_dense",
+      "col": 3,
+      "type": "backend",
+      "label": "微调基座 / 长文档",
+      "sublabel": "生态与 ctx 优先",
+      "icon": "decision"
+    },
+    {
+      "id": "a4",
+      "lane": "ln_dense",
+      "col": 4,
+      "type": "backend",
+      "label": "Llama 3 / Qwen2.5",
+      "sublabel": "LoRA/QLoRA 成熟,原生 128k",
+      "icon": "success"
+    },
+    {
+      "id": "w1",
+      "lane": "ln_warn",
+      "col": 5,
+      "type": "security",
+      "label": "MoE 显存按总参估",
+      "sublabel": "47B bf16 ≈ 94GB,别按 13B",
+      "icon": "failure"
+    },
+    {
+      "id": "w2",
+      "lane": "ln_warn",
+      "col": 2,
+      "type": "security",
+      "label": "别自己 YaRN 硬扩到生产",
+      "sublabel": "社区扩展版先过下游回归",
+      "icon": "failure"
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "q1", "to": "a1", "label": "别硬上 MoE", "role": "main" },
+    { "id": "e2", "from": "q1", "to": "q2", "label": "卡够但集群不够", "role": "branch" },
+    { "id": "e3", "from": "q2", "to": "a2", "label": "拿激活参换智能", "role": "main" },
+    { "id": "e4", "from": "q2", "to": "q3", "label": "卡很多", "role": "branch" },
+    { "id": "e5", "from": "q3", "to": "a3", "label": "承担 EP 复杂度", "role": "main" },
+    { "id": "e6", "from": "q2", "to": "q4", "label": "要微调而非推理", "role": "branch" },
+    { "id": "e7", "from": "q4", "to": "a4", "label": "生态优先", "role": "main" },
+    { "id": "e8", "from": "a2", "to": "w1", "label": "最大的估算误区", "role": "error" },
+    { "id": "e9", "from": "q4", "to": "w2", "label": "长上下文别硬扩", "role": "error" }
+  ],
+  "mainPath": ["q1", "a1"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "30 秒定位一个新模型:config 四件套",
+      "items": [
+        "num_key_value_heads → 是不是 GQA?多少个 KV 头?",
+        "num_local_experts / num_experts_per_tok → 是不是 MoE?激活几个?",
+        "max_position_embeddings + rope_scaling → 上下文怎么来的?",
+        "sliding_window → 有没有 SWA?局部性怎么设?"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "MoE 部署三坑",
+      "items": [
+        "权重常驻显存:47B bf16 ≈ 94GB,别按 13B 估",
+        "专家并行要高速互联,all-to-all 在以太网上性能崩",
+        "router 负载不均时长尾专家拖慢整个 batch(V3 用 bias + ≤4 节点约束)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "「开源」这个词要拆开",
+      "items": [
+        "LLM 语境的「开源」默认指 open-weight,不等于 OSI 开源",
+        "Llama Community License:有月活阈值与命名要求,非 OSI",
+        "Apache 2.0:Mistral / Qwen 多数档 / DeepSeek / RWKV,可自由商用",
+        "Qwen 部分尺寸档用 Qwen 许可(注册制)"
+      ]
+    }
+  ]
+}

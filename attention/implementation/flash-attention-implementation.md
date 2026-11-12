@@ -20,6 +20,8 @@ date: 2026-10
 
 # FlashAttention 实现全解:四代内核主线(FA1→FA2→FA3→FA4)
 
+**按任务跳读**：[原理与 online softmax](#reading-principles) · [Hopper 异步](#reading-hopper) · [CuTe 后端工程问题](#reading-engineering) · [反向重算](#reading-backward) · [使用检查清单](#reading-checklist)。原理可沿四代主线阅读；工程快照和性能数字仍以各节注明的版本与条件为准。
+
 > 本篇由原 `io-aware-tiling.md`(FA1)、`work-partitioning.md`(FA2)、`fa3-hopper-async.md`(FA3)三篇于 2026-09 合成,按代次串成完整主线,全部内容(公式/伪代码/数据表/实践/溯源)保留。FA 前驱谱系(Rabe & Staats O(1) 显存)单独见 [../algorithm/exact-attention-memory-lineage.md](../algorithm/exact-attention-memory-lineage.md)。
 
 ## 0. TL;DR:四代怎么解决"attention 访存受限"
@@ -44,6 +46,8 @@ attention 的瓶颈不是计算,是**内存搬运**:标准实现要把 N×N 的 
         loading="eager" title="FlashAttention 四代内核架构交互图"></iframe>
 
 ---
+
+<a id="reading-principles"></a>
 
 ## 1. FA1:IO-aware tiling 与 Online Softmax
 
@@ -314,6 +318,8 @@ grid = (batch, nheads, n_splits)       # 沿 K/V 切(分 split)
 
 ---
 
+<a id="reading-hopper"></a>
+
 ## 3. FA3:Hopper 异步内核——WGMMA + TMA + 计算通信重叠
 
 FA3(2024.07,Hopper H100/H800)的目标是在 Hopper 上达到**接近 GEMM 的效率**。它用 Hopper 的**三件硬件特性**把 attention kernel 推满:
@@ -460,6 +466,8 @@ FA4(2026,MLSys,arXiv:2603.05451)聚焦 **Blackwell(B200/GB200)**:瞄准"张量�
 > 一句话:FA1 解决"少搬数据"(IO-optimal);FA2+ 解决"算得更满"(并行/利用率/软硬件特性)。两者都在 FlashAttention 家族里层层叠加,FA4 把这条主线延伸到 Blackwell。
 
 ---
+
+<a id="reading-engineering"></a>
 
 ## 4.5 2026-10 的 CuTe 后端工程增量(上游 10-12 → 10-24,HEAD `98c1cee`)
 
@@ -775,6 +783,8 @@ commit 原话:`This was also the cause of the hd256 2CTA CLC exclusion, which st
 
 ---
 
+<a id="reading-backward"></a>
+
 ## 5. 反向重算(Recomputation):训练省显存的关键
 
 下图展示"前向只存统计量、反向重算"这笔算力换显存的交易:
@@ -795,6 +805,8 @@ TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统�
 > **一句话**:FA 用"前向存统计量 + 反向重算"换取显存 O(N);算力换显存,在 memory-bound 的 attention 里是合算的买卖。
 
 ---
+
+<a id="reading-checklist"></a>
 
 ## 6. 实践要点(checklist,三代合并去重)
 

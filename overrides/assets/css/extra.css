@@ -207,6 +207,19 @@
   background: color-mix(in srgb, var(--m3-surface-lowest) 72%, transparent);
   border-bottom: 1px solid var(--m3-outline-variant);
   color: var(--m3-on-surface-variant);
+  position: relative;
+  z-index: 10;
+  overflow: visible;
+}
+
+/* The primary navigation lives in the top domain tabs. */
+.md-sidebar--primary {
+  display: none;
+}
+
+.md-content {
+  max-width: 1180px;
+  margin-inline: auto;
 }
 
 .md-tabs__list {
@@ -214,65 +227,104 @@
   gap: 0.1rem;
   padding-left: 0.4rem;
   padding-right: 0.4rem;
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: visible;
+  scrollbar-width: thin;
 }
 
-.md-tabs__list::-webkit-scrollbar {
+.md-tabs__item:first-child {
   display: none;
 }
 
 .md-tabs__item {
   flex-shrink: 0;
+  position: relative;
   padding-left: 0.3rem;
   padding-right: 0.3rem;
   height: auto;
 }
 
-/* shorten long tab labels (presentation only; page content untouched) */
-.md-tabs__link[href$="/SOURCE-POLICY/"] {
+.md-tabs__link[href*="deepseek-models/"],
+.md-tabs__link[href*="deepseek-vision/"] {
+  display: none;
+}
+
+.md-tabs__link[href*="deepseek-infra/"] {
   font-size: 0;
 }
 
-.md-tabs__link[href$="/SOURCE-POLICY/"]::after {
-  content: "来源策略";
+.md-tabs__link[href*="deepseek-infra/"]::after {
+  content: "DeepSeek";
   font-size: 0.62rem;
 }
 
-.md-tabs__link[href$="/model-architecture/"] {
+.md-tabs__link[href*="computer-vision/"] {
   font-size: 0;
 }
 
-.md-tabs__link[href$="/model-architecture/"]::after {
-  content: "模型架构";
+.md-tabs__link[href*="computer-vision/"]::after {
+  content: "计算机视觉";
   font-size: 0.62rem;
 }
 
-.md-tabs__link[href$="/deepseek-infra/"] {
-  font-size: 0;
+/* Desktop mega-menu: expose the current domain's second-level links on hover
+   or keyboard focus, while the original sidebar remains the fallback DOM. */
+.ob-mega-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 1px);
+  left: 0;
+  display: none;
+  min-width: 17rem;
+  max-width: 25rem;
+  padding: 0.55rem;
+  border: 1px solid var(--m3-outline-variant);
+  border-radius: 0 0 var(--m3-radius-card) var(--m3-radius-card);
+  background: color-mix(in srgb, var(--m3-surface-lowest) 96%, transparent);
+  box-shadow: 0 12px 28px color-mix(in srgb, #000 22%, transparent);
+  pointer-events: auto;
 }
 
-.md-tabs__link[href$="/deepseek-infra/"]::after {
-  content: "DS Infra";
-  font-size: 0.62rem;
+.md-tabs__item:hover > .ob-mega-menu,
+.md-tabs__item:focus-within > .ob-mega-menu {
+  display: block;
 }
 
-.md-tabs__link[href$="/deepseek-models/"] {
-  font-size: 0;
+.ob-mega-menu .md-nav__list {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.md-tabs__link[href$="/deepseek-models/"]::after {
-  content: "DS Models";
-  font-size: 0.62rem;
+.ob-mega-menu .md-nav__item {
+  margin: 0;
 }
 
-.md-tabs__link[href$="/deepseek-vision/"] {
-  font-size: 0;
+.ob-mega-menu .md-nav__link {
+  display: block;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  color: var(--m3-on-surface-variant);
+  font-size: 0.72rem;
+  line-height: 1.35;
 }
 
-.md-tabs__link[href$="/deepseek-vision/"]::after {
-  content: "DS Vision";
-  font-size: 0.62rem;
+.ob-mega-menu .md-nav__link:hover,
+.ob-mega-menu .md-nav__link:focus-visible {
+  color: var(--m3-on-surface);
+  background: var(--m3-surface-high);
+  text-decoration: none;
+}
+
+@media (max-width: 760px) {
+  .md-tabs__list {
+    overflow-x: auto;
+  }
+
+  .ob-mega-menu {
+    display: none !important;
+  }
 }
 
 .md-tabs__link {
@@ -307,6 +359,91 @@
 
 .md-sidebar--primary {
   border-right: 1px solid transparent;
+}
+
+/* Keep the primary rail contextual instead of rendering the entire knowledge
+   tree at once. The homepage remains the full domain directory. */
+.ob-nav-focused .md-nav--primary > .md-nav__list > .md-nav__item:not(:first-child):not(.ob-nav-current) {
+  display: none;
+}
+
+.ob-nav-focused .md-nav--primary > .md-nav__list > .md-nav__item.ob-nav-current {
+  display: block;
+}
+
+/* Homepage acts as the knowledge portal: let the domain directory carry the
+   navigation instead of repeating the full tree in a permanent rail. */
+.ob-home .md-sidebar--primary {
+  display: none;
+}
+
+.ob-home .md-content {
+  max-width: 1180px;
+  margin-inline: auto;
+}
+
+.ob-home .md-typeset > table:first-of-type {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+  border: 0;
+  overflow: visible;
+}
+
+.ob-home .md-typeset > table:first-of-type thead {
+  display: none;
+}
+
+.ob-home .md-typeset > table:first-of-type tbody {
+  display: contents;
+}
+
+.ob-home .md-typeset > table:first-of-type tr {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-height: 9rem;
+  padding: 1.05rem 1.15rem;
+  border: 1px solid var(--m3-outline-variant);
+  border-radius: var(--m3-radius-card);
+  background: var(--m3-surface-low);
+  transition: border-color var(--m3-ease) var(--m3-dur),
+              transform var(--m3-ease) var(--m3-dur),
+              background var(--m3-ease) var(--m3-dur);
+}
+
+.ob-home .md-typeset > table:first-of-type tr:hover {
+  border-color: var(--m3-primary);
+  background: var(--m3-surface-high);
+  transform: translateY(-2px);
+}
+
+.ob-home .md-typeset > table:first-of-type td {
+  display: block;
+  padding: 0;
+  border: 0;
+}
+
+.ob-home .md-typeset > table:first-of-type td:first-child {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.ob-home .md-typeset > table:first-of-type td:nth-child(2) {
+  flex: 1;
+  color: var(--m3-on-surface-variant);
+}
+
+.ob-home .md-typeset > table:first-of-type td:nth-child(3),
+.ob-home .md-typeset > table:first-of-type td:nth-child(4) {
+  font-size: 0.72rem;
+  color: var(--m3-on-surface-tertiary);
+}
+
+@media (max-width: 760px) {
+  .ob-home .md-typeset > table:first-of-type {
+    grid-template-columns: 1fr;
+  }
 }
 
 .md-sidebar__scrollwrap {
@@ -628,160 +765,17 @@
 }
 
 /* ============================================================
-   Homepage hero
-   ============================================================ */
-.md-content .ob-hero {
-  position: relative;
-  overflow: hidden;
-  margin: 0 calc(var(--md-typeset-table-width, 100%) - 100%) 0 0;
-  padding: 0;
-  background: var(--m3-surface-lowest);
-}
-
-.ob-hero {
-  position: relative;
-  overflow: hidden;
-  padding: 4.5rem 0 3.5rem;
-  text-align: center;
-}
-
-/* ambient primary glow, hero-only, subtle */
-.ob-hero__glow {
-  position: absolute;
-  inset: -40% -20% auto -20%;
-  height: 130%;
-  background:
-    radial-gradient(42% 55% at 50% 8%, color-mix(in srgb, var(--m3-primary) 16%, transparent) 0%, transparent 70%),
-    radial-gradient(30% 40% at 82% 30%, color-mix(in srgb, var(--m3-primary) 8%, transparent) 0%, transparent 70%),
-    radial-gradient(26% 36% at 16% 32%, color-mix(in srgb, var(--m3-primary) 8%, transparent) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-/* fine blueprint grid, fading downward */
-.ob-hero__grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--m3-on-surface) 5%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--m3-on-surface) 5%, transparent) 1px, transparent 1px);
-  background-size: 44px 44px;
-  -webkit-mask-image: radial-gradient(65% 80% at 50% 32%, #000 0%, transparent 78%);
-  mask-image: radial-gradient(65% 80% at 50% 32%, #000 0%, transparent 78%);
-  pointer-events: none;
-}
-
-.ob-hero__inner {
-  position: relative;
-  max-width: 46rem;
-  margin: 0 auto;
-  padding: 0 1.5rem;
-}
-
-.ob-hero__eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.62rem;
-  font-weight: 550;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--m3-on-surface-tertiary);
-  margin-bottom: 1.4rem;
-}
-
-.ob-hero__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--m3-primary);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--m3-primary) 18%, transparent);
-}
-
-.ob-hero__title {
-  margin: 0 0 1.15rem;
-  font-size: clamp(1.6rem, 4.6vw, 2.6rem);
-  font-weight: 640;
-  letter-spacing: -0.035em;
-  line-height: 1.13;
-  color: var(--m3-on-surface);
-}
-
-.ob-hero__accent {
-  color: var(--m3-primary);
-}
-
-.ob-hero__lede {
-  margin: 0 auto 2.1rem;
-  max-width: 33rem;
-  font-size: 0.85rem;
-  line-height: 1.75;
-  letter-spacing: -0.005em;
-  color: var(--m3-on-surface-variant);
-}
-
-.ob-hero__cta {
-  display: flex;
-  justify-content: center;
-  gap: 0.85rem;
-  flex-wrap: wrap;
-}
-
-/* stats strip */
-.ob-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--m3-outline-variant);
-  border: 1px solid var(--m3-outline-variant);
-  border-radius: var(--m3-radius-card);
-  overflow: hidden;
-  margin: 0 0 2.5rem;
-  padding: 0;
-}
-
-.ob-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 1.15rem 0.5rem 1.05rem;
-  background: var(--m3-surface-lowest);
-}
-
-.ob-stat b {
-  font-size: 1.3rem;
-  font-weight: 640;
-  letter-spacing: -0.03em;
-  color: var(--m3-on-surface);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-
-.ob-stat span {
-  font-size: 0.62rem;
-  color: var(--m3-on-surface-tertiary);
-  letter-spacing: 0.04em;
-}
-
-/* hide the redundant markdown H1 on the homepage (hero replaces it) */
-.ob-homepage .md-content__inner > h1:first-child {
-  display: none;
-}
-
-/* homepage domain table row hover lift */
-.ob-homepage .md-typeset table:not([class]) tbody tr {
-  transition: background var(--m3-ease) var(--m3-dur);
-}
-
-.ob-homepage .md-typeset table:not([class]) tbody tr:hover {
-  background: var(--m3-surface-low);
-}
-
-/* ============================================================
    Footer
    ============================================================ */
 .md-footer {
   border-top: 1px solid var(--m3-outline-variant);
+}
+
+.md-source-file,
+.md-meta,
+.md-footer-meta,
+.md-generator {
+  display: none !important;
 }
 
 .md-footer-meta {
@@ -858,13 +852,6 @@
    Responsive
    ============================================================ */
 
-/* reduced left/right gutters on mid screens */
-@media screen and (max-width: 1200px) {
-  .ob-hero {
-    padding: 3.2rem 0 2.6rem;
-  }
-}
-
 @media screen and (max-width: 768px) {
   .md-typeset {
     font-size: 0.75rem;  /* 15px */
@@ -883,42 +870,10 @@
     font-size: 0.62rem;
   }
 
-  .ob-hero {
-    padding: 2.6rem 0 2.2rem;
-  }
-
-  .ob-hero__title {
-    font-size: clamp(1.35rem, 7vw, 1.8rem);
-  }
-
-  .ob-hero__lede {
-    font-size: 0.96rem;
-  }
-
-  .ob-hero__cta .ob-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .ob-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .ob-stat b {
-    font-size: 1.05rem;
-  }
-
   /* tables scroll horizontally instead of squashing */
   .md-typeset table:not([class]) {
     display: block;
     overflow-x: auto;
-  }
-}
-
-@media print {
-  .ob-hero__glow,
-  .ob-hero__grid {
-    display: none;
   }
 }
 
@@ -932,60 +887,49 @@
   }
 }
 
-/* ============================================================
-   archify 交互图容器
-   ============================================================
-   height 由 overrides/main.html 里的脚本按图内真实内容逐张设定
-   (实测 232 张图 svg 高度从 121 到 2073px,固定 720px 会让一半
-   留白 300+px、另一半被截断)。这里的 560px 只是 JS 未生效前的
-   兜底值 --js-fit-height 标记出"已自适应"状态,便于排查。 */
 .archify-figure {
   margin: 1.6rem 0 2rem;
   overflow: hidden;
   border-radius: 14px;
 }
 
-.archify-figure iframe {
+.md-content iframe[src*="diagrams/"] {
   display: block;
   width: 100%;
-  height: 560px;
+  height: clamp(520px, 82vh, 920px) !important;
   border: 1px solid var(--m3-outline-variant);
   border-radius: 14px;
   background: var(--m3-surface-lowest);
-  transition: height 0.2s var(--m3-ease, ease);
 }
 
-.archify-figure iframe[data-fitted] {
-  transition: none;   /* 自适应后不要动画,否则页面高度抖动 */
+/* Diagram pages need the reclaimed reading width: the embedded canvas already
+   has its own controls and benefits more from width than from a narrow TOC. */
+.ob-has-diagram .md-sidebar--secondary {
+  display: none;
+}
+
+.ob-has-diagram .md-content {
+  max-width: none;
+}
+
+.ob-figure-caption {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  margin: 0 0 0.6rem;
+  font-size: 0.72rem;
+}
+
+.ob-figure-caption a {
+  padding: 0.25rem 0;
+  overflow-wrap: anywhere;
 }
 
 /* 图上方那句引导文字:贴紧图,弱化但不隐形 */
 .md-typeset .archify-figure + p,
 .md-typeset blockquote + .archify-figure {
   margin-top: 0.6rem;
-}
-
-/* 未完成自适应测量的图(用户快速跳转/锚点直达时,lazy iframe 可能尚未
-   进入视口)—— 加一道柔和的呼吸底色,提示"这里有一张图,滚近会加载",
-   避免读者误以为空白/损坏。图一旦测量完成(data-fitted=1)提示自动消失。 */
-.archify-figure iframe:not([data-fitted]) {
-  background-image: linear-gradient(
-    100deg,
-    var(--m3-surface-low) 30%,
-    var(--m3-surface) 50%,
-    var(--m3-surface-low) 70%
-  );
-  background-size: 200% 100%;
-  animation: ob-figure-loading 1.6s ease-in-out infinite;
-}
-
-@keyframes ob-figure-loading {
-  0%   { background-position: 150% 0; }
-  100% { background-position: -50% 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .archify-figure iframe:not([data-fitted]) { animation: none; }
 }
 
 /* 锚点跳转/scrollIntoView 时,固定 header(49px)会盖住目标标题的首行。

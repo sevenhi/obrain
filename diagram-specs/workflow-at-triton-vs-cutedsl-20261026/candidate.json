@@ -1,0 +1,89 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "为什么需要 CuTeDSL:Triton 在 Blackwell 上表达不出来",
+  "subtitle": "Triton 块级抽象把线程/内存细节藏起来;深度异步流水线 + warp 特化超出其表达能力",
+  "locale": "zh-CN",
+  "output": "diagrams/at-triton-vs-cutedsl.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "ab",
+   "label": "抽象层次"
+  },
+  {
+   "id": "gap",
+   "label": "Blackwell 需求"
+  },
+  {
+   "id": "sol",
+   "label": "解法"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "triton",
+   "lane": "ab",
+   "col": 0,
+   "type": "frontend",
+   "label": "Triton",
+   "sublabel": "@triton.jit,编译器管线程映射"
+  },
+  {
+   "id": "gap",
+   "lane": "gap",
+   "col": 1,
+   "type": "backend",
+   "label": "Blackwell 需要的",
+   "sublabel": "深度异步流水线+warp 特化+ping-pong"
+  },
+  {
+   "id": "cute",
+   "lane": "sol",
+   "col": 2,
+   "type": "backend",
+   "label": "CuTeDSL",
+   "sublabel": "@cute.jit,显式控 TMEM/TMA/tcgen05"
+  }
+ ],
+ "edges": [
+  {
+   "from": "triton",
+   "to": "gap",
+   "label": "细节被隐藏,表达不出来",
+   "variant": "emphasis"
+  },
+  {
+   "from": "gap",
+   "to": "cute",
+   "label": "CUTLASS 抽象搬到 Python,JIT 才现实",
+   "variant": "emphasis"
+  }
+ ],
+ "mainPath": [
+  "triton",
+  "gap",
+  "cute"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "对比表要点",
+   "items": [
+    "Triton:OpenAI 出品,中高抽象,硬件覆盖广",
+    "CuTeDSL:NVIDIA CUTLASS 团队,能碰 TMEM/TMA/tcgen05",
+    "性能上限 CuTeDSL 最高(FA4=手工级流水线)"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "为什么是 JIT",
+   "items": [
+    "FlexAttention 本质是运行时才知道用户函数长什么样",
+    "CUTLASS C++ 编译痛苦、周期长",
+    "CuTeDSL 让 Python 写 CUTLASS 级内核成为可能"
+   ]
+  }
+ ]
+}

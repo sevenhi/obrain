@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "缩放点积注意力:一条打分到加权的前向链",
+    "locale": "zh-CN",
+    "subtitle": "Attention(Q,K,V) = softmax(QKᵀ/√d_k)V;除以 √d_k 把 q·k 的方差拉回 1,避免 softmax 饱和",
+    "output": "diagrams/at-aiayn-scaled-dot.dataflow.html"
+  },
+  "stages": [
+    {
+      "label": "① 打分"
+    },
+    {
+      "label": "② 缩放"
+    },
+    {
+      "label": "③ 归一化"
+    },
+    {
+      "label": "④ 加权"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "qk",
+      "type": "backend",
+      "label": "Q·Kᵀ 兼容度",
+      "sublabel": "点积算 query 与每个 key 的匹配",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "scale",
+      "type": "backend",
+      "label": "除以 √d_k",
+      "sublabel": "q·k 方差 = d_k,缩放拉回 1",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "softmax",
+      "type": "backend",
+      "label": "softmax 归一",
+      "sublabel": "权重和为 1",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "v",
+      "type": "backend",
+      "label": "对 V 加权求和",
+      "sublabel": "权重 × value = 输出",
+      "stage": 3,
+      "row": 0
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "qk",
+      "to": "scale",
+      "label": "缩放因子 √d_k"
+    },
+    {
+      "id": "f2",
+      "from": "scale",
+      "to": "softmax",
+      "label": "概率化"
+    },
+    {
+      "id": "f3",
+      "from": "softmax",
+      "to": "v",
+      "label": "权重 × V"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "√d_k 的推导(脚注 4)",
+      "items": [
+        "q、k 分量独立、均值 0 方差 1,则 q·k 方差是 d_k",
+        "d_k 大时点积量级 ~√d_k,把 softmax 推进饱和区",
+        "除以 √d_k 保住梯度,工程选择压倒理论优雅"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么不选 additive attention",
+      "items": [
+        "理论复杂度相近,但点积可用高度优化的 matmul",
+        "实践中快得多、省内存得多",
+        "d_k 大时不缩放的点积反而输给 additive"
+      ]
+    }
+  ]
+}

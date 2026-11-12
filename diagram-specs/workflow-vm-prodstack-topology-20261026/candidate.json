@@ -1,0 +1,127 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Production Stack 部署拓扑:Helm 一键三件套",
+    "subtitle": "应用只改 base_url;Router 分流、LMCache 复用 KV、Prometheus/Grafana 观测,引擎仍是多副本 vLLM",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-prodstack-topology.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_app",
+      "label": "① 应用"
+    },
+    {
+      "id": "ln_rt",
+      "label": "② Request Router"
+    },
+    {
+      "id": "ln_eng",
+      "label": "③ Serving Engines"
+    },
+    {
+      "id": "ln_obs",
+      "label": "④ 观测"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "app",
+      "lane": "ln_app",
+      "col": 0,
+      "type": "frontend",
+      "label": "OpenAI SDK 客户端",
+      "sublabel": "base_url 指向 Router"
+    },
+    {
+      "id": "rt",
+      "lane": "ln_rt",
+      "col": 1,
+      "type": "backend",
+      "label": "Request Router",
+      "sublabel": "routing key/会话粘滞"
+    },
+    {
+      "id": "eng",
+      "lane": "ln_eng",
+      "col": 2,
+      "type": "cloud",
+      "label": "vLLM 引擎 ×N",
+      "sublabel": "多模型/多副本"
+    },
+    {
+      "id": "lm",
+      "lane": "ln_eng",
+      "col": 2,
+      "type": "database",
+      "label": "LMCache",
+      "sublabel": "CPU/磁盘 KV offload",
+      "yOffset": 120
+    },
+    {
+      "id": "pg",
+      "lane": "ln_obs",
+      "col": 3,
+      "type": "security",
+      "label": "Prometheus/Grafana",
+      "sublabel": "TTFT/KV 命中率"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "app",
+      "to": "rt",
+      "label": "/v1/chat/completions",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "rt",
+      "to": "eng",
+      "label": "按 session 分流",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "eng",
+      "to": "lm",
+      "label": "KV offload 读写",
+      "role": "async"
+    },
+    {
+      "id": "e4",
+      "from": "eng",
+      "to": "pg",
+      "label": "导出 metrics",
+      "role": "async",
+      "variant": "dashed"
+    },
+    {
+      "id": "e5",
+      "from": "pg",
+      "to": "rt",
+      "label": "反馈负载视图",
+      "role": "async",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "app",
+    "rt",
+    "eng"
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "README 三个卖点",
+      "items": [
+        "从单实例到分布式,应用代码零改动",
+        "Web dashboard 看指标",
+        "请求路由 + KV offload 带来性能收益"
+      ]
+    }
+  ]
+}

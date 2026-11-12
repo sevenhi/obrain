@@ -1,0 +1,177 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "选型决策:先问「要可复现」还是「要超长周期」",
+    "subtitle": "一句话口径:极致吞吐/确定性/跨平台可复现 → Philox;超长周期 + 高维等分布且能吃 block 协作 → MTGP。cuRAND 默认的 XORWOW 快但过不了 BigCrush",
+    "locale": "zh-CN",
+    "output": "diagrams/rng-picker.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_need", "label": "① 先问需求" },
+    { "id": "ln_judge", "label": "② 两个判据" },
+    { "id": "ln_philox", "label": "③ Philox 路线" },
+    { "id": "ln_mtgp", "label": "④ MTGP 路线" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "定需求", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "二选一", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "落地", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["need", "repro", "philox", "philox_api", "use"],
+  "nodes": [
+    {
+      "id": "need",
+      "lane": "ln_need",
+      "col": 0,
+      "type": "frontend",
+      "label": "蒙特卡洛任务",
+      "sublabel": "要质量还是只要快",
+      "icon": "start",
+      "width": 150
+    },
+    {
+      "id": "xowow",
+      "lane": "ln_need",
+      "col": 1,
+      "type": "external",
+      "label": "默认 XORWOW",
+      "sublabel": "CollisionOver 系统性 reject",
+      "icon": "failure",
+      "width": 150
+    },
+    {
+      "id": "repro",
+      "lane": "ln_judge",
+      "col": 2,
+      "type": "security",
+      "label": "要跨平台可复现 ?",
+      "sublabel": "换硬件换并行度同序列",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "longper",
+      "lane": "ln_judge",
+      "col": 2,
+      "type": "security",
+      "label": "要超长周期 ?",
+      "sublabel": "2^11213 量级以上",
+      "icon": "decision",
+      "width": 150,
+      "yOffset": 124
+    },
+    {
+      "id": "philox",
+      "lane": "ln_philox",
+      "col": 3,
+      "type": "backend",
+      "label": "Philox 4×32",
+      "sublabel": "零状态、纯计数器",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "philox_api",
+      "lane": "ln_philox",
+      "col": 4,
+      "type": "cloud",
+      "label": "PHILOX4_32_10",
+      "sublabel": "cuRAND 现成实现",
+      "icon": "success",
+      "width": 150
+    },
+    {
+      "id": "mtgp",
+      "lane": "ln_mtgp",
+      "col": 3,
+      "type": "backend",
+      "label": "MTGP32",
+      "sublabel": "一 block 一状态",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "mtgp_api",
+      "lane": "ln_mtgp",
+      "col": 4,
+      "type": "cloud",
+      "label": "预置 200 组参数",
+      "sublabel": "curandMakeMTGP32KernelState",
+      "icon": "success",
+      "width": 150
+    },
+    {
+      "id": "use",
+      "lane": "ln_philox",
+      "col": 5,
+      "type": "cloud",
+      "label": "喂给模拟循环",
+      "sublabel": "再按片内存优化",
+      "icon": "success",
+      "width": 150,
+      "yOffset": 62
+    },
+    {
+      "id": "crush",
+      "lane": "ln_need",
+      "col": 5,
+      "type": "external",
+      "label": "TestU01 验证",
+      "sublabel": "BigCrush 全过才算 CR",
+      "icon": "clock",
+      "width": 150,
+      "yOffset": 186
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "need", "to": "xowow", "label": "图省事会选它", "role": "branch", "variant": "dashed" },
+    { "id": "e2", "from": "need", "to": "repro", "label": "先看能不能复现", "role": "main" },
+    { "id": "e3", "from": "repro", "to": "philox", "label": "是:走 counter-based", "role": "branch", "variant": "emphasis" },
+    { "id": "e4", "from": "repro", "to": "longper", "label": "否:再看周期", "role": "main" },
+    { "id": "e5", "from": "longper", "to": "mtgp", "label": "要:走 F2-linear 大状态", "role": "branch", "variant": "emphasis" },
+    { "id": "e6", "from": "philox", "to": "philox_api", "label": "直接用官方参数", "role": "main" },
+    { "id": "e7", "from": "mtgp", "to": "mtgp_api", "label": "吃预制参数集", "role": "main" },
+    { "id": "e8", "from": "philox_api", "to": "use", "label": "生成并消费", "role": "main" },
+    { "id": "e9", "from": "mtgp_api", "to": "use", "label": "生成并消费", "role": "branch" },
+    { "id": "e10", "from": "use", "to": "crush", "label": "上线前跑统计检验", "role": "return", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "SC11 的硬数字(节选,cpB 越低越快)",
+      "items": [
+        "Philox-4×32-7:CPU 2.4 cpB,NVIDIA GPU 201.6 GB/s,AMD 113.1 GB/s",
+        "Philox-4×32-10(带裕度):3.6 cpB,145.3 GB/s —— 生产用这个",
+        "XORWOW:1.6 cpB,136.7 GB/s,但 Crushable"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "XORWOW 到底怎么坏的",
+      "items": [
+        "CollisionOver(7)、SimpPoker(27)、LinearComp(81) 系统性 reject",
+        "看连续输出差分 y_n = x_n − x_{n−1} 时失败更多",
+        "速度快不是错,拿去跑严肃蒙特卡洛才是错"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "F2-linear 的失败别慌",
+      "items": [
+        "MTGP/MT/WELL 在 LinearComp / MatrixRank 上失败是共性",
+        "把输出当均匀实数/整数用的常规模拟一般不受影响",
+        "但对密码学或线性结构敏感的应用,必须换 counter-based"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "GTX260 上的另一组数据",
+      "items": [
+        "MTGP11213 4.7 ms / SDK-MT 18.6 ms(同任务 5×10⁷ 个 float)",
+        "CURAND(XORWOW) 3.0 ms 最快但 reject",
+        "WarpStandard 3.2 ms 是唯一全过 BigCrush 的"
+      ]
+    }
+  ]
+}

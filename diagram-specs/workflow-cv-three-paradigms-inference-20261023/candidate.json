@@ -1,0 +1,83 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "推理期三条路线的对齐流程:稠密预测、集合预测、提示式",
+    "subtitle": "同一条「图 → 结果」,三种范式在后处理阶段完全分道。差别在于「谁负责去重」:NMS 是启发式事后清理,匈牙利匹配是训练时学出来的,提示式根本不做全图检测",
+    "locale": "zh-CN",
+    "output": "diagrams/cv-three-paradigms-inference.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_dense", "label": "Faster R-CNN / YOLO" },
+    { "id": "ln_set", "label": "DETR(set prediction)" },
+    { "id": "ln_prompt", "label": "SAM(promptable)" },
+    { "id": "ln_key", "label": "这一路的关键动作" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "一次前向", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "后处理分道", "fromCol": 1, "toCol": 2, "variant": "emphasis" },
+    { "id": "p3", "label": "输出", "fromCol": 3, "toCol": 3 }
+  ],
+  "nodes": [
+    { "id": "d0", "lane": "ln_dense", "col": 0, "type": "backend", "label": "稠密预测", "sublabel": "几千到几万个候选框", "icon": "start" },
+    { "id": "d1", "lane": "ln_dense", "col": 1, "type": "security", "label": "按分数阈值过滤", "sublabel": "先砍掉明显不是物体的", "icon": "decision" },
+    { "id": "d2", "lane": "ln_dense", "col": 2, "type": "security", "label": "NMS 去重", "sublabel": "启发式,IoU 超阈就删", "icon": "decision" },
+    { "id": "d3", "lane": "ln_dense", "col": 3, "type": "external", "label": "框 + 类别", "sublabel": "密集场景可能误删真框", "icon": "neutral" },
+
+    { "id": "s0", "lane": "ln_set", "col": 0, "type": "backend", "label": "100 个 query 并行", "sublabel": "固定上限", "icon": "start" },
+    { "id": "s1", "lane": "ln_set", "col": 1, "type": "security", "label": "按 score 阈值过滤", "sublabel": "无需 NMS", "icon": "decision" },
+    { "id": "s2", "lane": "ln_set", "col": 3, "type": "external", "label": "框 + 类别", "sublabel": "超过 100 个物体被截断", "icon": "neutral" },
+
+    { "id": "p0", "lane": "ln_prompt", "col": 0, "type": "backend", "label": "整图编码一次", "sublabel": "ViT-H embedding 复用", "icon": "start" },
+    { "id": "p1", "lane": "ln_prompt", "col": 1, "type": "external", "label": "给提示(点/框)", "sublabel": "用户指哪", "icon": "neutral" },
+    { "id": "p2", "lane": "ln_prompt", "col": 2, "type": "backend", "label": "轻解码器出掩码", "sublabel": "约 50ms,可循环", "icon": "active" },
+    { "id": "p3", "lane": "ln_prompt", "col": 3, "type": "external", "label": "≤3 个候选掩码", "sublabel": "无类别信息", "icon": "neutral" },
+
+    { "id": "k1", "lane": "ln_key", "col": 1, "type": "cloud", "label": "NMS 是超参", "sublabel": "IoU 阈值需按场景调", "icon": "none" },
+    { "id": "k2", "lane": "ln_key", "col": 2, "type": "cloud", "label": "去重已学进权重里", "sublabel": "训练时一对一匹配的产物", "icon": "none" },
+    { "id": "k3", "lane": "ln_key", "col": 3, "type": "cloud", "label": "不做全图检测", "sublabel": "类别需外接分类器", "icon": "none" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "d0", "to": "d1", "label": "先按 objectness 筛", "role": "main" },
+    { "id": "e2", "from": "d1", "to": "d2", "label": "剩下的才交 NMS", "role": "main" },
+    { "id": "e3", "from": "d2", "to": "d3", "label": "去重后输出", "role": "main" },
+    { "id": "e4", "from": "s0", "to": "s1", "label": "直接过滤即完", "role": "main" },
+    { "id": "e5", "from": "s1", "to": "s2", "label": "没有去重步", "role": "main" },
+    { "id": "e6", "from": "p0", "to": "p1", "label": "embedding 留给后面的提示", "role": "main" },
+    { "id": "e7", "from": "p1", "to": "p2", "label": "每提示跑一次", "role": "main" },
+    { "id": "e8", "from": "p2", "to": "p3", "label": "多个候选一起给", "role": "main" },
+    { "id": "e9", "from": "d2", "to": "k1", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e10", "from": "s1", "to": "k2", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e11", "from": "p3", "to": "k3", "label": "", "variant": "dashed", "role": "async" }
+  ],
+  "mainPath": ["d0", "d1", "d2", "d3"],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "NMS 为什么会失败",
+      "items": [
+        "NMS 是启发式后处理,不懂语义:IoU 超阈就删",
+        "密集/遮挡场景下,两个真物体会被误判成重复而删掉一个",
+        "anchor 设计本身还引入先验偏置(尺寸、长宽比)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "DETR 省下的正是这一步",
+      "items": [
+        "训练时匈牙利匹配强制一对一,「去重」被学进权重",
+        "推理只剩阈值过滤,没有超参可调也没有误删风险",
+        "代价转移到训练端:500 epoch 收敛,是 Faster R-CNN 的十几倍"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "SAM 根本不在同一条任务上",
+      "items": [
+        "它不做「全图找所有物体」,而是「你指哪我割哪」",
+        "所以没有 NMS 也没有 query 上限问题",
+        "但也没有类别——「是什么」要外接分类器或 CLIP"
+      ]
+    }
+  ]
+}

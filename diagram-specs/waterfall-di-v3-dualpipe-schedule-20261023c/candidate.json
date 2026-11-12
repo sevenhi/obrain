@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "diagram_type": "waterfall",
+  "meta": {
+    "title": "DualPipe vs 1F1B:气泡从哪来、被谁填掉",
+    "subtitle": "同一段 4-stage × 4-micro-batch 的前向/反向流;1F1B 在两端各留一段纯气泡,DualPipe 从流水两端同时灌入 micro-batch 把气泡压到一半",
+    "locale": "zh-CN",
+    "evidence": "illustrative",
+    "unit": "ms",
+    "output": "diagrams/di-v3-dualpipe-schedule.waterfall.html"
+  },
+  "spans": [
+    { "id": "b1_f", "name": "stage0 前向 chunk", "start": 0, "end": 6, "service": "1F1B 基线(PP=4)", "detail": "1F1B:第一个 micro-batch 逐 stage 流过,前面全空", "status": "ok" },
+    { "id": "b1_fill", "name": "warmup 期流水气泡", "start": 0, "end": 18, "service": "1F1B 基线(PP=4)", "detail": "气泡 = (PP−1)(F+B):pipeline 填充与排空的两段死时间", "status": "incomplete" },
+    { "id": "b1_steady", "name": "steady 段:1F1B 交替前向/反向", "start": 18, "end": 42, "service": "1F1B 基线(PP=4)", "detail": "这段是满的,气泡只出现在两端", "status": "ok" },
+    { "id": "b1_drain", "name": "cooldown 期排空气泡", "start": 42, "end": 60, "service": "1F1B 基线(PP=4)", "detail": "最后几个 micro-batch 只剩反向,前半段计算单元空转", "status": "incomplete" },
+
+    { "id": "d2_bidir", "name": "双向灌入:两端同时进 micro-batch", "start": 0, "end": 12, "service": "DualPipe", "detail": "micro-batch 从 pipeline 两端同时注入,一段气泡被另一段的计算填掉", "status": "ok" },
+    { "id": "d2_steady", "name": "steady:一对前向+反向 chunk 内重排四段", "start": 12, "end": 44, "service": "DualPipe", "detail": "chunk = attention → a2a dispatch → MLP → a2a combine;反向再拆 backward-for-input / backward-for-weights", "status": "ok" },
+    { "id": "d2_bubble", "name": "剩余气泡(约为 1F1B 的一半)", "start": 44, "end": 52, "service": "DualPipe", "detail": "(PP/2−1)(F&B+B−3W):气泡减半靠的是双向调度本身", "status": "incomplete" },
+    { "id": "d2_a2a", "name": "a2a 与 PP 通信全程被计算覆盖", "start": 0, "end": 52, "service": "DualPipe 通信层", "detail": "计算:通信比保持不变时,模型再大也近乎零 all-to-all 开销", "status": "ok" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两个公式记牢",
+      "items": [
+        "1F1B 气泡:(PP−1)(F+B)",
+        "DualPipe 气泡:(PP/2−1)(F&B+B−3W),约减半",
+        "F/B 是单 chunk 前向/反向耗时,W 是 chunk 内一段的耗时"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "DualPipe 的代价",
+      "items": [
+        "参数/设备 1× → 2×(要同时持有前后两个方向的 chunk)",
+        "激活/设备 PP → PP+1(峰值多一份)",
+        "PP 与 micro-batch 数必须是偶数,但不要求 micro-batch 整除 PP(比 Chimera 宽松)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "气泡/激活不吃 micro-batch 数",
+      "items": [
+        "DualPipe 的气泡与激活占用不随 micro-batch 数增长",
+        "所以能把 micro-batch 数开大来摊薄 PP 边界开销",
+        "2× 参数由 EP64 切碎专家吸收,这是 V3 敢用它的前提"
+      ]
+    }
+  ]
+}

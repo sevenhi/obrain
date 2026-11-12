@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "未用量 KV 行的 NaN 污染:0 × NaN = NaN",
+    "subtitle": "paged/ragged KV cache 里 seqlen_k 之后的尾行是脏数据;mask 只能把系数变 0,消不掉乘法本身——前向坏在 V 尾,反向坏在 dQ(K 尾或 V 尾)",
+    "locale": "zh-CN",
+    "output": "diagrams/fa-nan-pollution.sequence.html",
+    "viewBox": [
+      1080,
+      680
+    ]
+  },
+  "participants": [
+    {
+      "id": "kv",
+      "type": "database",
+      "label": "KV cache(复用)",
+      "sublabel": "尾行=脏数据"
+    },
+    {
+      "id": "mask",
+      "type": "security",
+      "label": "mask(因果/长度)"
+    },
+    {
+      "id": "mm",
+      "type": "backend",
+      "label": "matmul(P@V 等)"
+    },
+    {
+      "id": "acc",
+      "type": "external",
+      "label": "输出/累加器"
+    }
+  ],
+  "segments": [
+    {
+      "from": 160,
+      "to": 380,
+      "label": "前向:O = P @ V"
+    },
+    {
+      "from": 396,
+      "to": 620,
+      "label": "反向:dQ = dS @ K"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "kv",
+      "to": "mm",
+      "y": 168,
+      "label": "读 V 整个 tile(含尾行 NaN)",
+      "note": "尾行是脏数据,可能 NaN"
+    },
+    {
+      "id": "m2",
+      "from": "mask",
+      "to": "mm",
+      "y": 216,
+      "label": "P 的尾行系数 mask 成 0",
+      "note": "直觉:0×无用=没事?"
+    },
+    {
+      "id": "m3",
+      "from": "mm",
+      "to": "acc",
+      "y": 264,
+      "label": "0 × NaN = NaN",
+      "variant": "security",
+      "note": "mask 挡不住乘法本身"
+    },
+    {
+      "id": "m4",
+      "from": "acc",
+      "to": "mm",
+      "y": 312,
+      "label": "前向结论:V 尾 NaN → O 全 NaN",
+      "variant": "return"
+    },
+    {
+      "id": "m5",
+      "from": "kv",
+      "to": "mm",
+      "y": 360,
+      "label": "反向:dP=dO@Vᵀ 读 V 尾",
+      "note": "dS mask 成 0 也没用"
+    },
+    {
+      "id": "m6",
+      "from": "mm",
+      "to": "acc",
+      "y": 408,
+      "label": "dQ = dS @ K 对整个 K tile 求和",
+      "variant": "security",
+      "note": "K 尾或 V 尾 NaN → dQ 全 NaN"
+    },
+    {
+      "id": "m7",
+      "from": "acc",
+      "to": "mask",
+      "y": 456,
+      "label": "dK/dV 仍有限:前向干净 ≠ 反向干净",
+      "variant": "return",
+      "note": "两方向独立,各自要防"
+    },
+    {
+      "id": "m8",
+      "from": "mask",
+      "to": "kv",
+      "y": 504,
+      "label": "正解:加载层收缩上界到 seqlen_k",
+      "variant": "emphasis",
+      "note": "TMA 越界自动补 0,脏行不进 SMEM"
+    },
+    {
+      "id": "m9",
+      "from": "kv",
+      "to": "acc",
+      "y": 590,
+      "label": "错误做法:wraparound descriptor",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "三种修复写法的命运",
+      "items": [
+        "5-D wraparound:TMA 预取足迹无界(~128KB),偶发 cudaErrorIllegalAddress",
+        "ptr_shift:base 出映射区,fault——只适合 store 侧",
+        "per-CTA GMEM descriptor:按 seqlen_k 改 rows extent ✓(最终方案)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "验证方法(上游实践)",
+      "items": [
+        "关 caching allocator 单序列复现(PYTORCH_NO_CUDA_MEMORY_CACHING=1)",
+        "V 放 VMM 尾部 + 保留未映射 guard range:改前必 fault、改后必过",
+        "B200 上 194 用例通过,最大延迟增幅仅 2.23%"
+      ]
+    }
+  ]
+}

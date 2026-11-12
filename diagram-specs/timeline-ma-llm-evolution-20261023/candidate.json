@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "diagram_type": "timeline",
+  "meta": {
+    "title": "GPT-3 → LLaMA → Llama 2/3:架构几乎不动,增长全在数据与 context",
+    "subtitle": "四代模型的三件套(pre-RMSNorm / SwiGLU / RoPE)自 LLaMA 起就没再变;变化的是 tokens 量、context 长度、tokenizer 词表和 KV 头数",
+    "locale": "zh-CN",
+    "evidence": "observed",
+    "output": "diagrams/ma-llm-evolution.timeline.html"
+  },
+  "layout": { "width": 1000, "breaks": "none" },
+  "lanes": [
+    { "id": "ln_arch", "label": "架构组件" },
+    { "id": "ln_data", "label": "数据与上下文" }
+  ],
+  "events": [
+    {
+      "id": "e_gpt3",
+      "at": "2020-05-28T00:00:00Z",
+      "lane": "ln_arch",
+      "title": "GPT-3 175B:pre-LN + GeLU + learned 绝对位置",
+      "detail": "context 2048,BPE 50k,~300B tokens;位置编码靠学一张表,超出 2048 无嵌入可查",
+      "kind": "default"
+    },
+    {
+      "id": "e_llama",
+      "at": "2023-02-27T00:00:00Z",
+      "lane": "ln_arch",
+      "title": "LLaMA 7/13/33/65B:三件套定型",
+      "detail": "pre-RMSNorm + SwiGLU(内维 (2/3)·4d)+ RoPE(θ=10k);MHA;context 2048;SentencePiece BPE 32k,数字逐位拆",
+      "kind": "change"
+    },
+    {
+      "id": "e_llama_data",
+      "at": "2023-02-27T00:01:00Z",
+      "lane": "ln_data",
+      "title": "1.0~1.4T tokens,只用公开数据",
+      "detail": "7B 训 1T(≈143 tokens/参数);65B 在 2048×A100-80G 上 380 tokens/s/GPU,1.4T 约 21 天",
+      "kind": "default"
+    },
+    {
+      "id": "e_l2",
+      "at": "2023-07-18T00:00:00Z",
+      "lane": "ln_arch",
+      "title": "Llama 2 7/13/70B:2T tokens、context 4096、70B 上 GQA",
+      "detail": "三件套沿用;tokens +40%(1.4T→2.0T);context 2k→4k;34B 训练了但未发布",
+      "kind": "change"
+    },
+    {
+      "id": "e_l2_data",
+      "at": "2023-07-18T00:01:00Z",
+      "lane": "ln_data",
+      "title": "2T tokens 后 loss 仍无饱和迹象",
+      "detail": "数据质量 + RLHF 对话成为这一代的重点;许可从研究许可放宽到可商用(月活 <7 亿)",
+      "kind": "default"
+    },
+    {
+      "id": "e_l3",
+      "at": "2024-07-31T00:00:00Z",
+      "lane": "ln_arch",
+      "title": "Llama 3 8/70/405B:架构几乎不动,四处参数改",
+      "detail": "全系 GQA 8 个 KV 头;RoPE θ 10k→500,000;tiktoken 基 128K 词表;预训练 8k,长上下文档到 128K",
+      "kind": "change"
+    },
+    {
+      "id": "e_l3_data",
+      "at": "2024-07-31T00:01:00Z",
+      "lane": "ln_data",
+      "title": "~15T tokens(Llama 2 的 7.5×),405B 用 ~50× 算力",
+      "detail": "三阶段:8k 预训练 → 长上下文(约 800B tokens,8K 六阶段渐进拉到 128K)→ 退火 40M tokens;论文自述收益主要来自数据质量与规模",
+      "kind": "default"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "论文原话(这是本篇最重要的一句)",
+      "items": [
+        "we did not make any major changes … in terms of model architecture",
+        "our performance gains are primarily driven by improvements in data quality and diversity as well as by increased training scale",
+        "→ 组件定型后,scaling 的主战场从架构转到数据"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "四代对照表(抽样,完整表见 §5)",
+      "items": [
+        "归一化:pre-LN(LayerNorm)→ pre-RMSNorm → 沿用 → 沿用",
+        "激活:GeLU → SwiGLU → SwiGLU → SwiGLU",
+        "位置:learned 绝对 → RoPE θ=10k → RoPE → RoPE θ=500,000",
+        "attention:MHA → MHA → 70B 用 GQA → 全系 GQA 8 KV 头",
+        "tokens:~300B → 1.0-1.4T → 2.0T → ~15T"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "两处容易读错的地方",
+      "items": [
+        "Llama 3 的 128K 是长上下文档结果,预训练本身是 8k",
+        "「开源」用词要准:LLaMA 1 是研究许可(非 OSI),Llama 2 起才放宽商用"
+      ]
+    }
+  ]
+}

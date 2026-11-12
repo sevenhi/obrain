@@ -1,0 +1,104 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "entry points 两条通道:平台探测 vs 通用注册",
+  "subtitle": "platform_plugins 换平台;general_plugins 补能力",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-hwp-entrypoints.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "platform",
+   "label": "platform_plugins"
+  },
+  {
+   "id": "general",
+   "label": "general_plugins"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "reg",
+   "lane": "platform",
+   "col": 0,
+   "type": "backend",
+   "label": "register() 探测函数",
+   "sublabel": "不是我的硬件返回 None"
+  },
+  {
+   "id": "cls",
+   "lane": "platform",
+   "col": 1,
+   "type": "backend",
+   "label": "返回 Platform 类全名",
+   "sublabel": "全限定类名字符串"
+  },
+  {
+   "id": "wk",
+   "lane": "platform",
+   "col": 2,
+   "type": "backend",
+   "label": "解析 worker_cls/attn",
+   "sublabel": "接管 device/worker/attention"
+  },
+  {
+   "id": "g0",
+   "lane": "general",
+   "col": 0,
+   "type": "backend",
+   "label": "模型/连接器/量化",
+   "sublabel": "进程启动即加载"
+  },
+  {
+   "id": "g1",
+   "lane": "general",
+   "col": 1,
+   "type": "backend",
+   "label": "GGUF/bitsandbytes",
+   "sublabel": "只补算子/格式"
+  },
+  {
+   "id": "g2",
+   "lane": "general",
+   "col": 2,
+   "type": "backend",
+   "label": "平台仍是主线",
+   "sublabel": "多注册算子不换平台"
+  }
+ ],
+ "edges": [
+  {
+   "from": "reg",
+   "to": "cls",
+   "label": "命中即返回",
+   "variant": "emphasis"
+  },
+  {
+   "from": "cls",
+   "to": "wk",
+   "label": "实例化 Worker",
+   "variant": "emphasis"
+  },
+  {
+   "from": "g0",
+   "to": "g1",
+   "label": "补能力"
+  },
+  {
+   "from": "g1",
+   "to": "g2",
+   "label": "不换平台"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "两类要分清",
+   "items": [
+    "换平台:Ascend/Metal/Gaudi/Neuron/OpenVINO",
+    "补能力:XPU kernels、GGUF、bitsandbytes、模型插件"
+   ]
+  }
+ ]
+}

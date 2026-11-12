@@ -1,0 +1,94 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "2-bit 以下处理 outlier 的两条对跖路线",
+    "locale": "zh-CN",
+    "subtitle": "SpQR 保留 outlier 到 16-bit,QuIP# 旋转消灭 outlier——隔离并利用 vs 预处理消解",
+    "output": "diagrams/qt-two-bit-outlier-routes.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_spqr",
+      "label": "SpQR 路线"
+    },
+    {
+      "id": "ln_quip",
+      "label": "QuIP# 路线"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "ln_spqr",
+      "col": 0,
+      "type": "backend",
+      "label": "outlier 有结构",
+      "sublabel": "行/列/head/RoPE 条纹",
+      "icon": "start"
+    },
+    {
+      "id": "s1",
+      "lane": "ln_spqr",
+      "col": 1,
+      "type": "backend",
+      "label": "单独高精度存(16-bit)",
+      "sublabel": "CSR 稀疏 + 隔离",
+      "icon": "active"
+    },
+    {
+      "id": "q0",
+      "lane": "ln_quip",
+      "col": 0,
+      "type": "backend",
+      "label": "outlier 是「没对齐」的症状",
+      "sublabel": "权重方向未对齐坐标轴",
+      "icon": "start"
+    },
+    {
+      "id": "q1",
+      "lane": "ln_quip",
+      "col": 1,
+      "type": "backend",
+      "label": "旋转抹平到 uniform",
+      "sublabel": "预处理消解",
+      "icon": "active"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "label": "隔离并利用",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "q0",
+      "to": "q1",
+      "label": "预处理消解",
+      "role": "main"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "为什么 2-bit 这么难",
+      "items": [
+        "单一尺度表示容量坍缩:1-bit 只有 {±1}×scale",
+        "outlier 与普通值共存,一个 scale 框不住",
+        "Hessian 加权误差 <3-bit 时传播失控"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "结论",
+      "items": [
+        "「选量化网格」和「消 outlier」必须一起解决",
+        "3-bit 近无损,2-bit 仍有可感知退化",
+        "「2-bit 近无损」是伪命题"
+      ]
+    }
+  ]
+}

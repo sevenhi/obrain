@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "开源 LLM 谱系:单主干 + 两条分叉,四次分枝",
+    "subtitle": "主干是 decoder-only Transformer,2023 年 LLaMA 把配方定型(pre-RMSNorm + SwiGLU + RoPE)。此后差异只收敛到四个变量:GQA 头数、上下文长度、tokenizer、FFN 是否换 MoE",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-open-model-lineage.tree.html"
+  },
+  "layout": {
+    "direction": "right",
+    "nodeW": 230,
+    "gapX": 26,
+    "gapY": 38
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "decoder-only 主干",
+      "sublabel": "GPT-2/3 奠基,2023 后无人改骨架"
+    },
+    {
+      "id": "llama",
+      "label": "LLaMA(2023-02):三件套定型",
+      "parent": "root",
+      "sublabel": "pre-RMSNorm + SwiGLU + RoPE"
+    },
+    {
+      "id": "l2",
+      "label": "Llama 2(2023-07)",
+      "parent": "llama",
+      "sublabel": "2T tokens,4k ctx,70B 首用 GQA-8"
+    },
+    {
+      "id": "l3",
+      "label": "Llama 3 / 3.1(2024)",
+      "parent": "l2",
+      "sublabel": "15T tokens,tiktoken 128K,θ=500k,128K ctx"
+    },
+    {
+      "id": "mistral",
+      "label": "Mistral 7B(2023-10)",
+      "parent": "llama",
+      "sublabel": "LLaMA 配方 + GQA-8 + SWA 4096"
+    },
+    {
+      "id": "mixtral",
+      "label": "Mixtral 8x7B(2024-01)",
+      "parent": "mistral",
+      "sublabel": "attention 不变,只把 FFN 换成 8 选 2"
+    },
+    {
+      "id": "qwen",
+      "label": "Qwen(2023-09 起)",
+      "parent": "llama",
+      "sublabel": "Qwen2 起全系 GQA + DCA/YaRN"
+    },
+    {
+      "id": "qwen_moe",
+      "label": "Qwen-MoE 57B-A14B",
+      "parent": "qwen",
+      "sublabel": "64 路由 + 8 共享,激活 8 路由"
+    },
+    {
+      "id": "ds",
+      "label": "DeepSeek(2023-12 起)",
+      "parent": "llama",
+      "sublabel": "67B dense(MHA)起步"
+    },
+    {
+      "id": "dsv2",
+      "label": "V2:236B/21B",
+      "parent": "ds",
+      "sublabel": "MoE + MLA 首次组合,128K ctx"
+    },
+    {
+      "id": "dsv3",
+      "label": "V3:671B/37B",
+      "parent": "dsv2",
+      "sublabel": "1+256 专家 top-8,aux-loss-free,MTP"
+    },
+    {
+      "id": "rwkv",
+      "label": "RWKV(旁支)",
+      "parent": "root",
+      "sublabel": "线性注意力 RNN 化,常数推理显存"
+    },
+    {
+      "id": "rwkv_why",
+      "label": "不走 softmax 的唯一大成支",
+      "parent": "rwkv",
+      "sublabel": "但质量与生态仍显著落后主干"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "四个变量,不是四套架构",
+      "items": [
+        "GQA 头数(8 KV 头最常见)→ 决定 KV cache 大小",
+        "上下文长度(2k → 4k → 128K)→ 决定 rope_scaling 与训练阶段",
+        "tokenizer(SP-BPE 32k → tiktoken 128K → 151,646)",
+        "FFN:dense 还是 MoE → 决定显存/算力比"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两条分叉的本质区别",
+      "items": [
+        "分叉一 MoE:参数总量暴涨但每 token 只走一小部分 —— 显存换计算",
+        "分叉二 线性注意力/RNN:推理期常数显存,但要用并行训练换",
+        "MoE 成了主流(三家都走),线性注意力只有 RWKV 一支"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "许可别记错",
+      "items": [
+        "Llama 系是 Community License,非 OSI 开源",
+        "Mistral / DeepSeek 主力 / Qwen 多数档是 Apache 2.0",
+        "Qwen 部分尺寸档用 Qwen 许可(注册制)",
+        "V3 是 MIT(GitHub license 端点实测)"
+      ]
+    }
+  ]
+}

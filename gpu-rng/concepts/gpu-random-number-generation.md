@@ -3,12 +3,15 @@ title: GPU 随机数生成:counter-based(Philox)与 F2-linear(MTGP)两条路
 type: concept
 tags: [gpu, rng, prng, philox, mtgp, curand, counter-based, monte-carlo, cuda]
 source:
+  - "code: Random123 v1.14.0 README（非密码学用途） | https://github.com/DEShawResearch/random123/blob/726a093cd9a73f3ec3c8d7a70ff10ed8efec8d13/README.md | reviewed 2026-11-04"
+  - "web: CUDA 12.6.3 Best Practices Guide（shared memory broadcast） | https://docs.nvidia.com/cuda/archive/12.6.3/cuda-c-best-practices-guide/index.html#shared-memory-and-memory-banks | reviewed 2026-11-04"
   - "pdf: Parallel Random Numbers: As Easy as 1, 2, 3 (Salmon/Moraes/Dror/Shaw, SC11 Best Paper) | https://www.thesalmons.org/john/random123/papers/random123sc11.pdf | ACM DL 版 DOI 10.1145/2063384.2063405(需订阅) (primary, counter-based)"
   - "pdf: Variants of Mersenne Twister Suitable for Graphic Processors (Saito/Matsumoto) | https://arxiv.org/abs/1005.4973 | (primary, MTGP)"
   - "web: Random123 官方站(DEShawResearch) | https://www.thesalmons.org/john/random123/"
   - "web: MTGP 官方站(広島大 松本实验室) | https://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/MTGP/"
   - "web: cuRAND Host API / Device API Overview (CUDA Toolkit 文档) | https://docs.nvidia.com/cuda/curand/host-api-overview.html ; https://docs.nvidia.com/cuda/curand/device-api-overview.html"
 date: 2026-09
+reviewed: 2026-11-04
 ---
 
 # GPU 随机数生成:为什么是 counter-based 与 MTGP
@@ -21,6 +24,8 @@ date: 2026-09
 2. **F2-linear 大块并行(MTGP)**:不是一线程一 generator,而是**一个 block 的多线程协作推进一个大状态空间**(周期 2¹¹²¹³−1 等),把 MT 的递推里天然存在的并行度暴露出来。cuRAND 的 `MTGP32` 用它(200 组预制参数集、每 block ≤256 线程)。
 
 **选型一句话**:要极致吞吐/确定性/跨平台可复现 → **Philox(counter-based)**;要超长周期 + 高维等分布的强统计保证、且能吃 block 级协作 → **MTGP**。cuRAND 默认的 XORWOW 快但**过不了 BigCrush**(CollisionOver/SimpPoker/LinearComp 系统性 reject),严肃蒙特卡洛别用。
+
+> 上述速度/测试结论绑定下文论文时代的硬件和配置,不是当前所有 GPU 上的排名。可复现先指固定 counter/key/轮数的整数输出,不自动保证分布转换或应用最终输出逐位一致。**Philox/Threefry 不用于密码学**;选型图与线程/block 图已于 2026-11-04 同步安全边界和同地址广播解释,并通过自动图检查与浏览器检查,不代表性能复现。
 
 ---
 
@@ -55,7 +60,7 @@ counter: s_n = (s + 1) mod 2^p          u_{k,n} = h_j(b_k(n))  // f 只是计数
 
 - **f 退化成一个计数器**:状态就是 p-bit 整数 n;
 - **g = h_j ∘ b_k**:`b_k` 是一个 **keyed bijection**(密钥化的双射),`h_j` 从 p-bit 输出里挑第 j 个 r-bit 块(J = 输出重数,如 128-bit 出 4 个 32-bit)。
-- `b_k` 从哪来?**密码学**。CTR 模式的 block cipher 就是"对计数器做 keyed 双射"——counter-based PRNG 与 CTR-mode 密码的唯一区别是前者把输出转成数值而非与明文 xor。任何扛住密码学界检验的 block cipher 几乎必然能做高质量 `b_k`(diffusion/avalanche 判据:输入单 bit 翻转 → 每个输出 bit 有 ~50% 概率翻转)。
+- `b_k` 的设计借鉴**密码学**中的 keyed 双射与扩散思想,但“counter-based”只描述生成结构,不是安全保证。完整安全分组密码可构造 CTR 随机流;Random123 中的 Philox/Threefry 则面向统计模拟,官方明确不适用于密码学或安全用途。avalanche 与 BigCrush 测试不能替代密码学安全分析。
 
 **并行方式天然**:multistream = 每计算单元分配不同 key k,自增各自 counter;substream = 把 counter 空间按 block/stride 分给各单元,key 相同。更妙的是 **API 把 k 和 n 的控制权完全交给应用**:可以用机器参数(core/rank/thread id)派生,也可以用**应用变量**(粒子 id、体素号、时间步)派生。后者给出**机器无关的随机流**——同样的应用逻辑在不同并行度/不同硬件上产生同样序列,可复现、可调试,这是传统 PRNG 几乎做不到的(要为亿万对象各存一份状态)。
 
@@ -88,7 +93,7 @@ counter: s_n = (s + 1) mod 2^p          u_{k,n} = h_j(b_k(n))  // f 只是计数
 
 Saito/Matsumoto 的路子正相反——**不抛弃 F2-linear 递推,而是把递推内部的并行度暴露出来**:
 
-> 下图把两条路线并排对比。左边是朴素做法(SDK-MT,4096 个 MT607 各占一份状态),右边是 MTGP:一个 block 共享一个大状态,内存反而只要 32-bit×线程数。
+> 下图比较两条路线的状态所有权:SDK-MT 每线程独立持有状态,MTGP 则由一个 block 协作推进共享状态。修复图不再用未经核验的简化公式表示总内存,也不将历史 texture 选择解释为同地址读取必然发生 bank conflict。
 
 <div class="archify-figure">
 <iframe src="../../../diagrams/rng-thread-vs-block.architecture.html"
@@ -106,7 +111,7 @@ Saito/Matsumoto 的路子正相反——**不抛弃 F2-linear 递推,而是把�
   u = t ^ (X[M+i]>>sh2);
   X[N+i] = u ^ rectbl[u & 0xf];   // rectbl = (4×w)矩阵 R 的 16 项查表
   ```
-  `R` 的乘法用 16 项查表实现(u4 只有 16 种取值);查表放 **texture memory**(只读缓存)最合适,因为它**无 bank conflict**——若放 shared memory,同 warp 不同线程的 u4 常相等会撞 bank;放寄存器又挤占 occupancy。
+  `R` 的乘法用 16 项查表实现(u4 只有 16 种取值);论文在当时硬件上使用 **texture memory**。不能把这个历史选择解释为“相同 u4 会导致 shared-memory bank conflict”:同 warp 读取同一 32-bit shared-memory 地址可广播;不同地址映射到同一 bank 才可能冲突。现代硬件应比较具体布局、指令与寄存器压力,不预设 texture 总是最优。
 - **tempering**(提升 k(v) 高维等分布):
   ```c
   t = X[M-1+i] ^ (X[M-1+i] >> 16);
@@ -227,14 +232,16 @@ __global__ void gen(curandStatePhilox4_32_10_t* s, float* out) {
 ## 4. 实践要点
 
 1. **默认别用 XORWOW**:cuRAND `CURAND_RNG_PSEUDO_XORWOW` 是默认最快项,但过不了 BigCrush。严肃蒙特卡洛用 **`PHILOX4_32_10`**(counter-based,可复现、零状态)或 **`MTGP32`**(超长周期)。
-2. **要跨平台可复现 → counter-based**:用应用变量(粒子 id/体素号/时间步)拼 counter+key,不同并行度、不同硬件都出同一序列。这是传统 PRNG 做不到的。
+2. **要调度无关的随机流 → counter-based**:用应用变量(粒子 id/体素号/时间步)无碰撞地编码 counter+key,固定算法、轮数与整数语义,可避免流随线程调度变化。这个保证只针对相同输入的整数输出;浮点分布转换、并行归约及模型采样结果还需单独验证。
 3. **state 存 global、跨 launch 复用**:反复 `curand_init` 很贵;把 state 缓存在 global memory,kernel 内载入 local 生成后写回。init 与 generate 拆成两个 kernel 更省寄存器。
 4. **Philox 选 4×32 不选 4×64**(在 GPU 上):32-bit 乘法 GPU 支持更好、吞吐更高;要 10 轮版本留安全裕度。
 5. **MTGP 的硬约束**:一个 state = 一个 block,≤256 线程协作,**跨 block 不能共享 state**;参数集必须离线用 MTGPDC 预生成(搜索以分钟计),用 cuRAND 时直接吃预制 200 组。
-6. **F2-linear 的 BigCrush 失败别慌**:MTGP/MT/WELL 在 LinearComp/MatrixRank 上失败是 F2-线性的共性,把输出当均匀实数/整数用的常规模拟一般不受影响;但对**密码学或线性结构敏感**的应用,选 counter-based(Philox/Threefry)而非 F2-linear。
+6. **区分统计模拟与安全用途**:MTGP/MT/WELL 在 LinearComp/MatrixRank 上失败是 F2-线性的共性,是否影响模拟需结合任务验证。线性结构敏感的数值应用可评估 Philox/Threefry;**密码学、安全 token、密钥与 nonce 不应使用它们**,应选适合该安全协议的 CSPRNG/系统安全随机接口。
 7. **验证工具**:TestU01 的 SmallCrush/Crush/BigCrush(BigCrush 在现代 CPU 上跑几小时、测 ~2³⁸ 样本);"Crush-resistant" 是全过零 Failed。counter-based 还要专门测**流间独立性**(不同 key 的 multistream、不同 counter block/stride 的 substream,含 gray-code/constant-Hamming 对抗性 counter)。
 
 ## 溯源
+
+- **2026-11-04 复核边界**:安全用途与 bank broadcast 按上方固定版本来源纠正;历史吞吐与 BigCrush 表仍是论文报告,未在当前 GPU 上复现。复现实验应记录生成器/轮数、counter/key 编码、seed、分布转换算法与版本、dtype 和并行归约方式;“整数流相同”“浮点样本逐位相同”“最终应用输出相同”分三层验收。
 
 - counter-based 主源:Salmon, Moraes, Dror, Shaw, *Parallel Random Numbers: As Easy as 1, 2, 3*, SC11(Best Paper)。官方站 https://www.thesalmons.org/john/random123/ (Random123 库,含 ARS/Threefry/Philox 的 C/C++/CUDA/OpenCL 实现)。
 - MTGP 主源:Saito, Matsumoto, *Variants of Mersenne Twister Suitable for Graphic Processors*, arXiv:1005.4973。权威在线版 https://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/MTGP/ (MTGP/MTGPDC 源码与参数集)。

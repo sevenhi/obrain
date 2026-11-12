@@ -1,0 +1,109 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DeiT:蒸馏 token + 配方,把 ViT 平民化",
+    "locale": "zh-CN",
+    "subtitle": "只用 ImageNet-1k,86M 参数(ViT-B)单机 3 天到 83.1%;「数据饥饿」靠配方缓解",
+    "output": "diagrams/cv-vit-deit.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_distill",
+      "label": "蒸馏机制"
+    },
+    {
+      "id": "ln_recipe",
+      "label": "数据与配方"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "cls",
+      "lane": "ln_distill",
+      "col": 0,
+      "type": "backend",
+      "label": "[CLS] 分类 token",
+      "sublabel": "序列级答案收集槽",
+      "icon": "start"
+    },
+    {
+      "id": "dist",
+      "lane": "ln_distill",
+      "col": 1,
+      "type": "backend",
+      "label": "[DIST] 蒸馏 token",
+      "sublabel": "旁加,学教师网络(CNN 亦可)",
+      "icon": "active"
+    },
+    {
+      "id": "dist2",
+      "lane": "ln_distill",
+      "col": 2,
+      "type": "backend",
+      "label": "蒸馏标签",
+      "sublabel": "最高 85.2% top-1",
+      "icon": "success"
+    },
+    {
+      "id": "data",
+      "lane": "ln_recipe",
+      "col": 0,
+      "type": "backend",
+      "label": "只用 ImageNet-1k",
+      "sublabel": "无需 JFT 3 亿图",
+      "icon": "start"
+    },
+    {
+      "id": "aug",
+      "lane": "ln_recipe",
+      "col": 1,
+      "type": "backend",
+      "label": "强增强 + 正则",
+      "sublabel": "RandAug/Mixup + stochastic depth",
+      "icon": "active"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "cls",
+      "to": "dist",
+      "label": "旁加蒸馏 token",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "dist",
+      "to": "dist2",
+      "label": "学教师网络",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "data",
+      "to": "aug",
+      "label": "配方缓解数据饥饿",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "aug",
+      "to": "dist2",
+      "label": "支撑 83.1%",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "DeiT 关键数字",
+      "items": [
+        "86M 参数(结构=ViT-B),单机 <3 天",
+        "83.1% top-1(single-crop)",
+        "蒸馏 token 最高 85.2%",
+        "配方(增强+正则)比架构更重要"
+      ]
+    }
+  ]
+}

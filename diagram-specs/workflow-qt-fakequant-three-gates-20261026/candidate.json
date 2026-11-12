@@ -1,0 +1,114 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "fake-quant 绕开的三重门槛",
+  "subtitle": "格式有 kernel、引擎能吃、口径一致,三件事同时成立才跑得起来;fake-quant 把缺失 kernel 换成 BF16 上的 QDQ 仿真",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-fakequant-three-gates.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "g1",
+   "label": "门槛①格式有 kernel"
+  },
+  {
+   "id": "g2",
+   "label": "门槛②引擎能吃"
+  },
+  {
+   "id": "g3",
+   "label": "门槛③口径一致"
+  },
+  {
+   "id": "by",
+   "label": "fake-quant 绕法"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "k",
+   "lane": "g1",
+   "col": 0,
+   "type": "backend",
+   "label": "格式有 kernel",
+   "sublabel": "NVFP4/GGML/自研格式常缺"
+  },
+  {
+   "id": "e",
+   "lane": "g2",
+   "col": 0,
+   "type": "backend",
+   "label": "引擎能吃",
+   "sublabel": "vLLM 无对应内核"
+  },
+  {
+   "id": "c",
+   "lane": "g3",
+   "col": 0,
+   "type": "backend",
+   "label": "口径一致",
+   "sublabel": "三处量化实现各异"
+  },
+  {
+   "id": "w",
+   "lane": "by",
+   "col": 1,
+   "type": "backend",
+   "label": "权重量化器离线折进 BF16",
+   "sublabel": "mtq.fold_weight"
+  },
+  {
+   "id": "a",
+   "lane": "by",
+   "col": 2,
+   "type": "backend",
+   "label": "激活/KV 留运行时 QDQ",
+   "sublabel": "sidecar:quantizer_state.pth + quant_recipe.yaml"
+  }
+ ],
+ "edges": [
+  {
+   "from": "k",
+   "to": "w",
+   "label": "折成 BF16,stock vLLM 直接吃",
+   "variant": "emphasis"
+  },
+  {
+   "from": "e",
+   "to": "w",
+   "label": "量化器禁用,产物即普通 BF16 模型",
+   "variant": "emphasis"
+  },
+  {
+   "from": "c",
+   "to": "a",
+   "label": "三处吃同一份 recipe,差异只剩框架",
+   "variant": "dashed"
+  }
+ ],
+ "mainPath": [
+  "k",
+  "w"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "测什么 / 不测什么",
+   "items": [
+    "测:量化参数本身损失(clipping/rounding/per-block scale/KV FP8 退化)",
+    "不测:真 kernel 内部数值(tensor core 低精度累加等)",
+    "一句话:验「量化方案」不是「量化内核」"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "权重-only 无 sidecar 是对的",
+   "items": [
+    "IQ2 折叠后无任何量化器启用→不写 sidecar",
+    "产物即纯 BF16 权重,折叠前后 logits 逐位相同",
+    "没有 sidecar 是形态正确的信号,不是失败"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "adapter 的存储红利与加载一致性校验",
+    "subtitle": "训练产物只含被训专家,N 个任务共享一个基座各挂各的 adapter;加载时 add_adapter 会先比对「配置里的专家集合」与「权重文件里的专家 ID」,不一致直接 raise",
+    "locale": "zh-CN",
+    "output": "diagrams/dm-esft-adapter-storage.dataflow.html",
+    "viewBox": [1080, 470]
+  },
+  "stages": [
+    { "label": "① 训出来的东西" },
+    { "label": "② 存成 adapter 目录" },
+    { "label": "③ 推理时组装" },
+    { "label": "④ 一致性校验" },
+    { "label": "⑤ 可服务模型" }
+  ],
+  "nodes": [
+    { "id": "ckpt", "type": "database", "label": "训练 checkpoint", "sublabel": "只有参数,没有 buffer", "stage": 0, "row": 0 },
+    { "id": "shared", "type": "database", "label": "共享专家权重", "sublabel": "shared_experts=True 才有", "stage": 0, "row": 1 },
+    { "id": "dir", "type": "external", "label": "adapter 目录", "sublabel": "每任务一份", "stage": 1, "row": 0 },
+    { "id": "base", "type": "database", "label": "基座模型", "sublabel": "vanilla-lite 只存一份", "stage": 1, "row": 1 },
+    { "id": "load", "type": "backend", "label": "add_adapter", "sublabel": "基座 + adapter 合体", "stage": 2, "row": 0 },
+    { "id": "check", "type": "security", "label": "_dict_equal 比对", "sublabel": "配置 vs 权重里的专家 ID", "stage": 3, "row": 0 },
+    { "id": "serve", "type": "backend", "label": "可服务模型", "sublabel": "同基座切换 adapter", "stage": 4, "row": 0 }
+  ],
+  "flows": [
+    { "id": "f1", "from": "ckpt", "to": "dir", "label": "按任务落盘", "route": "straight" },
+    { "id": "f2", "from": "shared", "to": "dir", "label": "可选一并存" },
+    { "id": "f3", "from": "base", "to": "load", "label": "加载基座", "route": "straight" },
+    { "id": "f4", "from": "dir", "to": "load", "label": "再叠加差异权重", "route": "straight" },
+    { "id": "f5", "from": "load", "to": "check", "label": "先校验再注入" },
+    { "id": "f6", "from": "check", "to": "serve", "label": "集合一致才放行" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么必须校验专家 ID 集合",
+      "items": [
+        "adapter 里只有「被训专家」的权重,配置却说另一批专家可训",
+        "两者不一致时加载不会报错,而是静默用错权重",
+        "把 A 任务的配置挂 B 任务的 adapter 是最典型的翻车方式"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "存储上到底省了什么",
+      "items": [
+        "全量微调:每任务一份完整模型 → 671B 级完全不可行",
+        "ESFT:每任务只有被选专家的权重 + 可选共享/非专家模块",
+        "基座只有一份,N 个任务 = 1 份基座 + N 份小差异"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "被训专家没有推理加速",
+      "items": [
+        "训练时挑了专家,推理仍是标准 MoE 前向",
+        "不存在结构化稀疏可利用,吞吐与未微调基座一致",
+        "省的是训练资源与存储,不是推理延迟"
+      ]
+    }
+  ]
+}

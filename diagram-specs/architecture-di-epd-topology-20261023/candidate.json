@@ -1,0 +1,244 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "DeepInfer 部署形态:EPD 分离 + Wide-EP + 专用 KV 存储",
+    "subtitle": "请求经 Entrypoint 分给 VE / Prefill(小 EP)/ Decode(Wide-EP);分页 block KV 落 3FS 专用集群,SWA KV 只在本机 host 内存——这是「任何 prefill 都能命中任何前缀」的前提",
+    "locale": "zh-CN",
+    "output": "diagrams/di-epd-topology.architecture.html",
+    "viewBox": [
+      1130,
+      620
+    ]
+  },
+  "components": [
+    {
+      "id": "recipe",
+      "type": "external",
+      "label": "deepseek-recipe",
+      "sublabel": "API 协议 → token",
+      "pos": [
+        50,
+        60
+      ],
+      "size": [
+        180,
+        56
+      ]
+    },
+    {
+      "id": "entry",
+      "type": "frontend",
+      "label": "Entrypoint 入口",
+      "sublabel": "hash-chain 前缀命中 ※未开源",
+      "pos": [
+        360,
+        52
+      ],
+      "size": [
+        280,
+        76
+      ]
+    },
+    {
+      "id": "lb",
+      "type": "security",
+      "label": "跨 DP 负载均衡器",
+      "sublabel": "Prefill 四级分桶 ※未开源",
+      "pos": [
+        760,
+        52
+      ],
+      "size": [
+        300,
+        76
+      ]
+    },
+    {
+      "id": "ve",
+      "type": "backend",
+      "label": "VE 视觉编码",
+      "sublabel": "单 GPU,便宜卡即可",
+      "pos": [
+        50,
+        220
+      ],
+      "size": [
+        200,
+        66
+      ]
+    },
+    {
+      "id": "prefill",
+      "type": "backend",
+      "label": "Prefill 引擎(PE)",
+      "sublabel": "EP2–8 / DP2–8:装得下最小并行",
+      "pos": [
+        360,
+        210
+      ],
+      "size": [
+        280,
+        80
+      ]
+    },
+    {
+      "id": "decode",
+      "type": "backend",
+      "label": "Decode 引擎(CE)",
+      "sublabel": "EP64–128 / DP64–128 = Wide-EP",
+      "pos": [
+        360,
+        380
+      ],
+      "size": [
+        280,
+        80
+      ]
+    },
+    {
+      "id": "kvstore",
+      "type": "database",
+      "label": "KVCache Storage(3FS)",
+      "sublabel": "分页 block KV,10+2 EC,~100 PiB",
+      "pos": [
+        760,
+        200
+      ],
+      "size": [
+        320,
+        96
+      ]
+    },
+    {
+      "id": "swa",
+      "type": "database",
+      "label": "SWA KV(host 内存)",
+      "sublabel": "单副本,不上 3FS;跨机 400G VLAN",
+      "pos": [
+        760,
+        372
+      ],
+      "size": [
+        320,
+        96
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "EPD 分离编排(引擎侧已实现,生产编排层未开源)",
+      "wraps": [
+        "entry",
+        "ve",
+        "prefill",
+        "decode"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "KV 存储(与计算解耦,扩缩容互不影响)",
+      "wraps": [
+        "kvstore",
+        "swa"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "recipe",
+      "to": "entry",
+      "label": "协议转 token",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c4",
+      "from": "lb",
+      "to": "entry",
+      "label": "按配额拉活",
+      "variant": "dashed"
+    },
+    {
+      "id": "c3",
+      "from": "entry",
+      "to": "prefill",
+      "label": "token 入队",
+      "labelAt": [
+        510,
+        178
+      ]
+    },
+    {
+      "id": "c2",
+      "from": "entry",
+      "to": "ve",
+      "label": "图→VE",
+      "variant": "dashed"
+    },
+    {
+      "id": "c8",
+      "from": "ve",
+      "to": "prefill",
+      "label": "视觉 token"
+    },
+    {
+      "id": "c5",
+      "from": "prefill",
+      "to": "decode",
+      "label": "P→D 传 KV",
+      "variant": "emphasis",
+      "labelAt": [
+        510,
+        332
+      ]
+    },
+    {
+      "id": "c6",
+      "from": "kvstore",
+      "to": "prefill",
+      "label": "swap-in 分页 KV",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c9",
+      "from": "prefill",
+      "to": "swa",
+      "label": "SWA 写本机 host"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "官方部署数字(单源,Q&A)",
+      "items": [
+        "最小高效单元 = 64 卡 prefill + 64 卡 decode(EP64)",
+        "P:D GPU 配比约 1:1;跨 DC 每 8 GPU ~400 Gbps",
+        "单集群日服务 155 万亿 token;$38/GPU-hour",
+        "每卡约 14.4 TB KV 逻辑容量;生产不用 TP/CP"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Wide-EP 为什么值得",
+      "items": [
+        "decode 是访存题:EP 越大,每 GPU 常驻 expert 越少",
+        "per-step MoE 访存随 EP 增大而下降",
+        "配合 EPLB 复制热点 expert 摊平,Q&A 给 EP8 vs EP64 pareto",
+        "代价:单 GPU 故障即整实例不可用,需按健康 GPU 重定 EP size"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "只开源了「引擎」",
+      "items": [
+        "缺 KV cache 存储客户端(kvcache-store + 命中匹配)",
+        "缺 VE/Prefill/Decode 分离编排层",
+        "缺跨 DP 副本的负载均衡器",
+        "decode 不做 KV offload,但产出的 KV 仍写盘提命中率",
+        "单模型边界:只支持 V4.1-Flash,无通用模型注册表"
+      ]
+    }
+  ]
+}

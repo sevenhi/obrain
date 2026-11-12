@@ -1,0 +1,303 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "三代骨架并排:dense 基座 → MoE 换 FFN → MLA + MoE 双改",
+    "subtitle": "V1 是 Llama 式 dense decoder-only(Pre-Norm + RMSNorm + SwiGLU + RoPE);DeepSeekMoE 只改一处——把除首层外的 FFN 换成稀疏 MoE;V2 两处同时改:注意力换 MLA、FFN 换 DeepSeekMoE",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-ds-gen-stack.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_v1",
+      "label": "V1-7B/67B:dense 基座"
+    },
+    {
+      "id": "ln_moe",
+      "label": "DeepSeekMoE:只换 FFN"
+    },
+    {
+      "id": "ln_v2",
+      "label": "V2:注意力也换"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "① 骨架与归一化",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "② 两处可替换点",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ph3",
+      "label": "③ 输出与动机",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "emb1",
+    "blk1",
+    "attn1",
+    "mlp1",
+    "head1"
+  ],
+  "nodes": [
+    {
+      "id": "emb1",
+      "lane": "ln_v1",
+      "col": 0,
+      "type": "frontend",
+      "label": "Embedding",
+      "sublabel": "vocab 102400",
+      "icon": "start",
+      "width": 146
+    },
+    {
+      "id": "blk1",
+      "lane": "ln_v1",
+      "col": 1,
+      "type": "backend",
+      "label": "DecoderBlock × N",
+      "sublabel": "7B 30 层 / 67B 95 层",
+      "icon": "active",
+      "width": 146
+    },
+    {
+      "id": "attn1",
+      "lane": "ln_v1",
+      "col": 2,
+      "type": "frontend",
+      "label": "MHA / GQA + RoPE",
+      "sublabel": "67B 是 64Q : 8KV",
+      "icon": "neutral",
+      "width": 146
+    },
+    {
+      "id": "mlp1",
+      "lane": "ln_v1",
+      "col": 3,
+      "type": "backend",
+      "label": "SwiGLU dense FFN",
+      "sublabel": "gate ⊙ up → down",
+      "icon": "neutral",
+      "width": 146
+    },
+    {
+      "id": "head1",
+      "lane": "ln_v1",
+      "col": 4,
+      "type": "backend",
+      "label": "RMSNorm → lm_head",
+      "sublabel": "→ vocab",
+      "icon": "success",
+      "width": 146
+    },
+    {
+      "id": "blk2",
+      "lane": "ln_moe",
+      "col": 1,
+      "type": "backend",
+      "label": "骨架不变",
+      "sublabel": "dense + MHA",
+      "icon": "neutral",
+      "width": 146
+    },
+    {
+      "id": "attn2",
+      "lane": "ln_moe",
+      "col": 2,
+      "type": "frontend",
+      "label": "MHA 不变",
+      "sublabel": "这代没动",
+      "icon": "neutral",
+      "width": 146
+    },
+    {
+      "id": "moe2",
+      "lane": "ln_moe",
+      "col": 3,
+      "type": "security",
+      "label": "唯一改动:FFN→MoE",
+      "sublabel": "2 共享 + 64 路由",
+      "icon": "decision",
+      "width": 146
+    },
+    {
+      "id": "sparse",
+      "lane": "ln_moe",
+      "col": 4,
+      "type": "cloud",
+      "label": "16B 只激活 2.8B",
+      "sublabel": "≈ LLaMA2 7B",
+      "icon": "success",
+      "width": 146
+    },
+    {
+      "id": "attn3",
+      "lane": "ln_v2",
+      "col": 2,
+      "type": "security",
+      "label": "MLA 换注意力",
+      "sublabel": "c^KV 512 + RoPE 64",
+      "icon": "decision",
+      "width": 146
+    },
+    {
+      "id": "moe3",
+      "lane": "ln_v2",
+      "col": 3,
+      "type": "security",
+      "label": "MoE 放大",
+      "sublabel": "2 + 160,top-6",
+      "icon": "decision",
+      "width": 146
+    },
+    {
+      "id": "both",
+      "lane": "ln_v2",
+      "col": 4,
+      "type": "cloud",
+      "label": "236B / 21B 激活",
+      "sublabel": "KV 降 93.3%",
+      "icon": "success",
+      "width": 146
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "emb1",
+      "to": "blk1",
+      "label": "查表 + 投影",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "blk1",
+      "to": "attn1",
+      "label": "子层一:注意力",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "attn1",
+      "to": "mlp1",
+      "label": "残差后子层二:FFN",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "mlp1",
+      "to": "head1",
+      "label": "堆叠结束",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "blk1",
+      "to": "blk2",
+      "label": "骨架原封不动",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e6",
+      "from": "attn1",
+      "to": "attn2",
+      "label": "注意力也原封不动",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e7",
+      "from": "mlp1",
+      "to": "moe2",
+      "label": "只把这里换掉",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e8",
+      "from": "moe2",
+      "to": "sparse",
+      "label": "容量不变算力大降",
+      "role": "main"
+    },
+    {
+      "id": "e9",
+      "from": "attn1",
+      "to": "attn3",
+      "label": "第二次也换注意力",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e10",
+      "from": "moe2",
+      "to": "moe3",
+      "label": "MoE 继续放大",
+      "role": "main"
+    },
+    {
+      "id": "e11",
+      "from": "attn3",
+      "to": "both",
+      "label": "省显存",
+      "role": "main"
+    },
+    {
+      "id": "e12",
+      "from": "moe3",
+      "to": "both",
+      "label": "省算力",
+      "role": "main"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三代超参一眼对照",
+      "items": [
+        "V1-7B:30 层 / 4096 / 32 头 MHA / dense / 7B 激活 7B",
+        "V1-67B:95 层 / 8192 / 64 Q : 8 KV(GQA)/ dense / 67B",
+        "DeepSeekMoE-16B:28 层 / 2048 / 16 头 MHA / 2 共享 + 64 路由 top-6 / 16.4B 激活 2.8B",
+        "V2:60 层 / 5120 / 128 头 MLA / 2 共享 + 160 路由 top-6 / 236B 激活 21B"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "首层为什么保持 dense",
+      "items": [
+        "论文观察:首层的负载均衡状态收敛特别慢",
+        "所以 first_k_dense_replace=1,第一层仍是 dense FFN",
+        "V2 继承了这个设计(first_k_dense_replace=1, moe_layer_freq=1)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "两条主线的物理约束",
+      "items": [
+        "KV cache 显存:GQA 砍「头数」,MLA 砍「维度」——从 32768 维/token 压到 576",
+        "算力 FLOPs:MoE 只激活 6/160 个专家,激活参数 21B / 236B",
+        "两条线在 V2 第一次合流,这是本篇最重要的结论"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "数字口径提醒",
+      "items": [
+        "专家相对 FFN 大小 0.25× 是「相对标准专家」(论文 Table 口径),不是相对 dense FFN",
+        "16B 的 moe_intermediate_size=1408 对 dense 10944 约 0.129",
+        "V1 论文正确 arXiv ID 是 2401.02954(不是常被误写的 2302.09500)"
+      ]
+    }
+  ]
+}

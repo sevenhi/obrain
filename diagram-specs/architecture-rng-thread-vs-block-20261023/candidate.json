@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "MTGP 反着走:不是一线程一 generator,而是一个 block 共享一个大状态",
+    "subtitle": "左边 SDK-MT 每线程一个 MT607,内存随线程数线性爆;右边 MTGP 一 block 一个状态,shared memory 只放 32-bit×线程数,周期却到 2^11213−1",
+    "locale": "zh-CN",
+    "output": "diagrams/rng-thread-vs-block.architecture.html"
+  },
+  "layout": { "mode": "grid", "cols": 5, "gapX": 54, "gapY": 62, "cellW": 176, "cellH": 104 },
+  "components": [
+    {
+      "id": "sdk_t0",
+      "type": "external",
+      "label": "线程 0 · MT607",
+      "sublabel": "独享 607 字状态",
+      "size": [176, 104],
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "sdk_t1",
+      "type": "external",
+      "label": "线程 1 · MT607",
+      "sublabel": "再一份 607 字",
+      "size": [176, 104],
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "sdk_tn",
+      "type": "external",
+      "label": "线程 n · MT607",
+      "sublabel": "4096 份就是 4096 个",
+      "size": [176, 104],
+      "row": 2,
+      "col": 0
+    },
+    {
+      "id": "sdk_mem",
+      "type": "security",
+      "label": "内存线性爆",
+      "sublabel": "(607+参数) × 线程数",
+      "icon": "failure",
+      "size": [176, 104],
+      "row": 1,
+      "col": 1
+    },
+    {
+      "id": "mtgp_t0",
+      "type": "frontend",
+      "label": "线程 0..255",
+      "sublabel": "各推进一个槽位",
+      "size": [176, 104],
+      "row": 3,
+      "col": 1
+    },
+    {
+      "id": "params",
+      "type": "cloud",
+      "label": "MTGPDC 预生成",
+      "sublabel": "cuRAND 预制 200 组",
+      "icon": "clock",
+      "size": [176, 104],
+      "row": 1,
+      "col": 4
+    },
+    {
+      "id": "mtgp_state",
+      "type": "database",
+      "label": "block 共享大状态",
+      "sublabel": "放 shared memory",
+      "icon": "database",
+      "size": [176, 104],
+      "row": 0,
+      "col": 4
+    },
+    {
+      "id": "mtgp_rec",
+      "type": "backend",
+      "label": "协作算递推",
+      "sublabel": "N−M 个并行位",
+      "size": [176, 104],
+      "row": 2,
+      "col": 3
+    },
+    {
+      "id": "rectbl",
+      "type": "cloud",
+      "label": "R 矩阵查表",
+      "sublabel": "16 项表放 texture",
+      "icon": "cloud",
+      "size": [176, 104],
+      "row": 3,
+      "col": 3
+    },
+    {
+      "id": "mtgp_mem",
+      "type": "security",
+      "label": "只要 32-bit×线程",
+      "sublabel": "寄存器 + shared 就够",
+      "icon": "success",
+      "size": [176, 104],
+      "row": 3,
+      "col": 4
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "SDK-MT:一线程一 generator(内存灾难)",
+      "wraps": ["sdk_t0", "sdk_t1", "sdk_tn", "sdk_mem"],
+      "pad": 16
+    },
+    {
+      "kind": "region",
+      "label": "MTGP:一 block 一 generator(协作型)",
+      "wraps": ["mtgp_t0", "mtgp_rec", "rectbl", "mtgp_mem", "mtgp_state"],
+      "pad": 16
+    }
+  ],
+  "connections": [
+    { "from": "sdk_t0", "to": "sdk_mem", "label": "每线程摊一份", "variant": "dashed" },
+    { "from": "sdk_t1", "to": "sdk_mem", "label": "叠加", "variant": "dashed" },
+    { "from": "sdk_tn", "to": "sdk_mem", "label": "n 份相乘", "variant": "dashed" },
+    { "from": "sdk_mem", "to": "mtgp_t0", "label": "换思路:合成一个", "variant": "emphasis", "labelAt": [358, 448] },
+    { "from": "mtgp_t0", "to": "mtgp_rec", "label": "各算各的槽位" },
+    { "from": "mtgp_rec", "to": "mtgp_state", "label": "写回状态数组" },
+    { "from": "mtgp_rec", "to": "rectbl", "label": "乘 R 时查表", "variant": "dashed", "labelAt": [818, 548] },
+    { "from": "mtgp_rec", "to": "mtgp_mem", "label": "只碰片上内存" },
+    { "from": "params", "to": "mtgp_state", "label": "参数定特征多项式" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三种周期对应三种线程数",
+      "items": [
+        "2^11213−1 → 256 线程",
+        "2^23209−1 → 512 线程",
+        "2^44497−1 → 1024 线程(状态越大能吃越多线程)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么 R 的查表放 texture 而不是 shared",
+      "items": [
+        "u4 只有 16 种取值,同 warp 不同线程的 u4 常常相等",
+        "放 shared memory 会撞 bank conflict",
+        "放寄存器又挤占 occupancy,所以只读缓存的 texture 最合适"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "两个硬约束",
+      "items": [
+        "一个 state 只能由一个 block 用,两个 block 不能操作同一 state",
+        "参数集搜索极慢(p=11213 平均 338 秒/组),必须离线预生成、复用"
+      ]
+    }
+  ]
+}

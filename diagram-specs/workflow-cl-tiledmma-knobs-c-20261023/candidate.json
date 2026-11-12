@@ -1,0 +1,75 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "TiledMMA 的三个旋钮:把一条指令铺成一整块 tile",
+    "subtitle": "Atom 只是「一条指令」。TiledMMA 用三个参数把它铺开:AtomLayout 决定几个 atom 给几个线程组、ValLayout 决定每线程重复几份值、Permutation 决定数据怎么置换;产出 ThrMMA 后算法层就能写规范三重循环",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-tiledmma-three-knobs.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_in", "label": "输入" },
+    { "id": "ln_knob", "label": "三个旋钮(空间微内核的全部自由度)" },
+    { "id": "ln_use", "label": "产出:算法层的视角" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "铺开", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "交出稳定接口", "fromCol": 2, "toCol": 3, "variant": "emphasis" }
+  ],
+  "mainPath": ["atom", "k1", "k2", "k3"],
+  "nodes": [
+    { "id": "atom", "lane": "ln_in", "col": 0, "type": "frontend", "label": "MMA_Atom", "sublabel": "一条指令 + ThrID", "icon": "start", "width": 140 },
+
+    { "id": "k1", "lane": "ln_knob", "col": 1, "type": "backend", "label": "AtomLayout", "sublabel": "几个 atom 给几组线程", "width": 150 },
+    { "id": "k2", "lane": "ln_knob", "col": 2, "type": "backend", "label": "ValLayout", "sublabel": "每线程重复几份值", "width": 150 },
+    { "id": "k3", "lane": "ln_knob", "col": 3, "type": "security", "label": "Permutation", "sublabel": "数据置换,布局更友好", "width": 155 },
+
+    { "id": "tlvm", "lane": "ln_use", "col": 4, "type": "cloud", "label": "ThrLayoutVMNK", "sublabel": "tiled_product 拼线程布局", "width": 170 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "atom", "to": "k1", "label": "先决定给谁", "role": "main" },
+    { "id": "e2", "from": "k1", "to": "k2", "label": "再决定每线程几份", "role": "main" },
+    { "id": "e3", "from": "k2", "to": "k3", "label": "最后调 tiling 形状", "role": "main" },
+    { "id": "e4", "from": "k3", "to": "tlvm", "label": "get_slice(tid) 得 ThrMMA", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三个旋钮的语义(§2.2 原文)",
+      "items": [
+        "AtomLayout:把几个 atom 铺给几个线程组",
+        "ValLayout:每线程重复几份值,喂更大 tile",
+        "Permutation:置换数据 tiling 换更友好的布局",
+        "内部一行:ThrLayoutVMNK = decltype(tiled_product(AtomThrID{}, AtomLayoutMNK{}))"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "同一套接口的三个落地(原 PPT)",
+      "items": [
+        "Hopper:TiledMma<MMA_Atom<SM90_64x128x16_F32F16F16_SS>> —— atom 本身就大到一行完事,三旋钮全默认",
+        "Volta:ComposedLayout<Swizzle<1,0,-1>> 交织 atom layout + Layout<Shape<_2,_2>> 的 2x2 值平铺 + Tile<...> 的 M/N 置换",
+        "Maxwell:TiledMMA<MMA_Atom<UniversalFMA<float>>, Layout<Shape<_8,_16,_1>>, Layout<Shape<_2,_2,_1>>, Tile<...>> —— 纯 SIMT fp32 也用同一套表达"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Permutation 不是装饰(实践要点 4)",
+      "items": [
+        "Volta 需要 2x2 空间交织,让一条 128-bit smem load 喂两个 MMA 的高低 64 位",
+        "新架构的 smem 排布约束(swgemm descriptor 的 layout atom)同理",
+        "遇到「布局对但性能差」,先查 permutation / swizzle,再怀疑别处"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "读到就一定会踩的坑",
+      "items": [
+        "partition_A/B/C 不是 TiledMMA 的成员,是 ThrMMA(per-thread 视图)的",
+        "必须先 mma.get_slice(threadIdx.x) 拿到 thr_mma 再 partition",
+        "TiledCopy 结构完全同构:Copy_Op → Copy_Traits → Copy_Atom → TiledCopy → ThrCopy,只多出 retile_D",
+        "make_tiled_copy_A(copy_atom, tiled_mma) 能直接继承 MMA 的 fragment 布局 —— 这是「copy 与 compute 图案不一致」的工程解"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "MTGP 递推里哪一段能并行:i = 0 … N−M−1",
+    "subtitle": "x_{N+i} = g(x_{M+i}, x_{1+i}, x_i)。只要数组长度 L ≥ 2N−M,前 N−M 个位置互不依赖,正好喂满一个 block 的线程",
+    "locale": "zh-CN",
+    "output": "diagrams/rng-mtgp-recursion.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_win", "label": "① 取旧字" },
+    { "id": "ln_par", "label": "② 并行窗口" },
+    { "id": "ln_ser", "label": "③ 串行区" },
+    { "id": "ln_tmp", "label": "④ 输出整形" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "准备输入", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "并行段", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "收尾", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["pick", "mask", "par", "shift", "merge", "temper", "out"],
+  "nodes": [
+    {
+      "id": "pick",
+      "lane": "ln_win",
+      "col": 0,
+      "type": "frontend",
+      "label": "取三个旧字",
+      "sublabel": "X[i] / X[1+i] / X[M+i]",
+      "icon": "start",
+      "width": 150
+    },
+    {
+      "id": "mask",
+      "lane": "ln_win",
+      "col": 1,
+      "type": "backend",
+      "label": "按 (w,r) 掩码",
+      "sublabel": "t = X[1+i] ^ (X[i] & mask)",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "par",
+      "lane": "ln_par",
+      "col": 2,
+      "type": "backend",
+      "label": "前 N−M 个位置并行",
+      "sublabel": "每线程一个 i,互不依赖",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "shift",
+      "lane": "ln_par",
+      "col": 3,
+      "type": "backend",
+      "label": "移位混合",
+      "sublabel": "u = t ^ (X[M+i]>>sh2)",
+      "icon": "neutral",
+      "width": 150
+    },
+    {
+      "id": "ser",
+      "lane": "ln_ser",
+      "col": 2,
+      "type": "external",
+      "label": "i = N−M 起串行",
+      "sublabel": "从这里开始依赖新值",
+      "icon": "stop",
+      "width": 150,
+      "yOffset": 124
+    },
+    {
+      "id": "merge",
+      "lane": "ln_ser",
+      "col": 3,
+      "type": "backend",
+      "label": "乘 R 矩阵",
+      "sublabel": "X[N+i] = u ^ rectbl[u&0xf]",
+      "icon": "database",
+      "width": 150
+    },
+    {
+      "id": "temper",
+      "lane": "ln_tmp",
+      "col": 4,
+      "type": "backend",
+      "label": "tempering 整形",
+      "sublabel": "两次右移 + 末项查表",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "out",
+      "lane": "ln_tmp",
+      "col": 5,
+      "type": "cloud",
+      "label": "输出 32-bit",
+      "sublabel": "提升高维等分布",
+      "icon": "success",
+      "width": 150
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "pick", "to": "mask", "label": "先按位与筛低位", "role": "main" },
+    { "id": "e2", "from": "mask", "to": "par", "label": "这段没有新值依赖", "role": "main", "variant": "emphasis" },
+    { "id": "e3", "from": "par", "to": "shift", "label": "每线程独立算完", "role": "main" },
+    { "id": "e4", "from": "shift", "to": "merge", "label": "并行段结果汇入", "role": "main" },
+    { "id": "e5", "from": "ser", "to": "merge", "label": "串行区补上依赖项", "role": "branch", "variant": "dashed" },
+    { "id": "e6", "from": "merge", "to": "temper", "label": "新状态先整形再出数", "role": "main" },
+    { "id": "e7", "from": "temper", "to": "out", "label": "掩到 32-bit", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "并行度是从递推结构里挖出来的",
+      "items": [
+        "传统 MT 的 s_{n+1}=f(s_n) 没有可利用的并行度",
+        "MTGP 的 g 有三个不同时滞的自变量,当 L ≥ 2N−M 时前 N−M 项互不重叠",
+        "所以「F2-linear 天生串行」是误判:串行的是取数顺序,不是全部依赖"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "R 矩阵为什么用查表",
+      "items": [
+        "R 是 4×w 矩阵,乘的对象只有 16 种取值(u4)",
+        "所以预生成 16 项 rectbl 直接查,省掉整段矩阵乘",
+        "tempering 里同理有一张 tmptbl"
+      ]
+    }
+  ]
+}

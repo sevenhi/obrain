@@ -3,17 +3,20 @@ title: FP8 / FP4 硬件原生低比特格式:E4M3、E5M2、NVFP4 与 scale 粒�
 type: concept
 tags: [quantization, fp8, fp4, e4m3, e5m2, nvfp4, mxfp4, blackwell, hopper, transformer-engine, microscaling, deepseek-v3]
 source:
+  - "code: Transformer Engine v2.0 DelayedScaling（历史 amax） | https://github.com/NVIDIA/TransformerEngine/blob/e5cc6c299821e222aee0a7558f88e81c7a9fb134/transformer_engine/common/recipe/__init__.py | reviewed 2026-11-04"
+  - "code: CUTLASS float8.h（E4M3 子正规数） | https://github.com/NVIDIA/cutlass/blob/ee98dbdfd5727085ef86a018009215c2230904e3/include/cutlass/float8.h | reviewed 2026-11-04"
   - "pdf: DeepSeek-V3 Technical Report | arXiv:2412.19437 (DeepSeek-AI, 细粒度 FP8 训练 recipe, ↑primary)"
   - "web: NVIDIA Transformer Engine Documentation | https://docs.nvidia.com/deeplearning/transformer-engine/ | 阅读日期 2026-10"
   - "web: OCP Microscaling Formats (MX) Specification v1.0 | https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf (2024-02)"
   - "web: DeepGEMM | https://github.com/deepseek-ai/DeepGEMM (细粒度 FP8 GEMM 库)"
   - "web: MS-AMP | https://github.com/Azure/MS-AMP (微软 FP8 训练框架)"
 date: 2026-10
+reviewed: 2026-11-04
 ---
 
 # FP8 / FP4 硬件原生低比特格式:E4M3、E5M2、NVFP4 与 scale 粒度
 
-> **TL;DR**:FP8/FP4 是**硬件原生**低比特格式(浮点数制 + Tensor Core 直通路径),与 INT8/AWQ 的「自定义 scale + 整数 kernel」路线、QuIP#/AQLM 的「算法压缩 + 码本 kernel」路线都不同。Hopper 起 FP8 成为默认服务/训练格式;Blackwell 引入 FP4、NVFP4、MXFP4。真正决定可用性的**不是位宽本身,而是 scale 粒度**(per-tensor / per-token / block-wise)与配套 kernel 成熟度——粗粒度 scale 会被 outlier 击穿,细粒度 scale 才是近年训练 recipe 的核心变量。
+> **TL;DR**:FP8/FP4 是低比特浮点格式,在支持的 GPU 上可使用原生低精度 Tensor Core 路径。**硬件支持不等于训练框架或推理服务默认启用**;实际路径由模型、recipe、checkpoint、硬件与 kernel 共同决定。它与 INT8/INT4 量化、QuIP#/AQLM 码本压缩的数值表示不同;AWQ 等 weight-only 格式也可能先反量化再做浮点 GEMM,不能一概当整数计算。可用性取决于格式、scale 粒度、统计策略、累加精度与 kernel 的匹配。
 
 下面这张交互图展示了统一量化模板下的数据流:高精度输入如何经 scale 统计、格式 cast 走进低比特 GEMM,以及 FP8/FP4/梯度三条路径的分工:
 
@@ -74,7 +77,7 @@ INT8:  [s | d d d d d d d]        定点,均匀网格,scale 外置
 | **E2M1(FP4)** | 4 | **6** | **1.0**(最小正规数;0.5 为最小子正规) | 2⁻¹ | Blackwell 4-bit 权重/激活 |
 | INT8 + scale | 8 | 由 scale 决定 | 由 scale 决定 | 2⁻⁷(均匀) | W8A8、KV8 |
 
-要点:E4M3 的 448 听起来「够大」,但**没有 scale 时** LLM 激活的 outlier 动辄上百,普通值会被压到 2⁻⁶ 以下的下溢区。这就是 scale 粒度成为一等公民的原因。
+要点:E4M3 的**最小正规数为 2⁻⁶,最小非零子正规数为 2⁻⁹**;低于 2⁻⁶ 不等于已经为零。缩放后的小值可能落入子正规区或舍入为零,还取决于舍入模式与实现是否 flush-to-zero。判断原张量的可表示范围必须再乘还原 scale;不能只看格式的 448 上限。
 
 ### 2.2 与 INT8 的对比
 
@@ -113,7 +116,7 @@ GEMM 在 FP8 上计算,输出用高精度累加器承接:
     Y ≈ Σ_ij  Ŵ_ij · X̂_ij   (accum 精度 FP16/FP32)
 ```
 
-- per-tensor 相当于「整网只有一个 s_ij」;block-wise 则是把上式里 `(i,j)` 的覆盖范围缩小到 tile。**scale 越细,单个 outlier 污染的元素越少**,但 scale 元数据与计算也越多。
+- per-tensor 是**每个被量化张量一个 scale**,不是全网络共享一个;block-wise 则把覆盖范围缩小到 tile。**scale 越细,单个 outlier 影响的元素越少**,但 scale 元数据与计算也越多。
 - 元数据开销可估:权重侧每 128×128=16384 个 FP8 元素配 1 个 FP32 scale(激活侧每 1×128 组 1 个),开销约 0.02%,可忽略;真正的代价在 kernel 要按 tile 读 scale 并在寄存器里完成还原。
 
 **DeepSeek-V3 的细粒度方案**:对 GEMM 的两个操作数分设粒度——**权重按 128×128 block、激活按 1×128 tile(per token per 128 channels)**——各自求 scale,配合在线量化(online quantization,不缓存过期 amax)与更高精度累加。其工程实现见 DeepGEMM(库内见 [DeepGEMM(NVIDIA)](../../deepseek-infra/concepts/deepgemm-nvidia-vs-ascend.md))。这是「精度不够,粒度来凑」的典型:用更多 scale 元数据 + 定制 GEMM,换回 FP8 的硬件吞吐。
@@ -123,15 +126,15 @@ GEMM 在 FP8 上计算,输出用高精度累加器承接:
 Transformer Engine 里两种 scale 策略是服务侧常踩的坑:
 
 - **Delayed scaling**:维护历史 amax(绝对值最大)缓冲,用近若干步的 amax 推出 scale。优点是量化与 GEMM 之间几乎零额外同步;缺点是 scale **滞后于当前张量**,遇到分布突变(如长上下文、领域切换)会短暂失配。
-- **Just-in-time(JIT)scaling**:每个张量当场算 amax 再定 scale。数值最准,但多一次全张量 reduction,且 scale 生成容易成为 kernel 边界上的同步点。
+- **Just-in-time(JIT)/current scaling**:根据当前张量统计量确定 scale,避免使用过时 amax,但不保证对每种误差指标都最优;统计可能增加 reduction 或读写成本,也可能与其它操作融合。
 - **MS-AMP**(微软)给出了另一条工程路线:在保留 FP8 GEMM 的同时,把 optimizer state 也下放到 FP8(O2/O3 级),用分层 scale 管理梯度/动量/方差——说明「scale 策略」本身可以是一个框架级组件,而不只是 kernel 参数。
 
-**经验**:推理服务优先 JIT(数值稳定可复现);超大 batch 训练可用 delayed 换带宽,但要在数据分布切换处强制刷新 amax。
+**经验**:按框架支持比较 current、delayed 或校准得到的静态 scale,分别验证误差与端到端成本。分布切换时检查历史 amax 是否失配,不要把某一种更新策略当所有模型的默认最优。
 
 工程上还要区分「scale 存在哪里」:
 
 - **打包进 checkpoint**:转换工具把 `s` 与 FP8 权重一并写出,推理端直接加载,版本与 layout 必须冻结;
-- **运行时计算**:激活/梯度的 scale 天然只能 JIT,由 kernel 或框架在 cast 时现算;
+- **运行时或校准统计**:激活可用当前统计、历史 amax 或预先校准的静态 scale;训练梯度也可采用 delayed/current 策略。张量在运行时生成,不代表其 scale 必须在同一步现算;
 - **两者混用**最常见(权重 scale 静态、激活 scale 动态),此时日志里要能区分两类 scale,否则数值问题无法归因。
 
 Transformer Engine 的浮点类型接口(`Float8CurrentScaling` / delayed scaling recipe 等)本质上就是把「格式 + 粒度 + 统计策略」绑成一个可替换配方;MS-AMP 则把同一思想扩展到 optimizer state。框架选择决定你能调哪些旋钮,而不是反过来。
@@ -208,8 +211,8 @@ MS-AMP 的贡献在另一侧:把 FP8 从 GEMM 延伸到 optimizer state(动量�
 
 按顺序问六个问题:
 
-1. **硬件代际**:Hopper(H100/H200/…)→ FP8 是默认加速路径;Blackwell(B100/B200/GB200/…)→ 可评估 FP4/NVFP4;Ampere 及更早 → FP8 只能软模拟,优先 INT8/INT4。
-2. **训练还是推理**:训练 → FP8 + BF16 master + 细粒度 scale;推理吞吐 → FP8 权重/激活;推理显存极限 → 4-bit weight-only 或 KV 量化。
+1. **硬件与实现**:Hopper(H100/H200/…)可评估原生 FP8,Blackwell 可评估 FP4/NVFP4;不支持对应计算格式的设备可能回退反量化路径。不要从存储 dtype 推断原生计算支持或默认启用,应检查目标 SM、kernel 与实际 profile。
+2. **训练还是推理**:训练 → 按 recipe 保留高精度 master weights/优化器状态(上文示例为 FP32),对适合的 GEMM 使用 FP8;推理吞吐 → 评估 FP8 权重/激活;推理显存极限 → 评估 weight-only 或 KV 量化。
 3. **Scale 粒度是否匹配 outlier**:激活离群明显 → 至少 per-token 或 block-wise;权重 → per-channel/group 已够。
 4. **Kernel 成熟度**(最重要的一条):
    - FP8:cuBLASLt / Transformer Engine / DeepGEMM / 引擎内置 FP8,基本可用;
@@ -229,7 +232,7 @@ MS-AMP 的贡献在另一侧:把 FP8 从 GEMM 延伸到 optimizer state(动量�
 
 - **「FP8 就是 8-bit 的一半精度,FP4 再减半」**——错误。浮点网格非均匀,scale 粒度不同的话,FP4 与 FP8 的质量差距既不是线性也不是固定的;FP4 的有效精度几乎完全由块大小和累加路径决定。
 - **「E5M2 范围大所以更安全,前后向都用它」**——方向反了。E5M2 只有 2 bit 尾数,前向权重/激活的相对误差会明显放大;它适合的是动态范围大、精度要求低的梯度。
-- **「checkpoint 转成 FP8 就走上了 FP8 加速」**——不一定。若 engine 回退到反量化+BF16 GEMM,或 scale layout 不匹配,你只是换了一个更大的文件。必须 profile 确认 GEMM 指令路径。
+- **「checkpoint 转成 FP8 就走上了 FP8 加速」**——不一定。若 engine 回退反量化+BF16 GEMM,存储变小也不保证算得更快;scale layout 不匹配还可能无法加载。必须 profile 确认 GEMM 指令路径。
 - **「MXFP4 与 NVFP4 可以互转」**——不能默认。块大小(32 vs 16)、scale 数值格式(E8M0 vs FP8)、双层 scale 约定都不同,跨格式转换等于重量化。
 - **「有了 FP8 就不需要管 KV cache」**——权重与 KV 是两套预算。长上下文下 KV 显存/带宽仍可能是主导项,需要单独选 FP8/低比特 KV 策略。
 - **「细粒度 scale 免费」**——不免费。它要求 GEMM kernel 内联按块还原,且训练时的 scale 同步/在线 cast 会占用额外带宽;用通用 cuBLAS 模拟细粒度路径通常得不偿失。
@@ -239,11 +242,13 @@ MS-AMP 的贡献在另一侧:把 FP8 从 GEMM 延伸到 optimizer state(动量�
 1. **先测 scale,再测 bit**:同为 FP8,per-tensor 与权重 128×128 block + 激活 1×128 分组的质量差距可能大于 E4M3/E5M2 的格式差距。
 2. **amax 统计是隐蔽的正确性来源**:delayed scaling 的历史长度、是否在序列边界刷新、是否用 FP32 记录 amax,都要写进实验记录。
 3. **格式与 kernel 必须成对出现**:checkpoint 是 FP8 不等于服务走了 FP8 Tensor Core;用 profiler 确认 GEMM 真的走低精度指令。
-4. **溢出/下溢监控**:E4M3 上限 448、下限 2⁻⁶,日志里保留 scale 与被 clip 元素比例,比事后看 PPL 更早发现问题。
+4. **溢出/下溢监控**:E4M3 最大有限值 448、最小正规数 2⁻⁶、最小非零子正规数 2⁻⁹;分别记录饱和、子正规、舍入为零与 NaN/Inf 比例,并保留 scale、舍入及 flush-to-zero 约定。
 5. **不要混用规范**:OCP MXFP4(块 32、E8M0 scale)与 NVFP4(块 16、FP8 scale)layout 不同;转换工具、引擎、硬件三者对齐前,先做逐元素往返测试。
 6. **累加精度单独验收**:在长 K 维 GEMM(注意力、大 hidden 的 MLP)上做 FP8 与 BF16 的数值对齐实验;若误差随 K 线性放大,优先修累加而不是修 scale。
 7. **保留「格式回退」开关**:服务侧至少保留 BF16 与 FP8 两条路径;FP4 上线前用同一套请求流量做 A/B,不要只看离线 benchmark。
 8. **实验记录最小集**:卡型号与 SM 版本、格式(E4M3/E5M2/E2M1)、scale 粒度、amax 策略、GEMM 库与版本、质量指标、TTFT/ITL/吞吐、显存峰值。
+
+**最小数值验收**：先以高精度参考检查量化→反量化,再比较同输入下的低精度 GEMM/融合 kernel,最后验收模型任务指标。覆盖零、正负极值、子正规边界、outlier、长 K 与全零 scale 组;报告最大/分位绝对误差、带近零保护的相对误差、NaN/Inf 与饱和比例。阈值按任务预先定义,不要把逐元素相近等同于下游质量无损。本文性能与训练数据仍是引用口径,2026-11-04 的复核未运行硬件 benchmark。
 
 ## 相关条目
 

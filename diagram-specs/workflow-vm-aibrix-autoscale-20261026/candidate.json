@@ -1,0 +1,133 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "PodAutoscaler 的 GPU 感知扩缩容循环",
+    "subtitle": "不看 CPU,直读 vLLM 的 gpu_cache_usage_perc;超阈值扩容、回落并过 cooldown 才缩容,避免 GPU Pod 抖动",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-aibrix-autoscale.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_metric",
+      "label": "① 指标采集"
+    },
+    {
+      "id": "ln_policy",
+      "label": "② 策略判定"
+    },
+    {
+      "id": "ln_exec",
+      "label": "③ 执行(Deployment)"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "metric",
+      "lane": "ln_metric",
+      "col": 0,
+      "type": "backend",
+      "label": "读 gpu_cache_usage_perc",
+      "sublabel": "vLLM :8000/metrics"
+    },
+    {
+      "id": "strat",
+      "lane": "ln_policy",
+      "col": 1,
+      "type": "database",
+      "label": "策略 HPA/KPA/APA",
+      "sublabel": "scalingStrategy 选一种"
+    },
+    {
+      "id": "judge",
+      "lane": "ln_policy",
+      "col": 1,
+      "type": "backend",
+      "icon": "decision",
+      "label": "对比 targetValue=0.5",
+      "sublabel": "KPA 短窗口+panic",
+      "yOffset": 120
+    },
+    {
+      "id": "up",
+      "lane": "ln_exec",
+      "col": 2,
+      "type": "cloud",
+      "label": "扩容 replica+1",
+      "sublabel": "上限 maxReplicas=8"
+    },
+    {
+      "id": "down",
+      "lane": "ln_exec",
+      "col": 2,
+      "type": "external",
+      "label": "缩容 replica-1",
+      "sublabel": "scale-down-cooldown 3m",
+      "yOffset": 120
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "metric",
+      "to": "judge",
+      "label": "上报当前 KV 使用率",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "strat",
+      "to": "judge",
+      "label": "决定窗口/容忍",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e3",
+      "from": "judge",
+      "to": "up",
+      "label": ">0.5 扩容",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e4",
+      "from": "judge",
+      "to": "down",
+      "label": "回落且过 cooldown",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e5",
+      "from": "up",
+      "to": "metric",
+      "label": "副本变化→重新采集",
+      "role": "async"
+    }
+  ],
+  "mainPath": [
+    "metric",
+    "judge",
+    "up"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三种策略分工",
+      "items": [
+        "HPA:兼容 K8s 原生语义",
+        "KPA(Knative):短窗口+panic,适合流量尖刺",
+        "APA(AiBrix):带上下波动容忍 up/down-fluctuation-tolerance"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "为什么不用 CPU",
+      "items": [
+        "CPU 利用率对 LLM 推理几乎没有信息量",
+        "KV 使用率/QPS/命中才是引擎真实负载信号"
+      ]
+    }
+  ]
+}

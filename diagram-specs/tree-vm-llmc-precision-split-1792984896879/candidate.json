@@ -1,0 +1,57 @@
+{
+ "schema_version": 1,
+ "diagram_type": "tree",
+ "meta": {
+  "title": "生产 checkpoint 的精度分层",
+  "subtitle": "MoE 专家层压到低比特,敏感部件保留原精度",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-llmc-precision-split.tree.html"
+ },
+ "nodes": [
+  {
+   "id": "root",
+   "label": "生产 checkpoint",
+   "sublabel": "精度与体积的经验平衡"
+  },
+  {
+   "id": "expert",
+   "label": "MoE 专家层",
+   "parent": "root",
+   "sublabel": "FP4/FP8 量化,体积大头"
+  },
+  {
+   "id": "router",
+   "label": "router",
+   "parent": "root",
+   "sublabel": "保留原精度,量化极敏感"
+  },
+  {
+   "id": "emb",
+   "label": "embedding",
+   "parent": "root",
+   "sublabel": "保留原精度"
+  },
+  {
+   "id": "head",
+   "label": "output head / lm_head",
+   "parent": "root",
+   "sublabel": "保留原精度"
+  },
+  {
+   "id": "mtp",
+   "label": "MTP 头",
+   "parent": "root",
+   "sublabel": "保留原精度"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "amber",
+   "title": "不是硬性要求",
+   "items": [
+    "生产 checkpoint 反复出现同一模式",
+    "精度敏感层显式保留,避免量化掉点"
+   ]
+  }
+ ]
+}

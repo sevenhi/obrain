@@ -1,0 +1,111 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "选型对比:平台 / 启动条件 / 特征与常见坑",
+  "subtitle": "显式指定错了直接 ValueError;量化 KV 会换后端",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-attn-selection-pitfalls.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "nvidia",
+   "label": "NVIDIA"
+  },
+  {
+   "id": "amd",
+   "label": "AMD"
+  },
+  {
+   "id": "portable",
+   "label": "可移植"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "fa",
+   "lane": "nvidia",
+   "col": 0,
+   "type": "backend",
+   "label": "FLASH_ATTN",
+   "sublabel": "Ampere+,FA3 仅 Hopper/FA4 仅 Blackwell"
+  },
+  {
+   "id": "fi",
+   "lane": "nvidia",
+   "col": 1,
+   "type": "backend",
+   "label": "FLASHINFER",
+   "sublabel": "SM100 非 MLA 优先"
+  },
+  {
+   "id": "mla",
+   "lane": "nvidia",
+   "col": 2,
+   "type": "backend",
+   "label": "MLA 族",
+   "sublabel": "use_mla=True(DeepSeek V2/V3/V4)"
+  },
+  {
+   "id": "rocm",
+   "lane": "amd",
+   "col": 0,
+   "type": "backend",
+   "label": "ROCM 系列",
+   "sublabel": "ROCm + aiter"
+  },
+  {
+   "id": "triton",
+   "lane": "portable",
+   "col": 0,
+   "type": "backend",
+   "label": "TRITON_ATTN",
+   "sublabel": "无专用内核时兜底"
+  },
+  {
+   "id": "flex",
+   "lane": "portable",
+   "col": 1,
+   "type": "backend",
+   "label": "FLEX_ATTENTION",
+   "sublabel": "可组合 mask,性能一般"
+  }
+ ],
+ "edges": [
+  {
+   "from": "fa",
+   "to": "fi",
+   "label": "SM100 换",
+   "variant": "dashed"
+  },
+  {
+   "from": "fi",
+   "to": "mla",
+   "label": "MLA 场景",
+   "variant": "emphasis"
+  },
+  {
+   "from": "rocm",
+   "to": "triton",
+   "label": "无专用内核兜底",
+   "variant": "dashed"
+  },
+  {
+   "from": "triton",
+   "to": "flex",
+   "label": "灵活性换性能",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "实践要点",
+   "items": [
+    "别用 ATTN_BACKEND 环境变量——它不存在,用 --attention-backend",
+    "--block-size 会静默降级(只打 warning)",
+    "量化 KV 换后端:FP8 KV 下 MLA 优先级翻转"
+   ]
+  }
+ ]
+}

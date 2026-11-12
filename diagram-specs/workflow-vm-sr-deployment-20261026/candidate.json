@@ -1,0 +1,149 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "SR 的四种部署形态:它站在哪里",
+    "subtitle": "可独立网关、Envoy extproc 旁路、K8s Ingress 层、CLI 管理;不接管 agent 循环,只在一次推理调用粒度决策",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-sr-deployment.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_pos",
+      "label": "① 位置"
+    },
+    {
+      "id": "ln_form",
+      "label": "② 形态"
+    },
+    {
+      "id": "ln_note",
+      "label": "③ 边界"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "gw",
+      "lane": "ln_pos",
+      "col": 0,
+      "type": "frontend",
+      "label": "独立网关",
+      "sublabel": "监听 8899"
+    },
+    {
+      "id": "ext",
+      "lane": "ln_pos",
+      "col": 0,
+      "type": "backend",
+      "label": "Envoy extproc",
+      "sublabel": "旁路 sidecar",
+      "yOffset": 110
+    },
+    {
+      "id": "k8s",
+      "lane": "ln_pos",
+      "col": 0,
+      "type": "cloud",
+      "label": "Kubernetes",
+      "sublabel": "Ingress/网关层",
+      "yOffset": 220
+    },
+    {
+      "id": "cli",
+      "lane": "ln_pos",
+      "col": 0,
+      "type": "security",
+      "label": "CLI 管理",
+      "sublabel": "vllm-sr",
+      "yOffset": 330
+    },
+    {
+      "id": "req",
+      "lane": "ln_form",
+      "col": 1,
+      "type": "backend",
+      "label": "改写请求/响应头",
+      "sublabel": "注入鉴权/诊断头"
+    },
+    {
+      "id": "diag",
+      "lane": "ln_form",
+      "col": 1,
+      "type": "database",
+      "label": "记录诊断",
+      "sublabel": "XSR-Protocol-Warnings",
+      "yOffset": 120
+    },
+    {
+      "id": "bound",
+      "lane": "ln_note",
+      "col": 2,
+      "type": "external",
+      "label": "不接管 agent 循环",
+      "sublabel": "工具调用/任务状态仍在 harness"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "gw",
+      "to": "req",
+      "label": "路由",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "ext",
+      "to": "req",
+      "label": "改写/鉴权",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "k8s",
+      "to": "req",
+      "label": "",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e4",
+      "from": "cli",
+      "to": "req",
+      "label": "配置校验",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e5",
+      "from": "req",
+      "to": "diag",
+      "label": "写诊断",
+      "role": "async"
+    },
+    {
+      "id": "e6",
+      "from": "req",
+      "to": "bound",
+      "label": "粒度只在一次推理调用",
+      "role": "main"
+    }
+  ],
+  "mainPath": [
+    "gw",
+    "req",
+    "bound"
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "安全边界写在配置里",
+      "items": [
+        "监听器可 TLS、api_keys",
+        "identity.trust_headers 信任上游注入身份",
+        "打开前确认上游确实在做认证"
+      ]
+    }
+  ]
+}

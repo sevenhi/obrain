@@ -1,0 +1,155 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "V2 的分组受限贪心路由:两级选择,先选组再选专家",
+    "subtitle": "160 个路由专家分 8 组,每组 20 个。第一步只在组的层面竞争(取组内 max 得分 → 选 top-3 组),第二步才在选中的 3 组内做 top-6。这比全量 top-6 更能保证专家在组间均衡",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-ds-v2-group-route.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_in", "label": "① 输入打分" },
+    { "id": "ln_g1", "label": "② 第一级:选组" },
+    { "id": "ln_g2", "label": "③ 第二级:组内选专家" },
+    { "id": "ln_w", "label": "④ 权重处理" },
+    { "id": "ln_out", "label": "⑤ 输出" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "先算 160 个分数", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "两级筛选", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "出权重与索引", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["h", "score", "gscore", "topg", "mask", "pick"],
+  "nodes": [
+    {
+      "id": "h",
+      "lane": "ln_in",
+      "col": 0,
+      "type": "frontend",
+      "label": "hidden u_t",
+      "sublabel": "每 token 一次",
+      "icon": "start",
+      "width": 158
+    },
+    {
+      "id": "score",
+      "lane": "ln_in",
+      "col": 1,
+      "type": "backend",
+      "label": "F.linear → softmax",
+      "sublabel": "[*, 160] 分",
+      "icon": "active",
+      "width": 158
+    },
+    {
+      "id": "gscore",
+      "lane": "ln_g1",
+      "col": 2,
+      "type": "security",
+      "label": "reshape 8 组取 max",
+      "sublabel": "view(-1, 8, 20).max(-1)",
+      "icon": "decision",
+      "width": 158
+    },
+    {
+      "id": "topg",
+      "lane": "ln_g1",
+      "col": 3,
+      "type": "security",
+      "label": "选 top-3 组",
+      "sublabel": "topk_group=3",
+      "icon": "decision",
+      "width": 158
+    },
+    {
+      "id": "mask",
+      "lane": "ln_g2",
+      "col": 4,
+      "type": "backend",
+      "label": "未选中组清零",
+      "sublabel": "masked_fill(~mask, 0.0)",
+      "icon": "neutral",
+      "width": 158
+    },
+    {
+      "id": "pick",
+      "lane": "ln_g2",
+      "col": 5,
+      "type": "cloud",
+      "label": "全局 top-6 索引",
+      "sublabel": "等价于「组内 top-6」",
+      "icon": "success",
+      "width": 158
+    },
+    {
+      "id": "scale",
+      "lane": "ln_w",
+      "col": 4,
+      "type": "backend",
+      "label": "乘 routed_scaling 16.0",
+      "sublabel": "不归一化",
+      "icon": "clock",
+      "width": 158,
+      "yOffset": 116
+    },
+    {
+      "id": "aux",
+      "lane": "ln_out",
+      "col": 5,
+      "type": "backend",
+      "label": "序列级 aux loss",
+      "sublabel": "仅训练,α=0.001",
+      "icon": "database",
+      "width": 158,
+      "yOffset": 116
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "h", "to": "score", "label": "过门控权重", "role": "main" },
+    { "id": "e2", "from": "score", "to": "gscore", "label": "160 分按组归并", "role": "main", "variant": "emphasis" },
+    { "id": "e3", "from": "gscore", "to": "topg", "label": "每组只留最高分", "role": "main" },
+    { "id": "e4", "from": "topg", "to": "mask", "label": "3 组 × 20 个候选", "role": "main" },
+    { "id": "e5", "from": "mask", "to": "pick", "label": "在候选里取前 6", "role": "main", "variant": "emphasis" },
+    { "id": "e6", "from": "topg", "to": "scale", "label": "选中分数先放大", "role": "branch", "variant": "dashed" },
+    { "id": "e7", "from": "scale", "to": "pick", "label": "放大后定权重", "role": "branch", "variant": "dashed" },
+    { "id": "e8", "from": "pick", "to": "aux", "label": "训练时统计负载", "role": "branch", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "「限制」限的是什么",
+      "items": [
+        "限的是「最多能落到几个组」,不是「每组最多几个专家」",
+        "top-3 组 × 组内取 6 → 理论上 6 个专家可能全在 1 个组里",
+        "但因为组是先按 max 分的,极端塌缩被压制住了"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "为什么不用全量 top-6",
+      "items": [
+        "全量 top-6 容易让某几个「明星专家」吃掉大部分 token",
+        "分组后组间必须先竞争,天然把流量摊开",
+        "代价:牺牲一点「最优 6 个」的灵活度,换负载均衡"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "V3 改了什么(对照 §4.2)",
+      "items": [
+        "打分函数 softmax → sigmoid(亲和度更独立,不受归一化牵制)",
+        "不归一化 + 乘 scaling → 归一化后再乘 route_scale",
+        "aux loss → aux-loss-free(bias 项动态调节),分组机制保留"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "源码字段对照",
+      "items": [
+        "topk_method=\"group_limited_greedy\",n_group=8,topk_group=3",
+        "n_routed_experts=160,num_experts_per_tok=6",
+        "config.json 里同名超参可直接验证"
+      ]
+    }
+  ]
+}

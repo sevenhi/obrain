@@ -15,6 +15,8 @@ source:
 
 # DeepInfer — DeepSeek 生产推理框架
 
+**按任务跳读**：[开源边界](#reading-scope) · [调度机制](#reading-scheduling) · [KV 状态与存储](#reading-cache) · [benchmark 口径](#reading-benchmark) · [与 vLLM 对照](#reading-comparison)。部署与性能数字是文中指定来源/版本的记录，不等同于本地复现结论。
+
 ## TL;DR
 
 **DeepInfer 是 DeepSeek 自家大规模生产推理框架的首次开源**(2026-10-20),服务 DeepSeek-V4.1-Flash,同时支持 NVIDIA SM100 GPU 与昇腾 950 NPU。README Acknowledgment 明写它**最初主要基于 vLLM 构建**,另受 SGLang / TensorRT-LLM 启发——但它不是通用 serving 框架的 fork 维护版,而是围绕 DeepSeek 生产条件(EPD 分离、Wide-EP、低精度 KV、多厂商硬件)深度改造的**单模型引擎**:开源版只支持 V4.1-Flash 一个模型,且 KV cache 存储客户端与跨 DP 负载均衡器**不在开源范围内**(README「Required for a complete inference service (not included)」)。
@@ -27,6 +29,8 @@ source:
 官方口径(单源,出自部署 Q&A):单集群日服务 **155 万亿 token**,谷时定价下 **$38/GPU-hour** 整体收益。
 
 ---
+
+<a id="reading-scope"></a>
 
 ## 1. 定位与边界:开源了什么,没开源什么
 
@@ -156,6 +160,8 @@ if (!any_scheduled) return _schedule_decode(acquire);
 - `decode_step` 各 rank 一致,所以投票次数与语义全组天然对齐,不会卡死在 allreduce。
 
 ---
+
+<a id="reading-scheduling"></a>
 
 ## 5. 零开销调度 ZOS(核心机制)
 
@@ -318,6 +324,8 @@ V4.1 的层分两段:前 `n_prefill_layer` 层是 producer(全量 prefill),其�
 
 ---
 
+<a id="reading-cache"></a>
+
 ## 8. KV cache 三级存储与 StateBlock
 
 ### 8.1 三级布局(Q&A 表格重排;数字均为官方单源)
@@ -442,6 +450,8 @@ constexpr int64_t FP32 = TF32; // Accounting reference, not actual kernel precis
 
 ---
 
+<a id="reading-benchmark"></a>
+
 ## 13. benchmark 口径与坑(examples/README.md,数字口径极细,照抄前先对齐)
 
 - **prefill throughput**(tokens/s/GPU):跳过 5 个 warmup chunk 后,取最后 **11 个样本 = 10 个稳态区间**(首样本只贡献起始时间戳、其 token 不计入);token 总数 ÷ 区间总时长 ÷ 设备数。供给不足两个采样点打 `N/A`。
@@ -453,6 +463,8 @@ constexpr int64_t FP32 = TF32; // Accounting reference, not actual kernel precis
 - prefill/decode 两阶段解耦:`--prefill_batch_size`/`--non_cached_tokens` 只管 prefill,`--decode_num_requests` 只管 decode batch;唯一耦合是 decode 复用 prefill 产出的共享前缀 KV。README 的 pareto 图口径:prefill 4 张 SM100、decode 64 张,各在一个 scale-up domain 内。
 
 ---
+
+<a id="reading-comparison"></a>
 
 ## 14. 与 vLLM 的关系(机制对照)
 

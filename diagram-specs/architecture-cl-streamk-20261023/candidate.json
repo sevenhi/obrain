@@ -1,0 +1,264 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "tile-based vs Stream-K:K 维被切开后必须 fixup 归约",
+    "subtitle": "传统分解按输出 tile 分派,尾批只干一点活就退场;Stream-K 按「内层迭代数」均分给固定数量 CTA,每个 CTA 可能只做某 tile 的一部分 K,代价是跨 CTA 归约",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-streamk-vs-tile.architecture.html",
+    "viewBox": [
+      1120,
+      700
+    ]
+  },
+  "components": [
+    {
+      "id": "tile_c",
+      "type": "frontend",
+      "label": "输出 C(M×N)",
+      "sublabel": "tile-based:整块归一个 CTA",
+      "pos": [
+        40,
+        50
+      ],
+      "size": [
+        300,
+        80
+      ]
+    },
+    {
+      "id": "t1",
+      "type": "backend",
+      "label": "CTA 0:整块 K",
+      "sublabel": "K=0..K_end",
+      "pos": [
+        40,
+        200
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "t2",
+      "type": "backend",
+      "label": "CTA 1:整块 K",
+      "sublabel": "独立累加",
+      "pos": [
+        40,
+        320
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "t3",
+      "type": "backend",
+      "label": "CTA 2:整块 K",
+      "sublabel": "独立累加",
+      "pos": [
+        40,
+        440
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "tail",
+      "type": "security",
+      "label": "尾批 CTA 只干一点就退场",
+      "sublabel": "tile 总数不能被 SM 数整除才有",
+      "pos": [
+        40,
+        560
+      ],
+      "size": [
+        300,
+        80
+      ]
+    },
+    {
+      "id": "sk_c",
+      "type": "frontend",
+      "label": "同一条 K 工作流",
+      "sublabel": "Stream-K:按迭代数均分",
+      "pos": [
+        600,
+        50
+      ],
+      "size": [
+        300,
+        80
+      ]
+    },
+    {
+      "id": "s1",
+      "type": "backend",
+      "label": "CTA 0:K 的 0–33%",
+      "sublabel": "可跨 tile 边界",
+      "pos": [
+        600,
+        200
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "s2",
+      "type": "backend",
+      "label": "CTA 1:K 的 33–66%",
+      "sublabel": "也可能是某 tile 的一段",
+      "pos": [
+        600,
+        320
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "s3",
+      "type": "backend",
+      "label": "CTA 2:K 的 66–100%",
+      "sublabel": "几乎同时下班",
+      "pos": [
+        600,
+        440
+      ],
+      "size": [
+        220,
+        70
+      ]
+    },
+    {
+      "id": "fix",
+      "type": "security",
+      "label": "fixup 跨 CTA 归约",
+      "sublabel": "持最后 K-split 的 CTA 轮询合并",
+      "pos": [
+        860,
+        320
+      ],
+      "size": [
+        220,
+        110
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "tile-based:每块算得高效,但边缘不齐时有尾部空闲",
+      "wraps": [
+        "tile_c",
+        "t1",
+        "t2",
+        "t3",
+        "tail"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "Stream-K:每个核都别闲着,代价是归约",
+      "wraps": [
+        "sk_c",
+        "s1",
+        "s2",
+        "s3",
+        "s4"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "tile_c",
+      "to": "t1",
+      "label": "整块 K 归它"
+    },
+    {
+      "id": "c2",
+      "from": "tile_c",
+      "to": "t2",
+      "label": "另一块输出"
+    },
+    {
+      "id": "c3",
+      "from": "tile_c",
+      "to": "t3",
+      "label": "另一块输出"
+    },
+    {
+      "id": "c4",
+      "from": "sk_c",
+      "to": "s1",
+      "label": "均分第 1 份"
+    },
+    {
+      "id": "c5",
+      "from": "sk_c",
+      "to": "s2",
+      "label": "均分第 2 份"
+    },
+    {
+      "id": "c6",
+      "from": "sk_c",
+      "to": "s3",
+      "label": "均分第 3 份"
+    },
+    {
+      "id": "c7",
+      "from": "s3",
+      "to": "fix",
+      "label": "交出 partial",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c8",
+      "from": "t3",
+      "to": "tail",
+      "label": "剩余 tile 落尾批",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Stream-K 的实测收益(官方论文)",
+      "items": [
+        "32,824 种 GEMM 几何上评估",
+        "相对 CUTLASS 峰值提速最高 14×",
+        "相对 cuBLAS 最高 6.7×",
+        "平均性能更高、更稳,尤其长而扁的非方阵"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "fixup 的真实代价(上之前先看)",
+      "items": [
+        "一个输出 tile 的 K 维被拆给多个 CTA → 必须跨 CTA 归约",
+        "SM90 默认在同一 kernel 内由持最后 K-split 的 CTA 合并(不是独立 kernel)",
+        "默认 ReductionMode::Deterministic,不是「天然不可复现」",
+        "要更高吞吐才选 Nondeterministic(放弃位级确定性)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "tail effect 的准确判据",
+      "items": [
+        "判据是「输出 tile 总数 ⌈M/TileM⌉×⌈N/TileN⌉ 不能被 SM 数整除」",
+        "不是按「网格 / H·W」判——H·W 是卷积记法,GEMM 用 M/N",
+        "Stream-K 在 CUTLASS 里是模板参数 cutlass::gemm::StreamKScheduler",
+        "经 GemmUniversal 注入,要显式选,不是默认行为"
+      ]
+    }
+  ]
+}

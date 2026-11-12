@@ -1,0 +1,92 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DeepGEMM-Ascend: MAD 原语上的轻量 GEMM 抽象工作流",
+    "subtitle": "从安装构建到 kernel 调用的完整路径,以及昇腾 MAD 抽象隐藏的底层细节",
+    "output": "diagrams/deepgemm-ascend.workflow.html",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "dev", "label": "开发者" },
+    { "id": "lib", "label": "DeepGEMM-Ascend 库层" },
+    { "id": "hw", "label": "昇腾硬件层", "variant": "exception" },
+    { "id": "ops", "label": "支持算子" }
+  ],
+  "phases": [
+    { "id": "install", "label": "安装构建", "fromCol": 0, "toCol": 1 },
+    { "id": "abstract", "label": "MAD 轻量抽象", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "run", "label": "算子执行", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": ["clone", "build", "api", "mad", "gemm"],
+  "nodes": [
+    { "id": "clone", "lane": "dev", "col": 0, "type": "external", "label": "克隆仓库", "sublabel": "git clone --recursive", "width": 120 },
+    { "id": "build", "lane": "dev", "col": 1, "type": "backend", "label": "develop.sh 构建", "sublabel": "链接头文件 + C++ 扩展", "tag": "pip install", "width": 120 },
+    { "id": "api", "lane": "lib", "col": 2, "type": "frontend", "label": "kernel API", "sublabel": "API 与原版对齐", "tag": "同包名兼容", "width": 120 },
+    { "id": "mad", "lane": "hw", "col": 3, "type": "security", "label": "MAD 矩阵乘加原语", "sublabel": "轻量抽象入口", "tag": "950 系列 AI core", "width": 120 },
+    { "id": "gemm", "lane": "ops", "col": 4, "type": "backend", "label": "GEMM 算子族", "sublabel": "BF16/FP8/FP4 GEMM", "tag": "最高 99.8% 利用率", "width": 120 },
+    { "id": "mqa", "lane": "ops", "col": 5, "type": "backend", "label": "MQA logits", "sublabel": "含稀疏/分页稀疏", "tag": "FIX-pipe bound", "width": 120 },
+    { "id": "moe", "lane": "ops", "col": 5, "type": "backend", "label": "MegaMoE", "sublabel": "大规模专家 GEMM", "tag": "4组856 / 8组862 TFLOPS", "width": 120, "yOffset": 110 },
+    { "id": "prenorm", "lane": "ops", "col": 4, "type": "database", "label": "HC prenorm kernel", "sublabel": "依赖 tilelang", "width": 120, "yOffset": 110 },
+    { "id": "fractal", "lane": "hw", "col": 4, "type": "messagebus", "label": "fractal 分形布局", "sublabel": "库层隐藏的片上数据布局", "tag": "是数据布局,非算子", "width": 120 },
+    { "id": "sparse", "lane": "hw", "col": 5, "type": "cloud", "label": "稀疏加载协程", "sublabel": "对标 TMA/persistent", "width": 120 },
+    { "id": "scale", "lane": "dev", "col": 3, "type": "security", "label": "scaling 坑", "sublabel": "UE8M0 打包 int16", "width": 120 },
+    { "id": "env", "lane": "dev", "col": 4, "type": "database", "label": "环境校验", "sublabel": "CANN 9.2.0", "width": 120 },
+    { "id": "tool", "lane": "lib", "col": 3, "type": "database", "label": "工具函数", "sublabel": "set/get_num_sms", "width": 120 }
+  ],
+  "edges": [
+    { "id": "e-clone-build", "from": "clone", "to": "build", "variant": "emphasis", "label": "submodule 必须克隆" },
+    { "id": "e-build-api", "from": "build", "to": "api", "variant": "default", "label": "pip install 后导入" },
+    { "id": "e-api-mad", "from": "api", "to": "mad", "variant": "emphasis", "label": "调用下沉到 MAD 原语" },
+    { "id": "e-mad-gemm", "from": "mad", "to": "gemm", "variant": "emphasis", "label": "密集/M-Grouped GEMM" },
+    { "id": "e-mad-fractal", "from": "mad", "to": "fractal", "variant": "dashed", "label": "隐藏对齐与地址计算" },
+    { "id": "e-fractal-sparse", "from": "fractal", "to": "sparse", "variant": "dashed", "label": "稀疏搬运数据" },
+    { "id": "e-sparse-gemm", "from": "sparse", "to": "gemm", "variant": "dashed", "label": "流水线喂给计算" },
+    { "id": "e-gemm-mqa", "from": "gemm", "to": "mqa", "variant": "default", "label": "prefill/decode logits" },
+    { "id": "e-gemm-moe", "from": "gemm", "to": "moe", "variant": "default", "label": "MoE 专家矩阵" },
+    { "id": "e-api-prenorm", "from": "api", "to": "prenorm", "variant": "dashed", "label": "tilelang 依赖路径" },
+    { "id": "e-api-tool", "from": "api", "to": "tool", "variant": "dashed", "label": "AI core 数量控制" },
+    { "id": "e-scale-api", "from": "scale", "to": "api", "variant": "security", "label": "FP8 scaling 传参警示" },
+    { "id": "e-env-build", "from": "env", "to": "build", "variant": "security", "label": "CANN 9.2.0 前置约束" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "核心定位",
+      "items": [
+        "DeepGEMM 的昇腾移植版,独立仓库、API 完全兼容(同包名)",
+        "对 MAD 矩阵乘加原语做轻量抽象,保持内核简洁又高效",
+        "设计哲学与 NVIDIA 原版一脉相承:轻量、可读、极致性能"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "库层隐藏的繁重细节",
+      "items": [
+        "fractal 分形布局(注意:是数据布局,不是算子)",
+        "对齐约束与 fractal 布局下的地址计算",
+        "冗长低层参数,开发者按普通 tiling 思路写即可"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "易踩的坑",
+      "items": [
+        "scaling factor 格式与 NVIDIA 不同:UE8M0 沿 K 维打包进 int16,MN-major 存储",
+        "CANN 9.20 实为 9.2.0,需 bisheng/ld.lld;submodule 不克隆会构建失败",
+        "MQA 是 FIX-pipe bound 而非 compute bound,提升靠稀疏化(只对选中 KV 块打分)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "关键数据(950DT + CANN 9.2.0 口径)",
+      "items": [
+        "密集 GEMM 最高利用率 99.8%(BF16×BF16, M=4096/N=7168/K=16384)",
+        "M-Grouped GEMM(FP8×FP4, BF16 output):4 组 856 / 8 组 862 TFLOPS",
+        "FP8 inference(M=4096/N=4096/K=7168)850 TFLOPS"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,236 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Warp 特化:producer 只搬,consumer 只算",
+    "subtitle": "Hopper 上把 warp 分成两拨角色——producer 发 TMA(cp.async.bulk.tensor),consumer 发 wgmma;生产与消费并发运行,靠 named barrier 同步。别把 wgmma 当搬运指令",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-warp-specialization.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_role",
+      "label": "角色划分"
+    },
+    {
+      "id": "ln_prod",
+      "label": "producer:只搬运"
+    },
+    {
+      "id": "ln_cons",
+      "label": "consumer:只计算"
+    },
+    {
+      "id": "ln_sync",
+      "label": "同步"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "① 分角色",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "② 各自循环",
+      "fromCol": 2,
+      "toCol": 3
+    },
+    {
+      "id": "ph3",
+      "label": "③ 靠 barrier 串起来",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "emphasis"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "warp",
+      "lane": "ln_role",
+      "col": 0,
+      "type": "backend",
+      "label": "同一个 CTA 的 warp",
+      "sublabel": "按角色分成两拨",
+      "icon": "start"
+    },
+    {
+      "id": "prod",
+      "lane": "ln_prod",
+      "col": 1,
+      "type": "database",
+      "label": "producer warp",
+      "sublabel": "专职 global→smem",
+      "icon": "database"
+    },
+    {
+      "id": "tma",
+      "lane": "ln_prod",
+      "col": 2,
+      "type": "backend",
+      "label": "发 TMA bulk 拷贝",
+      "sublabel": "cp.async.bulk.tensor,一条指令搬整块",
+      "icon": "active"
+    },
+    {
+      "id": "arrive",
+      "lane": "ln_sync",
+      "col": 3,
+      "type": "security",
+      "label": "named barrier 报告到达",
+      "sublabel": "smem 有新数据了",
+      "icon": "decision"
+    },
+    {
+      "id": "cons",
+      "lane": "ln_cons",
+      "col": 1,
+      "type": "backend",
+      "label": "consumer warp",
+      "sublabel": "专职 smem→register",
+      "icon": "active"
+    },
+    {
+      "id": "wgmma",
+      "lane": "ln_cons",
+      "col": 3,
+      "type": "backend",
+      "label": "发 wgmma 到 Tensor Core",
+      "sublabel": "Hopper 的「计算」指令",
+      "icon": "active"
+    },
+    {
+      "id": "release",
+      "lane": "ln_sync",
+      "col": 4,
+      "type": "security",
+      "label": "barrier 报告 buffer 可复用",
+      "sublabel": "本轮 mma 已读完",
+      "icon": "decision"
+    },
+    {
+      "id": "next",
+      "lane": "ln_sync",
+      "col": 5,
+      "type": "backend",
+      "label": "下一轮 copy 覆盖它",
+      "sublabel": "数据依赖由此保证",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "warp",
+      "to": "prod",
+      "label": "分出搬运角色",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "warp",
+      "to": "cons",
+      "label": "分出计算角色",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "prod",
+      "to": "tma",
+      "label": "一个线程即可发起",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "tma",
+      "to": "arrive",
+      "label": "整块落地后",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "arrive",
+      "to": "wgmma",
+      "label": "数据就绪才允许算",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "cons",
+      "to": "wgmma",
+      "label": "consumer 独占发射权",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "wgmma",
+      "to": "release",
+      "label": "读完 smem buffer",
+      "role": "main"
+    },
+    {
+      "id": "e8",
+      "from": "release",
+      "to": "next",
+      "label": "允许覆盖",
+      "role": "main"
+    },
+    {
+      "id": "e9",
+      "from": "next",
+      "to": "tma",
+      "label": "下一 stage",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e10",
+      "from": "arrive",
+      "to": "release",
+      "label": "算完即放开 buffer",
+      "role": "main"
+    }
+  ],
+  "mainPath": [
+    "warp",
+    "prod",
+    "tma",
+    "arrive",
+    "release",
+    "next"
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "两个常见误解(原文明确纠错)",
+      "items": [
+        "别把 wgmma 当搬运指令——它是 Hopper 的计算指令,由 consumer 发射",
+        "producer 搬的是 TMA(cp.async.bulk.tensor),不是 wgmma",
+        "别把 Ada 当「旧代」:cp.async 自 Ampere 引入,Ada(sm_86/89)仍支持",
+        "真正「无异步拷贝、需显式 barrier」的是 Volta/Turing 及更早"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "TMA 相对 cp.async 的本质优势",
+      "items": [
+        "bulk 整块搬,不是 per-thread 单元素",
+        "硬件按 tensor descriptor 处理 strided/多维 tile 形状",
+        "一个线程即可发起整块拷贝,不占满所有线程",
+        "腾出的资源交给计算 —— 这才是 warp 特化能成立的前提"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "效果与代价",
+      "items": [
+        "Colfax 教程:Hopper 手写 pipelined GEMM 单靠这招到 ~65% FP16 利用率",
+        "剩余差距来自负载均衡、tile 形状、TMA 效率(见 Stream-K)",
+        "同步原语优先复用 CUTLASS 的 Pipeline* 类",
+        "手写 named barrier / fence 是最容易出 race 的地方"
+      ]
+    }
+  ]
+}

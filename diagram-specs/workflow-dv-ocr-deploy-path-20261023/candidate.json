@@ -1,0 +1,146 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "OCR 系的部署链路:环境 → 推理 → 三条必踩的坑",
+    "subtitle": "两代共用同一套解码器与同一套 vLLM 约束;差别只在 prompt 写法与是否带 crop_mode。坑集中在 transformers 版本、prefix caching 和「别套 MLA」",
+    "locale": "zh-CN",
+    "output": "diagrams/dv-ocr-deploy-path.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_env", "label": "环境" },
+    { "id": "ln_run", "label": "推理入口" },
+    { "id": "ln_prompt", "label": "prompt 分支" },
+    { "id": "ln_prompt2", "label": "prompt 分支(续)" },
+    { "id": "ln_pit", "label": "坑", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 固定版本", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 选推理栈", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "③ 按版面选 prompt", "fromCol": 4, "toCol": 5 }
+  ],
+  "nodes": [
+    {
+      "id": "ver",
+      "lane": "ln_env",
+      "col": 0,
+      "type": "backend",
+      "label": "cuda11.8 + torch2.6.0",
+      "sublabel": "vllm-0.8.5(README 指定)",
+      "icon": "neutral"
+    },
+    {
+      "id": "tf",
+      "lane": "ln_env",
+      "col": 1,
+      "type": "backend",
+      "label": "transformers 推理",
+      "sublabel": "trust_remote_code=True + FA2",
+      "icon": "backend"
+    },
+    {
+      "id": "vllm",
+      "lane": "ln_run",
+      "col": 2,
+      "type": "security",
+      "label": "上游 vLLM 推理",
+      "sublabel": "需 nightly(至 v0.11.1 前)",
+      "icon": "active"
+    },
+    {
+      "id": "npc",
+      "lane": "ln_run",
+      "col": 3,
+      "type": "backend",
+      "label": "enable_prefix_caching=False",
+      "sublabel": "开前缀缓存会出问题",
+      "icon": "failure"
+    },
+    {
+      "id": "ngram",
+      "lane": "ln_run",
+      "col": 4,
+      "type": "backend",
+      "label": "NGramPerReqLogitsProcessor",
+      "sublabel": "抑制重复 token,长页必需",
+      "icon": "neutral"
+    },
+    {
+      "id": "md",
+      "lane": "ln_prompt",
+      "col": 5,
+      "type": "frontend",
+      "label": "带 grounding 转 markdown",
+      "sublabel": "<|grounding|>Convert the document…",
+      "icon": "frontend"
+    },
+    {
+      "id": "free",
+      "lane": "ln_prompt2",
+      "col": 5,
+      "type": "backend",
+      "label": "Free OCR 无版面",
+      "sublabel": "纯文本页用这条",
+      "icon": "neutral"
+    },
+    {
+      "id": "mla",
+      "lane": "ln_pit",
+      "col": 3,
+      "type": "security",
+      "label": "别套 MLA 配置",
+      "sublabel": "两代都是 use_mla=false",
+      "icon": "failure"
+    },
+    {
+      "id": "conflict",
+      "lane": "ln_pit",
+      "col": 4,
+      "type": "backend",
+      "label": "两代同环境会版本冲突",
+      "sublabel": "README 明示无需处理",
+      "icon": "failure"
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "ver", "to": "tf", "label": "同环境装两代", "role": "main" },
+    { "id": "e2", "from": "tf", "to": "vllm", "label": "要吞吐就换 vLLM", "role": "main" },
+    { "id": "e3", "from": "vllm", "to": "npc", "label": "先关前缀缓存", "role": "main" },
+    { "id": "e4", "from": "npc", "to": "ngram", "label": "再挂重复抑制", "role": "main" },
+    { "id": "e5", "from": "ngram", "to": "md", "label": "有版面:带 grounding", "role": "main" },
+    { "id": "e6", "from": "ngram", "to": "free", "label": "无版面:Free OCR", "role": "branch" },
+    { "id": "e7", "from": "ver", "to": "mla", "label": "按 config 估显存", "role": "error" },
+    { "id": "e8", "from": "tf", "to": "conflict", "label": "OCR 与 OCR-2 共存时", "role": "error" }
+  ],
+  "mainPath": ["ver", "tf", "vllm", "npc", "ngram"],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "三条坑,一条比一条隐蔽",
+      "items": [
+        "① 套 MLA:显存估算直接错,而且不报错",
+        "② 开 prefix caching:vLLM 侧出问题,但症状不像缓存问题",
+        "③ transformers 版本冲突:README 明说「无需处理」—— 意思是它一定会报,但可以忽略",
+        "另:config.py 里 INPUT_PATH / OUTPUT_PATH 要先改,否则跑起来读不到文件"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "OCR-2 的推理参数",
+      "items": [
+        "model.infer(..., base_size=1024, image_size=768, crop_mode=True)",
+        "crop_mode=True 才走分块;对应 (0-6)×144 + 256 个 visual token",
+        "提示词决定输出格式:markdown(带 grounding)vs 纯文本"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么 vLLM 要 nightly",
+      "items": [
+        "2025-10-23 才被上游官方支持,旧版没有该架构",
+        "官方支持到 v0.11.1 之前都需 nightly",
+        "NGramPerReqLogitsProcessor 是官方给的重复 token 抑制手段"
+      ]
+    }
+  ]
+}

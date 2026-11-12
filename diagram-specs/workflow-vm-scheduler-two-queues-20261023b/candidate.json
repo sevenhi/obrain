@@ -1,0 +1,264 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "schedule() 每一步:先 RUNNING 后 WAITING,把预算填到满",
+    "subtitle": "连续批处理的关键不在「批多大」而在「每步重排」:完成的移出、新到的按预算补进、运行中的再续 1 个 token",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-scheduler-two-queues.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "in",
+      "label": "队列入口"
+    },
+    {
+      "id": "run",
+      "label": "第一步:RUNNING"
+    },
+    {
+      "id": "wait",
+      "label": "第二步:WAITING"
+    },
+    {
+      "id": "budget",
+      "label": "预算约束"
+    },
+    {
+      "id": "out",
+      "label": "本步产物"
+    }
+  ],
+  "phases": [
+    {
+      "id": "p1",
+      "label": "取队列",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "p2",
+      "label": "先保运行中",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "p3",
+      "label": "再补等待中",
+      "fromCol": 3,
+      "toCol": 4,
+      "variant": "emphasis"
+    },
+    {
+      "id": "p4",
+      "label": "产出",
+      "fromCol": 5,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "start",
+    "running",
+    "budget_check",
+    "waiting",
+    "space",
+    "out"
+  ],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "in",
+      "col": 0,
+      "type": "frontend",
+      "label": "schedule() 被调用",
+      "sublabel": "EngineCore 每步调一次",
+      "width": 148
+    },
+    {
+      "id": "running",
+      "lane": "run",
+      "col": 1,
+      "type": "backend",
+      "label": "遍历 RUNNING 队列",
+      "sublabel": "FCFS 高优先,每请求续 1 token",
+      "width": 148
+    },
+    {
+      "id": "budget_check",
+      "lane": "budget",
+      "col": 2,
+      "type": "security",
+      "label": "预算还够吗",
+      "sublabel": "token_budget + input_budget 双重约束",
+      "width": 148
+    },
+    {
+      "id": "waiting",
+      "lane": "wait",
+      "col": 3,
+      "type": "backend",
+      "label": "取 WAITING 队首",
+      "sublabel": "受剩余预算与 max_num_running_reqs 限制",
+      "width": 148
+    },
+    {
+      "id": "space",
+      "lane": "budget",
+      "col": 4,
+      "type": "security",
+      "label": "allocate_slots 成功?",
+      "sublabel": "块不足 → 触发抢占(默认抢队尾)",
+      "width": 148
+    },
+    {
+      "id": "out",
+      "lane": "out",
+      "col": 5,
+      "type": "database",
+      "label": "SchedulerOutput",
+      "sublabel": "new/running/preempted 三类",
+      "width": 148
+    },
+    {
+      "id": "prefix",
+      "lane": "wait",
+      "col": 3,
+      "type": "database",
+      "label": "先查 prefix cache",
+      "sublabel": "命中直接跳过那些 token",
+      "width": 148,
+      "yOffset": 104
+    },
+    {
+      "id": "chunkn",
+      "lane": "wait",
+      "col": 4,
+      "type": "backend",
+      "label": "按剩余预算切块",
+      "sublabel": "chunked prefill:塞得下多少算多少",
+      "width": 148,
+      "yOffset": 104
+    },
+    {
+      "id": "preempt",
+      "lane": "budget",
+      "col": 5,
+      "type": "cloud",
+      "label": "抢占:V1 只有 recompute",
+      "sublabel": "释放块进 LRU,computed 归零",
+      "width": 148,
+      "yOffset": 104
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "start",
+      "to": "running",
+      "variant": "emphasis",
+      "label": "每步都全量重排"
+    },
+    {
+      "id": "e2",
+      "from": "running",
+      "to": "budget_check",
+      "variant": "emphasis",
+      "label": "先算已占多少预算"
+    },
+    {
+      "id": "e3",
+      "from": "budget_check",
+      "to": "waiting",
+      "variant": "emphasis",
+      "label": "有空余才继续"
+    },
+    {
+      "id": "e4",
+      "from": "waiting",
+      "to": "space",
+      "variant": "emphasis",
+      "label": "先分配 KV 块再调度"
+    },
+    {
+      "id": "e5",
+      "from": "space",
+      "to": "out",
+      "variant": "emphasis",
+      "label": "成功 → 进本步 batch"
+    },
+    {
+      "id": "e6",
+      "from": "waiting",
+      "to": "prefix",
+      "variant": "dashed",
+      "label": "拿 prompt 先查缓存"
+    },
+    {
+      "id": "e7",
+      "from": "prefix",
+      "to": "chunkn",
+      "variant": "dashed",
+      "label": "未命中的部分再切"
+    },
+    {
+      "id": "e8",
+      "from": "chunkn",
+      "to": "space",
+      "variant": "dashed",
+      "label": "切出的块才去要 slot"
+    },
+    {
+      "id": "e9",
+      "from": "space",
+      "to": "preempt",
+      "variant": "security",
+      "label": "失败 → 抢 running 队尾"
+    },
+    {
+      "id": "e10",
+      "from": "preempt",
+      "to": "out",
+      "variant": "security",
+      "label": "被抢者回到 waiting"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两个预算不是一回事",
+      "items": [
+        "token_budget = max_num_scheduled_tokens,管这一步能塞多少 token",
+        "input_budget = max_num_batched_tokens,管整批的总量",
+        "max_num_running_reqs 默认 128,是并发请求数的上限"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "为什么顺序是 RUNNING 先",
+      "items": [
+        "运行中的请求已经付过 prefill 成本,保住它们 = 保住产出",
+        "decode 每请求每步只产 1 token,算术强度极低,必须优先填满",
+        "新请求只能用「剩余」预算,保证公平但不抢占在跑的"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "抢占的 V1 语义",
+      "items": [
+        "allocate_slots 返回 None(块不足)才抢,默认抢 running 队尾",
+        "V1 只有 recompute 一种模式:释放块 + num_computed_tokens=0",
+        "重排时靠 prefix cache 命中减少重算,不是「保留部分进度」"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "可观测指标",
+      "items": [
+        "vllm:num_preemptions_total 看抢占次数",
+        "调参时看 KV cache 余量比看 batch 数字更本质",
+        "每步 batch 填充度可从 scheduler 指标读出"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Atom 吞掉的复杂度:同一件事,三代指令三种线程布局",
+    "subtitle": "MMA_Atom = 裸 PTX 操作 + MMA_Traits。traits 编码了 ISA 里根本不表达的语义 —— 哪些线程协作、每个线程拿哪些值。三代之间这两项完全不同,这就是 partitioning 无法跨代泛化的具体形态",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-atom-generation-layouts.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_passcal", "label": "Pascal:DP4A 点积(单线程)" },
+    { "id": "ln_volta", "label": "Volta:8x8x4(quadpair)" },
+    { "id": "ln_ampere", "label": "Ampere:16x8x8(整 warp)" },
+    { "id": "ln_common", "label": "三代共用的一层" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "谁在协作", "fromCol": 0, "toCol": 0 },
+    { "id": "ph2", "label": "吃什么形状、各拿什么值", "fromCol": 1, "toCol": 2, "variant": "emphasis" }
+  ],
+  "mainPath": ["p1", "p2", "p3"],
+  "nodes": [
+    { "id": "p1", "lane": "ln_passcal", "col": 0, "type": "external", "label": "ThrID = 1 个线程", "sublabel": "tensor core 之前", "icon": "start", "width": 165 },
+    { "id": "p2", "lane": "ln_passcal", "col": 1, "type": "backend", "label": "无 Shape_MNK", "sublabel": "ALayout 1 线程 4 值", "width": 155 },
+    { "id": "p3", "lane": "ln_passcal", "col": 2, "type": "database", "label": "int8 → int32", "sublabel": "CLayout 1 线程 1 值", "width": 155 },
+
+    { "id": "v1", "lane": "ln_volta", "col": 0, "type": "security", "label": "ThrID = 8 线程", "sublabel": "4×2 quadpair", "width": 165 },
+    { "id": "v2", "lane": "ln_volta", "col": 1, "type": "backend", "label": "Shape 8×8×4", "sublabel": "A 布局 (T8,V4)→(M8,K4)", "width": 175 },
+    { "id": "v3", "lane": "ln_volta", "col": 2, "type": "database", "label": "C 布局三层嵌套", "sublabel": "(T8,V8)→(M8,N8),stride 16/4/8/2/32", "width": 185 },
+
+    { "id": "a1", "lane": "ln_ampere", "col": 0, "type": "security", "label": "ThrID = 32 线程", "sublabel": "整 warp 协作", "width": 165 },
+    { "id": "a2", "lane": "ln_ampere", "col": 1, "type": "backend", "label": "Shape 16×8×8", "sublabel": "fp16 输入 fp32 累加", "width": 155 },
+    { "id": "a3", "lane": "ln_ampere", "col": 2, "type": "database", "label": "C 布局 (32,V2)", "sublabel": "stride 16/1、8", "width": 165 },
+
+    { "id": "tri", "lane": "ln_common", "col": 0, "type": "cloud", "label": "共同动作:由 ThrID + 值布局推出", "sublabel": "traits 给的是 (thr,val)→MNK,使用侧要它的逆", "width": 200 },
+    { "id": "inv", "lane": "ln_common", "col": 1, "type": "backend", "label": "取逆由 CuTe 代数给", "sublabel": "right_inverse / left_inverse", "width": 180 },
+    { "id": "res", "lane": "ln_common", "col": 2, "type": "external", "label": "结论:没有平凡办法跨代", "sublabel": "只能把复杂度封进 Atom", "icon": "decision", "width": 190 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "p1", "to": "p2", "label": "单线程视角", "role": "main" },
+    { "id": "e2", "from": "p2", "to": "p3", "label": "值直接落在寄存器", "role": "main" },
+    { "id": "e3", "from": "p1", "to": "v1", "label": "进入 tensor core", "role": "branch" },
+    { "id": "e4", "from": "v1", "to": "v2", "label": "线程开始分摊数据", "role": "main" },
+    { "id": "e5", "from": "v2", "to": "v3", "label": "C 的值布局变得不规则", "role": "main" },
+    { "id": "e6", "from": "v1", "to": "a1", "label": "协作范围扩到整 warp", "role": "branch" },
+    { "id": "e7", "from": "a1", "to": "a2", "label": "M 翻倍、K 翻倍", "role": "main" },
+    { "id": "e8", "from": "a2", "to": "a3", "label": "布局跟着重写", "role": "main" },
+    { "id": "e9", "from": "a3", "to": "tri", "label": "三代都要回答同一问", "role": "main" },
+    { "id": "e10", "from": "tri", "to": "inv", "label": "方向是反的", "role": "main" },
+    { "id": "e11", "from": "inv", "to": "res", "label": "所以必须封装", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Atom 到底是什么",
+      "items": [
+        "Atom = MMA_Op(裸 PTX)+ MMA_Traits(PTX 元信息)",
+        "对外提供 checked call 接口与 fragment 生成",
+        "traits 编码 ISA 里不表达的语义:值类型、collective 的线程布局、[thr_id, val_id] → 逻辑坐标 (M,N,K) 的数据布局映射"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "方向千万别搞反",
+      "items": [
+        "traits 里的 layout 是 (thr,val) 域 → MNK 逻辑坐标",
+        "使用侧一般想要它的逆(MNK → thr,val)",
+        "取逆由 CuTe 代数的 right_inverse / left_inverse 完成,不要手推",
+        "手推这一层就是 CUTLASS 2.x 每代重写 indexing math 的老路"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "三代差异一句话",
+      "items": [
+        "Pascal DP4A:ThrID = 1,无 Shape_MNK,1 线程 4 个 A 值",
+        "Volta 8x8x4:8 线程 quadpair,ThrID = Layout<Shape<_4,_2>, Stride<_1,_16>>,CLayout 三层嵌套",
+        "Ampere 16x8x8:整 warp(ThrID = 32),M/K 都翻倍,布局完全重写"
+      ]
+    }
+  ]
+}

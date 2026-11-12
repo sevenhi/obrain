@@ -1,0 +1,80 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Blackwell CLC:不静态预留 SM,而是取消未启动的 block",
+    "subtitle": "直觉会以为是「预留一部分 SM 常驻」,实际相反:像非 persistent kernel 一样 launch 全量 tile 数的 grid,已启动的 Worker 用 clusterlaunchcontrol.try_cancel 取消尚未启动的 block、领走它的坐标继续算",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-clc-vs-static-persistent.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_hopper", "label": "Hopper:静态 persistent" },
+    { "id": "ln_clc", "label": "Blackwell:CLC 抢占式" },
+    { "id": "ln_scene", "label": "两个 tag 的场景" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "grid 怎么来", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "适配真实可用 SM", "fromCol": 2, "toCol": 2, "variant": "emphasis" }
+  ],
+  "mainPath": ["h1", "h2", "h3"],
+  "nodes": [
+    { "id": "h1", "lane": "ln_hopper", "col": 0, "type": "frontend", "label": "按声明 SM 数 launch", "sublabel": "一 SM 一 CTA 常驻", "icon": "start", "width": 170 },
+    { "id": "h2", "lane": "ln_hopper", "col": 1, "type": "backend", "label": "假设启动时的 SM 数", "sublabel": "静态预留,不会回头改", "width": 170 },
+    { "id": "h3", "lane": "ln_hopper", "col": 2, "type": "security", "label": "被别的 kernel 挤占就亏", "sublabel": "感知不到真实空闲 SM", "icon": "failure", "width": 195 },
+
+    { "id": "c1", "lane": "ln_clc", "col": 0, "type": "frontend", "label": "launch 全量 tile 数", "sublabel": "和普通 kernel 一样", "icon": "start", "width": 170 },
+    { "id": "c2", "lane": "ln_clc", "col": 1, "type": "backend", "label": "try_cancel 抢未启动块", "sublabel": "clusterlaunchcontrol 指令", "width": 190 },
+    { "id": "c3", "lane": "ln_clc", "col": 2, "type": "security", "label": "Worker 领走其坐标", "sublabel": "被取消的 block 根本不启动", "icon": "success", "width": 195 },
+
+    { "id": "dyn", "lane": "ln_scene", "col": 1, "type": "database", "label": "DynamicPersistentScheduler", "sublabel": "共享 GPU / green context / MIG", "icon": "decision", "width": 215 },
+    { "id": "stat", "lane": "ln_scene", "col": 2, "type": "external", "label": "StaticPersistentScheduler", "sublabel": "独占 GPU 时更稳", "width": 195 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "h1", "to": "h2", "label": "静态假设", "role": "main" },
+    { "id": "e2", "from": "h2", "to": "h3", "label": "SM 数变了也不改", "role": "error" },
+    { "id": "e3", "from": "h3", "to": "c1", "label": "改成动态感知", "role": "branch" },
+    { "id": "e4", "from": "c1", "to": "c2", "label": "设备侧抢占指令", "role": "main" },
+    { "id": "e5", "from": "c2", "to": "c3", "label": "取消即接管", "role": "main" },
+    { "id": "e6", "from": "c2", "to": "dyn", "label": "对应动态 tag", "role": "branch" },
+    { "id": "e7", "from": "dyn", "to": "stat", "label": "对照静态档", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "机制一句话(§3.5)",
+      "items": [
+        "try_cancel 是 device-side 指令式抢占:被取消的 block 不启动,已启动的 Worker 领走它的 tile 索引继续算",
+        "只有 SM100 有这条指令能力",
+        "解决的是「SM 被其他 kernel 挤占时,静态 persistent 无法感知真实可用 SM 数」"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "源码位置别找错(容易踩)",
+      "items": [
+        "动态 CLC 版:include/cutlass/gemm/kernel/sm100_tile_scheduler.hpp 的 PersistentTileSchedulerSm100(内含 CLCResponse / PipelineCLCFetchAsync)",
+        "静态版:sm100_static_tile_scheduler.hpp 的 StaticPersistentTileScheduler100",
+        "注意:DynamicPersistentScheduler / StaticPersistentScheduler 是 tag 名,不是类名 —— 按 tag 名去找头文件会找不到",
+        "selector 经 tag 映射到上述类"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两个 tag 该选哪个",
+      "items": [
+        "DynamicPersistentScheduler = 动态感知实际空闲 SM,适合与其他 kernel 共享、SM 数不确定的 green context",
+        "StaticPersistentScheduler = 静态按声明 SM 数驻留,独占 GPU 时更稳",
+        "与 Hopper 静态 persistent 的本质区别:Hopper 假设「启动时的 SM 数」,CLC 动态适配「实际可用的 SM 数」"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "一句话记",
+      "items": [
+        "CLC = 动态抢占式持久化",
+        "不静态预留,而是取消未启动块来适配真实空闲 SM",
+        "与 Hopper 的静态 persistent 是两种不同的假设"
+      ]
+    }
+  ]
+}

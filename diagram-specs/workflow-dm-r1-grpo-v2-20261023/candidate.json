@@ -1,0 +1,75 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "GRPO 的一个训练步:用自己的「同题 G 个回答」替代 critic",
+    "subtitle": "对同一问题采样 G 个输出 → 各自算规则 reward → 组内标准化成优势 Aᵢ → 裁剪目标 + KL 更新。没有价值网络,671B 场景下省掉一个同尺寸模型,这是 R1 能跑大规模 RL 的前提",
+    "locale": "zh-CN",
+    "output": "diagrams/dm-r1-grpo-step.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_a", "label": "① 采样:一题 G 个回答" },
+    { "id": "ln_b", "label": "② 打分:纯规则,无神经 RM" },
+    { "id": "ln_c", "label": "③ 标准化 + 裁剪更新" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "拿回答、拿分", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "折算成梯度", "fromCol": 2, "toCol": 2, "variant": "emphasis" }
+  ],
+  "mainPath": ["q", "samp", "nocritic"],
+  "nodes": [
+    { "id": "q", "lane": "ln_a", "col": 0, "type": "frontend", "label": "问题 q", "sublabel": "答案可规则判定", "icon": "start", "width": 140 },
+    { "id": "samp", "lane": "ln_a", "col": 1, "type": "backend", "label": "π_old 采样 G 个", "sublabel": "得到同题一组回答", "width": 155 },
+    { "id": "nocritic", "lane": "ln_a", "col": 2, "type": "security", "label": "不建 critic", "sublabel": "组内互相当基线", "icon": "decision", "width": 155 },
+
+    { "id": "acc", "lane": "ln_b", "col": 0, "type": "database", "label": "accuracy reward", "sublabel": "答案匹配 / 跑测试用例", "icon": "start", "width": 165 },
+    { "id": "fmt", "lane": "ln_b", "col": 1, "type": "database", "label": "format reward", "sublabel": "思考须在 think 标签内", "width": 165 },
+    { "id": "norm", "lane": "ln_b", "col": 2, "type": "cloud", "label": "组内标准化", "sublabel": "Aᵢ=(rᵢ−mean)/std", "width": 160 },
+
+    { "id": "no_rm", "lane": "ln_c", "col": 0, "type": "external", "label": "明确不用神经 RM", "sublabel": "大规模 RL 下必被 hacking", "icon": "failure", "width": 175 },
+    { "id": "clip", "lane": "ln_c", "col": 1, "type": "backend", "label": "裁剪目标", "sublabel": "min(ratio·A, clip(ratio)·A)", "width": 190 },
+    { "id": "kl", "lane": "ln_c", "col": 2, "type": "security", "label": "KL 惩罚", "sublabel": "无偏估计,对 π_ref", "width": 150 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "q", "to": "samp", "label": "同一题反复答", "role": "main" },
+    { "id": "e2", "from": "samp", "to": "nocritic", "label": "用组当基线", "role": "main" },
+    { "id": "e3", "from": "samp", "to": "acc", "label": "逐条判对错", "role": "branch" },
+    { "id": "e4", "from": "acc", "to": "fmt", "label": "再加格式分", "role": "main" },
+    { "id": "e5", "from": "fmt", "to": "norm", "label": "G 个 reward 一起", "role": "main" },
+    { "id": "e6", "from": "norm", "to": "no_rm", "label": "替代 critic", "role": "main" },
+    { "id": "e7", "from": "no_rm", "to": "clip", "label": "剩裁剪目标", "role": "main" },
+    { "id": "e8", "from": "clip", "to": "kl", "label": "再加 KL 约束", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "公式 (1)–(3) 的对应关系",
+      "items": [
+        "公式 (3):Aᵢ = (rᵢ − mean({r₁…r_G})) / std({r₁…r_G}) —— 「比组内平均好多少」",
+        "公式 (1):(1/G)Σᵢ [ min(ratioᵢ·Aᵢ, clip(ratioᵢ,1−ε,1+ε)·Aᵢ) − β·D_KL(π_θ‖π_ref) ]",
+        "ratioᵢ = π_θ(oᵢ|q) / π_old(oᵢ|q),token 级重要性比",
+        "公式 (2):D_KL = π_ref/π_θ − log(π_ref/π_θ) − 1(K3 无偏估计)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "为什么省:critic 有多大",
+      "items": [
+        "critic 通常和策略模型一样大 —— 671B 场景下养一个 671B critic,内存直接翻倍",
+        "数学/代码的 reward 只有「对/错」,不需要逐状态估值",
+        "组内相对比较就够了:A 是标量,实作中按 token 广播",
+        "代价:A 的方差依赖 G,G 太小则优势噪声大"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "伪代码里的实作细节(§2.1)",
+      "items": [
+        "一个 step 内所有问题的梯度累积完再 optimizer.step()",
+        "伪码把 A 写成组内标准化标量,与实作的 token 广播是两回事",
+        "训练模板(论文 Table 1):think + answer 两段结构",
+        "只约束结构、不注入内容先验:不强制「必须反思」或特定解题策略,以便观察 RL 自然演化"
+      ]
+    }
+  ]
+}

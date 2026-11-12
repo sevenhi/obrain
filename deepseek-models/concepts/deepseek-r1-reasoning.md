@@ -4,9 +4,11 @@ type: concept
 tags: [deepseek, r1, reasoning, grpo, rl, cold-start, rejection-sampling, distillation, cot, aha-moment, domain-model]
 series: deepseek-r1
 source:
+  - "pdf: R1 官方论文固定快照 §2.2/§4.1 | https://github.com/deepseek-ai/DeepSeek-R1/blob/0cf78561f1d51c84a21b2190626b21116d5c68bb/DeepSeek_R1.pdf | reviewed 2026-11-04"
   - "pdf: DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning | arXiv:2501.12948 | https://arxiv.org/abs/2501.12948 | 2026-10-14 | ↑primary"
   - "code: deepseek-ai/DeepSeek-R1(README:模型表/评测表/使用建议)| https://github.com/deepseek-ai/DeepSeek-R1 | 2026-10-14"
 date: 2026-10
+reviewed: 2026-11-04
 ---
 
 # DeepSeek-R1 推理谱系:训练策略视角(R1-Zero → R1 → 蒸馏)
@@ -51,27 +53,27 @@ GRPO(Group Relative Policy Optimization)与 [deepseek-math.md](deepseek-math.md)
 
 **为什么省**:critic 通常和策略模型一样大,671B 场景下养一个 671B critic 内存直接翻倍;数学/代码 reward 只有「对/错」,不需要逐状态估值——组内相对比较就够了。
 
-### 2.1 GRPO 训练循环伪代码(按 R1 论文 §2.2 整理)
+### 2.1 GRPO 训练循环（教学流程,不是可直接运行的 trainer）
 
-```python
-# GRPO 训练循环伪代码(参考 DeepSeek-R1 论文公式 (1)–(3))
-for step in range(num_rl_steps):
-    prompts = sample_prompts(train_set)        # 只用答案可规则判定的题(数学/代码/逻辑)
-    for q in prompts:
-        outputs = pi_old.sample(q, G)          # 旧策略采样 G 个回答
-        rewards = []
-        for o in outputs:
-            r  = accuracy_reward(o)            # 正确性:如 \boxed{} 内答案匹配、编译器跑测试用例
-            r += format_reward(o)              # 格式:思考过程必须在 <think>…</think> 内
-            rewards.append(r)
-        A = (rewards - mean(rewards)) / std(rewards)   # 组内标准化 = 优势(替代 critic)
+下面明确一个更新步的作用域,避免伪代码缩进把前面的题目覆盖掉:
 
-    ratio = pi_theta(outputs) / pi_old(outputs)        # token 级重要性比
-    loss  = -mean(min(ratio * A, clip(ratio, 1 - eps, 1 + eps) * A))
-    loss += beta * (pi_ref / pi_theta - log(pi_ref / pi_theta) - 1).mean()  # KL(公式 2)
-    loss.backward()               # 逐问题累积梯度(记:此处 A 以组内标准化标量呈现,实作中按 token 广播)
-optimizer.step()                  # 一个 step 内所有问题累积完再更新
+```text
+每个更新步:
+  固定本轮采样旧策略,清空当前策略梯度
+  采样一批非空 prompts
+  对每道题:
+    无梯度地用旧策略生成 G 个回答,保存旧策略 log-prob
+    对各回答计算 accuracy/format reward
+    计算组内优势;全同 reward 时令优势为零,避免 std=0
+    当前策略前向,得到参与训练的回答 token 的 log-prob
+    用冻结参考策略得到对应 token 的 reference log-prob
+    计算 clipped policy loss 与 KL 正则,按明确的 mask/归一化规则求均值
+    按批次权重缩放 loss,backward 累积该题梯度
+  所有题累积完成后执行 optimizer.step
+  按训练配方刷新旧策略,进入下一更新步
 ```
+
+实现时用 log-prob 差构造重要性比,不能直接用模型对象相除。必须明确 token/sequence 级 ratio、padding/EOS mask、长度归一化、组内 std 的定义及 epsilon、梯度累积权重、每批更新次数与旧策略刷新周期。上面的“全同 reward→零优势”是稳健实现约定,不是论文式(3)对零分母的定义;即使策略优势为零,KL 项仍可能产生梯度。本文只解释数据流,不声称复现官方 trainer。
 
 ### 2.2 Reward 设计:纯规则,不用神经 reward model(论文 §2.2.2)
 
@@ -151,7 +153,7 @@ optimizer.step()                  # 一个 step 内所有问题累积完再更�
 
 ## 5. 蒸馏:小模型的推理能力从哪来(论文 §2.4、§4.1)
 
-下图是同底座 Qwen-32B 的两条路对照:自己跑 10K+ 步 RL 得 47.0,吃 R1 的 800k 轨迹只做 SFT 得 72.6。差的 25.6 个点说明「推理模式」本身就是资产。
+下图是论文同底座 Qwen-32B 的两条路对照:直接 RL 为 47.0,蒸馏为 72.6。结论绑定该实验的数据与计算配方;图已于 2026-11-04 删除“教师锁死上限/不能超越”的过强概括,纠正教师数据与学生的连接,并通过自动图检查与浏览器检查。相同底座不等于同数据、同总计算量的受控对照。
 
 <div class="archify-figure">
 <iframe src="../../../diagrams/dm-r1-distill-vs-rl.workflow.html"
@@ -171,7 +173,7 @@ optimizer.step()                  # 一个 step 内所有问题累积完再更�
 **蒸馏 vs RL 的直接对照(论文 Table 6,新手最值得记的实验)**:对 Qwen-32B-Base 直接做 10K+ 步大规模 RL(数学/代码/STEM 数据)得到 R1-Zero-Qwen-32B,AIME 只有 **47.0**;而同底座吃 R1 蒸馏数据的 Distill-Qwen-32B 是 **72.6**。论文结论:
 
 1. 小模型自己跑大规模 RL 费算力且打不过蒸馏——**大模型发现的推理模式才是关键资产**;
-2. 蒸馏经济有效,但**突破智能边界仍要靠更强底座 + 大规模 RL**(蒸馏只能继承,不能超越)。
+2. 在该论文的同底座对照中,蒸馏经济有效,作者认为更强底座与大规模 RL 仍是提升推理能力的重要方向;这不是“学生在任何任务上都不可能超过教师”的普遍上界。
 
 ---
 
@@ -199,7 +201,7 @@ vllm serve deepseek-ai/DeepSeek-R1-Distill-Qwen-32B \
 - **工程向代码弱**:SWE Verified / Aider 落后 o1-1217,官方归因「相关 RL 训练数据还很少」;
 - **PRM(过程奖励模型)被放弃**,三个理由(原文):① 通用推理的「细粒度步骤」难定义;② 判定中间步对错本身很难(模型标注不可靠、人工标注不可扩展);③ 模型化 PRM 必然被 reward hacking,重训 RM 又贵。PRM 只适合做 top-N 重排/引导搜索,不值得进大规模 RL 主循环;
 - **MCTS(蒙特卡洛树搜索)没跑通**:token 生成的搜索空间指数级大于棋类;细粒度 value model 难训,难以迭代自举;
-- **蒸馏的天花板**:蒸馏模型只有 SFT、没加 RL(官方留白给社区),且能力上限被 teacher 锁死。
+- **蒸馏的边界**:论文发布的蒸馏模型只做 SFT、未加 RL,效果受教师轨迹、数据选择与学生容量限制;不能由这组实验推导能力被教师严格锁死。
 
 ---
 

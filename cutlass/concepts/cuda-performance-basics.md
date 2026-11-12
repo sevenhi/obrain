@@ -3,11 +3,13 @@ title: CUDA GPU 性能基础：从带宽、占用率到 Roofline
 type: concept
 tags: [cuda, gpu, performance, memory-bandwidth, occupancy, roofline, profiler]
 source:
+  - "web: CUDA 12.6.3 Best Practices Guide（shared memory broadcast） | https://docs.nvidia.com/cuda/archive/12.6.3/cuda-c-best-practices-guide/index.html#shared-memory-and-memory-banks | reviewed 2026-11-04"
   - "web: NVIDIA CUDA C++ Programming Guide | https://docs.nvidia.com/cuda/cuda-c-programming-guide/ | 阅读日期 2026-09-27"
   - "web: NVIDIA CUDA Best Practices Guide | https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/ | 阅读日期 2026-09-27"
   - "web: NVIDIA Nsight Compute Documentation | https://docs.nvidia.com/nsight-compute/ | 阅读日期 2026-09-27"
   - "web: CUTLASS 官方文档 | https://docs.nvidia.com/cutlass/latest/ | 阅读日期 2026-09-27"
 date: 2026-09
+reviewed: 2026-11-04
 ---
 
 # CUDA GPU 性能基础：从带宽、占用率到 Roofline
@@ -45,6 +47,8 @@ Roofline 用两个上限判断 kernel：
 
 Roofline 是定位工具，不是性能证明；实际还会受到指令发射、同步、L2、分支和负载不均衡影响。
 
+跨域比较复杂度时固定三个口径：**训练/预填充的全序列总工作量、解码每步工作量、状态/额外空间**。例如固定头维 d 的 full attention，长度 n 的训练注意力工作量为 O(n²d)，单步 decode 读取 KV 为 O(nd)，KV 状态为 O(nd)；这不包含投影/FFN 等其它成本。FlashAttention 减少中间矩阵物化与访存，并不把 dense attention 的算术量改为线性。显存账还应区分输入/输出、持久状态与临时 workspace；测量结果须附 shape、dtype、软硬件版本和计时口径。
+
 ## 3. Occupancy 不是越高越好
 
 Occupancy 通常表示一个 SM 上活跃 warp 数相对硬件最大 warp 数的比例。它受以下资源共同限制：
@@ -70,7 +74,7 @@ Occupancy 通常表示一个 SM 上活跃 warp 数相对硬件最大 warp 数的
 - AoS 布局导致同一字段不连续，改为 SoA 后更易合并
 - 未对齐地址或不规则 gather
 - padding 与 tile 形状不匹配
-- shared memory 中不同线程访问同一 bank，产生 bank conflict
+- shared memory 中不同线程访问同一 bank 的不同地址，可能产生 bank conflict；同一 warp 读取同一 32-bit 地址可广播，不应误判为冲突。具体还要看访问宽度、指令与硬件代际。
 
 CUTLASS 的 Layout、Copy Atom、TiledCopy 和 `partition` 抽象，本质上是在编译期描述线程、数据和硬件 tile 的对应关系；参见 [CuTe Layout 代数](cute-layout-algebra.md)。
 

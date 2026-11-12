@@ -1,0 +1,140 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "部署侧选型:这是一棵决策树,不是流水线",
+    "subtitle": "模型方原生 128k = 预训练+渐进,最可靠;社区 YaRN 版 = 微调扩展,PPL 好但下游能力需自测;只改 HF 参数没微调 = NTK 免微调,只能应急",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-ctx-picker.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_ask", "label": "① 两个前提" },
+    { "id": "ln_pick", "label": "② 三条路线" },
+    { "id": "ln_check", "label": "③ 上线前必测" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "需求侧", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "选路线", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "验收", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["need", "budget", "yarn", "test", "ship"],
+  "nodes": [
+    {
+      "id": "need",
+      "lane": "ln_ask",
+      "col": 0,
+      "type": "frontend",
+      "label": "要多长上下文 ?",
+      "sublabel": "128k 生产级还是应急",
+      "icon": "start",
+      "width": 150
+    },
+    {
+      "id": "budget",
+      "lane": "ln_ask",
+      "col": 1,
+      "type": "security",
+      "label": "有微调预算 ?",
+      "sublabel": "算力与数据都要",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "native",
+      "lane": "ln_pick",
+      "col": 2,
+      "type": "external",
+      "label": "原生 128k 模型",
+      "sublabel": "Llama 3.1 / Qwen2.5,最可靠",
+      "icon": "success",
+      "width": 150,
+      "yOffset": -132
+    },
+    {
+      "id": "ntk",
+      "lane": "ln_pick",
+      "col": 2,
+      "type": "external",
+      "label": "NTK 免微调应急",
+      "sublabel": "改 base,精度打折",
+      "icon": "neutral",
+      "width": 150,
+      "yOffset": 132
+    },
+    {
+      "id": "yarn",
+      "lane": "ln_pick",
+      "col": 3,
+      "type": "backend",
+      "label": "YaRN 微调或吃权重",
+      "sublabel": "分段+温度,长文 PPL 最优",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "test",
+      "lane": "ln_check",
+      "col": 4,
+      "type": "security",
+      "label": "短窗口回归必做",
+      "sublabel": "所有插值方法都伤短上下文",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "ship",
+      "lane": "ln_check",
+      "col": 5,
+      "type": "cloud",
+      "label": "才能上生产",
+      "sublabel": "原窗口基准重测通过",
+      "icon": "success",
+      "width": 150
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "need", "to": "budget", "label": "先看能投多少", "role": "main" },
+    { "id": "e2", "from": "budget", "to": "native", "label": "有算力:直接选原生", "role": "branch", "variant": "emphasis" },
+    { "id": "e3", "from": "budget", "to": "yarn", "label": "预算小:微调扩展", "role": "main" },
+    { "id": "e4", "from": "budget", "to": "ntk", "label": "零预算:先应急", "role": "branch", "variant": "dashed" },
+    { "id": "e6", "from": "yarn", "to": "test", "label": "扩完必须回测", "role": "main", "variant": "emphasis" },
+    { "id": "e8", "from": "test", "to": "ship", "label": "过了才发", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "「只改 factor 不微调」为什么不行",
+      "items": [
+        "rope_scaling.factor 只是改位置映射,不产生新能力",
+        "模型对陌生相位的响应必须靠数据学出来",
+        "所以不微调的长文能力不会凭空出现,只能应急"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "HF 配置对照表",
+      "items": [
+        "type=linear → PI;type=dynamic → 动态 NTK",
+        "type=yarn → YaRN;type=llama3 → Llama-3.1 的分段插值",
+        "factor 就是扩展比 s"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两条没画进来的路线",
+      "items": [
+        "LongRoPE:研究 2M 级才用,需要进化搜索基础设施,≤1k 步扩到 2048k",
+        "改 base + 渐进继续预训练:质量最稳但最贵,只有模型方做得起(~800B tokens)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "θ 与目标长度要匹配",
+      "items": [
+        "经验法则:最长波长 ≫ 目标上下文",
+        "Llama 3:θ=500k → λ_max≈3.1M ≫ 128k",
+        "看到 θ=10k 的模型宣称 32k+,一定用了插值或 NTK,问清是哪种"
+      ]
+    }
+  ]
+}

@@ -14,6 +14,8 @@ date: 2026-10
 
 **ESFT(Expert-Specialized Fine-Tuning)** 是 DeepSeek 的 MoE 高效微调方法(EMNLP 2024 Main Conference):**只微调与目标任务相关的 expert,冻结其余部分**,从而用更少的资源和存储高效定制 LLM。
 
+本文侧重仓库脚本、执行顺序和验证入口；打分与选择机制的主解释见 [ESFT 机制篇](../../deepseek-models/concepts/deepseek-esft.md)。下文保留必要背景，便于独立阅读。
+
 **核心思想**:MoE 的不同 expert 天然对不同类型的输入敏感。先**打分**找出「这个任务主要激活哪些 expert」,再**只训练这批任务相关的 expert + 插 adapter**,其余 expert 和骨干冻结。效果:少训参数、省存储(只需存任务相关的 expert 差异/adapter)、性能不打折甚至更好——「让 expert 干它擅长的活(Stick to His Last)」。
 
 ---

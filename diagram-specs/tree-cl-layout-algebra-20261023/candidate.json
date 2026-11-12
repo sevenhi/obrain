@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "CuTe Layout 代数:把「大 Layout」切成给线程的小 Layout",
+    "subtitle": "Layout = 从坐标空间到线性地址的映射;divide 系列函数负责把数据 layout 按线程/线程组 layout 划分,tiled_divide 按 tile 切块,coalesce 化简模式数",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-layout-algebra.tree.html"
+  },
+  "layout": { "direction": "down", "gapX": 24, "gapY": 42, "nodeW": 156, "nodeMaxW": 176 },
+  "nodes": [
+    { "id": "root", "label": "CuTe 核心抽象", "sublabel": "tiling 的形式化" },
+    { "id": "layout", "parent": "root", "label": "Layout", "sublabel": "坐标 → 线性地址" },
+    { "id": "rowmaj", "parent": "layout", "label": "rowMajor", "sublabel": "Shape<4,8> Stride<8,1>" },
+    { "id": "colmaj", "parent": "layout", "label": "colMajor", "sublabel": "Shape<4,8> Stride<1,4>" },
+    { "id": "atom", "parent": "root", "label": "MMA Atom", "sublabel": "一条硬件指令变组件" },
+    { "id": "tv", "parent": "root", "label": "TV layout", "sublabel": "每个线程拿哪些值" },
+    { "id": "tiled", "parent": "root", "label": "TiledMMA / TiledCopy", "sublabel": "把 Atom 平铺成微内核" },
+    { "id": "algebra", "parent": "root", "label": "Layout 代数", "sublabel": "组合 / 切分" },
+    { "id": "comp", "parent": "algebra", "label": "composition", "sublabel": "函数复合" },
+    { "id": "prod", "parent": "algebra", "label": "product", "sublabel": "按一种 layout 复制另一种" },
+    { "id": "div", "parent": "algebra", "label": "divide 族", "sublabel": "切分(核心)" },
+    { "id": "logical", "parent": "div", "label": "logical_divide", "sublabel": "按逻辑模式切" },
+    { "id": "tiled_d", "parent": "div", "label": "tiled_divide", "sublabel": "按 tile 切块" },
+    { "id": "zipped", "parent": "div", "label": "zipped_divide", "sublabel": "含 zipped 模式" },
+    { "id": "coal", "parent": "algebra", "label": "coalesce", "sublabel": "合并相邻模式" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么抽象成 Layout 很关键",
+      "items": [
+        "同一个算法代码可以不感知具体内存排布",
+        "换行/列主序、换 tile 形状、跨线程拆分 = 只换一个 Layout 组合",
+        "算法主体不变",
+        "这是「用代数描述数据分布」而非「用下标硬编码」"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "原文明确纠错:别记错函数名",
+      "items": [
+        "不存在 left_padding / partitioned_into_TV 这类函数",
+        "partitioned_divide 只在部分版本/分支提供,与 tiled_divide 族相关",
+        "TV layout(thread-value)是真实概念,但它不是切分函数",
+        "切分函数以 divide 系列为主:logical_divide / tiled_divide / zipped_divide"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "现代 CUTLASS 的四件套",
+      "items": [
+        "Layout 代数描述数据",
+        "模板参数描述 tiling",
+        "Pipeline 描述流水",
+        "4.x 的 CuTe DSL(Python)生成 kernel"
+      ]
+    }
+  ]
+}

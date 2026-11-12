@@ -1,0 +1,51 @@
+{
+ "schema_version": 1,
+ "diagram_type": "tree",
+ "meta": {
+  "title": "权重同步的四种路径",
+  "subtitle": "Megatron 参数布局 ≠ vLLM 加载布局,按部署形态选传输方式",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-vime-weight-sync.tree.html"
+ },
+ "nodes": [
+  {
+   "id": "root",
+   "label": "update_weight_from_*",
+   "sublabel": "vime/backends/megatron_utils/update_weight"
+  },
+  {
+   "id": "tensor",
+   "label": "_from_tensor",
+   "parent": "root",
+   "sublabel": "NCCL/张量直传,同集群低延迟"
+  },
+  {
+   "id": "dist",
+   "label": "_from_distributed",
+   "parent": "root",
+   "sublabel": "分布式集合通信,多节点训练"
+  },
+  {
+   "id": "disk",
+   "label": "_from_disk",
+   "parent": "root",
+   "sublabel": "落盘再加载,环境隔离"
+  },
+  {
+   "id": "delta",
+   "label": "_from_disk_delta",
+   "parent": "root",
+   "sublabel": "磁盘增量,只推 delta,大模型分离部署"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "选错代价",
+   "items": [
+    "大模型+分离部署走 tensor 直传会 OOM/极慢",
+    "同机小模型走落盘白白丢吞吐"
+   ]
+  }
+ ]
+}

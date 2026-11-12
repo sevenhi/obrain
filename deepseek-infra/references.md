@@ -2,7 +2,7 @@
 title: deepseek-infra 外部链接索引
 type: reference
 tags: [deepseek, ascend, nvidia, cuda, tilelang, deepgemm, deepep, deepjit, tilekernels, flashmla, deepselect, dualpipe, eplb, lplb, esft, engram, 3fs, smallpond, deepinfer, serving, npu, references]
-date: 2026-10
+date: 2026-11
 ---
 
 # References — deepseek-infra
@@ -11,6 +11,8 @@ date: 2026-10
 > 本域事实断言(性能数字、支持矩阵、术语拼写)均核对一手源(各 GitHub README/raw、deep-dive 文档、PyPI、arXiv 论文页)。
 
 ## 昇腾六件套仓库
+
+- FlashMLA 固定快照 README/接口(2e5429f:sparse prefill/decoding 与 dense prefill/backward;勿混用旧 dense decode) — https://github.com/deepseek-ai/FlashMLA/tree/2e5429fc5653bab6e081f09477126f731882a6a9
 
 - **TileLang(上游 DSL,多后端:CUDA/ROCm/Metal)** — https://github.com/tile-ai/tilelang ;官方站 https://tilelang.com/
 - **TileLang-Ascend(昇腾专用后端仓,双路线 Ascend C & PTO / AscendNPU IR)** — https://github.com/tile-ai/tilelang-ascend

@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "四代方法的统一视角:所有方法都在改这两个函数之一",
+    "subtitle": "旋转角 = g(m) · h(θ_d)。PI 只动 g;NTK/YaRN/LongRoPE 都动 h,区别在于「怎么定这个缩放」;Llama 3 直接从预训练改 base",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-ctx-unified-map.tree.html"
+  },
+  "layout": { "direction": "down", "gapX": 20, "gapY": 64, "nodeW": 150, "nodeMaxW": 180 },
+  "nodes": [
+    { "id": "root", "label": "旋转角 = g(m)·h(θ_d)", "sublabel": "YaRN §2.3 的统一记号" },
+    { "id": "g", "parent": "root", "label": "g(m) 位置映射", "sublabel": "动位置,不动频率" },
+    { "id": "pi", "parent": "g", "label": "PI: m·L/L′", "sublabel": "均匀压缩回旧区间" },
+    { "id": "pi_cost", "parent": "pi", "label": "代价:高频被压", "sublabel": "局部分辨率受损" },
+    { "id": "h", "parent": "root", "label": "h(θ_d) 频率缩放", "sublabel": "动频率,位置不动" },
+    { "id": "ntk", "parent": "h", "label": "NTK-aware: 改 base", "sublabel": "base·s^(D/(D−2)),免微调" },
+    { "id": "yarn", "parent": "h", "label": "YaRN: 按波长分段", "sublabel": "r<α 插值,r>β 保持原样" },
+    { "id": "yarn_temp", "parent": "yarn", "label": "附加:cos/sin 乘 sqrt(1/t)", "sublabel": "sqrt(1/t)=0.1·ln(s)+1" },
+    { "id": "longrope", "parent": "h", "label": "LongRoPE: 逐维搜", "sublabel": "进化搜索取代解析式" },
+    { "id": "lr_more", "parent": "longrope", "label": "加两个非均匀性", "sublabel": "前 n̂ token 不插值 + 渐进" },
+    { "id": "pretrain", "parent": "root", "label": "改预训练:Llama 3", "sublabel": "θ 10k→500k,非事后补" },
+    { "id": "pre_cost", "parent": "pretrain", "label": "代价:~800B tokens", "sublabel": "只有模型方做得起" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "一句话记住四代差异",
+      "items": [
+        "PI:一刀切,所有维均匀压缩,高频维被过度压缩",
+        "NTK/YaRN:高频维管近距离、低频维管远距离,必须区别对待",
+        "LongRoPE:不信任何解析公式,逐维搜出来"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "「改 base」其实是训练时版的 NTK",
+      "items": [
+        "Llama 3 把 θ 从 10000 提到 500000,最长波长 62.8k → ~3.1M",
+        "与其事后插值,不如预训练就让低频维见过足够相位",
+        "长上下文档 ~800B tokens,占 15T 的约 5%,六阶段从 8k 渐进拉到 128k"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "YaRN 的温度补偿为什么必要",
+      "items": [
+        "插值拉长上下文后 softmax 分布熵下降,输出过度尖锐",
+        "做法是把 cos/sin 表整体乘 sqrt(1/t),q/k 同时被放大",
+        "s=16 时 sqrt(1/t)=1.2773,logit 放大 1.63 倍(不是 13%)"
+      ]
+    }
+  ]
+}

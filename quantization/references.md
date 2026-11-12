@@ -2,7 +2,7 @@
 title: quantization 外部链接索引
 type: reference
 tags: [quantization, compression, references]
-date: 2026-09
+date: 2026-11
 ---
 
 # References — quantization
@@ -11,27 +11,27 @@ date: 2026-09
 
 ## 论文(arXiv)
 
-- HyQuant — arXiv:2608.27875v3(EMNLP 2026 Main)
-- SpQR — arXiv:2306.03078(ICLR 2024)
-- GPTQ — arXiv:2210.17323
-- AWQ — arXiv:2306.00978
-- SmoothQuant — arXiv:2211.10438
-- KIVI — arXiv:2402.02750
-- QuIP# — arXiv:2402.04396(ICML 2024)
-- QuIP(前作)— arXiv:2307.13304
-- AQLM — arXiv:2401.06118(ICML 2024)
-- KVQuant — arXiv:2401.18079(NeurIPS 2024)
-- KVTuner — arXiv:2502.04420(ICML 2025)
-- Minitron(结构化剪枝 + 蒸馏;15B→8B/4B)— arXiv:2407.14679(NeurIPS 2024)
-- LLM Pruning and Distillation in Practice: The Minitron Approach(Llama-3.1-8B→4B、Mistral-NeMo-12B→8B)— arXiv:2408.11796
-- Puzzle: Distillation-Based NAS for Inference-Optimized LLMs(异构逐层剪枝 + MIP,Puzzletron 的论文)— arXiv:2411.19146(v5 2025-06)
-- Minitron-SSM(Hybrid Mamba 的 group-aware SSM 剪枝)— arXiv:2504.11409
-- NVIDIA Nemotron Nano 2(hybrid Mamba-Transformer 剪枝 + 两阶段蒸馏)— arXiv:2508.14444
-- ShortGPT(Block Influence 深度剪枝指标)— arXiv:2403.03853
-- LaCo(Layer Collapse,剪层时把被删层信息并入相邻层)— arXiv:2402.11187
-- Low-Rank Matrix Factorization for LSTM Compression — arXiv:1908.09982(PACLIC 2019)
-- LLM.int8() outlier features — arXiv:2208.07339
-- Deep Compression — arXiv:1510.00149
+- HyQuant — [arXiv:2608.27875v3](https://arxiv.org/abs/2608.27875v3)(EMNLP 2026 Main)
+- SpQR — [arXiv:2306.03078](https://arxiv.org/abs/2306.03078)(ICLR 2024)
+- GPTQ — [arXiv:2210.17323](https://arxiv.org/abs/2210.17323)
+- AWQ — [arXiv:2306.00978](https://arxiv.org/abs/2306.00978)
+- SmoothQuant — [arXiv:2211.10438](https://arxiv.org/abs/2211.10438)
+- KIVI — [arXiv:2402.02750](https://arxiv.org/abs/2402.02750)
+- QuIP# — [arXiv:2402.04396](https://arxiv.org/abs/2402.04396)(ICML 2024)
+- QuIP(前作)— [arXiv:2307.13304](https://arxiv.org/abs/2307.13304)
+- AQLM — [arXiv:2401.06118](https://arxiv.org/abs/2401.06118)(ICML 2024)
+- KVQuant — [arXiv:2401.18079](https://arxiv.org/abs/2401.18079)(NeurIPS 2024)
+- KVTuner — [arXiv:2502.04420](https://arxiv.org/abs/2502.04420)(ICML 2025)
+- Minitron(结构化剪枝 + 蒸馏;15B→8B/4B)— [arXiv:2407.14679](https://arxiv.org/abs/2407.14679)(NeurIPS 2024)
+- LLM Pruning and Distillation in Practice: The Minitron Approach(Llama-3.1-8B→4B、Mistral-NeMo-12B→8B)— [arXiv:2408.11796](https://arxiv.org/abs/2408.11796)
+- Puzzle: Distillation-Based NAS for Inference-Optimized LLMs(异构逐层剪枝 + MIP,Puzzletron 的论文)— [arXiv:2411.19146v5](https://arxiv.org/abs/2411.19146v5)(2025-06)
+- Minitron-SSM(Hybrid Mamba 的 group-aware SSM 剪枝)— [arXiv:2504.11409](https://arxiv.org/abs/2504.11409)
+- NVIDIA Nemotron Nano 2(hybrid Mamba-Transformer 剪枝 + 两阶段蒸馏)— [arXiv:2508.14444](https://arxiv.org/abs/2508.14444)
+- ShortGPT(Block Influence 深度剪枝指标)— [arXiv:2403.03853](https://arxiv.org/abs/2403.03853)
+- LaCo(Layer Collapse,剪层时把被删层信息并入相邻层)— [arXiv:2402.11187](https://arxiv.org/abs/2402.11187)
+- Low-Rank Matrix Factorization for LSTM Compression — [arXiv:1908.09982](https://arxiv.org/abs/1908.09982)(PACLIC 2019)
+- LLM.int8() outlier features — [arXiv:2208.07339](https://arxiv.org/abs/2208.07339)
+- Deep Compression — [arXiv:1510.00149](https://arxiv.org/abs/1510.00149)
 - Jaderberg et al. 低秩卷积加速 — BMVC 2014
 
 ## 官方代码 / 项目
@@ -84,5 +84,7 @@ date: 2026-09
 - DeepSeek-V3 Technical Report — https://arxiv.org/abs/2412.19437
 - OCP Microscaling Formats (MX) Specification — https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf
 - NVIDIA Transformer Engine — https://docs.nvidia.com/deeplearning/transformer-engine/
+- Transformer Engine 固定源码(DelayedScaling 历史 amax 与 scale 更新策略) — https://github.com/NVIDIA/TransformerEngine/blob/e5cc6c299821e222aee0a7558f88e81c7a9fb134/transformer_engine/common/recipe/__init__.py
+- CUTLASS float8.h 固定快照(E4M3 子正规数表示) — https://github.com/NVIDIA/cutlass/blob/ee98dbdfd5727085ef86a018009215c2230904e3/include/cutlass/float8.h
 - DeepGEMM(细粒度 FP8 GEMM 实现)— https://github.com/deepseek-ai/DeepGEMM
 - MS-AMP(微软 FP8 训练框架,optimizer state 下放)— https://github.com/Azure/MS-AMP

@@ -1,0 +1,214 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Mega MoE:五个阶段收进一个 kernel 的一次启动",
+    "subtitle": "原本 dispatch→linear1→SwiGLU→linear2→combine 要多次启动、两趟 all-to-all;Mega MoE 把它们合成单 mega-kernel,在对称内存里做,通信与 tensor core 计算重叠",
+    "locale": "zh-CN",
+    "output": "diagrams/di-dg-mega-moe.workflow.html",
+    "viewBox": [
+      1180,
+      660
+    ]
+  },
+  "lanes": [
+    {
+      "id": "ln_prep",
+      "label": "准备(主机侧,一次性)"
+    },
+    {
+      "id": "ln_k",
+      "label": "mega-kernel 去程(单次启动内)"
+    },
+    {
+      "id": "ln_back",
+      "label": "mega-kernel 回程"
+    },
+    {
+      "id": "ln_out",
+      "label": "输出"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "n_buf",
+      "lane": "ln_prep",
+      "col": 0,
+      "type": "backend",
+      "label": "建对称内存 buffer",
+      "sublabel": "PyTorch ≥2.9",
+      "width": 128,
+      "icon": "start"
+    },
+    {
+      "id": "n_w",
+      "lane": "ln_prep",
+      "col": 1,
+      "type": "database",
+      "label": "重排 L1/L2 权重",
+      "sublabel": "transform_weights",
+      "width": 128
+    },
+    {
+      "id": "n_fill",
+      "lane": "ln_prep",
+      "col": 2,
+      "type": "backend",
+      "label": "填 x / topk 索引",
+      "sublabel": "可先 localize",
+      "width": 128
+    },
+    {
+      "id": "n_a2a",
+      "lane": "ln_k",
+      "col": 3,
+      "type": "messagebus",
+      "label": "EP dispatch",
+      "sublabel": "NVLink 与计算重叠",
+      "width": 128,
+      "icon": "messagebus"
+    },
+    {
+      "id": "n_l1",
+      "lane": "ln_k",
+      "col": 4,
+      "type": "backend",
+      "label": "linear 1",
+      "sublabel": "FP8×FP4 / FP8×FP8",
+      "width": 128
+    },
+    {
+      "id": "n_swiglu",
+      "lane": "ln_k",
+      "col": 5,
+      "type": "backend",
+      "label": "SwiGLU",
+      "sublabel": "激活留在片上",
+      "width": 128
+    },
+    {
+      "id": "n_l2",
+      "lane": "ln_back",
+      "col": 4,
+      "type": "backend",
+      "label": "linear 2",
+      "sublabel": "回落到 hidden",
+      "width": 128
+    },
+    {
+      "id": "n_comb",
+      "lane": "ln_back",
+      "col": 3,
+      "type": "messagebus",
+      "label": "EP combine",
+      "sublabel": "回 token 原 rank",
+      "width": 128,
+      "icon": "messagebus"
+    },
+    {
+      "id": "n_y",
+      "lane": "ln_out",
+      "col": 2,
+      "type": "backend",
+      "label": "y 写出(BF16)",
+      "sublabel": "按 token 累加",
+      "width": 128,
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "n_buf",
+      "to": "n_w",
+      "label": "buffer 就绪才重排",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "n_w",
+      "to": "n_fill",
+      "label": "权重落位后填 token",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "n_fill",
+      "to": "n_a2a",
+      "label": "一次 kernel 启动",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "n_a2a",
+      "to": "n_l1",
+      "label": "token 到专家",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "n_l1",
+      "to": "n_swiglu",
+      "label": "中间维放大",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "n_swiglu",
+      "to": "n_l2",
+      "label": "激活后回落",
+      "role": "return"
+    },
+    {
+      "id": "e7",
+      "from": "n_l2",
+      "to": "n_comb",
+      "label": "专家侧算完",
+      "role": "main"
+    },
+    {
+      "id": "e8",
+      "from": "n_comb",
+      "to": "n_y",
+      "label": "累加写出",
+      "role": "main"
+    }
+  ],
+  "mainPath": [
+    "n_buf",
+    "n_w",
+    "n_fill",
+    "n_a2a",
+    "n_l1",
+    "n_swiglu"
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "融合换来了什么",
+      "items": [
+        "五次启动变一次:少四次 launch 与中间显存往返",
+        "NVLink 通信与 tensor core 计算在同一个 kernel 内重叠",
+        "权重只重排一次,后续调用复用 transformed_l1/l2"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么必须对称内存",
+      "items": [
+        "要直接访问对端 rank 的 buffer,地址必须对称",
+        "需 PyTorch ≥2.9 的多进程启动路径",
+        "locality domain:把权重 localize 到使用它的 GPU 附近"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "与 DeepEP 的分工",
+      "items": [
+        "Mega MoE 在 DeepGEMM:计算侧把通信吃掉",
+        "原始 all-to-all 原语在 DeepEP:通用、可单独调",
+        "职责不重叠,别混着改"
+      ]
+    }
+  ]
+}

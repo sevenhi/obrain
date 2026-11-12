@@ -1,0 +1,57 @@
+{
+ "schema_version": 1,
+ "diagram_type": "tree",
+ "meta": {
+  "title": "0.016 的差异从哪来:MoE 路由翻转放大",
+  "subtitle": "同一批 410 量化器与 ranges,微小 kernel 差异翻转专家路由;dense 能压到 0.0002",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-fakequant-nll-diff.tree.html"
+ },
+ "nodes": [
+  {
+   "id": "root",
+   "label": "per-token NLL 差异"
+  },
+  {
+   "id": "dense",
+   "parent": "root",
+   "label": "dense(Nemotron-9B)",
+   "sublabel": "2.3465 vs 2.3467,差 0.0002"
+  },
+  {
+   "id": "moe",
+   "parent": "root",
+   "label": "MoE(Qwen3.6-35B-A3B)",
+   "sublabel": "2.2844 vs 2.3008,差 0.016"
+  },
+  {
+   "id": "r1",
+   "parent": "moe",
+   "label": "单个量化器组各自 ±0.004 内",
+   "sublabel": "全部叠加才拉开"
+  },
+  {
+   "id": "r2",
+   "parent": "moe",
+   "label": "专家路由翻转",
+   "sublabel": "量化 MoE 后 per-token |Δ|≈0.2"
+  },
+  {
+   "id": "r3",
+   "parent": "dense",
+   "label": "不量化 MoE 只 0.07–0.1",
+   "sublabel": "路由不连续放大差异"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "三个计数不能互相换算",
+   "items": [
+    "1,045 张量 / 390 ranges / 410 recipe 条目",
+    "PR 自述三个不同计数,别写成同一个",
+    "Qwen3-30B 的 18,720 ranges 比 18,867 张量少 147,PR 未解释"
+   ]
+  }
+ ]
+}

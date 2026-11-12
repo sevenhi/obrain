@@ -1,0 +1,4355 @@
+{
+  "version": 1,
+  "description": "Preservation baseline, not a claim of semantic correctness or deterministic regeneration.",
+  "artifacts": [
+    {
+      "path": "diagrams/at-aiayn-mask.workflow.html",
+      "bytes": 813211,
+      "sha256": "57b4d7866553244d496592bb60b71bf4911afb2a71f226f0b039ee24c11a4bbf"
+    },
+    {
+      "path": "diagrams/at-aiayn-multihead.workflow.html",
+      "bytes": 810314,
+      "sha256": "f3cd1bb76550ba3aa81f4455327c328782d2d43c86584dc9801cc3c1cfb75ed5"
+    },
+    {
+      "path": "diagrams/at-aiayn-scaled-dot.dataflow.html",
+      "bytes": 806330,
+      "sha256": "97943fd8fca77df7244db4d7fe8c1637d38ae4c2ce5c7d74a80917c21876e0e3"
+    },
+    {
+      "path": "diagrams/at-backend-selection.workflow.html",
+      "bytes": 812280,
+      "sha256": "d76615529ab9a4dd44842d176fd89c8551dc96f7afd8c75679b4e6d37804caf8"
+    },
+    {
+      "path": "diagrams/at-blockmask-three-classes.workflow.html",
+      "bytes": 811384,
+      "sha256": "ce4d37554c66540e1766881202672694fb54702b345685ed209cc0339901f40e"
+    },
+    {
+      "path": "diagrams/at-fa4-limits.tree.html",
+      "bytes": 816591,
+      "sha256": "1a9d219b6697d7b2c3eb2528840da729657462c44d7d7f4a3e817f7d7917747b"
+    },
+    {
+      "path": "diagrams/at-fa4-two-hooks.workflow.html",
+      "bytes": 809145,
+      "sha256": "8d48c9fb1aea4cabe278792b7602501edec023d8675acbedfad392206eeb9eb9"
+    },
+    {
+      "path": "diagrams/at-flexattention-pipeline.workflow.html",
+      "bytes": 813628,
+      "sha256": "b3897d91b511fff55fd8d11979e0e3e70de488642aac8f772b65a2d13460454b"
+    },
+    {
+      "path": "diagrams/at-laser-gradient.workflow.html",
+      "bytes": 813686,
+      "sha256": "5e755ec431dd8bf31edb9144c1e45aebe9c2aadf65a7133db6faf671f45bc3c3"
+    },
+    {
+      "path": "diagrams/at-laser-logsumexp.dataflow.html",
+      "bytes": 805844,
+      "sha256": "0179437adae62dbdede8ed0f1a95c8078e5e57f2ba5162cb57039377e2eb287f"
+    },
+    {
+      "path": "diagrams/at-laser-spatten-longtail.tree.html",
+      "bytes": 816484,
+      "sha256": "0c931b546afbb4933f79d4d8161712f5aa1c043d322f95e166bba242f2ba85e9"
+    },
+    {
+      "path": "diagrams/at-scoremod-maskmod-why-split.workflow.html",
+      "bytes": 809827,
+      "sha256": "c09a657fb929a2b3e754477a3f462763df9c55e70a2b2a0006af340bdd821c23"
+    },
+    {
+      "path": "diagrams/at-sink-baselines.workflow.html",
+      "bytes": 815634,
+      "sha256": "ddf0f63d7406b6139e4fae30b56fbfd81a4d842aff207e17ea47c2cb4404a5d4"
+    },
+    {
+      "path": "diagrams/at-sink-cache-layout.workflow.html",
+      "bytes": 809817,
+      "sha256": "1cc3ce9ce1e9bc2448d477984406159b6c3fb6ceb8c5849ad66fa5f912bc5465"
+    },
+    {
+      "path": "diagrams/at-sink-causal-chain.workflow.html",
+      "bytes": 811882,
+      "sha256": "ac765abda528c325be71931bd5f83a5e0978d1dee462753f9068b50600553b1a"
+    },
+    {
+      "path": "diagrams/at-spatten-cascade.workflow.html",
+      "bytes": 814839,
+      "sha256": "d5a0403171fe3f19dd391b58017c0ffe98ef44ed1c76a8a2d9564f0db8a4d4d1"
+    },
+    {
+      "path": "diagrams/at-triton-vs-cutedsl.workflow.html",
+      "bytes": 809145,
+      "sha256": "a9866bc2dcd9c51915d7f93cd908f555e54484802e8f8871ec6c2a8ac60a80a8"
+    },
+    {
+      "path": "diagrams/cl-arch-suffix.lifecycle.html",
+      "bytes": 817669,
+      "sha256": "405cbf7980c0258f7a8e1ec4de0e04c7f69e2d8d7fa2a397ab10472425f2d0e6"
+    },
+    {
+      "path": "diagrams/cl-atom-generation-layouts.workflow.html",
+      "bytes": 831590,
+      "sha256": "647bf9a58439a640aa874db732a830b2a8a9fa70085fc04e5b57e5589bdf3a7d"
+    },
+    {
+      "path": "diagrams/cl-blis-formula-breaks.workflow.html",
+      "bytes": 825404,
+      "sha256": "12cf3c22e7db9cac61b227947da2c38f0ea45195b9325511915b30728485ecd4"
+    },
+    {
+      "path": "diagrams/cl-build-decision.workflow.html",
+      "bytes": 825332,
+      "sha256": "f5bbd61e0bb1c44d0fc5de14b14358e31654bc93a5361552a70d997bd1f654b5"
+    },
+    {
+      "path": "diagrams/cl-build-pitfalls.tree.html",
+      "bytes": 824958,
+      "sha256": "f9ca7da91a9f65b67f8918ecd6364123af1fc161e7dbe0dc45d81dcef13c4d60"
+    },
+    {
+      "path": "diagrams/cl-clc-vs-static.workflow.html",
+      "bytes": 823217,
+      "sha256": "b79dbdb5aab9d88e1a57888409b85e430a2639e0e005976bba9a6670765eb7ae"
+    },
+    {
+      "path": "diagrams/cl-collective-builder.sequence.html",
+      "bytes": 813641,
+      "sha256": "dd47128fccc32b262eacee7e8f3bc4cb43bead762bcc1ab1dab62bcbe8f201ca"
+    },
+    {
+      "path": "diagrams/cl-collective-dispatch-policy.workflow.html",
+      "bytes": 825198,
+      "sha256": "7616366a2f63a661d24780f2892a08ba9f768a08d14126399c39f7b498085def"
+    },
+    {
+      "path": "diagrams/cl-epilogue-api-generations.workflow.html",
+      "bytes": 823116,
+      "sha256": "f9e5eec3226d0422f4f650e75b5ec1322e76b3d7a3f00be2e2455b83220a4faa"
+    },
+    {
+      "path": "diagrams/cl-epilogue-fusion-io.workflow.html",
+      "bytes": 825984,
+      "sha256": "735b35ced46fbe89ff2b8fd87c6809ca34da484cd2c81f59482caf1725066e1f"
+    },
+    {
+      "path": "diagrams/cl-epilogue-standard-form.workflow.html",
+      "bytes": 819394,
+      "sha256": "add5867d6404f6073fa81479a15bb61fa91e0aec237f9229984ed9b8435c8da7"
+    },
+    {
+      "path": "diagrams/cl-gmma-descriptor.architecture.html",
+      "bytes": 819703,
+      "sha256": "ca07b792d1f86d0560375c64909605b1d695cc5dd8ee9b91487ba4ec0412bd87"
+    },
+    {
+      "path": "diagrams/cl-gmma-layout-atoms.tree.html",
+      "bytes": 824482,
+      "sha256": "31963096b570d28fe7acf1962fccd6f012179536f79c40432856cc1e0499ece0"
+    },
+    {
+      "path": "diagrams/cl-grouped-scheduler.workflow.html",
+      "bytes": 820496,
+      "sha256": "e0da68edbe65720058ef064300a828032795217b04dc95b525add594cc9c61b6"
+    },
+    {
+      "path": "diagrams/cl-layout-algebra.tree.html",
+      "bytes": 830770,
+      "sha256": "bceaf6c9f015315feb3756624237b7513531cbe0ee501c050421bd8cb0a1fd26"
+    },
+    {
+      "path": "diagrams/cl-layout-composition.dataflow.html",
+      "bytes": 813869,
+      "sha256": "a3b0789c2c8f708c6a1e3a2b474be74027861b5af1f9b3488d675d617a5ceb52"
+    },
+    {
+      "path": "diagrams/cl-layout-to-index.dataflow.html",
+      "bytes": 815775,
+      "sha256": "3af853fc238294f779a807a7361294983d4ccdbb0a04878a7129d79a7ccd4605"
+    },
+    {
+      "path": "diagrams/cl-mainloop-epilogue.dataflow.html",
+      "bytes": 811709,
+      "sha256": "e5ba49b9aef8484d6fdaed5a33a417b7a5884d5a94c845055f8ed8ace5a83669"
+    },
+    {
+      "path": "diagrams/cl-minimal-gemm-path.dataflow.html",
+      "bytes": 813114,
+      "sha256": "a23cd80cc319bd932b7c0b54af55044d528b5b259b7c1ca6f8bc949e389bb138"
+    },
+    {
+      "path": "diagrams/cl-mma-atom-traits.workflow.html",
+      "bytes": 831095,
+      "sha256": "9c280db03e21efb1497456f03c52b463bd91807e2a976df3462c2b37d41ae678"
+    },
+    {
+      "path": "diagrams/cl-multistage-pipeline.waterfall.html",
+      "bytes": 819700,
+      "sha256": "0c9970e6657c5ad84e2897dd28869e02d84c0b47f27608e3b91e4f5205971a66"
+    },
+    {
+      "path": "diagrams/cl-raster-order-l2.workflow.html",
+      "bytes": 822604,
+      "sha256": "19a13d2b675957194056e35aa46642a93a5c724ca9020c84d58a3fa87878a5fb"
+    },
+    {
+      "path": "diagrams/cl-scheduler-decision.lifecycle.html",
+      "bytes": 830596,
+      "sha256": "664fcc201c809e2e513e09927176007d6dd10b693e86cbb3644113fbcc276007"
+    },
+    {
+      "path": "diagrams/cl-scheduler-persistent-vs-naive.workflow.html",
+      "bytes": 823951,
+      "sha256": "c02c767551de7a6fc5c9527144764e0d83c2b50b93b12e91e4db25d319f5f7d0"
+    },
+    {
+      "path": "diagrams/cl-softmax-vs-layernorm.workflow.html",
+      "bytes": 821345,
+      "sha256": "d37cc2c3ebaff7f00080d448bb9b9e970c641c72964b0b695a7918d75dfa7326"
+    },
+    {
+      "path": "diagrams/cl-splitk-vs-streamk.workflow.html",
+      "bytes": 821937,
+      "sha256": "c1d378d3ac366bbfb7be97bfead290356cfd74c0fc5a561f35ef5d7e74ef8827"
+    },
+    {
+      "path": "diagrams/cl-streamk-vs-tile.workflow.html",
+      "bytes": 821228,
+      "sha256": "280ad5087e710c485c877a6cc9e9903801cfa708039c25a33c153e7817ccf55b"
+    },
+    {
+      "path": "diagrams/cl-tcgen05-2cta.workflow.html",
+      "bytes": 809833,
+      "sha256": "90e42842b4f1789cebaa387bf687d0f2c28a754f9fbdfff58287bde0e790a5f4"
+    },
+    {
+      "path": "diagrams/cl-tcgen05-atom-naming.tree.html",
+      "bytes": 822162,
+      "sha256": "03a56c2f832a90e713f2532d06d2a9e775c61ff6aeec65238784a44a470e3c9a"
+    },
+    {
+      "path": "diagrams/cl-tcgen05-tmem.dataflow.html",
+      "bytes": 806258,
+      "sha256": "32f7a84d908bf16c0b4b8736c360a971008518ce00cbe24788ff5c7fc331440b"
+    },
+    {
+      "path": "diagrams/cl-tcgen05-vs-wgmma.workflow.html",
+      "bytes": 812806,
+      "sha256": "4c5aae3d57fe42a7ea48b18c677b57f19e97b88d20a0ff3ed10092761a83fa11"
+    },
+    {
+      "path": "diagrams/cl-three-level-tiling.workflow.html",
+      "bytes": 825891,
+      "sha256": "7501813b27f1b54aa82b2b43c1193bf60bf69942a40376cb7e38f88206df0b03"
+    },
+    {
+      "path": "diagrams/cl-tiled-mma-layers.tree.html",
+      "bytes": 824365,
+      "sha256": "18c769055d7ae9ed9b34c93179696431df575f394ed6ee20e002da5edd377521"
+    },
+    {
+      "path": "diagrams/cl-tiledmma-partition.workflow.html",
+      "bytes": 826210,
+      "sha256": "ee20bd71b14a89a6dff4ba384e4055ac9607ae74635a4748fe8e738d5bd5494c"
+    },
+    {
+      "path": "diagrams/cl-tiledmma-three-knobs.workflow.html",
+      "bytes": 816729,
+      "sha256": "3970be4cd25b730e5299301d99eabc0a5094d924fb7ff168f1416d396a56fc7c"
+    },
+    {
+      "path": "diagrams/cl-two-level-microkernel.tree.html",
+      "bytes": 825428,
+      "sha256": "1261f37c31fc7ec8f4991ccb4248d78450f953906bb24ddf072b90d217de2260"
+    },
+    {
+      "path": "diagrams/cl-warp-specialization.workflow.html",
+      "bytes": 824983,
+      "sha256": "33b52bba3882e813659971d9806c92d18d77041918c687173cc8bd7bc1ef700e"
+    },
+    {
+      "path": "diagrams/cl-wgmma-fragments.dataflow.html",
+      "bytes": 813749,
+      "sha256": "ce8b360c3e7fdf8898fd7d630a9afa209453b2c1397a8c54694fadb345ce6a95"
+    },
+    {
+      "path": "diagrams/cl-wgmma-sync.workflow.html",
+      "bytes": 820170,
+      "sha256": "8a0dbbc6a259bf085549d44cce708023547a82b21796c1aea7e4ed21e5f77021"
+    },
+    {
+      "path": "diagrams/cl-wgmma-value.tree.html",
+      "bytes": 831682,
+      "sha256": "9b6cf8c58b20ff16d31bf3f9316be5c97446f34210f9ad4fde260b17d58ce83c"
+    },
+    {
+      "path": "diagrams/cl-wgmma-vs-mma.workflow.html",
+      "bytes": 827053,
+      "sha256": "10397777fbd9020b636673ab576b6db1ed962d0af84ff0f85f0f90ae9fd29ed6"
+    },
+    {
+      "path": "diagrams/cv-deploy-pipeline.dataflow.html",
+      "bytes": 819445,
+      "sha256": "81117455dc65e129190b8d4903ce04df0731628f301ad24c7dc317aea989e291"
+    },
+    {
+      "path": "diagrams/cv-detection-core-difficulty.workflow.html",
+      "bytes": 821997,
+      "sha256": "76f94389bf017e885c925d8b9bf2fcc461241667f64ba619635c42a636cde36a"
+    },
+    {
+      "path": "diagrams/cv-detr-set-prediction.workflow.html",
+      "bytes": 818921,
+      "sha256": "b305cb3035d89452b8d96ebf41156039cdc0dab9075b0da8f5c2856627ddba11"
+    },
+    {
+      "path": "diagrams/cv-engine-manifest.tree.html",
+      "bytes": 827940,
+      "sha256": "29aa8b89c84cb6b82225a12eb322eadcb822674759ee04db03c681178ebc779d"
+    },
+    {
+      "path": "diagrams/cv-export-decisions.workflow.html",
+      "bytes": 825106,
+      "sha256": "5d28752f516c2915552dae5d86e8dad58e9273b40629bc5aaf4bf9046c8a4264"
+    },
+    {
+      "path": "diagrams/cv-faster-mask-rcnn.dataflow.html",
+      "bytes": 812692,
+      "sha256": "90f3f28c4385e704dd92e0996b07b66249692f699289160f4b640e28128f2998"
+    },
+    {
+      "path": "diagrams/cv-numeric-layers.dataflow.html",
+      "bytes": 818565,
+      "sha256": "918a4223f59b808b85dc10fe49160c015eb197767f54442ab42a75000037654a"
+    },
+    {
+      "path": "diagrams/cv-sam-three-parts.workflow.html",
+      "bytes": 822014,
+      "sha256": "643e9aca39a77445b7afd89219bd79cae55ae7f97984bcf6996f292ecd8ca01f"
+    },
+    {
+      "path": "diagrams/cv-three-paradigms-inference.workflow.html",
+      "bytes": 831567,
+      "sha256": "67bd871f3b0bc8ac0d60e83f2c8962940343e83168b03447f2d789d741b7a07b"
+    },
+    {
+      "path": "diagrams/cv-two-routes.workflow.html",
+      "bytes": 825972,
+      "sha256": "6df9515f5535d3235340ddaf6014d2989ca59002833e8c089b4ac213b9f498ad"
+    },
+    {
+      "path": "diagrams/cv-vit-deit.workflow.html",
+      "bytes": 811489,
+      "sha256": "52e82d4129efdc151dff9aa555b7fcccf7c2f92c8e16e8e22cb3469f9832c249"
+    },
+    {
+      "path": "diagrams/cv-vit-patchify.dataflow.html",
+      "bytes": 809845,
+      "sha256": "3cbc256c1939f25ad27edee564a6804230ca47d067c9cbbd801dbd2d634ddcb0"
+    },
+    {
+      "path": "diagrams/cv-vit-why-data.workflow.html",
+      "bytes": 833245,
+      "sha256": "42ea33da253a7cf8c1319ec79975cdf64b2841d271de0ee32009fe135dbc62df"
+    },
+    {
+      "path": "diagrams/deepgemm-ascend.workflow.html",
+      "bytes": 837250,
+      "sha256": "976a258f67fa0036a91f6b3b49fbbd71d2cbfe10e91f0b0639706e3c9ef31c54"
+    },
+    {
+      "path": "diagrams/di-dg-backend-mapping.architecture.html",
+      "bytes": 825506,
+      "sha256": "7e82eedf49fe7ac242f3787e8ad4ff29a3ba0d5bb33f2069194b19de77926c0a"
+    },
+    {
+      "path": "diagrams/di-dg-grouped-gemm.workflow.html",
+      "bytes": 819388,
+      "sha256": "f079b84dd85b9de563d50182f4877240cc4714fa7782311cf50288e58c8d164b"
+    },
+    {
+      "path": "diagrams/di-dg-jit-flow.dataflow.html",
+      "bytes": 812240,
+      "sha256": "a3a668d6cb5b55a29070e4c13db169983b2c72852cda522fb392559e5a525110"
+    },
+    {
+      "path": "diagrams/di-dg-mega-moe.workflow.html",
+      "bytes": 822088,
+      "sha256": "26d4c7f71492442658bfae36900268161fef9493091899e945da418e9f96404d"
+    },
+    {
+      "path": "diagrams/di-dg-sparse-mqa.workflow.html",
+      "bytes": 822271,
+      "sha256": "7535f782f8277f12a5ddeb7f8afee2d277b32643d0eafdd989dc5f4fd0b8d68b"
+    },
+    {
+      "path": "diagrams/di-dspark-varlen.workflow.html",
+      "bytes": 818939,
+      "sha256": "efa253581a849fcee81841e277317047e296ce5d361f3b3862eb9c776be881ce"
+    },
+    {
+      "path": "diagrams/di-engine-layers.architecture.html",
+      "bytes": 824658,
+      "sha256": "d4c73ed041ba82abbebb6fa980dc36f63c608a705e3a346e8c31f9135a60f382"
+    },
+    {
+      "path": "diagrams/di-epd-topology.architecture.html",
+      "bytes": 825772,
+      "sha256": "9215b9d679f454e7af60e08de1aea4c77069f5c4544b33b323471f5499c18c0c"
+    },
+    {
+      "path": "diagrams/di-kv-tiers.dataflow.html",
+      "bytes": 809947,
+      "sha256": "baea9d623bc7986b67b245d6047c8fb23d3219baf255d189d9fa77587239d06f"
+    },
+    {
+      "path": "diagrams/di-mhc-cuda-graph-race.sequence.html",
+      "bytes": 817944,
+      "sha256": "4139d6d22cb564d43244952fecd1d12e7852b857d4625d8d9b04d2d66064ed46"
+    },
+    {
+      "path": "diagrams/di-mhc-gain-runaway.workflow.html",
+      "bytes": 826791,
+      "sha256": "0b33d6a99d46c874a895081f654df960485c4ae5d3b4cdf6c487f7b0cea0f89a"
+    },
+    {
+      "path": "diagrams/di-mhc-io-traffic.workflow.html",
+      "bytes": 827748,
+      "sha256": "37262b1aa8c01532ed2741dc3ec67befa32a2d930a2b2fbe88e55089cd6e55b7"
+    },
+    {
+      "path": "diagrams/di-mhc-warpgroup-roles.workflow.html",
+      "bytes": 832770,
+      "sha256": "5ebe263331c8dfacfb1a5ee949b695b2f33ffe32f5a6a08404ce5a37a01fba32"
+    },
+    {
+      "path": "diagrams/di-normal-voting.workflow.html",
+      "bytes": 828875,
+      "sha256": "50082968590fde33cc438073333bebef8d6a7b436de8ddf3a3f09bfa8ddf4c80"
+    },
+    {
+      "path": "diagrams/di-sinkhorn-projection.dataflow.html",
+      "bytes": 818115,
+      "sha256": "4c493717b88eaa56ec0412c7549889b3b5d1b7cbe21d76c9528e051b9ae9f010"
+    },
+    {
+      "path": "diagrams/di-swa-bounded-replay.workflow.html",
+      "bytes": 818502,
+      "sha256": "c33a5bac3ef8b150cd32270e9a8e5c743761c2b4f6cacce97725a7201a818dd7"
+    },
+    {
+      "path": "diagrams/di-v3-3d-partition.architecture.html",
+      "bytes": 822989,
+      "sha256": "0c3b883581ae26109628e3f0af979d7ba4c924cc6b58af4a12a1676b3778dbe9"
+    },
+    {
+      "path": "diagrams/di-v3-a2a-timeline.waterfall.html",
+      "bytes": 815863,
+      "sha256": "3099e7906cbc28842713b7b741d7970fd06e1ebef795f1e272c4276fdfcc18a7"
+    },
+    {
+      "path": "diagrams/di-v3-deepep-dispatch.workflow.html",
+      "bytes": 820809,
+      "sha256": "b77a2024149aa77a3a3ea87be38c34ebf748fc8c72f2fc3640e2f3f952a8afe4"
+    },
+    {
+      "path": "diagrams/di-v3-dualpipe-schedule.waterfall.html",
+      "bytes": 817611,
+      "sha256": "2b70109ef41cfd30fd24964731b818982c18657efe69de026f13b992343072c3"
+    },
+    {
+      "path": "diagrams/di-v3-memory-budget.tree.html",
+      "bytes": 828786,
+      "sha256": "f266140b7badd66cef9ee9ef598b07e9007253906ed9d7ecd9fb65c6b5f975ae"
+    },
+    {
+      "path": "diagrams/di-v3-parallel-primitives.architecture.html",
+      "bytes": 819576,
+      "sha256": "5977dd0e73966c374ea51a15376a6466a543bc128a591b4020f0a9af357f4840"
+    },
+    {
+      "path": "diagrams/di-zos-overlap.waterfall.html",
+      "bytes": 820872,
+      "sha256": "3e341a78d3a944ad2257f47502c9c5d58369e949bf325dfd4639c7321942763d"
+    },
+    {
+      "path": "diagrams/di-zos-seqlens-fix.dataflow.html",
+      "bytes": 812266,
+      "sha256": "d9ca08ce3809377ba6727f8f73a3ad442f527a8795f295840f8e5c0d738baff7"
+    },
+    {
+      "path": "diagrams/dm-esft-adapter-storage.dataflow.html",
+      "bytes": 813916,
+      "sha256": "4d9c0ecb3cefd2c6e0465d623d4886b5834a69d6b067ce96e36548f80802afd2"
+    },
+    {
+      "path": "diagrams/dm-esft-param-buffer.workflow.html",
+      "bytes": 824500,
+      "sha256": "c0d46a608afc05bba205af71a087e5a76fb3b2534bafc2227f216a0b87441226"
+    },
+    {
+      "path": "diagrams/dm-esft-route-position.workflow.html",
+      "bytes": 832972,
+      "sha256": "f24f22d425c663d3b6fbfcf197f61fa6e0e57cde1f0329a46f9571a8507a2738"
+    },
+    {
+      "path": "diagrams/dm-esft-three-stages.workflow.html",
+      "bytes": 823991,
+      "sha256": "c0b05a553d221d005761e80c6b5b1a39eab0701c282dacd4de5c8734afec05fb"
+    },
+    {
+      "path": "diagrams/dm-esft-top-p.workflow.html",
+      "bytes": 820820,
+      "sha256": "b9e19bf4248a20876d7b9096bef91db6870e3a2e5cdb26bd666d63a758983ec3"
+    },
+    {
+      "path": "diagrams/dm-esft-why-waste.workflow.html",
+      "bytes": 823559,
+      "sha256": "26b17eb73bc8615a9ad060b34f860a83b04352a13c5d2fa5338a0eb29c201a70"
+    },
+    {
+      "path": "diagrams/dm-r1-distill-vs-rl.workflow.html",
+      "bytes": 836933,
+      "sha256": "33a843b424ee562f473a4441da31cb8f8ed0f6aa6553e2af4affad833e167598"
+    },
+    {
+      "path": "diagrams/dm-r1-four-stages.lifecycle.html",
+      "bytes": 826814,
+      "sha256": "821ecaf595e4d090686df42b8235849b496d81aa460395e3cf94a4303dec6ec5"
+    },
+    {
+      "path": "diagrams/dm-r1-grpo-step.workflow.html",
+      "bytes": 825170,
+      "sha256": "cdf3d3e03ceedeba763bfc3ea6c422e9a60c3904ccb1d77036bb09a4ed42e18d"
+    },
+    {
+      "path": "diagrams/dm-r1-lineage.timeline.html",
+      "bytes": 818888,
+      "sha256": "c054c2b342de010f700e4358f9f7548f73e6adc9b33af834414d2109f2a47ff5"
+    },
+    {
+      "path": "diagrams/dm-r1-reward-choices.tree.html",
+      "bytes": 836796,
+      "sha256": "9d67fd24460428c517ba86c8a25030f30c173293ce202e40e4d5d0a180ab6327"
+    },
+    {
+      "path": "diagrams/dv-ocr-compression-curve.workflow.html",
+      "bytes": 822650,
+      "sha256": "9b09fb34381fe2ebb7d6f5a1c0ac7bce72a43ecd0338274ee081657888c0d02c"
+    },
+    {
+      "path": "diagrams/dv-ocr-deploy-path.workflow.html",
+      "bytes": 825635,
+      "sha256": "05b0fe2441adf6253495d7f01829705e92e151a60f6f14dffc6f88a0558e58c4"
+    },
+    {
+      "path": "diagrams/dv-ocr-optical-compression.dataflow.html",
+      "bytes": 834825,
+      "sha256": "301a9c51588ae44876b1596db907c083b3fa840a45a09053816e0226b1bd6bb8"
+    },
+    {
+      "path": "diagrams/dv-ocr-two-gen.tree.html",
+      "bytes": 845940,
+      "sha256": "688a0dfe3b7e75dc0565a6865be5f957504106d3cf29e591090736ed384c1996"
+    },
+    {
+      "path": "diagrams/dv-ocr2-causal-flow.workflow.html",
+      "bytes": 825229,
+      "sha256": "93811b9dc7cd08dc290f83e3bdc1048595e6385a7f3ff0dc9ecd505888daa05c"
+    },
+    {
+      "path": "diagrams/dv-vl-hybrid-dual-tower.dataflow.html",
+      "bytes": 816159,
+      "sha256": "d0d61cfa475f58d5779b53d7dcc5ac965123af588e190694595b85501fcd6028"
+    },
+    {
+      "path": "diagrams/dv-vl-to-vl2-evolution.timeline.html",
+      "bytes": 820276,
+      "sha256": "b90ce54fe658aba761aa87d43390949d527c10fb6cb52cc4266b8e9804202859"
+    },
+    {
+      "path": "diagrams/dv-vl2-dynamic-tiling.workflow.html",
+      "bytes": 824011,
+      "sha256": "5970349f6b95fba3bf6ea33e642bdc7d1a33e03a13577a7de9e41a2da0854c13"
+    },
+    {
+      "path": "diagrams/dv-vl2-moe-variants.tree.html",
+      "bytes": 825767,
+      "sha256": "f55da86f13156035513dd6020f766b81063b0624eab8fb3fce458eee1a761076"
+    },
+    {
+      "path": "diagrams/fa-backward-recompute.workflow.html",
+      "bytes": 818615,
+      "sha256": "98db8c4f0af8b3e17c4a9608ee512a3bbc3c78131e59a596c90da96f221a4168"
+    },
+    {
+      "path": "diagrams/fa-fa1-tiling.workflow.html",
+      "bytes": 818719,
+      "sha256": "611796ccc9a0b95e14b114255bd9ab17fe0536d355d50049b6de8ac98cc425b8"
+    },
+    {
+      "path": "diagrams/fa-fa2-defer-divide.workflow.html",
+      "bytes": 818446,
+      "sha256": "c136d73ac33752c9d83d34a8f177f1bd5e3cdfa38676ce7216a18c7ba973be88"
+    },
+    {
+      "path": "diagrams/fa-fa3-async-pipeline.waterfall.html",
+      "bytes": 818176,
+      "sha256": "db53e2bbad9eecca4b406e8d62b0c89be41f57b41cc141db51eb671451b63660"
+    },
+    {
+      "path": "diagrams/fa-fp8-precision.dataflow.html",
+      "bytes": 814994,
+      "sha256": "487bac6d1be1e3efc490eb86cd795d41e573cee18751388e1141c4e8df2f5759"
+    },
+    {
+      "path": "diagrams/fa-nan-pollution.sequence.html",
+      "bytes": 811545,
+      "sha256": "ca1ebaa971edc8ef7f6d9ae12c976b3bb3000a0f5ce310177c34401eb3ff2ccc"
+    },
+    {
+      "path": "diagrams/fa-online-softmax.workflow.html",
+      "bytes": 821197,
+      "sha256": "e6089dc02f9aadda4bf69806c915731ee75295ce17800581d09621d9b26e4a13"
+    },
+    {
+      "path": "diagrams/fa-splitq-vs-splitkv.workflow.html",
+      "bytes": 822321,
+      "sha256": "b9ef9be0a62f4af209a674061079f7e8b7ff1ee5e95b89ebf46e1224e1795287"
+    },
+    {
+      "path": "diagrams/fa-standard-attention-hbm.dataflow.html",
+      "bytes": 816158,
+      "sha256": "e8ff0a355955a29ba7771fbdff3f0da3364b2dadf620cfb803a8f5a3c5b76a7c"
+    },
+    {
+      "path": "diagrams/fa-warp-partition.architecture.html",
+      "bytes": 836346,
+      "sha256": "59d32d21681d3c6e2f32a17ace61367f0df31a66940e35b30e4bfdbb696aae23"
+    },
+    {
+      "path": "diagrams/fa-why-not-tiling.workflow.html",
+      "bytes": 820762,
+      "sha256": "b5cf12ab69ebb758fa6114373e4a10e8635e80527dd680197e9e2e445fc29b96"
+    },
+    {
+      "path": "diagrams/flash-attention-implementation.architecture.html",
+      "bytes": 840354,
+      "sha256": "36a802a38c3b3c8e64e0f1ed6743bae31df39afdc09b8414600bbec221d801c6"
+    },
+    {
+      "path": "diagrams/fp8-fp4-formats.dataflow.html",
+      "bytes": 831665,
+      "sha256": "0f7fe45bed5b9e81a85b182b102d0ebc07ffb2931d8575d7eea5e4df643f187d"
+    },
+    {
+      "path": "diagrams/ma-ctx-picker.workflow.html",
+      "bytes": 820649,
+      "sha256": "20740eaf4f29bb1f42445e449fe8919a5fccefcd94b6c2879edcffae36cf7fb0"
+    },
+    {
+      "path": "diagrams/ma-ctx-timeline.timeline.html",
+      "bytes": 818999,
+      "sha256": "348ae5df4767e708210c33963fc935ceac7801b7e721cb698d37230afa464155"
+    },
+    {
+      "path": "diagrams/ma-ctx-unified-map.tree.html",
+      "bytes": 828953,
+      "sha256": "c74c361e459551b69c03e556d33b8b2881dde34e52157b486d58b7ed25019a07"
+    },
+    {
+      "path": "diagrams/ma-ds-decouple-rope.workflow.html",
+      "bytes": 821283,
+      "sha256": "2c75e33d8279a24311ceb12c4bf13a5aca18cc136a5494c31ee88927922b465d"
+    },
+    {
+      "path": "diagrams/ma-ds-gen-stack.workflow.html",
+      "bytes": 831483,
+      "sha256": "40ba72cf4c28cbbf3e3c69a6ec27eba212efaf9bee1e3b77b88615e00ebc108b"
+    },
+    {
+      "path": "diagrams/ma-ds-kv-compare.architecture.html",
+      "bytes": 826651,
+      "sha256": "8c9f6291a9081d526439d48be26646f9ce553dc0ad9b14c2fa96fd1579d3a6fb"
+    },
+    {
+      "path": "diagrams/ma-ds-mla-kv.dataflow.html",
+      "bytes": 815720,
+      "sha256": "091a8a47143fc05acb041208c0014da1ab38b21f1cbd8613968552e4666d5647"
+    },
+    {
+      "path": "diagrams/ma-ds-moe-route.workflow.html",
+      "bytes": 824703,
+      "sha256": "4af09f0dd0bc1b467795e3599c92d591523857c77bc88d19758a85b331079d3a"
+    },
+    {
+      "path": "diagrams/ma-ds-v2-group-route.workflow.html",
+      "bytes": 824066,
+      "sha256": "9e627ea99666d58db3c5450b1a6678ea84a1c11064454d587b58bd244a8c88e6"
+    },
+    {
+      "path": "diagrams/ma-dsa-pipeline.workflow.html",
+      "bytes": 829418,
+      "sha256": "d571896962a2695cb77147a5cabcb57f3f3d0a3f2d09d3101f76e680e5f17896"
+    },
+    {
+      "path": "diagrams/ma-gqa-uptraining.workflow.html",
+      "bytes": 825619,
+      "sha256": "8585f21971b33d536e6bc81c609f52db7245c81ba6e0311b50c2e2538dc4eae3"
+    },
+    {
+      "path": "diagrams/ma-gqa-vs-mla-compression.dataflow.html",
+      "bytes": 819053,
+      "sha256": "19e8b8b206d87d5e626371a71e391c2074fca4a6d44d421773764bf9355be1b3"
+    },
+    {
+      "path": "diagrams/ma-head-sharing-lineage.timeline.html",
+      "bytes": 826623,
+      "sha256": "9faad1e137b43a117bd3abe3c3c04a276e08585f5a022fd2f2a0ff133f2eebfa"
+    },
+    {
+      "path": "diagrams/ma-kv-cache-bandwidth.workflow.html",
+      "bytes": 826084,
+      "sha256": "e6bf89ac1f3572b9f2deddb6cdcb708cb4c304f5839d9d30dd3244a58332fe30"
+    },
+    {
+      "path": "diagrams/ma-llm-evolution.timeline.html",
+      "bytes": 822091,
+      "sha256": "1aee25c933cb21377dbfb8bba6c25d797816352223867ffe957d33ef9a5a26a8"
+    },
+    {
+      "path": "diagrams/ma-llm-norm-lineage.workflow.html",
+      "bytes": 826524,
+      "sha256": "b9472b1446030621c4584c82ea467f3cb818553ab52debd735da6c604fed5248"
+    },
+    {
+      "path": "diagrams/ma-llm-positional-encoding.workflow.html",
+      "bytes": 840821,
+      "sha256": "40c968ec05630ca49d3aa142e524655a6af73f2cf802b830b75c0bbc987d73fc"
+    },
+    {
+      "path": "diagrams/ma-llm-swiglu-ffn.workflow.html",
+      "bytes": 831000,
+      "sha256": "701307bd533f43172d9f0bf14405fe82beb4c5ba3f202e1319c61e7b07a73aec"
+    },
+    {
+      "path": "diagrams/ma-llm-token-budget.workflow.html",
+      "bytes": 827060,
+      "sha256": "0c24d36cba8065a55cd2a59c4ec48f6cba69fddd4991af3820a6cb41360f239b"
+    },
+    {
+      "path": "diagrams/ma-mha-mqa-gqa-heads.architecture.html",
+      "bytes": 824487,
+      "sha256": "c5e493740dc89956f81748b1731581ac6d0cd22c7ebb5c048970f82d69ee9fc2"
+    },
+    {
+      "path": "diagrams/ma-mla-two-paths.workflow.html",
+      "bytes": 825712,
+      "sha256": "c6ee8400c5ca470b8f34d208c9250d614f92f151245304e9e67595887dc802b0"
+    },
+    {
+      "path": "diagrams/ma-moe-accounting.workflow.html",
+      "bytes": 827639,
+      "sha256": "842566eefcb14a83dd73730e8a98458c933451be8e963efe0df04bebcf3f5a30"
+    },
+    {
+      "path": "diagrams/ma-open-model-choice.workflow.html",
+      "bytes": 826281,
+      "sha256": "93a569a6a3ecbb0b22267870a3be8a69bd3ff4d2fd0c1caf62f10bf56069416d"
+    },
+    {
+      "path": "diagrams/ma-open-model-lineage.tree.html",
+      "bytes": 832624,
+      "sha256": "39576948959320acb3eab39fbb6f8bc83bb6d1d85220a2b8abaf49cb8e34c0c4"
+    },
+    {
+      "path": "diagrams/ma-open-model-timeline.timeline.html",
+      "bytes": 831458,
+      "sha256": "2898b1af4fe91b1c23e785c045cdb0dd35ae67d5210cd725066dc3bd467971e1"
+    },
+    {
+      "path": "diagrams/ma-rope-fail-mode.workflow.html",
+      "bytes": 825294,
+      "sha256": "36eed8f842d47054f72a62daca95a973cda310e76d17d091561e86e664689a68"
+    },
+    {
+      "path": "diagrams/ma-v2-v3-combo.dataflow.html",
+      "bytes": 817393,
+      "sha256": "ca747fa0476f8916981e79bea8cebbb98cc27a228fe155dba669e2da804d445d"
+    },
+    {
+      "path": "diagrams/ma-v3-auxfree.lifecycle.html",
+      "bytes": 823666,
+      "sha256": "d90852425b7bd196a23908d6897f45ea60b0e1b6571d86af48480b1500529337"
+    },
+    {
+      "path": "diagrams/ma-v3-mla-absorb.workflow.html",
+      "bytes": 825320,
+      "sha256": "8bbe4037f066175f684e9eb2dfdf125f424cff89295c0cfdf213e44b8f1a6dfa"
+    },
+    {
+      "path": "diagrams/ma-v3-mtp.dataflow.html",
+      "bytes": 820219,
+      "sha256": "3accc39d01a4502595982613593a5d4c064267f74344044fcfde826de8b8e69d"
+    },
+    {
+      "path": "diagrams/ma-v3-node-limited.architecture.html",
+      "bytes": 828997,
+      "sha256": "cb6dd6401006e5fa7ec514553cb5de061e07b3cbf8e72badcee9d44917a37a98"
+    },
+    {
+      "path": "diagrams/ma-v3-stack.workflow.html",
+      "bytes": 820686,
+      "sha256": "9f539cba68fcf832f779a431972e749cc64062eaf3fe43d3b4e756067abc0e16"
+    },
+    {
+      "path": "diagrams/ma-v3-vs-v2-diff.tree.html",
+      "bytes": 823817,
+      "sha256": "c97cc1981a0b4cab759d1c89ac767e746cf371d2c3bb597cacdb441b1fcdcd98"
+    },
+    {
+      "path": "diagrams/ma-v32-diff.tree.html",
+      "bytes": 834304,
+      "sha256": "f2683594a0dc69995d7442fb6e14254a2f95fcfdf290852098b2b61719ae97dc"
+    },
+    {
+      "path": "diagrams/ma-v32-stack.workflow.html",
+      "bytes": 823192,
+      "sha256": "e60c49e62d1cec2e6859c19b463b260a3d189a4548e91258a851f3f995a3307d"
+    },
+    {
+      "path": "diagrams/ma-yarn-by-parts.workflow.html",
+      "bytes": 828702,
+      "sha256": "7bcac236efd995f4c19f3cc3263b8888965a56e1f462a914d63b74be44d80e90"
+    },
+    {
+      "path": "diagrams/qt-aqlm-additive.workflow.html",
+      "bytes": 809780,
+      "sha256": "c651fa9ccaf3fa06172baad58ab52400e45128538368a0dddfa691ba577affef"
+    },
+    {
+      "path": "diagrams/qt-ep-ptq-21-prs.workflow.html",
+      "bytes": 812354,
+      "sha256": "488a637e68443408226bc0d811b39987e48684df07cfdcd0f7d8fa249182cf9a"
+    },
+    {
+      "path": "diagrams/qt-ep-ptq-eight-details.workflow.html",
+      "bytes": 813552,
+      "sha256": "9cbb19e75ad92d0211e4ad2adf77870017b9e7713a7a05a92ac286c774d6b952"
+    },
+    {
+      "path": "diagrams/qt-ep-ptq-four-steps.workflow.html",
+      "bytes": 812410,
+      "sha256": "6a4d594185d2e9fe63235e1f1c8378af0617d745ea687f33cccd9284295e72ce"
+    },
+    {
+      "path": "diagrams/qt-ep-ptq-register-transformers.tree.html",
+      "bytes": 815726,
+      "sha256": "75a9266a24f5690b00d9df72a728bb4ab65c88430979d9915c7c628a7df42367"
+    },
+    {
+      "path": "diagrams/qt-ep-ptq-three-routes.workflow.html",
+      "bytes": 812837,
+      "sha256": "eb0d15c3249b253600f225b76d0a5f9c33e40c8599741ff5d692b217603edf4c"
+    },
+    {
+      "path": "diagrams/qt-fakequant-fold-weight.dataflow.html",
+      "bytes": 810646,
+      "sha256": "774cc8f149563bebbac11c38a4f1d9815e915bb731bd28425316248ec02b4009"
+    },
+    {
+      "path": "diagrams/qt-fakequant-mbridge-export.workflow.html",
+      "bytes": 811658,
+      "sha256": "6f637983c49a6a2a0f97bf5dbf85b129962013b0cb618752541edc738aad9403"
+    },
+    {
+      "path": "diagrams/qt-fakequant-nll-diff.tree.html",
+      "bytes": 814021,
+      "sha256": "a0e1e385c6f96cb93b6477ae223dbcdc19f0770320bfcabcc022a7e98ab2cfa9"
+    },
+    {
+      "path": "diagrams/qt-fakequant-sidecar-restore.workflow.html",
+      "bytes": 812671,
+      "sha256": "49c612416cd5c534c3668b6438745d3d7c3ffc444e3e6157f88d95b0441181a2"
+    },
+    {
+      "path": "diagrams/qt-fakequant-three-gates.workflow.html",
+      "bytes": 812281,
+      "sha256": "172bedbcc44984f688904a5c230943a23af662ce68eaa079a82a0dd04e3a5486"
+    },
+    {
+      "path": "diagrams/qt-minitron-distill-loss.workflow.html",
+      "bytes": 811116,
+      "sha256": "758597b477bccb180697c6cbad98e23ec9c447363a92c42ec639e22d21a2282e"
+    },
+    {
+      "path": "diagrams/qt-minitron-importance-scoring.workflow.html",
+      "bytes": 813389,
+      "sha256": "e39b872a15661949a936a96a047b8483ad2f998d4eff8a2e684282952bc524d8"
+    },
+    {
+      "path": "diagrams/qt-minitron-mamba-state-consistency.tree.html",
+      "bytes": 811057,
+      "sha256": "42924176e6bfd54faee8a2823cbfd6ee75f1f51737884423ca50ea46376dc1ab"
+    },
+    {
+      "path": "diagrams/qt-minitron-pipeline.workflow.html",
+      "bytes": 812811,
+      "sha256": "c8b2d3a20e07d6d1a497905d23bf1072bd00f8681c642656ffabf72465281899"
+    },
+    {
+      "path": "diagrams/qt-moe-gptq-batch-evolution.tree.html",
+      "bytes": 809306,
+      "sha256": "b9a4b710d4e684559978016c3f205229f302b2f7e1c055b78a4cece9818888d9"
+    },
+    {
+      "path": "diagrams/qt-moe-gptq-layerwise-loop.workflow.html",
+      "bytes": 810883,
+      "sha256": "7b9986ca0d0499e8f502be71f4c040c14c0d4e41253b73c1696b182f879d6d35"
+    },
+    {
+      "path": "diagrams/qt-moe-gptq-memory-formula.dataflow.html",
+      "bytes": 810773,
+      "sha256": "36cc562fe420a95cd7b88e89a5e2cf520fd849cdbb0b1ae7a389f3d90442af61"
+    },
+    {
+      "path": "diagrams/qt-moe-gptq-per-expert-hessian.workflow.html",
+      "bytes": 816008,
+      "sha256": "5f5b3a82ad25718169fa1cfa0bb48c600b1bd61e3e21ce57eef336aba8c9af1b"
+    },
+    {
+      "path": "diagrams/qt-moe-gptq-three-waits.workflow.html",
+      "bytes": 813099,
+      "sha256": "e3d8a1efa2d4e887dc53c0f791cbf185574a6c4c7196b98b619e775a380a738f"
+    },
+    {
+      "path": "diagrams/qt-puzzletron-hetero-mip.workflow.html",
+      "bytes": 809953,
+      "sha256": "1fdc292262e666a873859f43a3c59a8cdd17b0579a61ec20a297e9b9b4ea8f42"
+    },
+    {
+      "path": "diagrams/qt-quip-sharp-pipeline.dataflow.html",
+      "bytes": 808533,
+      "sha256": "787eaafa018f8b22f63085a179d345fd8bb2f9185bcacd618bbbdc888fe0c96d"
+    },
+    {
+      "path": "diagrams/qt-two-bit-outlier-routes.workflow.html",
+      "bytes": 809186,
+      "sha256": "46c6702dc34b755dd316e294999b72293d52c1ade5a69d570580e958c2213576"
+    },
+    {
+      "path": "diagrams/rng-counter-based.dataflow.html",
+      "bytes": 815479,
+      "sha256": "7727b87f3b97042064ccd72a82c8a24d67ee3448201e5610e8ed38fab149116f"
+    },
+    {
+      "path": "diagrams/rng-curand-state-reuse.workflow.html",
+      "bytes": 823555,
+      "sha256": "a7d7534ff3b23288b4061cdc41dd38f06af45d03407a7696072e34a524e7326e"
+    },
+    {
+      "path": "diagrams/rng-mtgp-recursion.workflow.html",
+      "bytes": 821671,
+      "sha256": "ca17663f77770860356a194ad4c41466bb23f4a8b5df2fdab8768d5d36b18f47"
+    },
+    {
+      "path": "diagrams/rng-philox-round.workflow.html",
+      "bytes": 823590,
+      "sha256": "606a17b0c5280ddcf806e26059cb2102815d615683fc2e4956263471c97c7824"
+    },
+    {
+      "path": "diagrams/rng-picker.workflow.html",
+      "bytes": 838735,
+      "sha256": "c34c2bf356e66ba9ae4f3253942958c6fd99622409bf3731fdeff2ca3db9c812"
+    },
+    {
+      "path": "diagrams/rng-thread-vs-block.architecture.html",
+      "bytes": 836508,
+      "sha256": "4ca7de4563896b5857fbbbd43b698f9d3b6b100dcf649d46e2e9edd8db450f9f"
+    },
+    {
+      "path": "diagrams/vllm-index.architecture.html",
+      "bytes": 838376,
+      "sha256": "df2127a7036c41702dea8de303ca978a03281b706dc5c4bcba8b8a58b3369aec"
+    },
+    {
+      "path": "diagrams/vm-aibrix-autoscale.workflow.html",
+      "bytes": 814521,
+      "sha256": "68106687cb403348eb2ab789ab1260c59e09bc487a781d8424eeba4402738f9f"
+    },
+    {
+      "path": "diagrams/vm-aibrix-controlplane.workflow.html",
+      "bytes": 819656,
+      "sha256": "db9a8a1d87a4af5e5ce5db33cb83ed865eb5cc9bb7ae264c1ed782db79eda129"
+    },
+    {
+      "path": "diagrams/vm-aibrix-lora-adapter.lifecycle.html",
+      "bytes": 808442,
+      "sha256": "f38051799d9db2b03ddd3cff5f444d2179e64554a2cb92b7e11dd1f54c5fd3ce"
+    },
+    {
+      "path": "diagrams/vm-aibrix-pd-storm.workflow.html",
+      "bytes": 811485,
+      "sha256": "f927d186432e37e358e84e1c6ec8a95ca3f494eb84bb19f9c04bc199c51c5910"
+    },
+    {
+      "path": "diagrams/vm-aibrix-routing-algo.workflow.html",
+      "bytes": 814754,
+      "sha256": "54f596a9beb015af4ee44dfcf8ae4663d6f34b2661accb4be11ec42d1bf6c6f2"
+    },
+    {
+      "path": "diagrams/vm-async-snapshot.workflow.html",
+      "bytes": 821912,
+      "sha256": "f080ff6c002a92f8b0000ef24ceebc85c005d3ca7936ee2d3a343786a0cf060f"
+    },
+    {
+      "path": "diagrams/vm-attn-backend-enum.tree.html",
+      "bytes": 823642,
+      "sha256": "95675f7a971cf2955fab74f3cb357bdc35632e58eb977d5d4e91ac4b89c573f2"
+    },
+    {
+      "path": "diagrams/vm-attn-dispatch-chain.workflow.html",
+      "bytes": 813933,
+      "sha256": "683d51bf642d839ef28ced9f1913c6915b68b0f857a0716640eb6e74747b799f"
+    },
+    {
+      "path": "diagrams/vm-attn-selection-pitfalls.workflow.html",
+      "bytes": 812362,
+      "sha256": "a9a97a445fece2f7baa07ee9137af0cb0f408f3a77cde95df42c52e03b8a64dd"
+    },
+    {
+      "path": "diagrams/vm-attn-three-classes.workflow.html",
+      "bytes": 813049,
+      "sha256": "a895f4537605a4a71440e986c27e71587173aa05b05231677ae832f179bd680a"
+    },
+    {
+      "path": "diagrams/vm-awq-batch-heuristic.workflow.html",
+      "bytes": 819213,
+      "sha256": "a37bc44ead5cc330347aaf1c229e399614b5886434338ba79c311f4e45b6f060"
+    },
+    {
+      "path": "diagrams/vm-chunked-prefill-timeline.waterfall.html",
+      "bytes": 826923,
+      "sha256": "430017ae0c1bb845fa9c07cf053f8abea78a7312cc16bbebe4378f632cafce1e"
+    },
+    {
+      "path": "diagrams/vm-cudagraph-dispatch.workflow.html",
+      "bytes": 821751,
+      "sha256": "9be4f1310766cef6f28c109ff3172409a67e1c3b118f5067f303bf2971505fac"
+    },
+    {
+      "path": "diagrams/vm-enginecore-step.sequence.html",
+      "bytes": 815914,
+      "sha256": "6c7b591720ff98bca5c1f3e0e7a2b2f1bc2ffd4dd5896914a0f7d8e3792f47be"
+    },
+    {
+      "path": "diagrams/vm-fp8-quantkey.workflow.html",
+      "bytes": 826368,
+      "sha256": "ee444f2562bc3f5aa5fcf6e99d643f3c309bf2e30bcc23b6bfdf55c0dfbf266a"
+    },
+    {
+      "path": "diagrams/vm-guidellm-capacity-plan.workflow.html",
+      "bytes": 813523,
+      "sha256": "98f0eea1a84aca29c3a8265b85cfd86738c4790aff37d6a255980562094ca964"
+    },
+    {
+      "path": "diagrams/vm-guidellm-metrics.tree.html",
+      "bytes": 813575,
+      "sha256": "63daf9e22f265aae77c719e1631d5caf2ea0a623d248b3488f9ddd013517104e"
+    },
+    {
+      "path": "diagrams/vm-guidellm-profiles.workflow.html",
+      "bytes": 815557,
+      "sha256": "7bde49d57d108f8bc4c3c48f67ffcd9d5b91ca1c16f048e409236721776e7a3b"
+    },
+    {
+      "path": "diagrams/vm-guidellm-run-flow.workflow.html",
+      "bytes": 819320,
+      "sha256": "343aa332333724972822debbab1f818ee2a615b693b257e818450ad526545ce7"
+    },
+    {
+      "path": "diagrams/vm-gumbel-sampling.workflow.html",
+      "bytes": 823878,
+      "sha256": "a4db42769d1142082c79e0c10258c554a4792923f6fb9a0916b405cf4e0cdd2d"
+    },
+    {
+      "path": "diagrams/vm-hwp-entrypoints.workflow.html",
+      "bytes": 812236,
+      "sha256": "7aef6d2c8d7a9069eacdb091a123565747916729e32cbf26a873d34838d13d39"
+    },
+    {
+      "path": "diagrams/vm-hwp-load-path.workflow.html",
+      "bytes": 817794,
+      "sha256": "f2e7c9032b2d642e8906a2170c6e4196fd3f3bfeb246b6c199164f331e0ab91a"
+    },
+    {
+      "path": "diagrams/vm-hwp-responsibility.workflow.html",
+      "bytes": 815929,
+      "sha256": "44f7d147e35bddc09f587925425da335012117ed0339456a147f8b31b879afd6"
+    },
+    {
+      "path": "diagrams/vm-hwp-worker-dispatch.workflow.html",
+      "bytes": 810972,
+      "sha256": "b3ea0c7563de3e8ce082bcefdf73509ade97bb6ba42343a462601c90bc020deb"
+    },
+    {
+      "path": "diagrams/vm-int4-packing.dataflow.html",
+      "bytes": 817229,
+      "sha256": "d3cfa3a524e964fa0357b56c5a8ca4c8d32a5b9e64410c375ddbee1968bb3862"
+    },
+    {
+      "path": "diagrams/vm-llmc-ct-save.dataflow.html",
+      "bytes": 807996,
+      "sha256": "69792537b43a44014a9c80f96e0639a6c9d69faa27c74906ab04c01dc9d31368"
+    },
+    {
+      "path": "diagrams/vm-llmc-oneshot-lifecycle.lifecycle.html",
+      "bytes": 808334,
+      "sha256": "52dc451e3b387183a98b70aeeb365d6886ab8f82ae6ff9a6571e497108312602"
+    },
+    {
+      "path": "diagrams/vm-llmc-pipeline-match.workflow.html",
+      "bytes": 821219,
+      "sha256": "225e0e60c06a3839fdb974c755f0b247ffe3acbe4d754285ce5bf9af6d46f887"
+    },
+    {
+      "path": "diagrams/vm-llmc-precision-split.tree.html",
+      "bytes": 811694,
+      "sha256": "cc78703dcc5b44fe8ea02894f94a1a70c45a36bab2bc1433aeba2088714029bc"
+    },
+    {
+      "path": "diagrams/vm-llmc-three-abstractions.workflow.html",
+      "bytes": 816369,
+      "sha256": "fd3c22cbcefba390451be8671f106326d11069ac96a8a987e4eddfdb402c582a"
+    },
+    {
+      "path": "diagrams/vm-omni-fullduplex-session.workflow.html",
+      "bytes": 817135,
+      "sha256": "450eff5e16763aa40b2f69343503f4afb6ae0ffef775e657942ef7c4e819ed79"
+    },
+    {
+      "path": "diagrams/vm-omni-inheritance.tree.html",
+      "bytes": 810818,
+      "sha256": "1f279ab1d868e3d221a108eb6a7c0b63966dacbea093b1fc85d29cfd01d7d6a3"
+    },
+    {
+      "path": "diagrams/vm-omni-kv-transfer.dataflow.html",
+      "bytes": 809713,
+      "sha256": "fad20e33e7ec51fc44601fa1dc7f250525a214856a57ad1db1662a019b599ba3"
+    },
+    {
+      "path": "diagrams/vm-omni-qwen3-async.sequence.html",
+      "bytes": 808218,
+      "sha256": "8200fb13ab62e4272c9097f16aa2fb36735b3415de621d9af1e18ccd356688c2"
+    },
+    {
+      "path": "diagrams/vm-omni-stage-pipeline.workflow.html",
+      "bytes": 813219,
+      "sha256": "85cb65e3eb0aaf0ae85ff343be820d6b944fc7a2cb7f79d0bbb98c75d9b417cf"
+    },
+    {
+      "path": "diagrams/vm-pd-decision.workflow.html",
+      "bytes": 829936,
+      "sha256": "d2513fdf3b8907dd9a74a8b4eae60566214b891d8d8aed238c27a28c03362ead"
+    },
+    {
+      "path": "diagrams/vm-pd-request-path.dataflow.html",
+      "bytes": 820263,
+      "sha256": "eccaca0ebc03b6c77b3a65f55b02e96e4e1270864b1e4360953e3005bb0c6591"
+    },
+    {
+      "path": "diagrams/vm-pd-request-states.lifecycle.html",
+      "bytes": 828061,
+      "sha256": "a2cf78410e8c83549b14fbd0235f61cbad2d59d1f69e17f2fb31ef84028067ab"
+    },
+    {
+      "path": "diagrams/vm-pd-topology.architecture.html",
+      "bytes": 825136,
+      "sha256": "c8ca6918848cece2a44c5e5e3a252a74c9590900a35df4ffa12ad30edf96d2db"
+    },
+    {
+      "path": "diagrams/vm-penalty-math.workflow.html",
+      "bytes": 820184,
+      "sha256": "0dfd0c0fa7f3218a263738789e0c461e3f625d4f3bd28b06a33ded359de3d964"
+    },
+    {
+      "path": "diagrams/vm-persistent-batch.workflow.html",
+      "bytes": 823584,
+      "sha256": "b0bda88d1c4a10cab26d28196d0b1e03dce88a8192dafaf7cb53fe767426ea2b"
+    },
+    {
+      "path": "diagrams/vm-prodstack-dashboard.workflow.html",
+      "bytes": 817119,
+      "sha256": "e4dcce1a240eaa14bb95b0a4b4e2ebcedf86056b3d062bbfdd0e9431e1d3fbbe"
+    },
+    {
+      "path": "diagrams/vm-prodstack-lmcache.dataflow.html",
+      "bytes": 807204,
+      "sha256": "e8759794a4ed87b857fec8815d2de1c6963390b7b54bc8eb950715f29f1a0cce"
+    },
+    {
+      "path": "diagrams/vm-prodstack-migration.workflow.html",
+      "bytes": 813515,
+      "sha256": "5fadf875da318073cd6b881302c4a32e76cbfd1fb0f02c88e8af0b7face6540a"
+    },
+    {
+      "path": "diagrams/vm-prodstack-pd-disagg.workflow.html",
+      "bytes": 811501,
+      "sha256": "1dbadaacabefa5ac75037880c97e9a358d72af75af396a68aa8d837f8593b174"
+    },
+    {
+      "path": "diagrams/vm-prodstack-topology.workflow.html",
+      "bytes": 814720,
+      "sha256": "15405ca16e7f27f182e6e1865daab5fa5b7d59c828f48c69fddd5625b703f727"
+    },
+    {
+      "path": "diagrams/vm-quant-by-layer.architecture.html",
+      "bytes": 826087,
+      "sha256": "47b1046779c7c2b3ee827d28fbc0d5b91884c365c652d5cecbc328845a57c465"
+    },
+    {
+      "path": "diagrams/vm-quant-dispatch-chain.workflow.html",
+      "bytes": 825691,
+      "sha256": "f32f84a462475219caa9188bc469263321282abf35d3cb922678ba9743ef6428"
+    },
+    {
+      "path": "diagrams/vm-ray-commgroup-init.workflow.html",
+      "bytes": 814503,
+      "sha256": "8805fb369b047e174da5ef8b24590e8cf3debcb407ec45d3c45076a3a3d860b7"
+    },
+    {
+      "path": "diagrams/vm-ray-executor-compare.workflow.html",
+      "bytes": 812780,
+      "sha256": "18b3a4c0ee60b5355d37383d0332086e8244640f7c494a62d191aaaa34eb9a68"
+    },
+    {
+      "path": "diagrams/vm-ray-executor-dispatch.workflow.html",
+      "bytes": 817283,
+      "sha256": "4d819b89aea685b03605d587160c7d7302d2a695e92646b697eb7bd877072e01"
+    },
+    {
+      "path": "diagrams/vm-ray-rank-rerank.workflow.html",
+      "bytes": 814887,
+      "sha256": "e71bbdc2b17534be818ddbb10ea05b51ca8777b2dae328aaacd4f3f6ca0612b4"
+    },
+    {
+      "path": "diagrams/vm-request-lifecycle.lifecycle.html",
+      "bytes": 821014,
+      "sha256": "bdfa5200ee88cf567fe3c6097d41f67d4cac6741bc2ca9fb8c8b57bc4e363141"
+    },
+    {
+      "path": "diagrams/vm-router-circuit-breaker.lifecycle.html",
+      "bytes": 808640,
+      "sha256": "7c8335d5c0ebf993523a56110247a329e3be1335ed563ee589704260d97fe55a"
+    },
+    {
+      "path": "diagrams/vm-router-consistenthash.workflow.html",
+      "bytes": 813741,
+      "sha256": "1e910fa61fa094d2f02b7c3b009333e421fd56703ac2cca520db1db966ed1136"
+    },
+    {
+      "path": "diagrams/vm-router-pd-sequence.sequence.html",
+      "bytes": 806991,
+      "sha256": "16b42c29d2c5e90c6f398d614986dff3cf63626be03292f6353bbab6262da34d"
+    },
+    {
+      "path": "diagrams/vm-router-request-path.workflow.html",
+      "bytes": 814266,
+      "sha256": "94f8ca25f519615b23f4a02d4687b358d9636244799ba86b74042c80de8b0532"
+    },
+    {
+      "path": "diagrams/vm-router-strategy-tree.workflow.html",
+      "bytes": 817090,
+      "sha256": "adbbe7bd68d7f35c1a2f856a118f19893e2e51bc2c16e0c9e7405fc34ba97408"
+    },
+    {
+      "path": "diagrams/vm-sampler-order.workflow.html",
+      "bytes": 823494,
+      "sha256": "8ca8a485f99c04ea575b985ade08f0483a07a7a5ec7c36a35b167231187172f4"
+    },
+    {
+      "path": "diagrams/vm-sampling-params-fallback.workflow.html",
+      "bytes": 819983,
+      "sha256": "98dd3dde87cff3fa23558255ec797d541ba10c8e1c5b344f241f1f2e8832b26c"
+    },
+    {
+      "path": "diagrams/vm-scheduler-two-queues.workflow.html",
+      "bytes": 828465,
+      "sha256": "fe69478c8675d788a8ae09335ec5bc4547039ea6c46e48a0712fad9eb8f922f8"
+    },
+    {
+      "path": "diagrams/vm-spec-draft-verify.workflow.html",
+      "bytes": 823034,
+      "sha256": "0df7374ad7748dcd63e76eeb83f38fe125993d5e3b4606729a21576cd75796be"
+    },
+    {
+      "path": "diagrams/vm-spec-dynamic-adaptive.workflow.html",
+      "bytes": 825087,
+      "sha256": "243465ad3d0922b1bf1d0a14feff0e468143195ceb852fe88355e5f567489dd7"
+    },
+    {
+      "path": "diagrams/vm-spec-family.workflow.html",
+      "bytes": 810761,
+      "sha256": "e05d0116c559c056e34dc05888505ad885ad0daedf3941bf7c21ba0ed86c0d58"
+    },
+    {
+      "path": "diagrams/vm-spec-five-routes.workflow.html",
+      "bytes": 825203,
+      "sha256": "30fcd52916c46dc84acbdab7c309284a2e1d35194f95399593fa97f8c45eb22d"
+    },
+    {
+      "path": "diagrams/vm-spec-loss-target.workflow.html",
+      "bytes": 815793,
+      "sha256": "05675922c09aadfe61f7aa3ae97485da1ba932615c152487a8353fe049586759"
+    },
+    {
+      "path": "diagrams/vm-spec-online-vs-offline.workflow.html",
+      "bytes": 812939,
+      "sha256": "f4f09917cfa104342b78633a16888d54c346b4947de001859a978bf1f9922b6d"
+    },
+    {
+      "path": "diagrams/vm-spec-pipeline.workflow.html",
+      "bytes": 820478,
+      "sha256": "6dd725497e9dfe8181c55d1dc1822112997adbe88d44de84063e065b7f94670a"
+    },
+    {
+      "path": "diagrams/vm-spec-timeline.waterfall.html",
+      "bytes": 819076,
+      "sha256": "960dba24d04e041a431fdf43bc4f2ee3904f0c4ebca31456e172568df68e66fc"
+    },
+    {
+      "path": "diagrams/vm-spec-vocab-map.dataflow.html",
+      "bytes": 807148,
+      "sha256": "4d42b1e2953339f9fd1e8bd057de07f3588756fbefaf062859eb2a532d70ced6"
+    },
+    {
+      "path": "diagrams/vm-sr-boolean-tree.workflow.html",
+      "bytes": 814119,
+      "sha256": "04312146c4cf5825e2b60d322832899626012c6520365b709cb111cc69ed6b88"
+    },
+    {
+      "path": "diagrams/vm-sr-decision-flow.sequence.html",
+      "bytes": 810479,
+      "sha256": "9df988a766d0a250bd87541b37b065e6b10b22b14afc198b51d06b98b2243d3b"
+    },
+    {
+      "path": "diagrams/vm-sr-deployment.workflow.html",
+      "bytes": 817642,
+      "sha256": "e3b7b2bd812fe3a0360752bb903b2e76feeb2a7999b03f48bda1e1ca3f0b803d"
+    },
+    {
+      "path": "diagrams/vm-sr-signal-types.tree.html",
+      "bytes": 827270,
+      "sha256": "d2b51339b644e73a0afdff335a1585e64fb2feda972dc702be567f8467657bc7"
+    },
+    {
+      "path": "diagrams/vm-sr-three-layer.workflow.html",
+      "bytes": 819213,
+      "sha256": "eba34f8f0ad0db69b3081cf01c3b14cb904dcc57591b9487fa3f9aee1789a7ab"
+    },
+    {
+      "path": "diagrams/vm-staged-write.dataflow.html",
+      "bytes": 813148,
+      "sha256": "35777c33a61659bfe61665292ffcaede377261cd5d665b22900a002f4fd7af37"
+    },
+    {
+      "path": "diagrams/vm-static-vs-continuous.dataflow.html",
+      "bytes": 816471,
+      "sha256": "9663cfea67f692fd5e57a95687d5aead9dba6c339a122fb1b7280a14e1f59e90"
+    },
+    {
+      "path": "diagrams/vm-sync-free-sampling.workflow.html",
+      "bytes": 820204,
+      "sha256": "a85cf4619fb53e5bdfcb72b40a2f77a3d762427efd9d61f6d31c51cbf66b14f5"
+    },
+    {
+      "path": "diagrams/vm-token-bin-count.dataflow.html",
+      "bytes": 813502,
+      "sha256": "f5f2ff899ad4f09c63d4a1ec8f95d40e5db42de81d06d9ee5acbf7d725239a58"
+    },
+    {
+      "path": "diagrams/vm-token-budget-model.tree.html",
+      "bytes": 818603,
+      "sha256": "8fd93f031f60054ff9602634b93fbe21e47a8d8c8574bd29208ef984631d10b4"
+    },
+    {
+      "path": "diagrams/vm-v1-async-schedule.sequence.html",
+      "bytes": 815256,
+      "sha256": "160b04253b9574a92bd6a3e2f5e7fb06e335c22b4bd4d40e100e7a482e5c752a"
+    },
+    {
+      "path": "diagrams/vm-v1-executor-choice.tree.html",
+      "bytes": 820761,
+      "sha256": "c63bea6b7a9d264783be6abc46b407b6ea49e87700330959a4d842770d427e53"
+    },
+    {
+      "path": "diagrams/vm-v1-init-chain.workflow.html",
+      "bytes": 822598,
+      "sha256": "7e1b9c762f52f8712d8240a97c022aab0ded02a6eb9f54a849e519aeacf95c52"
+    },
+    {
+      "path": "diagrams/vm-v1-request-journey.sequence.html",
+      "bytes": 816881,
+      "sha256": "c9f4c1b9b065b0cd5bd27a06285f45330e1257318073c99b32f15d10aebd00fd"
+    },
+    {
+      "path": "diagrams/vm-v1-three-layers.architecture.html",
+      "bytes": 833595,
+      "sha256": "680a05676c1f07d709ba793727ae2bb2e213c0d9a2f344cd7b2179fdc87b1aa7"
+    },
+    {
+      "path": "diagrams/vm-vime-architecture.workflow.html",
+      "bytes": 818393,
+      "sha256": "ae132df2572abc5feb647c2b12b5fc64df2ead0effd6afb531585df03c0fceba"
+    },
+    {
+      "path": "diagrams/vm-vime-memory-topology.dataflow.html",
+      "bytes": 807354,
+      "sha256": "3cf1476b949afc8a77f8a3c44b905f44f52609a99c301e82f3bc0323997978b8"
+    },
+    {
+      "path": "diagrams/vm-vime-sync-vs-async.workflow.html",
+      "bytes": 813752,
+      "sha256": "42ecabb56c01b0fe2ad07cfdcc2022f49a03a1d7de89f997c05a5ceadf5d5252"
+    },
+    {
+      "path": "diagrams/vm-vime-train-loop.sequence.html",
+      "bytes": 808861,
+      "sha256": "c95e2ccff6d69b408adb44d850f8b3e970c6f8d954cbddc83b7a6d1f57b31e95"
+    },
+    {
+      "path": "diagrams/vm-vime-weight-sync.tree.html",
+      "bytes": 810617,
+      "sha256": "0e94b324fdbd0ae8517f50fd53958e0986b583a75e0317d5bffb846cb2bddda4"
+    }
+  ],
+  "specifications": [
+    {
+      "path": "diagram-specs/architecture-cl-gmma-descriptor-20261023c/candidate.json",
+      "bytes": 4611,
+      "sha256": "532c16faf33ec51fdfa4a433f980782fe4d23f213a94a05f806b431a29ee97d9"
+    },
+    {
+      "path": "diagram-specs/architecture-cl-streamk-20261023/candidate.json",
+      "bytes": 5462,
+      "sha256": "67caab99ff31e0bda79f0d1060457f0759e1f08557f8971eff79ee7eaeca22b8"
+    },
+    {
+      "path": "diagram-specs/architecture-cv-engine-manifest-20261023/candidate.json",
+      "bytes": 4354,
+      "sha256": "9d1a76f0ae670388532065794976d8314da4d6b27e9651733a8c275b2e8acbc3"
+    },
+    {
+      "path": "diagram-specs/architecture-di-dg-backend-mapping-20261023c/candidate.json",
+      "bytes": 6069,
+      "sha256": "ea6a22512653017db212c61a5f0188870d75d51cb050eacd494146c727eedd55"
+    },
+    {
+      "path": "diagram-specs/architecture-di-engine-layers-20261023/candidate.json",
+      "bytes": 5825,
+      "sha256": "126d874ba52a0228bbdeb483a5a5e6352fc5856b5d503e9413ea1c4d3b46b336"
+    },
+    {
+      "path": "diagram-specs/architecture-di-epd-topology-20261023/candidate.json",
+      "bytes": 5192,
+      "sha256": "8e3e6cbe3d6fb3597e5e643510a02bf8ca2bc6cf531c5a51f4cfc310cf54196c"
+    },
+    {
+      "path": "diagram-specs/architecture-di-v3-3d-partition-20261023c/candidate.json",
+      "bytes": 5926,
+      "sha256": "3abdbb75bef00d4d1e4baf83af6463a1d097c0f4d79606d7af04065b753f720c"
+    },
+    {
+      "path": "diagram-specs/architecture-di-v3-parallel-primitives-20261023c/candidate.json",
+      "bytes": 4577,
+      "sha256": "dea5b931680d2d637dc4ef39477ce7ceec6a39f321c4d4e2828fbbbcfd6a4a7d"
+    },
+    {
+      "path": "diagram-specs/architecture-fa-warp-partition-20261023/candidate.json",
+      "bytes": 6682,
+      "sha256": "e2ec970e741a48d011da589fc86d20f676cc70f2387e2d3c3b7eb3a1f1945f4e"
+    },
+    {
+      "path": "diagram-specs/architecture-flash-attention-implementation-20261023115334/candidate.json",
+      "bytes": 5945,
+      "sha256": "0bbe285fd8963fddc00ee07c707ebb798aed965b129cde860aa91a431383d540"
+    },
+    {
+      "path": "diagram-specs/architecture-ma-ctx-unified-map-20261023/candidate.json",
+      "bytes": 4469,
+      "sha256": "03761326b72e63f318e2e80315392b8d6257b7ab51d2da385acabd9677c38afa"
+    },
+    {
+      "path": "diagram-specs/architecture-ma-ds-kv-compare-20261023/candidate.json",
+      "bytes": 5554,
+      "sha256": "27beb38c2be327df5bd99611be31130845cd823702af6230bab821af3654dea9"
+    },
+    {
+      "path": "diagram-specs/architecture-ma-dsa-arch-20261023/candidate.json",
+      "bytes": 4780,
+      "sha256": "3f31f464a25f6397a28c424a00d8973417c9b59b1ace173962c2a6b542afb349"
+    },
+    {
+      "path": "diagram-specs/architecture-ma-mha-mqa-gqa-heads-20261023b/candidate.json",
+      "bytes": 4080,
+      "sha256": "b93a65ed398e5a3d430bb302fbcc749862ecb6c10cf822d6e38d33590187d075"
+    },
+    {
+      "path": "diagram-specs/architecture-ma-v3-node-limited-20261023/candidate.json",
+      "bytes": 6716,
+      "sha256": "bfcb2c84047f5c981d2d850ed5ae5330322b7c8af08007f7027e45668fa0a7fe"
+    },
+    {
+      "path": "diagram-specs/architecture-ma-v32-block-20261023/candidate.json",
+      "bytes": 3925,
+      "sha256": "a20f2d300ddef11ca211b89cb393d4e41756ac7ba4fbaaf9f2c3098be3969f80"
+    },
+    {
+      "path": "diagram-specs/architecture-rng-thread-vs-block-20261023/candidate.json",
+      "bytes": 4759,
+      "sha256": "fc69b58cead7b418ba7af41c01762341ce9aa293f485533a1e7fbf62b08094f9"
+    },
+    {
+      "path": "diagram-specs/architecture-vllm-index-20261023115334/candidate.json",
+      "bytes": 5688,
+      "sha256": "42dedd0f168ca9236ae2207fe45e9c8b0ec69bad079dc5a972d7a46b89013508"
+    },
+    {
+      "path": "diagram-specs/architecture-vm-async-snapshot-20261023/candidate.json",
+      "bytes": 4434,
+      "sha256": "7b46023a84e9ef314dba1e46454540c7b2293ea595afb840075b50e8764c1413"
+    },
+    {
+      "path": "diagram-specs/architecture-vm-pd-topology-20261023/candidate.json",
+      "bytes": 6108,
+      "sha256": "ac3f6df1d14edd34444276a308f6efa20033bf43069a94c5122e2937d26ddc11"
+    },
+    {
+      "path": "diagram-specs/architecture-vm-quant-by-layer-20261023/candidate.json",
+      "bytes": 3915,
+      "sha256": "18ed025c12ce96d1824224ffad3f9ce5d87e3c540a3eb7dfc58b76ae29cc211c"
+    },
+    {
+      "path": "diagram-specs/architecture-vm-v1-three-layers-20261023/candidate.json",
+      "bytes": 5869,
+      "sha256": "43264d41d9e4d0b230dee5f239af2153c845ab817cf89aa40ea16a62eb3254db"
+    },
+    {
+      "path": "diagram-specs/corrected-20261104/cv-vit-why-data/candidate.json",
+      "bytes": 2191,
+      "sha256": "80ac504669795ec72ac6bf093f7d61094b8d503a87578052cb123a838bec633b"
+    },
+    {
+      "path": "diagram-specs/corrected-20261104/dm-r1-distill-vs-rl/candidate.json",
+      "bytes": 2784,
+      "sha256": "73d2cda899bcd356af881e1d98eb3a4c1ce5652bdc0b0d07eae417185d4037e8"
+    },
+    {
+      "path": "diagram-specs/corrected-20261104/dv-ocr-optical-compression/candidate.json",
+      "bytes": 3662,
+      "sha256": "be0413ea57aabb43d803a0935e0264f4623df17bdb97df4b313f09a814d5e688"
+    },
+    {
+      "path": "diagram-specs/corrected-20261104/dv-ocr-two-gen/candidate.json",
+      "bytes": 2655,
+      "sha256": "2c460908e29b1c1bff50f7a956a31aacb27acc858f118629034b0bdbe26206ca"
+    },
+    {
+      "path": "diagram-specs/corrected-20261104/rng-picker/candidate.json",
+      "bytes": 2956,
+      "sha256": "bac3a3b52f0499bc1ff589b3cf449d56c140655fbb59b8a1a10fed28aa60adc9"
+    },
+    {
+      "path": "diagram-specs/corrected-20261104/rng-thread-vs-block/candidate.json",
+      "bytes": 2571,
+      "sha256": "661f841d2791b6fb2060d53e312f09760a01dec5fa3388d1fcd7682a500a466d"
+    },
+    {
+      "path": "diagram-specs/dataflow-at-aiayn-scaled-dot-20261026b/candidate.json",
+      "bytes": 2206,
+      "sha256": "c1bf6f289214e717cd10583469a2b9f8303ffdfc04e471024060c8a905b7bd47"
+    },
+    {
+      "path": "diagram-specs/dataflow-at-laser-logsumexp-20261026b/candidate.json",
+      "bytes": 1985,
+      "sha256": "c3c13182d81ca945721e7b6a87b5309320cb92f789598b4d60f129cfb2866703"
+    },
+    {
+      "path": "diagram-specs/dataflow-cl-layout-composition-20261023b/candidate.json",
+      "bytes": 3774,
+      "sha256": "222861c92646df9593a6df4d00afa0c5344639a042aaf1199922557f6f1e1e82"
+    },
+    {
+      "path": "diagram-specs/dataflow-cl-layout-to-index-20261023/candidate.json",
+      "bytes": 3296,
+      "sha256": "647f0f49c5fec3577e04134b5541cb3d3865cfe1fe9d20bb87248f4697283b8e"
+    },
+    {
+      "path": "diagram-specs/dataflow-cl-mainloop-epilogue-20261023/candidate.json",
+      "bytes": 3450,
+      "sha256": "86163c1d4391df92480f445206dd579953b3b35cf9393ac275e094cd5bd0d198"
+    },
+    {
+      "path": "diagram-specs/dataflow-cl-minimal-gemm-path-20261023c/candidate.json",
+      "bytes": 3715,
+      "sha256": "37f6db8c7f008ce23c9276a74c8ff6a0c68d8cdebec309902b40475a6af97bf9"
+    },
+    {
+      "path": "diagram-specs/dataflow-cl-tcgen05-tmem-20261026b/candidate.json",
+      "bytes": 2151,
+      "sha256": "4e0314ca4709442677f0e3ed02a74b0fd94121a60365199359f0b7b350533a36"
+    },
+    {
+      "path": "diagram-specs/dataflow-cl-wgmma-fragments-20261023c/candidate.json",
+      "bytes": 3107,
+      "sha256": "4416892e7d9c5e188f82f2e71862caa42a2ee5f7152dcc2c435cac382d087ac0"
+    },
+    {
+      "path": "diagram-specs/dataflow-cv-deploy-pipeline-20261023/candidate.json",
+      "bytes": 4208,
+      "sha256": "11af354efcea4ddf273405b750c8bca7586d7060300510772c69d68e508c2bf7"
+    },
+    {
+      "path": "diagram-specs/dataflow-cv-faster-mask-rcnn-20261023/candidate.json",
+      "bytes": 3202,
+      "sha256": "80229da081974f227ce81f69b48595cf6a98426bed14030141238be74c35ded9"
+    },
+    {
+      "path": "diagram-specs/dataflow-cv-numeric-layers-20261023/candidate.json",
+      "bytes": 4251,
+      "sha256": "47348b50aee8814e7dde6c9b6909776463ac8461fabbcfcd76a1eaa97907cf7f"
+    },
+    {
+      "path": "diagram-specs/dataflow-cv-vit-patchify-20261026b/candidate.json",
+      "bytes": 2470,
+      "sha256": "d00e3f755982a9f221d980d15415e8c22acef4c4b24c4fca5e00d7ad40390263"
+    },
+    {
+      "path": "diagram-specs/dataflow-di-dg-jit-flow-20261023c/candidate.json",
+      "bytes": 3404,
+      "sha256": "442a504e86df4191be757396bccac168bc0babfdd85ead8016dd1f81646468de"
+    },
+    {
+      "path": "diagram-specs/dataflow-di-kv-tiers-20261023/candidate.json",
+      "bytes": 3366,
+      "sha256": "48edc8727b579e63a34a26c0ea743d0f46e2a3f971ba9a36f24e2dbd5b025c81"
+    },
+    {
+      "path": "diagram-specs/dataflow-di-sinkhorn-projection-20261023b/candidate.json",
+      "bytes": 3680,
+      "sha256": "fb5d4806782d95996210904e38ed0c644559001c33e162086d1b7a834b6afaa1"
+    },
+    {
+      "path": "diagram-specs/dataflow-di-zos-seqlens-fix-20261023/candidate.json",
+      "bytes": 3775,
+      "sha256": "eb8162ac0288530786ed047897a76d42be1fe569412995954942863541bf7c1d"
+    },
+    {
+      "path": "diagram-specs/dataflow-dm-esft-adapter-storage-20261023/candidate.json",
+      "bytes": 3233,
+      "sha256": "3e2e3106f435c9a7d718f25666404ddfb0fc2121a5a5ec05a85f98f61c91000f"
+    },
+    {
+      "path": "diagram-specs/dataflow-dv-ocr-optical-compression-20261023/candidate.json",
+      "bytes": 3537,
+      "sha256": "085162151db30381ed8cfad73780462910a942380b3b1ce0a3e4ce8187855904"
+    },
+    {
+      "path": "diagram-specs/dataflow-dv-vl-hybrid-dual-tower-20261023/candidate.json",
+      "bytes": 4256,
+      "sha256": "809674e7e9e5ffda27bfaed270a9b968e90ae1b689b0c6156400bb3e33b1e752"
+    },
+    {
+      "path": "diagram-specs/dataflow-fa-fp8-precision-20261023/candidate.json",
+      "bytes": 3621,
+      "sha256": "04f2f7251930f8c2f6f00dd83a5b99380064b9b6469b22da7f7cc96cb5796eb7"
+    },
+    {
+      "path": "diagram-specs/dataflow-fa-standard-attention-hbm-20261023/candidate.json",
+      "bytes": 3090,
+      "sha256": "17395c0b063da931d62cf7b1d3b64fc907d23b946c854177fd4bea58437f05f1"
+    },
+    {
+      "path": "diagram-specs/dataflow-fp8-fp4-formats-20261023115334/candidate.json",
+      "bytes": 5835,
+      "sha256": "192caaa2c1330c61160f05930c9767b21f6b81b5ea7ad681fc2a23ea0f7a239d"
+    },
+    {
+      "path": "diagram-specs/dataflow-ma-ds-mla-kv-20261023/candidate.json",
+      "bytes": 4313,
+      "sha256": "8367d616bb9d8217680726ae7680a6c3c109534626465ad5d98a9affd73986e3"
+    },
+    {
+      "path": "diagram-specs/dataflow-ma-ds-mla-kv2-20261023/candidate.json",
+      "bytes": 4757,
+      "sha256": "7d27b0eb827ba4e940452043953d03c96ec586211a3ab72cfdba3924bba0b3b9"
+    },
+    {
+      "path": "diagram-specs/dataflow-ma-gqa-vs-mla-compression-20261023b/candidate.json",
+      "bytes": 4648,
+      "sha256": "8743330b4b9b752be4956ccf86bfd10cf7c0f8b066af7ff091ccf62ed40bb62c"
+    },
+    {
+      "path": "diagram-specs/dataflow-ma-v2-v3-combo-20261023/candidate.json",
+      "bytes": 4068,
+      "sha256": "54ff8974a884e25009bc76777f065c2734e3b419e2105cdd67057c5feefc5f69"
+    },
+    {
+      "path": "diagram-specs/dataflow-ma-v3-mla-absorb-20261023/candidate.json",
+      "bytes": 4583,
+      "sha256": "25679441e3815974d0088e9adb4426b9f8aacc7d1310fdbdb51dfba36ef04d97"
+    },
+    {
+      "path": "diagram-specs/dataflow-ma-v3-mtp-20261023/candidate.json",
+      "bytes": 5599,
+      "sha256": "0b18dfed352f95faf82d6996ec1f91fd3c7efdc64365316cd8637efa4a5d45f3"
+    },
+    {
+      "path": "diagram-specs/dataflow-qt-fakequant-fold-weight-20261026/candidate.json",
+      "bytes": 2512,
+      "sha256": "8812976f7f52d29850b036b48fcaafd06e0ee28cfa067cdf7f7956db48a49a60"
+    },
+    {
+      "path": "diagram-specs/dataflow-qt-moe-gptq-memory-formula-20261026/candidate.json",
+      "bytes": 2450,
+      "sha256": "fac416c9b14e9798441406d19d8610134b3f8fa90fd998a4653c964868a21a4b"
+    },
+    {
+      "path": "diagram-specs/dataflow-qt-quip-sharp-pipeline-20261026b/candidate.json",
+      "bytes": 2517,
+      "sha256": "750610f8b4b785df6fdd871e16cbc39c0f56a6d9e27b1c734b1281e5bea4f993"
+    },
+    {
+      "path": "diagram-specs/dataflow-rng-counter-based-20261023/candidate.json",
+      "bytes": 3731,
+      "sha256": "9dd0c8ccf82ad196b087ac006ea277d82867d769c4e002b99bd2587f64a0cf10"
+    },
+    {
+      "path": "diagram-specs/dataflow-vm-int4-packing-20261023/candidate.json",
+      "bytes": 3478,
+      "sha256": "2274615359ef79f3358af0d486c264c10aafc12960f0f134ef1269a4fc3b66e7"
+    },
+    {
+      "path": "diagram-specs/dataflow-vm-llmc-ct-save-1792984895430/candidate.json",
+      "bytes": 1686,
+      "sha256": "117ed04ac72d2950773c0003ac3ef358b83a2cd78c707015f7cc9606e4e0f26b"
+    },
+    {
+      "path": "diagram-specs/dataflow-vm-omni-kv-transfer-20261026/candidate.json",
+      "bytes": 2343,
+      "sha256": "43640ae6ace710a7e1a211eb1935932a6f2ab525d285a3256fb3118906e1dcef"
+    },
+    {
+      "path": "diagram-specs/dataflow-vm-pd-path2-20261023/candidate.json",
+      "bytes": 5566,
+      "sha256": "1bd7c04b910b37f644b7e265c1b70bf341ffed52d88bfa5348fb65f733a0a381"
+    },
+    {
+      "path": "diagram-specs/dataflow-vm-pd-request-path-20261023/candidate.json",
+      "bytes": 5043,
+      "sha256": "1005ed8543e5f3a4709b2db38dc8454fe9f8091aa3fdb4cdcf17d5a3ed2c1a5b"
+    },
+    {
+      "path": "diagram-specs/dataflow-vm-prodstack-lmcache-20261026/candidate.json",
+      "bytes": 1978,
+      "sha256": "09de8112a19c8452a7acc7bd8a11f0b4f73f15aeefb314241bcbac00f3808383"
+    },
+    {
+      "path": "diagram-specs/dataflow-vm-spec-vocab-map-1792985214590/candidate.json",
+      "bytes": 1644,
+      "sha256": "f20ba41941b1dd384d832bac63ab32b7542c1e275d154539a7e18dcff32a427a"
+    },
+    {
+      "path": "diagram-specs/dataflow-vm-staged-write-20261023/candidate.json",
+      "bytes": 3867,
+      "sha256": "4b81b418e289fb06e7480c532ddf448224eb7f6fea707f5ec7202557771dad0b"
+    },
+    {
+      "path": "diagram-specs/dataflow-vm-static-vs-continuous-20261023b/candidate.json",
+      "bytes": 4140,
+      "sha256": "eb837683a387b684d8c647c71455216018168ccd4cb24f7acc202e3b2bf403ca"
+    },
+    {
+      "path": "diagram-specs/dataflow-vm-token-bin-count-20261023/candidate.json",
+      "bytes": 3396,
+      "sha256": "7770849b1d42397b5507c50edc802d4e3802518e4ddbd486ac5771435520c79c"
+    },
+    {
+      "path": "diagram-specs/dataflow-vm-vime-memory-topology-1792984943460/candidate.json",
+      "bytes": 1653,
+      "sha256": "85256d0627b09ad33b2250839731273cad47114de8983c586cec12dd95b445e0"
+    },
+    {
+      "path": "diagram-specs/dataflow-vm-vime-memory-topology-1792985168089/candidate.json",
+      "bytes": 1635,
+      "sha256": "4c805693c77c0596a8502172520103cba25085d4f3d8ecca2c1043e846b7d6ac"
+    },
+    {
+      "path": "diagram-specs/lifecycle-cl-arch-suffix-20261023c/candidate.json",
+      "bytes": 3540,
+      "sha256": "dc6b06abf9c4c065ef15199943e9343e64b566d2c78de6dab37dddab5917ab94"
+    },
+    {
+      "path": "diagram-specs/lifecycle-cl-scheduler-decision-20261023/candidate.json",
+      "bytes": 5986,
+      "sha256": "8b305a7901c5206d3c60c67265603776a1d3734cd15f8c0735c9b9c4b28fa359"
+    },
+    {
+      "path": "diagram-specs/lifecycle-dm-r1-four-stages-20261023/candidate.json",
+      "bytes": 5070,
+      "sha256": "f0819abcd6878d15c5132d657dbf50886b77a41eb69a9fb18321c0cf196826de"
+    },
+    {
+      "path": "diagram-specs/lifecycle-ma-v3-auxfree-20261023/candidate.json",
+      "bytes": 4566,
+      "sha256": "a230aea419a17dc54c5188d93f852444d4e6b6b2afe522883ab3492756f51272"
+    },
+    {
+      "path": "diagram-specs/lifecycle-vm-aibrix-lora-adapter-20261026/candidate.json",
+      "bytes": 1595,
+      "sha256": "00968509ec44b9e20971d09dd73fdba22b8c64b9f6f4b46b638bde840a14fc23"
+    },
+    {
+      "path": "diagram-specs/lifecycle-vm-llmc-oneshot-lifecycle-1792984892094/candidate.json",
+      "bytes": 1416,
+      "sha256": "9f4cc6b3c02244a8c367ec188eae535a3c18e41f9a62e191bdca7e8e08fcf191"
+    },
+    {
+      "path": "diagram-specs/lifecycle-vm-pd-states-20261023/candidate.json",
+      "bytes": 5200,
+      "sha256": "31ff368507c9a946c123ab8bd6b2c4a61bfca637392053d0c3f700fa2676efff"
+    },
+    {
+      "path": "diagram-specs/lifecycle-vm-request-lifecycle-20261023b/candidate.json",
+      "bytes": 3362,
+      "sha256": "14b5c1b601a45fc1d9350c4f91aa74199ef0ca9df470b49b96e195abe7725a64"
+    },
+    {
+      "path": "diagram-specs/lifecycle-vm-router-circuit-breaker-20261026/candidate.json",
+      "bytes": 1610,
+      "sha256": "a99edf7b8459f4ae695c61478a492e38281db0ddec9acda61cd0dd91099b7553"
+    },
+    {
+      "path": "diagram-specs/sequence-cl-collective-builder-20261023c/candidate.json",
+      "bytes": 3466,
+      "sha256": "4c3fbe642b68f573d7ac6f53288fbecc9c47ffa9c431bf19173ec6e8da5fbab9"
+    },
+    {
+      "path": "diagram-specs/sequence-di-mhc-cuda-graph-race-20261023b/candidate.json",
+      "bytes": 4504,
+      "sha256": "e80c65cf6e5f0f86af968621b4fede9e940be85e576a8d3ddfa136053a07d073"
+    },
+    {
+      "path": "diagram-specs/sequence-fa-nan-pollution-20261023/candidate.json",
+      "bytes": 3512,
+      "sha256": "96f509207effca84b179f73e44819ae6482393ad412b8d6ca1b2f2e9a313d84f"
+    },
+    {
+      "path": "diagram-specs/sequence-vm-enginecore-step-20261023b/candidate.json",
+      "bytes": 3686,
+      "sha256": "303cd862962d14314064c949c4eff8b0effd0277b61423ea89e617f7e877bbe3"
+    },
+    {
+      "path": "diagram-specs/sequence-vm-omni-qwen3-async-20261026/candidate.json",
+      "bytes": 1941,
+      "sha256": "ceeb45e75a6c7ee083b2be6148159128025d945f54a185f16bd8bd1a7f5e34a0"
+    },
+    {
+      "path": "diagram-specs/sequence-vm-router-pd-sequence-20261026/candidate.json",
+      "bytes": 1779,
+      "sha256": "2a5cfef8ee01fb2f3945359bca8610d1d5e947f5a103aa9214b5c92cd9caba8c"
+    },
+    {
+      "path": "diagram-specs/sequence-vm-sr-decision-flow-20261026/candidate.json",
+      "bytes": 2330,
+      "sha256": "bf4473aebf9c8083e3c19e4984515acc180e564e81945c42875ea1b58ee05f83"
+    },
+    {
+      "path": "diagram-specs/sequence-vm-v1-async-schedule-20261023/candidate.json",
+      "bytes": 4736,
+      "sha256": "10190099d8f5ec161f4a3cc97521024e3737d74b1ede27c9e74a7bb1eb281fd7"
+    },
+    {
+      "path": "diagram-specs/sequence-vm-v1-request-journey-20261023/candidate.json",
+      "bytes": 4918,
+      "sha256": "bd0f4a19121d887a33ea73d6ae985efc9fe103ad838e74f36767e13f463b34f4"
+    },
+    {
+      "path": "diagram-specs/sequence-vm-vime-train-loop-1792984941395/candidate.json",
+      "bytes": 1523,
+      "sha256": "ed1a4b9493946cfde6f2e165d21811b19590f47670fe2068410d7b0cf6b24323"
+    },
+    {
+      "path": "diagram-specs/sequence-vm-vime-train-loop-1792985166374/candidate.json",
+      "bytes": 1696,
+      "sha256": "7cb44f4de9197cc151d4c96588f1b8be89a475cb3f8e712811e378e3f770aec2"
+    },
+    {
+      "path": "diagram-specs/timeline-dm-r1-lineage-20261023/candidate.json",
+      "bytes": 3565,
+      "sha256": "27b2b91be3ef26806ba285c4eda7ebe1e78b20cd2eb869aca41acd7f7529fe89"
+    },
+    {
+      "path": "diagram-specs/timeline-dv-vl-to-vl2-evolution-20261023/candidate.json",
+      "bytes": 3655,
+      "sha256": "af21eaf4268fc172a4275291dd7385794104ea0e1877e11485ab305b351d1d0c"
+    },
+    {
+      "path": "diagram-specs/timeline-ma-ctx-timeline-20261023/candidate.json",
+      "bytes": 2939,
+      "sha256": "2996442f6f61767fbbb2cb80d3cc04a475bab64a9169db8fc64d6dc6bdb5a3da"
+    },
+    {
+      "path": "diagram-specs/timeline-ma-head-sharing-lineage-20261023b/candidate.json",
+      "bytes": 3625,
+      "sha256": "d99cc03baae75f83deb7cc3c6347320b0c1243371f8f06be505a549f65315d42"
+    },
+    {
+      "path": "diagram-specs/timeline-ma-llm-evolution-20261023/candidate.json",
+      "bytes": 3966,
+      "sha256": "7585c5cebdb117fdc15dbbc04096d9ed35f68ff19b4d3e3226f036341975a2f1"
+    },
+    {
+      "path": "diagram-specs/timeline-ma-open-model-timeline-20261023/candidate.json",
+      "bytes": 5145,
+      "sha256": "00edbb30b3011b7d68f00e366f76d8ba7fbae23087046585c77e609223ce20df"
+    },
+    {
+      "path": "diagram-specs/tree-at-fa4-limits-20261026/candidate.json",
+      "bytes": 1633,
+      "sha256": "0eaaaba3d1a565b6a0408e3840c9bec18a2b5e7699279478d4bb096a243ac6e2"
+    },
+    {
+      "path": "diagram-specs/tree-at-laser-spatten-longtail-20261026b/candidate.json",
+      "bytes": 1471,
+      "sha256": "374dde7a4b7494896de472efd784b6e083a70b543f9818bd18487af394044533"
+    },
+    {
+      "path": "diagram-specs/tree-cl-build-pitfalls-20261023c/candidate.json",
+      "bytes": 3071,
+      "sha256": "7311cc5ffbc5afc9c233bbe2013b053664864eae462371d55ce9a57043b28748"
+    },
+    {
+      "path": "diagram-specs/tree-cl-gmma-layout-atoms-20261023c/candidate.json",
+      "bytes": 3070,
+      "sha256": "e79d2b63430469c3ca647243b1be94782f03817c6dc3aa05d6f42722d12c77ac"
+    },
+    {
+      "path": "diagram-specs/tree-cl-layout-algebra-20261023/candidate.json",
+      "bytes": 3150,
+      "sha256": "fcbf7760024afd491b32e1099b277e8020ed728551b46d5ea69e4705a60ad717"
+    },
+    {
+      "path": "diagram-specs/tree-cl-tcgen05-atom-naming-20261026b/candidate.json",
+      "bytes": 1667,
+      "sha256": "8b02d60d61fd14120ce8e52f75e014d343d544cbcc357630df2e349c0734b3dc"
+    },
+    {
+      "path": "diagram-specs/tree-cl-tiled-mma-layers-20261023b/candidate.json",
+      "bytes": 2861,
+      "sha256": "d2038b28a57d1cd5e2fb56c48862cc3eb2455f920bae81002fcc4b3b372e66f5"
+    },
+    {
+      "path": "diagram-specs/tree-cl-two-level-microkernel-20261023/candidate.json",
+      "bytes": 3823,
+      "sha256": "060102a7e7d3f22ad98393d1155a734ebb8060468c4a22721873f1dae59f4cd4"
+    },
+    {
+      "path": "diagram-specs/tree-cl-wgmma-value-20261023c/candidate.json",
+      "bytes": 3044,
+      "sha256": "165cfc09e7beed580734139106d21b9c8a90a47dece30a7b052e52b0724c1748"
+    },
+    {
+      "path": "diagram-specs/tree-cv-engine-manifest-20261023/candidate.json",
+      "bytes": 2801,
+      "sha256": "3c50da242bd7c3a696788b7d72bda6c5426e37b56ac5076ce14f7e62a47a7647"
+    },
+    {
+      "path": "diagram-specs/tree-di-v3-memory-budget-20261023c/candidate.json",
+      "bytes": 3323,
+      "sha256": "443febf1284bec077a72c9006c28443052ecfdb4e443058f5136dfadc4d64f1c"
+    },
+    {
+      "path": "diagram-specs/tree-dm-r1-reward-choices-20261023/candidate.json",
+      "bytes": 4537,
+      "sha256": "0a09fc29a03e9ca534fe4b093544e64aef98d6ecb2b07b9a2d1f9956644a8f54"
+    },
+    {
+      "path": "diagram-specs/tree-dv-ocr-two-gen-20261023/candidate.json",
+      "bytes": 3949,
+      "sha256": "98f6cb735b3101d4f20bbca127962e9011e008728d982ccf2b9e3d93e90fa667"
+    },
+    {
+      "path": "diagram-specs/tree-dv-vl2-moe-variants-20261023/candidate.json",
+      "bytes": 3082,
+      "sha256": "6bcd7185eb44e4b8950371c3f535e87c9b62530cf6f029f77851ab36bdfbdc5d"
+    },
+    {
+      "path": "diagram-specs/tree-ma-ctx-unified-map-20261023/candidate.json",
+      "bytes": 2913,
+      "sha256": "b44de5757a9afc7215ab2735cb92c436fb9b053dd31e2779748d3d314798131e"
+    },
+    {
+      "path": "diagram-specs/tree-ma-open-model-lineage-20261023/candidate.json",
+      "bytes": 3580,
+      "sha256": "222a56ee09adea87dbad9d5a9ecab4247bab274b507d0023a6834c3a9dc44ecd"
+    },
+    {
+      "path": "diagram-specs/tree-ma-v3-vs-v2-diff-20261023/candidate.json",
+      "bytes": 3207,
+      "sha256": "50f397174ab36737f6644b8fa547480789ffa3f587db268c268b89439ee6839a"
+    },
+    {
+      "path": "diagram-specs/tree-ma-v32-diff-20261023/candidate.json",
+      "bytes": 4025,
+      "sha256": "8bdde860b17c57829c8ce422d9a990649827cdd1869890026717ef46dee605b6"
+    },
+    {
+      "path": "diagram-specs/tree-qt-ep-ptq-register-transformers-20261026/candidate.json",
+      "bytes": 1763,
+      "sha256": "cc58c0faba522e0a49faafc4c0c39ca1d19b32073b9313c133f391c25bee63fe"
+    },
+    {
+      "path": "diagram-specs/tree-qt-fakequant-nll-diff-20261026/candidate.json",
+      "bytes": 1331,
+      "sha256": "0e0bed3e33df571b9e89afcfe53cf498585b926a1aefbc17404d1d8b2e199814"
+    },
+    {
+      "path": "diagram-specs/tree-qt-minitron-mamba-state-consistency-20261026/candidate.json",
+      "bytes": 1534,
+      "sha256": "90182a8681290021c22168bce8647295b3f14a7608919bbd8bff3a9f82020731"
+    },
+    {
+      "path": "diagram-specs/tree-qt-moe-gptq-batch-evolution-20261026/candidate.json",
+      "bytes": 1341,
+      "sha256": "46e78cd33ea643778ffd872c6ed6a9c20a13a81f44fde2dc68026c67654b70c6"
+    },
+    {
+      "path": "diagram-specs/tree-vm-attn-backend-enum-1792985394393/candidate.json",
+      "bytes": 1868,
+      "sha256": "bffb171f80e0a3b2a114e2d01bf0770aa87c1fbec33895fe3e2fd51cf8ac669e"
+    },
+    {
+      "path": "diagram-specs/tree-vm-guidellm-metrics-1792985249588/candidate.json",
+      "bytes": 1324,
+      "sha256": "c81edf1497e06f6990b7957081e2e1b536d968fdf88138e0638f575cd8155cc6"
+    },
+    {
+      "path": "diagram-specs/tree-vm-llmc-precision-split-1792984896879/candidate.json",
+      "bytes": 1151,
+      "sha256": "d84a7ec8d3b49f0be28a9a3ff842a2c7dcf25d98c0b4cbf242968cba4e4d10f5"
+    },
+    {
+      "path": "diagram-specs/tree-vm-omni-inheritance-20261026/candidate.json",
+      "bytes": 1057,
+      "sha256": "00cb21ec8899a1a0a1624aa83b29948ea0fee88e786abbb3fdbe778d5ee774c5"
+    },
+    {
+      "path": "diagram-specs/tree-vm-sr-signal-types-20261026/candidate.json",
+      "bytes": 2147,
+      "sha256": "904e6a568e21974d0f40148e51d425d207f30c7a213c43295d3d84fffdfb853f"
+    },
+    {
+      "path": "diagram-specs/tree-vm-token-budget-model-20261023b/candidate.json",
+      "bytes": 2497,
+      "sha256": "d3917e89ad5c91e81a2462347d0c19396a813d68359f9ab7310941d6443371b1"
+    },
+    {
+      "path": "diagram-specs/tree-vm-v1-executor-choice-20261023/candidate.json",
+      "bytes": 2936,
+      "sha256": "f498b39a6e4ade1ed37e411b61d50e0e75c7f70a96abc8677f009ccc7260b543"
+    },
+    {
+      "path": "diagram-specs/tree-vm-vime-weight-sync-1792984941668/candidate.json",
+      "bytes": 1135,
+      "sha256": "0570fba8b188d88a925eebf2d333212bd6b15ad60cbccd850c2c8ad621d3d955"
+    },
+    {
+      "path": "diagram-specs/waterfall-cl-multistage-pipeline-20261023/candidate.json",
+      "bytes": 3444,
+      "sha256": "2436215d89bee4c5000de4ea6851e4fa62368ebfd3828e4dec746c402666e1c5"
+    },
+    {
+      "path": "diagram-specs/waterfall-di-v3-a2a-timeline-20261023c/candidate.json",
+      "bytes": 3040,
+      "sha256": "bb244dc90eb6a112096de5d88ab8d3d42a29ffe705a1ffd86d458cd047d9063d"
+    },
+    {
+      "path": "diagram-specs/waterfall-di-v3-dualpipe-schedule-20261023c/candidate.json",
+      "bytes": 3234,
+      "sha256": "6f18bb6fd413534a64b5b42e65dde928d851d7b5997c460c1bb7eee779b55172"
+    },
+    {
+      "path": "diagram-specs/waterfall-di-zos-overlap-20261023/candidate.json",
+      "bytes": 3849,
+      "sha256": "61e2f3540020e606b4b21c444e0804a4d501f63a1b7003bd5fd8d373e151dfc9"
+    },
+    {
+      "path": "diagram-specs/waterfall-fa3-async-pipeline-20261023/candidate.json",
+      "bytes": 3020,
+      "sha256": "d27c4c99a279eb73e708ee9a9a58b1e78f6388380bb79c9b2142b11c33db9c97"
+    },
+    {
+      "path": "diagram-specs/waterfall-vm-chunked-prefill-timeline-20261023b/candidate.json",
+      "bytes": 3733,
+      "sha256": "aa8236876a00a6892710e57a5bbc5a133082a15abd7394f28694182aa34071df"
+    },
+    {
+      "path": "diagram-specs/waterfall-vm-spec-timeline-20261023/candidate.json",
+      "bytes": 3511,
+      "sha256": "33564017e692179414aa7bf5ee9ebd311cfebc26d659c652611f38a41644d077"
+    },
+    {
+      "path": "diagram-specs/workflow-at-aiayn-mask-20261026b/candidate.json",
+      "bytes": 2645,
+      "sha256": "a345432d6291fd72fc2cc1f3fc892bac73169f896ea1a7142d16bf24e56d2bc6"
+    },
+    {
+      "path": "diagram-specs/workflow-at-aiayn-multihead-20261026b/candidate.json",
+      "bytes": 2449,
+      "sha256": "9f93eaad7c6ef2ea18ebeac0dd6b2e0bb39150c9a2d1f9e9ddb7daf70052d32b"
+    },
+    {
+      "path": "diagram-specs/workflow-at-backend-selection-20261026/candidate.json",
+      "bytes": 2073,
+      "sha256": "64c64c171c75f82c1b74b68d7f07b64615ea3e6d4fad64a7d50ee34ff2523e4f"
+    },
+    {
+      "path": "diagram-specs/workflow-at-blockmask-three-classes-20261026/candidate.json",
+      "bytes": 2176,
+      "sha256": "7e8d014d990c626094c09c7e721381c8ed0f62d09223e65a7950305ca87e7885"
+    },
+    {
+      "path": "diagram-specs/workflow-at-fa4-two-hooks-20261026/candidate.json",
+      "bytes": 1850,
+      "sha256": "7b83db16fe1713dda6b72f27386befe0b5cefbeb1a9792a5e5f421f1b53c1563"
+    },
+    {
+      "path": "diagram-specs/workflow-at-flexattention-pipeline-20261026/candidate.json",
+      "bytes": 2416,
+      "sha256": "d41f479d8d1b100fd7c2372f08df08c6b53fa22b6f26e581f544db877dbe81e5"
+    },
+    {
+      "path": "diagram-specs/workflow-at-laser-gradient-20261026b/candidate.json",
+      "bytes": 2864,
+      "sha256": "8da3193a974c0e0643ec946cbca4858bac04c747c424f50175211fdc346b4261"
+    },
+    {
+      "path": "diagram-specs/workflow-at-scoremod-maskmod-why-split-20261026/candidate.json",
+      "bytes": 1840,
+      "sha256": "36dc36bd3b06c5594d7bd8f4407277bbc89863e956ec8f4eb2350be4bda1842e"
+    },
+    {
+      "path": "diagram-specs/workflow-at-sink-baselines-20261026b/candidate.json",
+      "bytes": 2933,
+      "sha256": "a059c6ea02a7754a4387e3dd980e2af41a35c52b4f3c911f625ab188912dac66"
+    },
+    {
+      "path": "diagram-specs/workflow-at-sink-cache-layout-20261026b/candidate.json",
+      "bytes": 2073,
+      "sha256": "81b9698bb59ec5e857cbabf60b33a87599b80096b2a753e5a7756b162feac78a"
+    },
+    {
+      "path": "diagram-specs/workflow-at-sink-causal-chain-20261026b/candidate.json",
+      "bytes": 2447,
+      "sha256": "13ef439a3d5e84a2b8731a20d432d10567c18dc363a7580f20e8681103bc887f"
+    },
+    {
+      "path": "diagram-specs/workflow-at-spatten-cascade-20261026b/candidate.json",
+      "bytes": 3170,
+      "sha256": "b14545c331974a5c27bbb92c51b33fb5c4653ff3f7c73630639d5b5724ac4802"
+    },
+    {
+      "path": "diagram-specs/workflow-at-triton-vs-cutedsl-20261026/candidate.json",
+      "bytes": 1851,
+      "sha256": "08ecd10f540a0e146629648f71e7c29157085386a7fefcb1067bceeb828b8fe6"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-atom-generation-layouts-20261023/candidate.json",
+      "bytes": 5201,
+      "sha256": "da88a085b702a4dd935b804d7ad72f54860b75cdd591cea07455bfacc158c067"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-blis-formula-breaks-20261023/candidate.json",
+      "bytes": 5433,
+      "sha256": "933f98d08224d6f02a6aeac93b5d7c13b2661fe32833dd5982dc7c57c7783008"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-build-decision-20261023c/candidate.json",
+      "bytes": 5207,
+      "sha256": "3d34d01b1a4b2f3705325bdf1bbbab4ba3ae670a1057f37b4ac0d5c6683b9c5e"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-clc-vs-static-20261023/candidate.json",
+      "bytes": 4719,
+      "sha256": "53873dfa4e25fad6edb6f2d2e3ca883bcda867209b40ec9f997070b863fbac97"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-dispatch-policy-v2-20261023/candidate.json",
+      "bytes": 5010,
+      "sha256": "ead884933c662fdb046ad086364e0cfd1cd371783d9ab11daf1a95c37f509ebc"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-epilogue-api-generations-20261023/candidate.json",
+      "bytes": 4448,
+      "sha256": "4b7462be7a0717b4a978fa767cd8016c2c965d84988c43b9b0621975bb4783f9"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-epilogue-fusion-io-20261023/candidate.json",
+      "bytes": 4647,
+      "sha256": "f79f71d7e809064771983be3bdb5e378da92707030dbc705f8d7c6ace3464a2f"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-epilogue-standard-form-20261023/candidate.json",
+      "bytes": 3705,
+      "sha256": "4fc60a004ec21ba4ba913164d874347175c6474726693f25ce5d47f953f10fde"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-grouped-scheduler-20261023/candidate.json",
+      "bytes": 5022,
+      "sha256": "b247b6cfb1908bd3de8ae2cc90384fc924f400627b00ac6e4aedd54e9936f2cd"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-mma-atom-traits-20261023b/candidate.json",
+      "bytes": 6207,
+      "sha256": "df14b123f194707b1c6bd81d3b2a70f1d673a80ffb330aef840d59f374c40220"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-raster-order-l2-20261023/candidate.json",
+      "bytes": 4247,
+      "sha256": "2096fe1658b5f853eb4767cc7d7cab9b6b96238e9b339c50fdbfefc0d329e6b7"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-scheduler-persistent-vs-naive-20261023/candidate.json",
+      "bytes": 4922,
+      "sha256": "321a494eb7a907cc066b382c863cd5bd33ccf86b4d48672df6bc7a461e04a827"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-softmax-vs-layernorm-20261023/candidate.json",
+      "bytes": 4198,
+      "sha256": "9cb901e0c3363db705a03d1996d76578f535a6acdc7470e3d81ca6f2c330f380"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-splitk-vs-streamk-20261023/candidate.json",
+      "bytes": 4243,
+      "sha256": "b5b486d7eb45cfac0507827fc16132d8cb61fdbd952fea35b2c3b71f9524e3f9"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-streamk-vs-tile-20261023/candidate.json",
+      "bytes": 4106,
+      "sha256": "073c7d95dca8fe5b1ab84f1d67197fbcee8d39317cc14250574a79df5311821b"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-tcgen05-2cta-20261026b/candidate.json",
+      "bytes": 2013,
+      "sha256": "f80266827b8f39e4f8fc67a49e2bec8acf92a09476cd2954a3a8c3e3d96ae0b1"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-tcgen05-vs-wgmma-20261026b/candidate.json",
+      "bytes": 2486,
+      "sha256": "4c7d3d7326b0ed591f32304f72e18d64b32f59317b1d513ed5e67bc5d2a5c581"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-three-level-tiling-20261023/candidate.json",
+      "bytes": 4797,
+      "sha256": "42f957de469dc218c387cc5283a138e6a8b818e23b38653b0869539577041af5"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-tiledmma-knobs-c-20261023/candidate.json",
+      "bytes": 4008,
+      "sha256": "6d517b51e3718a4c809803fb845183b0f5713852654de425839ffe938942be7e"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-tiledmma-partition-20261023b/candidate.json",
+      "bytes": 5524,
+      "sha256": "5cbdb795ed725d361206d6ebae0ec0399e911b549ed7e96fbc49a58827986a3c"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-warp-specialization-20261023/candidate.json",
+      "bytes": 5519,
+      "sha256": "38f0088c05368683f245484384cb9ec5e3244cc4b5c595e8d2b93088be8998d8"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-wgmma-sync-20261023c/candidate.json",
+      "bytes": 4592,
+      "sha256": "9b1c3e231ff1f69d8bcb492f05fdd1290a64e4fb2446ed8fd7121c9f7d6f57c3"
+    },
+    {
+      "path": "diagram-specs/workflow-cl-wgmma-vs-mma-20261023c/candidate.json",
+      "bytes": 5581,
+      "sha256": "6c3898af6501fbbe9ec48325f8873f572aea7c570fe0b3d5bb913a87efd15324"
+    },
+    {
+      "path": "diagram-specs/workflow-cv-detection-core-difficulty-20261023/candidate.json",
+      "bytes": 4044,
+      "sha256": "c5f0ba989e7e71ff4cbf918076f803f5446e745b115df13ef567710e1cbcd6f7"
+    },
+    {
+      "path": "diagram-specs/workflow-cv-detr-set-prediction-20261023/candidate.json",
+      "bytes": 3747,
+      "sha256": "b75139e3dd935fbc3ad16068258282ce4bb8cbd34dafaa7dfba4b4000f5ac750"
+    },
+    {
+      "path": "diagram-specs/workflow-cv-export-decisions-20261023/candidate.json",
+      "bytes": 5094,
+      "sha256": "e22a12c3a64b29b34353214d7d6d1858e77ea75a0c572edff3ebffbc20c19240"
+    },
+    {
+      "path": "diagram-specs/workflow-cv-sam-three-parts-20261023/candidate.json",
+      "bytes": 4225,
+      "sha256": "9ffbd7e9800053c83617334a102244e89fad9ec9b39cf7d759638b422dd00032"
+    },
+    {
+      "path": "diagram-specs/workflow-cv-three-paradigms-inference-20261023/candidate.json",
+      "bytes": 5299,
+      "sha256": "bec14ad30adec0c5c32d5a806ba8c771144865aa72cf9105a58ed2ac8c665288"
+    },
+    {
+      "path": "diagram-specs/workflow-cv-two-routes-20261023/candidate.json",
+      "bytes": 5026,
+      "sha256": "9a76353db13fa9b6b906d57319c8a5a737103771720010ebe370b2b70d57440a"
+    },
+    {
+      "path": "diagram-specs/workflow-cv-vit-deit-20261026b/candidate.json",
+      "bytes": 2357,
+      "sha256": "8e72d3f3f68a54c209b52a9f76f62d3af11f56618207b1049e9e4e40863b2ef3"
+    },
+    {
+      "path": "diagram-specs/workflow-cv-vit-why-data-20261026b/candidate.json",
+      "bytes": 2276,
+      "sha256": "a3246b363a5d50c47239c7bcc3621b38a824481d00d50d0dc05f3721fe58e765"
+    },
+    {
+      "path": "diagram-specs/workflow-deepgemm-ascend-20261023115334/candidate.json",
+      "bytes": 6019,
+      "sha256": "4b8fb2c4a16cef2dd0922b11516c70ce06fca29732c439016b595b2191fbe459"
+    },
+    {
+      "path": "diagram-specs/workflow-di-dg-grouped-gemm-20261023c/candidate.json",
+      "bytes": 4064,
+      "sha256": "006ad8b0255a165d28d7cfb9313708ad6d24bb86f4754ddb6a0a42bacc55c3ed"
+    },
+    {
+      "path": "diagram-specs/workflow-di-dg-mega-moe-20261023c/candidate.json",
+      "bytes": 4695,
+      "sha256": "6fe3a8967d6f24ebc570feb8db9943b9ecc56e4e77715889937086f08d819447"
+    },
+    {
+      "path": "diagram-specs/workflow-di-dg-sparse-mqa-20261023c/candidate.json",
+      "bytes": 4965,
+      "sha256": "1867e5d19fdf940f60c24ad389692639474b309cd4068c12e086a2729bc5ca42"
+    },
+    {
+      "path": "diagram-specs/workflow-di-dspark-varlen-20261023/candidate.json",
+      "bytes": 4570,
+      "sha256": "a3b3c0de66875cf45d3a647037e786adfc2ae018acaf25b05a0975d7378a1349"
+    },
+    {
+      "path": "diagram-specs/workflow-di-mhc-gain-runaway-20261023b/candidate.json",
+      "bytes": 5765,
+      "sha256": "9d2bf1b09de2024e645b1e7985444c87facb0b0025c5b1967cdf7eb9a415b77e"
+    },
+    {
+      "path": "diagram-specs/workflow-di-mhc-io-traffic-20261023b/candidate.json",
+      "bytes": 5703,
+      "sha256": "5065a22fb478404352f2e1261d30aaf3fd7b10f77861af0bc8d8c595bea2ba93"
+    },
+    {
+      "path": "diagram-specs/workflow-di-mhc-warpgroup-roles-20261023b/candidate.json",
+      "bytes": 6960,
+      "sha256": "c22fc5eeab629908b0d2f9685cc8aefd6ccff5a4208c72db005f379254d4e2a7"
+    },
+    {
+      "path": "diagram-specs/workflow-di-normal-voting-20261023/candidate.json",
+      "bytes": 6345,
+      "sha256": "79b1fe2900cd42dff80597a52f04d99963de257586cc78ff9e716c100dbc6c17"
+    },
+    {
+      "path": "diagram-specs/workflow-di-swa-bounded-replay-20261023/candidate.json",
+      "bytes": 3759,
+      "sha256": "2d22945c21d6b558a8fe5da4e76ba061e9c1dbcca9adf09881024f2d498bfdf2"
+    },
+    {
+      "path": "diagram-specs/workflow-di-v3-deepep-dispatch-20261023c/candidate.json",
+      "bytes": 4641,
+      "sha256": "1b4d971f258eb53e6634b315172f5c067c616a6f121ed6879af4085e4de03fc3"
+    },
+    {
+      "path": "diagram-specs/workflow-dm-esft-param-buffer-20261023/candidate.json",
+      "bytes": 4362,
+      "sha256": "eaca386c7aab07e40e16d00e1e729d12118a9a9e6c5f66e559a8075c7c27b521"
+    },
+    {
+      "path": "diagram-specs/workflow-dm-esft-route-position-20261023/candidate.json",
+      "bytes": 5533,
+      "sha256": "9959252d2c77df2b0754db4e446e1246b3da8e5658b8fcb10f04cc8455e7042a"
+    },
+    {
+      "path": "diagram-specs/workflow-dm-esft-three-stages-20261023/candidate.json",
+      "bytes": 4361,
+      "sha256": "7fd74b37c06e57e91c38b98b4933071947b493ce5f0f2899c797ad9d5bdb6d75"
+    },
+    {
+      "path": "diagram-specs/workflow-dm-esft-top-p-20261023/candidate.json",
+      "bytes": 3954,
+      "sha256": "f0729dad31a849490335594aec6df746cc33c15bef3361038b7874ca769ee07f"
+    },
+    {
+      "path": "diagram-specs/workflow-dm-esft-why-waste-20261023/candidate.json",
+      "bytes": 4370,
+      "sha256": "e8d8dbb2fd17c0ad24acd41d4a6f428027ee44dd4d65cd529949aee7b8bd07f3"
+    },
+    {
+      "path": "diagram-specs/workflow-dm-r1-distill-vs-rl-20261023/candidate.json",
+      "bytes": 4857,
+      "sha256": "f70cf08561c92948892cbbf576783d478cc69d75c1f5f38bef10a0867ea98e68"
+    },
+    {
+      "path": "diagram-specs/workflow-dm-r1-grpo-v2-20261023/candidate.json",
+      "bytes": 4586,
+      "sha256": "278b07f587e458e8c85f6491f6fdcaad9473c83782e84c7dc7d2517ae8b98e17"
+    },
+    {
+      "path": "diagram-specs/workflow-dv-ocr-compression-curve-20261023/candidate.json",
+      "bytes": 4468,
+      "sha256": "d30bdb2f38067ab1211ee64542f1ccd1765aad95f33ed235f8a10cea40791338"
+    },
+    {
+      "path": "diagram-specs/workflow-dv-ocr-deploy-path-20261023/candidate.json",
+      "bytes": 4907,
+      "sha256": "ef78de54439065a904c45b3368cf47379bf737360662813efc28c1102fcfa869"
+    },
+    {
+      "path": "diagram-specs/workflow-dv-ocr2-causal-flow-20261023/candidate.json",
+      "bytes": 5120,
+      "sha256": "bc94ac73d3069ef71f6d629b4a2ad3e2ddf441ada1534930ec6b6907d10ceeee"
+    },
+    {
+      "path": "diagram-specs/workflow-dv-vl2-dynamic-tiling-20261023/candidate.json",
+      "bytes": 4957,
+      "sha256": "28e6f00d7b7c7cf18a21e9568843013c37bc67a09afb6adb4b32fb15359dce70"
+    },
+    {
+      "path": "diagram-specs/workflow-fa-backward-recompute-20261023/candidate.json",
+      "bytes": 3986,
+      "sha256": "b861a6c4b70eeab7f2a35b0b89c3598b6f3493d7ba0db40b93e393cf637166bb"
+    },
+    {
+      "path": "diagram-specs/workflow-fa-fa1-tiling-20261023/candidate.json",
+      "bytes": 4199,
+      "sha256": "3497a43484c97c1d9c3b4ba02a1b81e185d4b593d6534b06d326c81d6764c312"
+    },
+    {
+      "path": "diagram-specs/workflow-fa-fa2-defer-divide-20261023/candidate.json",
+      "bytes": 4026,
+      "sha256": "f62250eae2414345b3cc26ec0172138363851258f2b59a9b0531230bcf3ff9d2"
+    },
+    {
+      "path": "diagram-specs/workflow-fa-online-softmax-20261023/candidate.json",
+      "bytes": 3875,
+      "sha256": "87f68aebfaebb20cb70934fe02fc79cd1cee2c47ebe6b9117978ad1eb8f8ce9d"
+    },
+    {
+      "path": "diagram-specs/workflow-fa-splitq-vs-splitkv-20261023/candidate.json",
+      "bytes": 4450,
+      "sha256": "15ea809e578244c50dc2a549d72d4fcccda49c561864a769d071a40c133e3990"
+    },
+    {
+      "path": "diagram-specs/workflow-fa-why-not-tiling-20261023/candidate.json",
+      "bytes": 4063,
+      "sha256": "237e3489cc64b66643e18195cf93b44e03a56287c389831b517a399a2744a6e3"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-ctx-picker-20261023/candidate.json",
+      "bytes": 4474,
+      "sha256": "e2ebdf743225c97bcefd29e9db66863e66b1a382ec9d9662a4bb4479292b8f8c"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-ds-decouple-rope-20261023/candidate.json",
+      "bytes": 5335,
+      "sha256": "adbecbc0f711f6784755b82b98c51d5f85f902b8393ed0fe2392bfac4606841b"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-ds-gen-stack-20261023/candidate.json",
+      "bytes": 6921,
+      "sha256": "bede20e10b4a3f36a6c0a9e5bad6789fd8620d011e861295511a6c91fe617f01"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-ds-moe-route-20261023/candidate.json",
+      "bytes": 5743,
+      "sha256": "b87584372f9976a328db2b8077851034b93d137c88fa6650f2f13eb2c42252fb"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-ds-v2-group-route-20261023/candidate.json",
+      "bytes": 5137,
+      "sha256": "d34f7d1a3eabbf26e0e595be6aef3937a5cb061561d1bcf1179b03ebc1ddedf7"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-dsa-pipeline-20261023/candidate.json",
+      "bytes": 6264,
+      "sha256": "0ff1935c4c81e85626440bf70ec4b01cd0c9aa0105de3d44e6cc975d0603cea2"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-gqa-uptraining-20261023b/candidate.json",
+      "bytes": 4655,
+      "sha256": "e8f525390f115a27baeecf468ef30d26577a0693bac5df9d208f8008a8588677"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-kv-cache-bandwidth-20261023b/candidate.json",
+      "bytes": 4750,
+      "sha256": "bad384b659a2c5f47d41b52db2b93e26df57a274400c6ae615869b6d02a348bf"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-llm-norm-lineage-20261023/candidate.json",
+      "bytes": 4935,
+      "sha256": "f7ea71e8a4eb19a9c4c9af3a42a6cd0e2628f06d2b66e4302bb516fcaffe0d90"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-llm-positional-encoding-20261023/candidate.json",
+      "bytes": 6877,
+      "sha256": "3d4d8e20200f9bbeb30fa85219e5321b84c84f5241cde040c8cd2f15b1acd974"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-llm-swiglu-ffn-20261023/candidate.json",
+      "bytes": 5307,
+      "sha256": "9aec570eea39ceb5865e3984626d9b20eb85421b8901ed385e030b1cfd2f10c4"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-llm-token-budget-20261023/candidate.json",
+      "bytes": 5214,
+      "sha256": "b952f20afe8d17f81173b9066e5825cffd38503929b2db9a8db649002377912c"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-mla-two-paths-20261023/candidate.json",
+      "bytes": 5744,
+      "sha256": "3e4c90466d39c193c3d20041e92fee97cc5a706027eefafb3b104fcfce11fafb"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-moe-accounting-20261023/candidate.json",
+      "bytes": 5593,
+      "sha256": "015daafb3a08887712e8d85b21d03c98f2085950c0cb70067a711f106cb14763"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-open-model-choice-20261023/candidate.json",
+      "bytes": 5133,
+      "sha256": "1f77f529d9bf6df98d907b0d9cd02f91e9f8247ede1536f5d00ba231eab610bb"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-rope-fail-mode-20261023/candidate.json",
+      "bytes": 5143,
+      "sha256": "449ddd45e12db12e1f73ec2956607973a92a2f43afecbdcfe17543bab384dbe2"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-v3-mla-absorb-20261023/candidate.json",
+      "bytes": 5854,
+      "sha256": "2ee2f12b1ae60fee81cf5d852fafb917b6f722b1c7439bc76b618e9fd8a4a62e"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-v3-stack-20261023/candidate.json",
+      "bytes": 4455,
+      "sha256": "64fa38e1d101df816ddc46f541da4f7623dc40f110144f9fc39ffbf577878475"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-v32-stack-20261023/candidate.json",
+      "bytes": 4921,
+      "sha256": "d20da56b21ceb6ad58f43f1afdae3bb7946e775646fe71728bbee2447ea8302e"
+    },
+    {
+      "path": "diagram-specs/workflow-ma-yarn-by-parts-20261023/candidate.json",
+      "bytes": 5997,
+      "sha256": "85b2dbc4e833cda2316bc97439a0bbbd696468eec07601d09670e9012d86a4a3"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-aqlm-additive-20261026b/candidate.json",
+      "bytes": 2111,
+      "sha256": "e71a5dc7de3e9550fbea8061e0444e79844560f9b2e0055782fad194edf3cb57"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-ep-ptq-21-prs-20261026/candidate.json",
+      "bytes": 2043,
+      "sha256": "c1881780473620d2f673e2f42cc41ad7085864385e023dd59c6b90f90c049606"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-ep-ptq-eight-details-20261026/candidate.json",
+      "bytes": 2386,
+      "sha256": "24eeac343cd70df05810a9e6bb3477758004453111b50dcd13c5ca1842e5583d"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-ep-ptq-four-steps-20261026/candidate.json",
+      "bytes": 2478,
+      "sha256": "42b793acdb8eb660b0d879a57d4c893506bfd411bdb31039e8e91c64885e0aa5"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-ep-ptq-three-routes-20261026/candidate.json",
+      "bytes": 2311,
+      "sha256": "d573b59ff1f7a7c3a22429e2dc2fde8ad5aaf821cd9845b3f617ff512e2a8812"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-fakequant-mbridge-export-20261026/candidate.json",
+      "bytes": 1999,
+      "sha256": "0441b8aa474d45a50a056021c46ee859804686bfcb8640da59fb4e90c0d8abfa"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-fakequant-sidecar-restore-20261026/candidate.json",
+      "bytes": 2352,
+      "sha256": "fdc2d540b7596d676e76fb3a37925452bbd1178aa24ff46b7b6ca38e6e62d85a"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-fakequant-three-gates-20261026/candidate.json",
+      "bytes": 2409,
+      "sha256": "2f4554503234e6d9628f3f450830008be2bf03ccffae170a86b90325af2b364e"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-minitron-distill-loss-20261026/candidate.json",
+      "bytes": 1940,
+      "sha256": "3a2dce7ad600cd126f1ecdd2271c1ab9fa47e00b69721c95a9e600c2f74c6236"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-minitron-importance-scoring-20261026/candidate.json",
+      "bytes": 2383,
+      "sha256": "9c36844dc25fdb42b5d45ac5a224f89c19736c60f02bddee029b865d46992c1e"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-minitron-pipeline-20261026/candidate.json",
+      "bytes": 2343,
+      "sha256": "959bbc21d4b2db2fc194b2bed2d693cc64eab09d2d480a8617e52be93173cb66"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-moe-gptq-layerwise-loop-20261026/candidate.json",
+      "bytes": 2095,
+      "sha256": "78cc6fcaa5e670eda3bc74e48c6577147baa7a8c7aac4e5e86638d502d4757b6"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-moe-gptq-per-expert-hessian-20261026/candidate.json",
+      "bytes": 2774,
+      "sha256": "98a7b3a637659d9ae99da65df3bb43526da37e0e0cb720b890734932a1d61a01"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-moe-gptq-three-waits-20261026/candidate.json",
+      "bytes": 2432,
+      "sha256": "8d6f3314113a9216b3af0e66a8c0dc0db64438be99514795f985b09f6fee5e86"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-puzzletron-hetero-mip-20261026/candidate.json",
+      "bytes": 1961,
+      "sha256": "6a1722cf7e672bdd2395378d8bad257a668e1f5781fb5c310b37de15bd53357a"
+    },
+    {
+      "path": "diagram-specs/workflow-qt-two-bit-outlier-routes-20261026b/candidate.json",
+      "bytes": 2162,
+      "sha256": "ea92f6b0f23c835803f37d273b7d1009967be5289644574826d0362722420c7c"
+    },
+    {
+      "path": "diagram-specs/workflow-rng-curand-state-reuse-20261023/candidate.json",
+      "bytes": 4836,
+      "sha256": "ea76fbe7e194e2e19b33ea9943e5f9038589da87234f0dfe393d233abbfb1f75"
+    },
+    {
+      "path": "diagram-specs/workflow-rng-mtgp-recursion-20261023/candidate.json",
+      "bytes": 4214,
+      "sha256": "00fa12b272d3440727fbe0ef43d435a5beabf18532c7b9b6687f6aaa0562bd49"
+    },
+    {
+      "path": "diagram-specs/workflow-rng-philox-round-20261023/candidate.json",
+      "bytes": 4659,
+      "sha256": "1d1c8ac04a34d22696b5b0376693cab41b90e96dc6c04bc7bb8bf6fb9fc4d1b9"
+    },
+    {
+      "path": "diagram-specs/workflow-rng-picker-20261023/candidate.json",
+      "bytes": 5730,
+      "sha256": "f9945e1054f1fdcc8db895553f27256e1e214533c2fa222679cc055895e26c75"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-aibrix-autoscale-20261026/candidate.json",
+      "bytes": 2919,
+      "sha256": "c05df4c1c698f3943c0fbdbc9a1ca9ebdc8a9a0ce11a3660bd76daca724f2e4b"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-aibrix-controlplane-20261026/candidate.json",
+      "bytes": 3629,
+      "sha256": "c0068310d08a37a1f5b85c0d099658302ffb843a657307575bffa0452f2bc56f"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-aibrix-pd-storm-20261026/candidate.json",
+      "bytes": 2188,
+      "sha256": "362a71acb08ff53f99e229c36cb9072e48853e502c1225118fa67978cb1598db"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-aibrix-routing-algo-20261026/candidate.json",
+      "bytes": 2856,
+      "sha256": "bbcc6f0e4ed4e5060345dc760c217a6aa6df4ff0d53b6b87bbdba1c94f84492e"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-async-snapshot-20261023/candidate.json",
+      "bytes": 4899,
+      "sha256": "d452eca92cb734f2e32eb23a90dac00fc72f1aad02ab237fc7fb9ed521c4ecbf"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-attn-dispatch-chain-1792985392519/candidate.json",
+      "bytes": 2129,
+      "sha256": "5a15da63a0acae554b786e85bf7eb841b971f51131f9439dd5806f12dff74256"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-attn-selection-pitfalls-1792985396066/candidate.json",
+      "bytes": 2074,
+      "sha256": "2ec1fc012a6cd58ddfeb7de6f1d906499d121fff80eb8ad013d0d8165ee68c0a"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-attn-three-classes-1792985390700/candidate.json",
+      "bytes": 1966,
+      "sha256": "ca1c12ecd30ac72826dc0a526ca785342083017925948a5c25788a77b79d48a6"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-awq-batch-heuristic-20261023/candidate.json",
+      "bytes": 3862,
+      "sha256": "17bcf84151383d485e230c0d76f47b9458f1491e8143caec4b1cde6fda8c47d8"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-cudagraph-dispatch-20261023/candidate.json",
+      "bytes": 4285,
+      "sha256": "50b3d667462adf776c5de027b3ca89dd3bc7c8c10a7a2b53099a99ce7679758e"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-fp8-quantkey-20261023/candidate.json",
+      "bytes": 5205,
+      "sha256": "de2e91ce39d49bfd4b1856d13dc33bd77d6b16d88f668af4965bebb3a75f5f2e"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-guidellm-capacity-plan-1792985253131/candidate.json",
+      "bytes": 1864,
+      "sha256": "02a45628b6efb260cd03487e7a25fc86498ff91492f5ca318dd2871adf0bcc6d"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-guidellm-profiles-1792985247745/candidate.json",
+      "bytes": 2190,
+      "sha256": "75e7f24e976b85221be6583d533a579634c4765812aacccc4dd55f3ce212f142"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-guidellm-run-flow-1792985251297/candidate.json",
+      "bytes": 2591,
+      "sha256": "ada7b047731a74959d75492ed16f7b1e0e4791db0e9e933923626e2159dcba45"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-gumbel-sampling-20261023/candidate.json",
+      "bytes": 4972,
+      "sha256": "f4a7143b332e9028f1c04c309f164699adfa010bb781157b923e30fc177c3fa1"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-hwp-entrypoints-1792985288949/candidate.json",
+      "bytes": 1962,
+      "sha256": "800d0fc7da1297718e7f962e7b3f9ee9ed5e428cd8ef2b536d747d6001348d9e"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-hwp-load-path-1792985290492/candidate.json",
+      "bytes": 2643,
+      "sha256": "f4395a8f6082d5b78d3f2e1bee7f27bbf3f32dd6299cbc2567edb7c1a54ee516"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-hwp-responsibility-1792985292184/candidate.json",
+      "bytes": 2248,
+      "sha256": "63b9a6187037e80e1f044dbcb78ebf4b22c1b27ac628c320b376f18c045a6ebb"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-hwp-worker-dispatch-1792985293973/candidate.json",
+      "bytes": 1770,
+      "sha256": "f16ed64448b64f7e9c74e8b39900e740b9b1c2592226ccdda68b1061578a6597"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-llmc-pipeline-match-1792984893632/candidate.json",
+      "bytes": 2935,
+      "sha256": "7da7cea2a343c1177f9cf10d4a81d643c6b067da1fdc0bb570d6511873b41ecf"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-llmc-three-abstractions-1792984786844/candidate.json",
+      "bytes": 2239,
+      "sha256": "07fdfb42267dbf0c019bd4c465d4d193c30752f04481dc4de0e34ea29d5bfec0"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-llmc-three-abstractions-1792984813785/candidate.json",
+      "bytes": 2286,
+      "sha256": "e162f9050cb84907ecb3a700b06d7fe1654050f95ae85f6c12a63b6f219ae45c"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-omni-fullduplex-session-20261026/candidate.json",
+      "bytes": 3212,
+      "sha256": "714fbe2646c0a28e7686f1609a46c1c56877a4ea6cd62520fa92945f5223f1f8"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-omni-stage-pipeline-20261026/candidate.json",
+      "bytes": 2757,
+      "sha256": "6fa9ddf3f518c8057601b67a2d633d1fe7ca609f0824361f39a352f9376784b7"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-pd-decision-20261023/candidate.json",
+      "bytes": 6965,
+      "sha256": "c7aba340787dfeaa5cd672060d885dc6011897e034857c986a86dcb754c06d17"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-penalty-math-20261023/candidate.json",
+      "bytes": 4181,
+      "sha256": "0ddade0bb0ec75428075c0472e5293e55403d6043440dcc8b7aace298961a67f"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-persistent-batch-20261023/candidate.json",
+      "bytes": 5325,
+      "sha256": "1df4e0ccb7a7310daf2cb57f4d19f51139f8b752cf8811cf71a46c0986aa63ff"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-prodstack-dashboard-20261026/candidate.json",
+      "bytes": 3078,
+      "sha256": "ffe23325883e5b9d70877a88ed071ab7b1044bb4a790cd2cedcc46dfefa35703"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-prodstack-migration-20261026/candidate.json",
+      "bytes": 2357,
+      "sha256": "179838df5cc78d9bbc8ac59ad5d231dfe1b80d6782e394f458435c01eb1d9896"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-prodstack-pd-disagg-20261026/candidate.json",
+      "bytes": 2163,
+      "sha256": "7257b7bea04c8648f049296e720e51ed0474f5e5985e22b134f39aeeacfac6d9"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-prodstack-topology-20261026/candidate.json",
+      "bytes": 2592,
+      "sha256": "83b64b3c07ee9ef6f78524842d4d33492c16e899ae3cb64c864c58d42a759754"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-quant-dispatch-chain-20261023/candidate.json",
+      "bytes": 5466,
+      "sha256": "20315f42afb588a5a2b45fd4dc062b59c57dbc5adf5895a246ac49b9e63290f2"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-ray-commgroup-init-1792985356295/candidate.json",
+      "bytes": 2185,
+      "sha256": "77276ce390c66f7734eeee42dec31b67cf89e1201c53986ed3da47899b4e605d"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-ray-executor-compare-1792985358095/candidate.json",
+      "bytes": 1918,
+      "sha256": "90b98dff07d486b534e3458eba48f236cbe24ebaabffe79437b9e5f300dfb7f2"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-ray-executor-dispatch-1792985352790/candidate.json",
+      "bytes": 2439,
+      "sha256": "ae0a8b50f61d3b6d26e189125925d06ab874e8b62dee4426ef30492d9e080597"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-ray-rank-rerank-1792985354656/candidate.json",
+      "bytes": 2274,
+      "sha256": "66c9d76671e07e31263102b827af43b8f3eff9a60193d2c99c408d0d1c8d3242"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-router-consistenthash-20261026/candidate.json",
+      "bytes": 2779,
+      "sha256": "d57f8372765a642ddb523ce85fb15b5deba694c41205b880f33f72848a6f0fe6"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-router-request-path-20261026/candidate.json",
+      "bytes": 2529,
+      "sha256": "f08a42fda3c06bd4303474db738e7d4b54463576bfcd03596a9e81e6218380fa"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-router-strategy-tree-20261026/candidate.json",
+      "bytes": 3215,
+      "sha256": "09247ddb39ddace85645726e39b2250e7c5b17a77f516e12ea2f9cd0f26033c9"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-sampler-order-20261023/candidate.json",
+      "bytes": 4871,
+      "sha256": "760c8aef0aedb5cb7041085a49c3a95052548b84c167d0caa76773e4491ead90"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-sampling-params-fallback-20261023/candidate.json",
+      "bytes": 4037,
+      "sha256": "d08f80ed81579018c8c7a6aa9d47f64ca5a1d1fa0fe4268ef983f7e60b8998ef"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-scheduler-two-queues-20261023b/candidate.json",
+      "bytes": 6153,
+      "sha256": "ff32365e7fae05b3ee716eb92604e66a61d03d819064579b9afc3ed814c969d6"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-spec-draft-verify-20261023/candidate.json",
+      "bytes": 5052,
+      "sha256": "19ac9de21e34d27a85091d9f279512afd48e77480eb63faf0b09185c36c01a36"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-spec-dynamic-adaptive-20261023/candidate.json",
+      "bytes": 5150,
+      "sha256": "e00ed69d868da0ce9b4564a9c0f39e94bf78a6de6520f2f04ed73c52b815af27"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-spec-family-1792985207476/candidate.json",
+      "bytes": 1809,
+      "sha256": "b26e42384b93e1f8c1c9e17b7fb4ad94661cd6f95cd3a70a7c476b363c056734"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-spec-five-routes-20261023/candidate.json",
+      "bytes": 5363,
+      "sha256": "8880d13628d363cc506a425948fe4861c3730cc15d8c0de7d15e65a9738d0143"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-spec-loss-target-1792985209164/candidate.json",
+      "bytes": 2255,
+      "sha256": "c3fceaad2d194d57f98bc085aa3477b1519bfe48ef0e2e8564bc57ed68f12149"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-spec-online-vs-offline-1792985212797/candidate.json",
+      "bytes": 1879,
+      "sha256": "11b5fa525e915a9d90f1a01fcd693c6fe481c551ad3a48c67ea7eb59ea27330d"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-spec-pipeline-1792985211006/candidate.json",
+      "bytes": 2675,
+      "sha256": "88b2f0a9a388f92b1b533ba8e8073ba5d38b13afcb090bf8099c2807500f1a76"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-sr-boolean-tree-20261026/candidate.json",
+      "bytes": 2697,
+      "sha256": "d4a313dc69bd20dbec29f8b2da79a3a57f56ff646ad8142dd4ce8166d6684223"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-sr-deployment-20261026/candidate.json",
+      "bytes": 3034,
+      "sha256": "241b7831dc74f1355f6753e1a73a3ec990f677fd648884fd7b5c789bea8c0552"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-sr-three-layer-20261026/candidate.json",
+      "bytes": 3450,
+      "sha256": "c1dfb53b16b1e5f55df2ee59addc9a76ac48cb0e42146f336f70d7ea622743de"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-sync-free-sampling-20261023/candidate.json",
+      "bytes": 3895,
+      "sha256": "4e67a8c8ec47f1d0785434c838585f44ec62613ab20b1d0eca8593979659d3df"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-v1-init-chain-20261023/candidate.json",
+      "bytes": 5168,
+      "sha256": "c57be8ba9184585be85b3fdbfb54c6b92912deb562063aa68c041b9cd5cf5871"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-vime-architecture-1792984937780/candidate.json",
+      "bytes": 2418,
+      "sha256": "9f81a1897d8af4a914a600ea52e2c2d826af21df934f76a5cab8dacc6a8dd820"
+    },
+    {
+      "path": "diagram-specs/workflow-vm-vime-sync-vs-async-1792984939749/candidate.json",
+      "bytes": 2130,
+      "sha256": "5cbd07e2504ee54b629294c2aa933c12e25db27929271dec954b796fa8d48dbc"
+    }
+  ],
+  "receipts": [
+    {
+      "path": "diagrams/at-aiayn-mask.workflow.finalize-summary.json",
+      "bytes": 1500,
+      "sha256": "fafcc836d807815f1d32ab5c36b76325b08b488d3337f5352fe4a257ec9cb4f3"
+    },
+    {
+      "path": "diagrams/at-aiayn-multihead.workflow.finalize-summary.json",
+      "bytes": 1525,
+      "sha256": "616df7905a47d2be5eae5af83ca1cc87cbe0a9e40754a1042fb383ba376198d0"
+    },
+    {
+      "path": "diagrams/at-aiayn-scaled-dot.dataflow.finalize-summary.json",
+      "bytes": 1530,
+      "sha256": "7c3d6bc14d328116559381b68b940f75fb2ba95db271d51dacef72c829150b7f"
+    },
+    {
+      "path": "diagrams/at-backend-selection.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "0d6162cd9468a38846cb2301fc057a34008d36e78203bddc2bed2a22090e9565"
+    },
+    {
+      "path": "diagrams/at-blockmask-three-classes.workflow.finalize-summary.json",
+      "bytes": 1564,
+      "sha256": "8efbca702436d0d689df258c0649facc54578f586a0356ef6a34733171b8deae"
+    },
+    {
+      "path": "diagrams/at-fa4-limits.tree.finalize-summary.json",
+      "bytes": 1475,
+      "sha256": "7a4b6a2ee4588597e6ec75e9e2bdba69e72b739c645dd823e3af4c832916a793"
+    },
+    {
+      "path": "diagrams/at-fa4-two-hooks.workflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "00c09d613e30e720b9a4a47174dfdf4a4d22e6fed1a5e42730131fe83e942003"
+    },
+    {
+      "path": "diagrams/at-flexattention-pipeline.workflow.finalize-summary.json",
+      "bytes": 1559,
+      "sha256": "96cf6d63ee897d76e9ae6b7898335ef052bd494239f9dcc787d329fee488a5b0"
+    },
+    {
+      "path": "diagrams/at-laser-gradient.workflow.finalize-summary.json",
+      "bytes": 1520,
+      "sha256": "3429a9ff6fe6834ead965fcdb840cbe97416d8b71e2dd2a395406d698c3b88de"
+    },
+    {
+      "path": "diagrams/at-laser-logsumexp.dataflow.finalize-summary.json",
+      "bytes": 1525,
+      "sha256": "e6401b9699605699517ed56c5b4eb0f1bb863e484171b9818069e20fdb837612"
+    },
+    {
+      "path": "diagrams/at-laser-spatten-longtail.tree.finalize-summary.json",
+      "bytes": 1536,
+      "sha256": "9c108ffadabe939c9188bc2b3a8a678f21d8ba3aa4784adfb89f53a8cd2e2f1e"
+    },
+    {
+      "path": "diagrams/at-scoremod-maskmod-why-split.workflow.finalize-summary.json",
+      "bytes": 1579,
+      "sha256": "0d0a8ea25f14dd26a19856ee9b8016ab93cc2369c90b22c067dfb897c5dd570d"
+    },
+    {
+      "path": "diagrams/at-sink-baselines.workflow.finalize-summary.json",
+      "bytes": 1520,
+      "sha256": "987ef6a24b799f2fe236a0a08d4591276dec38a15601d8f3933dd38e602ff56b"
+    },
+    {
+      "path": "diagrams/at-sink-cache-layout.workflow.finalize-summary.json",
+      "bytes": 1535,
+      "sha256": "9a54f33e8e50cc22b653460a65741acd39e6ea1d08f051460b0de98b0f09e403"
+    },
+    {
+      "path": "diagrams/at-sink-causal-chain.workflow.finalize-summary.json",
+      "bytes": 1535,
+      "sha256": "f2ae50ebf399cdad0830b37f577a2202ee5a08362119dfb47b4cd2bd5c736677"
+    },
+    {
+      "path": "diagrams/at-spatten-cascade.workflow.finalize-summary.json",
+      "bytes": 1525,
+      "sha256": "529eeb7706deda6496df5a54df0dfd2d79eea7bacf26862784d6b959c03d7c12"
+    },
+    {
+      "path": "diagrams/at-triton-vs-cutedsl.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "cec1d9dd449582a74a658428b4f129a8fcbb8db682dd4816c791e645b94c3958"
+    },
+    {
+      "path": "diagrams/cl-arch-suffix.lifecycle.finalize-summary.json",
+      "bytes": 1511,
+      "sha256": "f7bc23a21dc7ba153cbf049f34b7164195d521e1c54b1dd1adccb4cca2390cdb"
+    },
+    {
+      "path": "diagrams/cl-atom-generation-layouts.workflow.finalize-summary.json",
+      "bytes": 1564,
+      "sha256": "926bea223d13a31e42a3663a8be6ccfd87547ffe777f6a79bb9117483ddc1cd8"
+    },
+    {
+      "path": "diagrams/cl-blis-formula-breaks.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "d65c3a2e36837a6fffc92a0078d59a9ac2605b5c3f192dfcfef507ca899da89e"
+    },
+    {
+      "path": "diagrams/cl-build-decision.workflow.finalize-summary.json",
+      "bytes": 1520,
+      "sha256": "b46f0f25492d31bd807a34ba291e320fe0241126cf5d71fd6b188dcc285d687e"
+    },
+    {
+      "path": "diagrams/cl-build-pitfalls.tree.finalize-summary.json",
+      "bytes": 1496,
+      "sha256": "36e63a5656eb94c9b4cc4bea22cd2c30e5c23ba31c676ada8a6c4dddaa0d6767"
+    },
+    {
+      "path": "diagrams/cl-clc-vs-static.workflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "47652361cc14cd64f97042a162be0057ef62f985d33657686173ed151016e190"
+    },
+    {
+      "path": "diagrams/cl-collective-builder.sequence.finalize-summary.json",
+      "bytes": 1540,
+      "sha256": "42d762d2c9b4d76be8b43031950092ea5dcc764398be810aed60ea3587ce104f"
+    },
+    {
+      "path": "diagrams/cl-collective-dispatch-policy.workflow.finalize-summary.json",
+      "bytes": 1571,
+      "sha256": "361a910a179413cedd5aab9cd5eb35aadffe02dbae80210a9090cd9210dd6596"
+    },
+    {
+      "path": "diagrams/cl-epilogue-api-generations.workflow.finalize-summary.json",
+      "bytes": 1569,
+      "sha256": "f254ee4c08c5d82060d86445d4ba10b9fee4f1aef62edb2af60e1fb505a286ea"
+    },
+    {
+      "path": "diagrams/cl-epilogue-fusion-io.workflow.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "b03a25c2c085fd074ca2f08468485f73cba42426c486c90880f8d07f220748c1"
+    },
+    {
+      "path": "diagrams/cl-epilogue-standard-form.workflow.finalize-summary.json",
+      "bytes": 1559,
+      "sha256": "5fc7292a3474442b11cfdf11bf61fbcc1c14763e5fcb890f20e46fdb3f20e7e5"
+    },
+    {
+      "path": "diagrams/cl-gmma-descriptor.architecture.finalize-summary.json",
+      "bytes": 1549,
+      "sha256": "2e0eb598c944a4473b496f8bd8dee638849c2a390bc7504c611954b37c7cc2b5"
+    },
+    {
+      "path": "diagrams/cl-gmma-layout-atoms.tree.finalize-summary.json",
+      "bytes": 1511,
+      "sha256": "e18872db34cff774ab88c1574fed682abbdcf675fb88189d9d5e1444dc327616"
+    },
+    {
+      "path": "diagrams/cl-grouped-scheduler.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "4d806cdad8c24ac0dfc0b4c4b25892f66ce71ca451dc9baa7c22616a6a06c415"
+    },
+    {
+      "path": "diagrams/cl-layout-algebra.tree.finalize-summary.json",
+      "bytes": 1495,
+      "sha256": "26e6295a24ed225fcab083eaf8f170f350b1d0d9e0704e0fc21df52413e53e0c"
+    },
+    {
+      "path": "diagrams/cl-layout-composition.dataflow.finalize-summary.json",
+      "bytes": 1540,
+      "sha256": "0ebaa6f4739432d644414f046af8e6c9c1cac887ca4e9c66db61002afb916570"
+    },
+    {
+      "path": "diagrams/cl-layout-to-index.dataflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "d442dfea15016044bde2fe3ca731e92fb393ff8c4ac75f2e01ee991b3b5a480c"
+    },
+    {
+      "path": "diagrams/cl-mainloop-epilogue.dataflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "c7a86cbc4ee6d543b636d31a17fdc5cd9be1b6789db2bb022d469291eeec2bfa"
+    },
+    {
+      "path": "diagrams/cl-minimal-gemm-path.dataflow.finalize-summary.json",
+      "bytes": 1535,
+      "sha256": "1e1cf7f58c9903059a8d6621ffcb7194fc7e7bcb2fa01d10c43272767eba6c72"
+    },
+    {
+      "path": "diagrams/cl-mma-atom-traits.workflow.finalize-summary.json",
+      "bytes": 1525,
+      "sha256": "9d304512e6cab1360945a7aecc85f7925fad5325030014f2068c25f90472134f"
+    },
+    {
+      "path": "diagrams/cl-multistage-pipeline.waterfall.finalize-summary.json",
+      "bytes": 1550,
+      "sha256": "7957931004076c7cbbbb1a58d9f679f988951d57dce42c38acf916a29642a28e"
+    },
+    {
+      "path": "diagrams/cl-raster-order-l2.workflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "2d3bd60e2b3537027d17c8f30c68a913dcbf29c37890ad9e739e132e166a1d59"
+    },
+    {
+      "path": "diagrams/cl-scheduler-decision.lifecycle.finalize-summary.json",
+      "bytes": 1545,
+      "sha256": "9c839893f2daa8dc050785153df6544a7bd6f00b780aa5790bcb931f475a1b77"
+    },
+    {
+      "path": "diagrams/cl-scheduler-persistent-vs-naive.workflow.finalize-summary.json",
+      "bytes": 1594,
+      "sha256": "b14bf88681cb22c3ab78f17dfe06b0acd4be6b936a77d5a10f0711df2101908b"
+    },
+    {
+      "path": "diagrams/cl-softmax-vs-layernorm.workflow.finalize-summary.json",
+      "bytes": 1549,
+      "sha256": "5ced4882552e7f512bb5c29651c82c5df1b3a6495c3a90125df00bfc3e822eb8"
+    },
+    {
+      "path": "diagrams/cl-splitk-vs-streamk.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "c5b2d86cf35aee97fab1862c6f0a1bfe9d6e1411ae47d4213b9be646870cdde8"
+    },
+    {
+      "path": "diagrams/cl-streamk-vs-tile.workflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "90d527313a07a433a39ca28fc68de07ba060b1b8b8dd98a208aa859afb8a3eed"
+    },
+    {
+      "path": "diagrams/cl-tcgen05-2cta.workflow.finalize-summary.json",
+      "bytes": 1510,
+      "sha256": "d44dea6ed4827213e23ef8f734405cefb3e85106494d8f087cd09ac06b0a8a41"
+    },
+    {
+      "path": "diagrams/cl-tcgen05-atom-naming.tree.finalize-summary.json",
+      "bytes": 1521,
+      "sha256": "8770736fb676c7af3aea13a8e45d1e8050cc5bcbb46ac447e71093e05b4013c0"
+    },
+    {
+      "path": "diagrams/cl-tcgen05-tmem.dataflow.finalize-summary.json",
+      "bytes": 1510,
+      "sha256": "84617cfd9a0030bc0d3829f730fd2b104d8f90d9b70f6219e84e0d019f7244e7"
+    },
+    {
+      "path": "diagrams/cl-tcgen05-vs-wgmma.workflow.finalize-summary.json",
+      "bytes": 1530,
+      "sha256": "dc38c6656fac07a68fcace92e368cb84f33281035f8ba81162d4faea017adae7"
+    },
+    {
+      "path": "diagrams/cl-three-level-tiling.workflow.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "8f7185884881db27c7ef6ba37aa567514ec144af7ceef6a0dbbd0108dd8b74c7"
+    },
+    {
+      "path": "diagrams/cl-tiled-mma-layers.tree.finalize-summary.json",
+      "bytes": 1506,
+      "sha256": "8f62b3a390978c3b9a8630ce906d4fa81cc0f64a22257fd1f251c1ab37eaa767"
+    },
+    {
+      "path": "diagrams/cl-tiledmma-partition.workflow.finalize-summary.json",
+      "bytes": 1540,
+      "sha256": "f45ff5e131f5c04aa27ba27303a16e2ce1fa2a354beba03d7362e0bc3bae75d4"
+    },
+    {
+      "path": "diagrams/cl-tiledmma-three-knobs.workflow.finalize-summary.json",
+      "bytes": 1545,
+      "sha256": "dcb0b8c18749e172f2cb6c2caedd2c1639d71dc87bbe5b583d50818e6d52b715"
+    },
+    {
+      "path": "diagrams/cl-two-level-microkernel.tree.finalize-summary.json",
+      "bytes": 1530,
+      "sha256": "0554d732bd1c7983d44998c49a2bf11442b9153d36c523fda09b5a879386072a"
+    },
+    {
+      "path": "diagrams/cl-warp-specialization.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "8e82f0bff816024a0bbec409d4f052b53eab0630811368de0d9c02460afa0d60"
+    },
+    {
+      "path": "diagrams/cl-wgmma-fragments.dataflow.finalize-summary.json",
+      "bytes": 1525,
+      "sha256": "3fc1feff76d1caebf8aa57ff0516c9ff34d9c19b6b9cc1fe0a86be912bf28b2f"
+    },
+    {
+      "path": "diagrams/cl-wgmma-sync.workflow.finalize-summary.json",
+      "bytes": 1500,
+      "sha256": "245702c9b25ec5171d064b7a42b5fa9ca82c7cebcb047d78a5397b9beb9b94e0"
+    },
+    {
+      "path": "diagrams/cl-wgmma-value.tree.finalize-summary.json",
+      "bytes": 1481,
+      "sha256": "110d905a70aeab29b97d0ad9c10a08ab34ef5cde0bf7be490f24c8138910c510"
+    },
+    {
+      "path": "diagrams/cl-wgmma-vs-mma.workflow.finalize-summary.json",
+      "bytes": 1510,
+      "sha256": "62f6a3a125b8be064cc87085a0452a4c9efcbd484c2d10bf9ae04cb351cdc81b"
+    },
+    {
+      "path": "diagrams/cv-deploy-pipeline.dataflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "6b4427eefadc829b2709fb486f027c19eac51ba203e312d9dd653df9b97cbe06"
+    },
+    {
+      "path": "diagrams/cv-detection-core-difficulty.workflow.finalize-summary.json",
+      "bytes": 1574,
+      "sha256": "034409d3b9c4c6fdbb0309e0ec14f2cf67dc8207fead94b24acad443c306cb4b"
+    },
+    {
+      "path": "diagrams/cv-detr-set-prediction.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "05b6f61387a27a526e5b4c9f0b91b1cccc1f6d0d2831280f448df1f9b47e9d01"
+    },
+    {
+      "path": "diagrams/cv-engine-manifest.tree.finalize-summary.json",
+      "bytes": 1500,
+      "sha256": "a36dba0a014f27d7b7f90eb35a688bdb4ddccb5242890895e1d33fad48ae0f1b"
+    },
+    {
+      "path": "diagrams/cv-export-decisions.workflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "e3aa92880279738567501370d12ae21ddfb01c176a2f0d00f20701efc5532ceb"
+    },
+    {
+      "path": "diagrams/cv-faster-mask-rcnn.dataflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "1f14ef6f71bd1d01b4d5ecc091e4187ea93e24fd8a2069bbccc8266479d52b74"
+    },
+    {
+      "path": "diagrams/cv-numeric-layers.dataflow.finalize-summary.json",
+      "bytes": 1519,
+      "sha256": "89b66149513e9de7241b776c2f8cc8af82aa7b6b5eb027caa9efb11868ccae60"
+    },
+    {
+      "path": "diagrams/cv-sam-three-parts.workflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "3da0b048c15fe096e3adeee53477e145acb65f210cbc62848499225c9055914d"
+    },
+    {
+      "path": "diagrams/cv-three-paradigms-inference.workflow.finalize-summary.json",
+      "bytes": 1574,
+      "sha256": "8512fbd717aa7ba09b15e5d30ef31abba913113aea0dfc3815f8bdc82acc9cf3"
+    },
+    {
+      "path": "diagrams/cv-two-routes.workflow.finalize-summary.json",
+      "bytes": 1499,
+      "sha256": "16f22a920c481a3c0a73d12f94d5abbf8b114790593adf474fe4cca63aaef415"
+    },
+    {
+      "path": "diagrams/cv-vit-deit.workflow.finalize-summary.json",
+      "bytes": 1490,
+      "sha256": "fde13049108da610dd8d4e359a1b850e4fa101d7f3253b8228e544fa4dc4679b"
+    },
+    {
+      "path": "diagrams/cv-vit-patchify.dataflow.finalize-summary.json",
+      "bytes": 1510,
+      "sha256": "88c21aea3179c07563989ab0c3319d2d12000c247b9e9ce1c0542b9c7aa4dc57"
+    },
+    {
+      "path": "diagrams/cv-vit-why-data.workflow.finalize-summary.json",
+      "bytes": 1510,
+      "sha256": "de34ebd289a0d6bdd46eaf6a979e937f982c765426f289af43855fbf05c82a78"
+    },
+    {
+      "path": "diagrams/di-dg-backend-mapping.architecture.finalize-summary.json",
+      "bytes": 1564,
+      "sha256": "2725eff312e6307e4a1ce4b3ff851f39491b0baaff4c6a4572b20b50fc0d698a"
+    },
+    {
+      "path": "diagrams/di-dg-grouped-gemm.workflow.finalize-summary.json",
+      "bytes": 1525,
+      "sha256": "68b929cebaedbfd7d0589233cb64bf7f2d388e478bf76e045425ab6467f690c9"
+    },
+    {
+      "path": "diagrams/di-dg-jit-flow.dataflow.finalize-summary.json",
+      "bytes": 1505,
+      "sha256": "7cd88fc32b8a6d6dcf2e4e238662e21a2be626833ba0df34c21185d3db505248"
+    },
+    {
+      "path": "diagrams/di-dg-mega-moe.workflow.finalize-summary.json",
+      "bytes": 1505,
+      "sha256": "11183edcf9394781cd9135e435384cd35f09701894dd4b65854564df01796e3e"
+    },
+    {
+      "path": "diagrams/di-dg-sparse-mqa.workflow.finalize-summary.json",
+      "bytes": 1515,
+      "sha256": "d4c1f84eb0f342833953781923058500995a203fd59a53439c1929594862d570"
+    },
+    {
+      "path": "diagrams/di-dspark-varlen.workflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "4be2ea7bc57585a874f17fe810e964c7e4f1305c1849591fa34878e697752eea"
+    },
+    {
+      "path": "diagrams/di-engine-layers.architecture.finalize-summary.json",
+      "bytes": 4160,
+      "sha256": "a1bb136d2ccac08af7e036dcdff63a6276d1934d82eeed4c27d59b250f8be06b"
+    },
+    {
+      "path": "diagrams/di-epd-topology.architecture.finalize-summary.json",
+      "bytes": 1533,
+      "sha256": "74a3770ebdba2bb082246fb35362cab99bad73fdaf1d23941cf1d7107228665c"
+    },
+    {
+      "path": "diagrams/di-kv-tiers.dataflow.finalize-summary.json",
+      "bytes": 1489,
+      "sha256": "b11c047ae92dcd9402fda797b001771f3e728a5508fb832882c90407ae9900e0"
+    },
+    {
+      "path": "diagrams/di-mhc-cuda-graph-race.sequence.finalize-summary.json",
+      "bytes": 1545,
+      "sha256": "d08ed9c195d4fd8b5d6934213ce1aec17463d8b1a57f84edc574a89c896f5f1b"
+    },
+    {
+      "path": "diagrams/di-mhc-gain-runaway.workflow.finalize-summary.json",
+      "bytes": 1530,
+      "sha256": "4a8cfacb4c3a461562d0f83ad5b6d24986e330697388c55fa347ac56167dfa16"
+    },
+    {
+      "path": "diagrams/di-mhc-io-traffic.workflow.finalize-summary.json",
+      "bytes": 1520,
+      "sha256": "bffed34fd97b1b789930bdf5ac4b8de09d13301e932cb8411342e8df41e131d4"
+    },
+    {
+      "path": "diagrams/di-mhc-warpgroup-roles.workflow.finalize-summary.json",
+      "bytes": 1545,
+      "sha256": "fb49e1fb4920901f38e23d63cbc629600f2a86502335759fd875238eb73a9f9c"
+    },
+    {
+      "path": "diagrams/di-normal-voting.workflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "c06ef0a446e5084c941284b244095d1a7ac7d04b8c57a4905065071404a29141"
+    },
+    {
+      "path": "diagrams/di-sinkhorn-projection.dataflow.finalize-summary.json",
+      "bytes": 1545,
+      "sha256": "33bbf70a23e905f2dbe9916f65022ed1015d758e8db392a7661091cbeba9a38c"
+    },
+    {
+      "path": "diagrams/di-swa-bounded-replay.workflow.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "9d4d5413d004999e715f4deb3e99b7e417069d037e067f1118476fda5cc4fcc1"
+    },
+    {
+      "path": "diagrams/di-v3-3d-partition.architecture.finalize-summary.json",
+      "bytes": 1549,
+      "sha256": "72bb6ffde0f88b799d1b530688ac229c1d217f4d3aacdfdd4692e1a384943e31"
+    },
+    {
+      "path": "diagrams/di-v3-a2a-timeline.waterfall.finalize-summary.json",
+      "bytes": 1531,
+      "sha256": "625f6b90491d5dcda368b6b2b9157e8b42b4fc5f554a49778c76669a9c09c950"
+    },
+    {
+      "path": "diagrams/di-v3-deepep-dispatch.workflow.finalize-summary.json",
+      "bytes": 1540,
+      "sha256": "fad0e6d3fef7ba5731ea0ee74c28ddbb523f377eef1f17f2a470e86f3faa0ca6"
+    },
+    {
+      "path": "diagrams/di-v3-dualpipe-schedule.waterfall.finalize-summary.json",
+      "bytes": 1556,
+      "sha256": "96cb41406a31292a8aab82e379093bcb60e7dcd661c8bfa4e09c7c518c1f25da"
+    },
+    {
+      "path": "diagrams/di-v3-memory-budget.tree.finalize-summary.json",
+      "bytes": 1506,
+      "sha256": "37dce16a1f36c05aedb94bcc2f3fbf5835b199aa78a31918fc9cf329945d544f"
+    },
+    {
+      "path": "diagrams/di-v3-parallel-primitives.architecture.finalize-summary.json",
+      "bytes": 1584,
+      "sha256": "407445ebfd5ff8fe7d1bf323b56408787f4eea98d93e08a8c04176ef4bf59b9c"
+    },
+    {
+      "path": "diagrams/di-zos-overlap.waterfall.finalize-summary.json",
+      "bytes": 1510,
+      "sha256": "8ae4af5da21742b9000535e36dfb36b0ad2ef1f767d127cdbfe45bbf9662d333"
+    },
+    {
+      "path": "diagrams/di-zos-seqlens-fix.dataflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "58a2974e18ba434d667698ad9f300edf1b6cf8a6a98746f8624b65b21a10bc49"
+    },
+    {
+      "path": "diagrams/dm-esft-adapter-storage.dataflow.finalize-summary.json",
+      "bytes": 1549,
+      "sha256": "2a1fb21c8d57003716082bed965f20394af94282402ca67e8fa0c881d8ee42d6"
+    },
+    {
+      "path": "diagrams/dm-esft-param-buffer.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "c591eae7acb1fdb3684360d4a87bf8441393960174280a607a7d1cd3ba28d532"
+    },
+    {
+      "path": "diagrams/dm-esft-route-position.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "cb71bfd24cd3307ee8f224c63aa2b2a8dd6d5b9921c2220944094ba970a27a78"
+    },
+    {
+      "path": "diagrams/dm-esft-three-stages.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "be008cf658d23f8adc82a6c86db2d55ff2ff7a0e43c8e9792fc860e09257cee7"
+    },
+    {
+      "path": "diagrams/dm-esft-top-p.workflow.finalize-summary.json",
+      "bytes": 1499,
+      "sha256": "6d318e2ca527a3c40b7e93d32520ea5efcddc23ffbc492c2c432619c44b5bab3"
+    },
+    {
+      "path": "diagrams/dm-esft-why-waste.workflow.finalize-summary.json",
+      "bytes": 1519,
+      "sha256": "4b29cafc5f9db24d7ee8135a9afd593369789b11cea792225efd30a037e6f182"
+    },
+    {
+      "path": "diagrams/dm-r1-distill-vs-rl.workflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "13cf85ee97aa9aa114b38a9ff28cb5511462fdc6ccec43ce6e3e3789f880b3ae"
+    },
+    {
+      "path": "diagrams/dm-r1-four-stages.lifecycle.finalize-summary.json",
+      "bytes": 1525,
+      "sha256": "4eb7bd5f228d4fd4255e074f76c9bf7e941459f59daaf0e01e7487c4e49f929d"
+    },
+    {
+      "path": "diagrams/dm-r1-grpo-step.workflow.finalize-summary.json",
+      "bytes": 1507,
+      "sha256": "c4f5555899b837f6d10844b4fbe70d0433f2f3d78dba69d74463ffcb16e70e1a"
+    },
+    {
+      "path": "diagrams/dm-r1-lineage.timeline.finalize-summary.json",
+      "bytes": 1499,
+      "sha256": "d74190ef1baf298346830c77659bc33d4e6d12fbaf5785661976c0d9c7815c7f"
+    },
+    {
+      "path": "diagrams/dm-r1-reward-choices.tree.finalize-summary.json",
+      "bytes": 1510,
+      "sha256": "59488ea557a3fc5c4a0bf6667b529fea2b091465214c31cc4af74b481a1aaabb"
+    },
+    {
+      "path": "diagrams/dv-ocr-compression-curve.workflow.finalize-summary.json",
+      "bytes": 1554,
+      "sha256": "35e3acd238e5c4e5b909720cc4630820d4b654961d683a10086286c061aebff8"
+    },
+    {
+      "path": "diagrams/dv-ocr-deploy-path.workflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "e3ac69ff8422480617bb26491fe5a820e89e15380e99ccb6933cf9777c2cf1c4"
+    },
+    {
+      "path": "diagrams/dv-ocr-optical-compression.dataflow.finalize-summary.json",
+      "bytes": 1564,
+      "sha256": "e77aa4743b576661f4246de3c13b5f43b786f42e693fb111fe16ef4b8c37c3ad"
+    },
+    {
+      "path": "diagrams/dv-ocr-two-gen.tree.finalize-summary.json",
+      "bytes": 1480,
+      "sha256": "8b5a939d4b2911a00a55d1b9bc5f718599d579972b04e5ec7e1a2bc14bafe232"
+    },
+    {
+      "path": "diagrams/dv-ocr2-causal-flow.workflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "187b98d98b3afc888ee9988c77b9d96bdba04e583e05c28402de65e2e74c4b53"
+    },
+    {
+      "path": "diagrams/dv-vl-hybrid-dual-tower.dataflow.finalize-summary.json",
+      "bytes": 1549,
+      "sha256": "b43114097301feaf38f93571ae816cf352e55362ac5863d59526f399664b55c0"
+    },
+    {
+      "path": "diagrams/dv-vl-to-vl2-evolution.timeline.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "2947c43a968dc6f85948e50955d5decb87b700ec6931cdc3e27da5057210a851"
+    },
+    {
+      "path": "diagrams/dv-vl2-dynamic-tiling.workflow.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "55c101686e242e5afc4cb451882239f4cf23d1bdf9fcc2abcc753644eb0c4202"
+    },
+    {
+      "path": "diagrams/dv-vl2-moe-variants.tree.finalize-summary.json",
+      "bytes": 1505,
+      "sha256": "6cdf253469ffc5de68ce5f2a2c66d97a0a9abda53d38170732a094e90844ccc5"
+    },
+    {
+      "path": "diagrams/fa-backward-recompute.workflow.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "fc28c88501c42e19fda514d32f3213e54fa6f75cef36e3a9a12117b8b8ecbe96"
+    },
+    {
+      "path": "diagrams/fa-fa1-tiling.workflow.finalize-summary.json",
+      "bytes": 1499,
+      "sha256": "4eb3ecddaa44f308499076349e4fea230f7766dc1e8fce80abdc48cd40e41685"
+    },
+    {
+      "path": "diagrams/fa-fa2-defer-divide.workflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "de6a20ed8957a27f9c26494db8ea7cd837a841e8172f0e2faa546e1a1e3c02c5"
+    },
+    {
+      "path": "diagrams/fa-fa3-async-pipeline.waterfall.finalize-summary.json",
+      "bytes": 1542,
+      "sha256": "bf7c45cd19c234a3c7be2e134cb659826a570de6e6bf1fccd21b5870215c66fd"
+    },
+    {
+      "path": "diagrams/fa-fp8-precision.dataflow.finalize-summary.json",
+      "bytes": 2328,
+      "sha256": "6df0a11b221a52a761da13e138674f295e95ad791092cdb1be391b705a18abc4"
+    },
+    {
+      "path": "diagrams/fa-nan-pollution.sequence.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "04e6750c339ce44bc09654fe3f63778cbd06074b2b79e8c7e5d043385e94d9a4"
+    },
+    {
+      "path": "diagrams/fa-online-softmax.workflow.finalize-summary.json",
+      "bytes": 1519,
+      "sha256": "b5abb3d64b1745fa4c44edcb5b87c59c42afa3acae0d4761d4db20e0510869c7"
+    },
+    {
+      "path": "diagrams/fa-splitq-vs-splitkv.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "71b49a92f4e9e4da32a9b625d8d6cbff3cba9f84751ea1b8a6987b7865215171"
+    },
+    {
+      "path": "diagrams/fa-standard-attention-hbm.dataflow.finalize-summary.json",
+      "bytes": 3081,
+      "sha256": "2aedcdc7c2002baf4b4dc67c74b698fbc49819d9d59af495a85e325806444dcb"
+    },
+    {
+      "path": "diagrams/fa-warp-partition.architecture.finalize-summary.json",
+      "bytes": 1543,
+      "sha256": "623b50dd97c3665c758793431bb0cbb2a73720330c5ec703f7ee53bbfd24702d"
+    },
+    {
+      "path": "diagrams/fa-why-not-tiling.workflow.finalize-summary.json",
+      "bytes": 1519,
+      "sha256": "5a0932221a74319ea7d01213528df897f99f837ee388ddfff273e1f6622c0a04"
+    },
+    {
+      "path": "diagrams/ma-ctx-picker.workflow.finalize-summary.json",
+      "bytes": 1499,
+      "sha256": "03419decbbffecf11d03d1709dbf6342fe735c4a2049a7e0ebec41b9e0c12d4f"
+    },
+    {
+      "path": "diagrams/ma-ctx-timeline.timeline.finalize-summary.json",
+      "bytes": 1509,
+      "sha256": "b29c007b3563bdf10416d785b8dbfad08943e00b2053248f40bd16ba83aedfc3"
+    },
+    {
+      "path": "diagrams/ma-ctx-unified-map.tree.finalize-summary.json",
+      "bytes": 1500,
+      "sha256": "099da12cbfd0b68aff4e995507710d3c80fc7732ba95593049012dbee99aa43d"
+    },
+    {
+      "path": "diagrams/ma-ds-decouple-rope.workflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "2c5291c260c3a13a0975973945528e10842cdd5d5d2ee2a537ea6f7c4b288ddc"
+    },
+    {
+      "path": "diagrams/ma-ds-gen-stack.workflow.finalize-summary.json",
+      "bytes": 1509,
+      "sha256": "df7a917f62e55b8003c3e1ae67b8f05ca0ace8a8703af2407a534d4037b278b8"
+    },
+    {
+      "path": "diagrams/ma-ds-kv-compare.architecture.finalize-summary.json",
+      "bytes": 2776,
+      "sha256": "11142a00254c5b1f39915fd082dbeaa5e8421a1b9ea48cc6593babe855260890"
+    },
+    {
+      "path": "diagrams/ma-ds-mla-kv.dataflow.finalize-summary.json",
+      "bytes": 1495,
+      "sha256": "2c5fd47a73ebe3836fc054b5af4feec040ff16192661c966af6d9e823b9f73f4"
+    },
+    {
+      "path": "diagrams/ma-ds-moe-route.workflow.finalize-summary.json",
+      "bytes": 1509,
+      "sha256": "ed7f2ad05113dcab5a6818553d939eeb67ae48b283382b895efd2585107161cd"
+    },
+    {
+      "path": "diagrams/ma-ds-v2-group-route.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "f3b1fd2d459315124591b1d960ad7824d2d85a0ce4b9f8d62454721e7f1f5f3d"
+    },
+    {
+      "path": "diagrams/ma-dsa-pipeline.workflow.finalize-summary.json",
+      "bytes": 1509,
+      "sha256": "57f395512c61d599160f035bfb156ca119c74affa9f5c5c9c938329876905eee"
+    },
+    {
+      "path": "diagrams/ma-gqa-uptraining.workflow.finalize-summary.json",
+      "bytes": 1520,
+      "sha256": "77c47e448c771a06776c5d7dc93f37e5988f0a43abd12bd0a599627f4f517627"
+    },
+    {
+      "path": "diagrams/ma-gqa-vs-mla-compression.dataflow.finalize-summary.json",
+      "bytes": 3296,
+      "sha256": "e81ce7226e5d1ec4edb06ae43f21164cab00e4405c43ec7a794025a83106efb3"
+    },
+    {
+      "path": "diagrams/ma-head-sharing-lineage.timeline.finalize-summary.json",
+      "bytes": 1550,
+      "sha256": "528ce0ef71fac94050cf505ae9d8e35dc98d2c4b55099a82f7cd7ce261f71ba2"
+    },
+    {
+      "path": "diagrams/ma-kv-cache-bandwidth.workflow.finalize-summary.json",
+      "bytes": 1540,
+      "sha256": "a3a97abca01f5b10f77bb5077da2ee591518f971f15f70e79990d4ecdc6df155"
+    },
+    {
+      "path": "diagrams/ma-llm-evolution.timeline.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "b5036ae38485ed3d6bd5e6ce0831e927a589ff8d654e92e2d0c39ae985bbcd05"
+    },
+    {
+      "path": "diagrams/ma-llm-norm-lineage.workflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "272279e9f417e254b03aa97833859dc59865d3d4bc5d496c4bc2768f485f71de"
+    },
+    {
+      "path": "diagrams/ma-llm-positional-encoding.workflow.finalize-summary.json",
+      "bytes": 1564,
+      "sha256": "11228c1520431604c9a4fe4e29c4f4fc46efab4d4dbb198fac36ee41d7b6f318"
+    },
+    {
+      "path": "diagrams/ma-llm-swiglu-ffn.workflow.finalize-summary.json",
+      "bytes": 1519,
+      "sha256": "d142da41c5a3bfa4348c6e4133def665ac9b197847c587e8f64cabad317afd06"
+    },
+    {
+      "path": "diagrams/ma-llm-token-budget.workflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "fee53b3f51493cc66c9101b1bb5f3cfcfe572a4776445d493512cb44cd896ca0"
+    },
+    {
+      "path": "diagrams/ma-mha-mqa-gqa-heads.architecture.finalize-summary.json",
+      "bytes": 1559,
+      "sha256": "d7b804754725a3c226567e79c4b938b789c7a06185a8ca04b9600b11c53bdb05"
+    },
+    {
+      "path": "diagrams/ma-mla-two-paths.workflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "866523404df61a47d646f3037975d8d47012ff9da5d79da4756dbb433ebf720e"
+    },
+    {
+      "path": "diagrams/ma-moe-accounting.workflow.finalize-summary.json",
+      "bytes": 1519,
+      "sha256": "fb55f32bc8fa14154373f3b39d6105a3127f55e99972a526015bda32b6372e9a"
+    },
+    {
+      "path": "diagrams/ma-open-model-choice.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "757067cf6318d2d58efe9cad21d1a201f6239d59d226bac1a4bed1dbfc44d540"
+    },
+    {
+      "path": "diagrams/ma-open-model-lineage.tree.finalize-summary.json",
+      "bytes": 1515,
+      "sha256": "d3e780671b14a5c76986a986ade277de88f846af1bd4a3722e413b8885b8ad93"
+    },
+    {
+      "path": "diagrams/ma-open-model-timeline.timeline.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "c648f25f25e34abc5cc5cb3fcf1be75d0adc29e8ed83769c45fa7f5c492e9f59"
+    },
+    {
+      "path": "diagrams/ma-rope-fail-mode.workflow.finalize-summary.json",
+      "bytes": 1519,
+      "sha256": "a250474344c78f4c8962e1cade0dbbcb398f3d8f792995790a292ae8d0a1ab0e"
+    },
+    {
+      "path": "diagrams/ma-v2-v3-combo.dataflow.finalize-summary.json",
+      "bytes": 2878,
+      "sha256": "585527962bdc3ca200b9207cf1e77ddead123040b48d34f953c7ade5788e8667"
+    },
+    {
+      "path": "diagrams/ma-v3-auxfree.lifecycle.finalize-summary.json",
+      "bytes": 1505,
+      "sha256": "77814b15a1af4a4607be7ffa980924ed798b64daa1370dba7f59f475fac55725"
+    },
+    {
+      "path": "diagrams/ma-v3-mla-absorb.workflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "f5fd000251e04f637b493cd15b47da4f679b861b084629e79865aa11c5b10efa"
+    },
+    {
+      "path": "diagrams/ma-v3-mtp.dataflow.finalize-summary.json",
+      "bytes": 1479,
+      "sha256": "2fd86bd28e20e33c982d8d79ca68364e4ee9b037101f53e3c805e2953384dae8"
+    },
+    {
+      "path": "diagrams/ma-v3-node-limited.architecture.finalize-summary.json",
+      "bytes": 1548,
+      "sha256": "03694eb5032e554f039817b43a52e200a58e61a5305f7b9d410cde0972e6aa01"
+    },
+    {
+      "path": "diagrams/ma-v3-stack.workflow.finalize-summary.json",
+      "bytes": 1489,
+      "sha256": "0c20609a3a7bfa6ac99bc805e918107edc74bdf2f1b9f99ec7bbd678784b453f"
+    },
+    {
+      "path": "diagrams/ma-v3-vs-v2-diff.tree.finalize-summary.json",
+      "bytes": 1490,
+      "sha256": "c7a6f402bda4acf9e23cd4a5039a5e627f7ea97cd2f6daa37ccb31cf96435b39"
+    },
+    {
+      "path": "diagrams/ma-v32-diff.tree.finalize-summary.json",
+      "bytes": 1465,
+      "sha256": "d67d3ac7999505fe0f626959f0264ad2b16ba6c9af7a1e2909a3518c298d1841"
+    },
+    {
+      "path": "diagrams/ma-v32-stack.workflow.finalize-summary.json",
+      "bytes": 1494,
+      "sha256": "a6b39a39cdf5bc63097080ef7e7f10cc31de892d8e70c45eeb6ccb024171e5bf"
+    },
+    {
+      "path": "diagrams/ma-yarn-by-parts.workflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "418f6558d8475411b71c6b1016dc0c57e33c11215f06d9f12590c323cb72f36a"
+    },
+    {
+      "path": "diagrams/qt-aqlm-additive.workflow.finalize-summary.json",
+      "bytes": 1515,
+      "sha256": "c6c87983ad1b58e395019b85065b89aec4387f1f2b80cd6af2f80996c0132f02"
+    },
+    {
+      "path": "diagrams/qt-ep-ptq-21-prs.workflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "d7c3c9f3d3e63e29614eac5afc92a45569735921180e47f240c98438142bc46b"
+    },
+    {
+      "path": "diagrams/qt-ep-ptq-eight-details.workflow.finalize-summary.json",
+      "bytes": 1549,
+      "sha256": "06159adf098899128cfd4ac08a87f2f716a3c769876818797f78a9f72e43f2fc"
+    },
+    {
+      "path": "diagrams/qt-ep-ptq-four-steps.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "fa747a424641063e1ab0acdec93fbbd979b61efbd2181a84ff8887c336c3f38f"
+    },
+    {
+      "path": "diagrams/qt-ep-ptq-register-transformers.tree.finalize-summary.json",
+      "bytes": 1565,
+      "sha256": "65f2853aac1670510c7e077ae5402097a1994368c5d418520ace2e2c28b9b280"
+    },
+    {
+      "path": "diagrams/qt-ep-ptq-three-routes.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "7b9932c5ce2491f6dc25864b4558cb3bd946bebb869fa573de7d79266cb1bf7d"
+    },
+    {
+      "path": "diagrams/qt-fakequant-fold-weight.dataflow.finalize-summary.json",
+      "bytes": 1554,
+      "sha256": "89c4e0763bab6b4ff55526695306a6cd632b921d756b94b755ff9ac75b8bd9a7"
+    },
+    {
+      "path": "diagrams/qt-fakequant-mbridge-export.workflow.finalize-summary.json",
+      "bytes": 1569,
+      "sha256": "b5abda3faf9e3f8558c161e0cdb0308d579a547dc8f190187306cbe3dca3ee11"
+    },
+    {
+      "path": "diagrams/qt-fakequant-nll-diff.tree.finalize-summary.json",
+      "bytes": 1515,
+      "sha256": "e9dcbd9b517b6760642f3eae5b49d35e17a5ffbf41df0281a58e036a66bd5eef"
+    },
+    {
+      "path": "diagrams/qt-fakequant-sidecar-restore.workflow.finalize-summary.json",
+      "bytes": 1574,
+      "sha256": "7d693f327c736d7c724263a5d8dde2cacdd6638943e299289d7d5dc947359670"
+    },
+    {
+      "path": "diagrams/qt-fakequant-three-gates.workflow.finalize-summary.json",
+      "bytes": 1554,
+      "sha256": "72e72a22ceeccaba117cfc5015efca86f8daf6b3fb6ea3ab58555affc6a4ea5f"
+    },
+    {
+      "path": "diagrams/qt-minitron-distill-loss.workflow.finalize-summary.json",
+      "bytes": 1554,
+      "sha256": "272c1014a30b1e72952c02885a9add5a0fb134b7655325ba634bd75f8eab4192"
+    },
+    {
+      "path": "diagrams/qt-minitron-importance-scoring.workflow.finalize-summary.json",
+      "bytes": 1584,
+      "sha256": "b586b023df2a36e5c48a376b79b958a254bc652c72c8afaaed6db22a65404c3e"
+    },
+    {
+      "path": "diagrams/qt-minitron-mamba-state-consistency.tree.finalize-summary.json",
+      "bytes": 1585,
+      "sha256": "fa8ccebe13cbb0506a5a0139979aa0ed4f33de6227695083aa4baa01f5d55b25"
+    },
+    {
+      "path": "diagrams/qt-minitron-pipeline.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "f62b255630fc092e2bf677442ee4026649e42fe3592d176604ca3200feec10b9"
+    },
+    {
+      "path": "diagrams/qt-moe-gptq-batch-evolution.tree.finalize-summary.json",
+      "bytes": 1545,
+      "sha256": "da3b368c1a832d66a69cbb40f8d323f45bff0567def10078435e0a9c79ff4794"
+    },
+    {
+      "path": "diagrams/qt-moe-gptq-layerwise-loop.workflow.finalize-summary.json",
+      "bytes": 1564,
+      "sha256": "aba956067c4e3af30a1786bfc6c6b34d5e309fe000cc82d3dd8d07f663d1ced7"
+    },
+    {
+      "path": "diagrams/qt-moe-gptq-memory-formula.dataflow.finalize-summary.json",
+      "bytes": 1564,
+      "sha256": "488954ab8e106da0493a3f262b080b2f25b0744257a397c3fdd4fc0791fc655d"
+    },
+    {
+      "path": "diagrams/qt-moe-gptq-per-expert-hessian.workflow.finalize-summary.json",
+      "bytes": 1584,
+      "sha256": "9bd0643ce9745d741338c12039d88d1e18269cc2d68cefee098bafb2445cf0ee"
+    },
+    {
+      "path": "diagrams/qt-moe-gptq-three-waits.workflow.finalize-summary.json",
+      "bytes": 1549,
+      "sha256": "3f0e2f73c7e3e367c90d98e424fb2aefbb0d87141f7d0b4e2da72ac70a43c3c2"
+    },
+    {
+      "path": "diagrams/qt-puzzletron-hetero-mip.workflow.finalize-summary.json",
+      "bytes": 1554,
+      "sha256": "355373510aa65bc93465a5c5f2073b4525153cfc3401ecde3b7362fa5d1026b0"
+    },
+    {
+      "path": "diagrams/qt-quip-sharp-pipeline.dataflow.finalize-summary.json",
+      "bytes": 1545,
+      "sha256": "c2b10fa8d3a22b696ef843e923f547988d3036d5629b1d1bb1104977208dc395"
+    },
+    {
+      "path": "diagrams/qt-two-bit-outlier-routes.workflow.finalize-summary.json",
+      "bytes": 1560,
+      "sha256": "8b3a05384450cb2f3271260c1bfed291105732930de992e9c28426febd94dd17"
+    },
+    {
+      "path": "diagrams/rng-counter-based.dataflow.finalize-summary.json",
+      "bytes": 1519,
+      "sha256": "8e991125c0453d51a709e82883c6ae20b4f541b822bff825d17b6d3214ab9aa1"
+    },
+    {
+      "path": "diagrams/rng-curand-state-reuse.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "618d55c139262a31b2c16599b2b2fc024acdfc9ddafac9b1a9a56bada87664c7"
+    },
+    {
+      "path": "diagrams/rng-mtgp-recursion.workflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "faa6c4716d35b7ecfb839d215cad1e926ff70b9de3a03d5675ccb6426ef3bf01"
+    },
+    {
+      "path": "diagrams/rng-philox-round.workflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "4f5a2ae7de02b979a3c07b33d86798fa727bd829375a59d34ba6ef40e23c9282"
+    },
+    {
+      "path": "diagrams/rng-picker.workflow.finalize-summary.json",
+      "bytes": 1484,
+      "sha256": "faa3a28df0da3e7cdc66e00841416f3840185952a97e000bf6c01aca7efb3df0"
+    },
+    {
+      "path": "diagrams/rng-thread-vs-block.architecture.finalize-summary.json",
+      "bytes": 1553,
+      "sha256": "533ad5418de445143e2b68db4413e96d121d3c044422c8887623370f55fffb77"
+    },
+    {
+      "path": "diagrams/vm-aibrix-autoscale.workflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "138fa37e8d6c22d01a1cb8a2fb90ca09f51b041d3a1acf328b1abab73cbdf0b3"
+    },
+    {
+      "path": "diagrams/vm-aibrix-controlplane.workflow.finalize-summary.json",
+      "bytes": 1546,
+      "sha256": "bfd878fd27139b60fdfd68e1b24bcffd20753c65879b02f17585aa4fcea36d00"
+    },
+    {
+      "path": "diagrams/vm-aibrix-lora-adapter.lifecycle.finalize-summary.json",
+      "bytes": 1550,
+      "sha256": "9ba7892677fb18d1a91f085fbe9704848bb6967111765caa34b670fc21d3bd27"
+    },
+    {
+      "path": "diagrams/vm-aibrix-pd-storm.workflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "edf8c4b6585782c14e0a92e45733d2cb9ad84e3dd8101c2afa3352af05f13960"
+    },
+    {
+      "path": "diagrams/vm-aibrix-routing-algo.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "7b04a1cc83f108513fb8340c5d501628b830733fae880d0576c0a1171180307f"
+    },
+    {
+      "path": "diagrams/vm-async-snapshot.workflow.finalize-summary.json",
+      "bytes": 1519,
+      "sha256": "a576ebebaa983d2fe784a55631b68bc59b84129d0e783169a4a8c6360bb8555f"
+    },
+    {
+      "path": "diagrams/vm-attn-backend-enum.tree.finalize-summary.json",
+      "bytes": 1515,
+      "sha256": "22aa4de12785d1c27bcb366e28cbdc26c5e49ec689ee0d9229a05758da7d2a79"
+    },
+    {
+      "path": "diagrams/vm-attn-dispatch-chain.workflow.finalize-summary.json",
+      "bytes": 1549,
+      "sha256": "8503f0f30a045827730930c89ca25ed7170671c97f4b8bc34eb511a618866748"
+    },
+    {
+      "path": "diagrams/vm-attn-selection-pitfalls.workflow.finalize-summary.json",
+      "bytes": 1569,
+      "sha256": "7d9226d4ebd1f9a9d54dc03d5aab5057abce0f02fed39ae31a8d44766047acc2"
+    },
+    {
+      "path": "diagrams/vm-attn-three-classes.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "875d9c02339e0ac7f2165ae4380f0cc934a626a27a86a81eb354e396ff670632"
+    },
+    {
+      "path": "diagrams/vm-awq-batch-heuristic.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "70eac1c4d08f06eea638d32c4717e5f5baa03e91c5791254098f9071863ad5c6"
+    },
+    {
+      "path": "diagrams/vm-chunked-prefill-timeline.waterfall.finalize-summary.json",
+      "bytes": 1576,
+      "sha256": "2e2f00636926df8b6d0996967510a2941acdfd5bc077f95fbdb1fe9bb3a4357d"
+    },
+    {
+      "path": "diagrams/vm-cudagraph-dispatch.workflow.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "3816b930e3d4a0d47f0cf3abb9c07c1d54ea5a27b55d89372b41a0d20f1f1810"
+    },
+    {
+      "path": "diagrams/vm-enginecore-step.sequence.finalize-summary.json",
+      "bytes": 1525,
+      "sha256": "3f071a7d8b87853308e4d4c2828666c909f29e556bb27ed3cb6340d535436e77"
+    },
+    {
+      "path": "diagrams/vm-fp8-quantkey.workflow.finalize-summary.json",
+      "bytes": 1509,
+      "sha256": "b13b3c555adb2cd3693600746437a24dfe2d45d3936ddd01fdfb902b484efd01"
+    },
+    {
+      "path": "diagrams/vm-guidellm-capacity-plan.workflow.finalize-summary.json",
+      "bytes": 1564,
+      "sha256": "7e7b92d143eca929fad5620d2c31232b1963da21243376cdef1a3207d2300873"
+    },
+    {
+      "path": "diagrams/vm-guidellm-metrics.tree.finalize-summary.json",
+      "bytes": 1510,
+      "sha256": "fe1dfced6e434281decd5e7648e1ee8e1271f54823963962b32c3d3bef51d12c"
+    },
+    {
+      "path": "diagrams/vm-guidellm-profiles.workflow.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "c22c5d0c6a8819001789df9327dcfd8056d56b9f57ddfb7a760b7ac3d258203b"
+    },
+    {
+      "path": "diagrams/vm-guidellm-run-flow.workflow.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "d0656c7b479271256328726a4d7d5494a4c706ba2bc7f9491a43866ff0078cda"
+    },
+    {
+      "path": "diagrams/vm-gumbel-sampling.workflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "3ee5aeec34b1890e2262b92a14e3e19297e76057b849d3e22ed36427a2f2dc6f"
+    },
+    {
+      "path": "diagrams/vm-hwp-entrypoints.workflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "c4548a5e57b0b3fdae47a64fe0b044c9dba7711b20ea52f9981518468717a05c"
+    },
+    {
+      "path": "diagrams/vm-hwp-load-path.workflow.finalize-summary.json",
+      "bytes": 1519,
+      "sha256": "a61ee145bac960c881d556b7edbe488415514734e622d3514ba1de534b53f41d"
+    },
+    {
+      "path": "diagrams/vm-hwp-responsibility.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "24ad38d1ed864450b1d313b7289fb8df020e6d6217da796cdd26e7de08fe689d"
+    },
+    {
+      "path": "diagrams/vm-hwp-worker-dispatch.workflow.finalize-summary.json",
+      "bytes": 1549,
+      "sha256": "69d2857ce397b8bd07bea2e044d02c69cd89a35c07768b5644048768aa1ef3af"
+    },
+    {
+      "path": "diagrams/vm-int4-packing.dataflow.finalize-summary.json",
+      "bytes": 3008,
+      "sha256": "b0a9276cd49a58c3ebfca19e4e3fdd0bfecb3818d36a2e1011ac4a8de079436e"
+    },
+    {
+      "path": "diagrams/vm-llmc-ct-save.dataflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "d01597d9558c053363d637d0f3e8d5de845b3767fc098f3f25b30c44b2ba4ac1"
+    },
+    {
+      "path": "diagrams/vm-llmc-oneshot-lifecycle.lifecycle.finalize-summary.json",
+      "bytes": 1570,
+      "sha256": "4c1f629f9f28085831a7a5a13c363ca76d6418a283f1b696aa55fcfb930f953f"
+    },
+    {
+      "path": "diagrams/vm-llmc-pipeline-match.workflow.finalize-summary.json",
+      "bytes": 1549,
+      "sha256": "fbe625ff357b8b5c828511b8b72ebf7e53ce8074a80332855e27372b5945f921"
+    },
+    {
+      "path": "diagrams/vm-llmc-precision-split.tree.finalize-summary.json",
+      "bytes": 1530,
+      "sha256": "91be9e2f14cdd9c1a9cf08106411638ac90ed25926f2149b3c3d72bf8abe3351"
+    },
+    {
+      "path": "diagrams/vm-llmc-three-abstractions.workflow.finalize-summary.json",
+      "bytes": 1569,
+      "sha256": "d4f1258b9c980cb5141fdf522c050afaa25881a8494287b5624372a6743ca2b4"
+    },
+    {
+      "path": "diagrams/vm-omni-fullduplex-session.workflow.finalize-summary.json",
+      "bytes": 1564,
+      "sha256": "9215f3ebae96f3009b545b7aeb13fa136cd2fbc0b21bebc1512f02ef41ace717"
+    },
+    {
+      "path": "diagrams/vm-omni-inheritance.tree.finalize-summary.json",
+      "bytes": 1505,
+      "sha256": "f962ec458b02c0f537f8453916875b027203134b9667f45124cde45e99fc1227"
+    },
+    {
+      "path": "diagrams/vm-omni-kv-transfer.dataflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "f3fd8a673649478dc6bb21fb92a18c00e7c178b756de456ec942933dde170cd6"
+    },
+    {
+      "path": "diagrams/vm-omni-qwen3-async.sequence.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "30eb54e56a8543f4bba482f9b899189690d1ec33567ff81e32155d0e4787f064"
+    },
+    {
+      "path": "diagrams/vm-omni-stage-pipeline.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "e65382a20f6b61fd92b52b49354d492a2e21edfd8d6b4c622681e71ae8d00198"
+    },
+    {
+      "path": "diagrams/vm-pd-decision.workflow.finalize-summary.json",
+      "bytes": 1504,
+      "sha256": "edb167c32f32a55dfd4e9b760dbe5fa9e4308ac61cb4af4b74e3e964cc322d03"
+    },
+    {
+      "path": "diagrams/vm-pd-request-path.dataflow.finalize-summary.json",
+      "bytes": 1517,
+      "sha256": "9b89fffe3174e8b33319c01133bbf84e3c2916594758d4735d4582ff919277bb"
+    },
+    {
+      "path": "diagrams/vm-pd-request-states.lifecycle.finalize-summary.json",
+      "bytes": 2650,
+      "sha256": "3c62662165a8f55c675957e14922f975175982eeb25085752d173ea717c50aff"
+    },
+    {
+      "path": "diagrams/vm-pd-topology.architecture.finalize-summary.json",
+      "bytes": 2748,
+      "sha256": "71b3cad2783e3c90e045dc06c08f2746387765ef5121b0fd7aa70ad4b3ef4949"
+    },
+    {
+      "path": "diagrams/vm-penalty-math.workflow.finalize-summary.json",
+      "bytes": 1509,
+      "sha256": "d6d787d52173ae7e0828fc0bc1d626cc310f3a77f86f3e9fcc5d41c5bde0278b"
+    },
+    {
+      "path": "diagrams/vm-persistent-batch.workflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "ed3b9085ba589f7befa579c90167dbb023b05305bf63e7ded410ff2ffc1a3953"
+    },
+    {
+      "path": "diagrams/vm-prodstack-dashboard.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "45c89d4c024897e03a1afd2b5c42af7b04f86d2e8367ac253147edbe7c0d1079"
+    },
+    {
+      "path": "diagrams/vm-prodstack-lmcache.dataflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "3123bc921e8934d7fdeb81cba2e809783f0564dbb81005c682f83f4396017dfc"
+    },
+    {
+      "path": "diagrams/vm-prodstack-migration.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "c173f4c452cab3626ec8b75066ed976c68ea1fd40a659da054d53ee21f99304f"
+    },
+    {
+      "path": "diagrams/vm-prodstack-pd-disagg.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "2f286d5b50c076d3092050d5ab9ffe31d72421dfa175a1c5ed9bbcc36feffdbb"
+    },
+    {
+      "path": "diagrams/vm-prodstack-topology.workflow.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "e9fddcd2bc5ffc8d9937cb75ab0ffd353a6d3d3569fb40c00971c7b5821e938f"
+    },
+    {
+      "path": "diagrams/vm-quant-by-layer.architecture.finalize-summary.json",
+      "bytes": 1543,
+      "sha256": "beecec7604c20074083b9cf551feb4c4623363c6b6cff0cf86adc0ff15d326ba"
+    },
+    {
+      "path": "diagrams/vm-quant-dispatch-chain.workflow.finalize-summary.json",
+      "bytes": 1549,
+      "sha256": "1aee8fff7506399e79c8aa86634c0e1205c7f693ab631a706e6c1cb092c350be"
+    },
+    {
+      "path": "diagrams/vm-ray-commgroup-init.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "57ccf2eff2c6b5faa552a184e5ae7e1ffb5164a6fcd3eaf5f6a3b36ecdf62448"
+    },
+    {
+      "path": "diagrams/vm-ray-executor-compare.workflow.finalize-summary.json",
+      "bytes": 1554,
+      "sha256": "64b3d51ae9a78d533b1c4557e4d69008df90f5425dbbfc8814c88f6d2a7a876c"
+    },
+    {
+      "path": "diagrams/vm-ray-executor-dispatch.workflow.finalize-summary.json",
+      "bytes": 1559,
+      "sha256": "b70cf07113e05ef1f51bdb6ff511dbe2a297d7f1fc40e2b9b347b8985b83f7d2"
+    },
+    {
+      "path": "diagrams/vm-ray-rank-rerank.workflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "045593ca0462ceaa762be513a39cf3a92f8915e5478790763d27cd246fd1a995"
+    },
+    {
+      "path": "diagrams/vm-request-lifecycle.lifecycle.finalize-summary.json",
+      "bytes": 3213,
+      "sha256": "2cf83ff54a48722657654ff5965715ba903f1859faf854bf3dac9b14d337e7c3"
+    },
+    {
+      "path": "diagrams/vm-router-circuit-breaker.lifecycle.finalize-summary.json",
+      "bytes": 1565,
+      "sha256": "1906217372a3349eb2ae16529b43078ac015e55b3f1d24eff05836c853ce6f87"
+    },
+    {
+      "path": "diagrams/vm-router-consistenthash.workflow.finalize-summary.json",
+      "bytes": 1554,
+      "sha256": "f9ae2901ed370ca20ab2d158e878982ee863e0e88aea16ee10311db58c7a0c8d"
+    },
+    {
+      "path": "diagrams/vm-router-pd-sequence.sequence.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "1451789dd98badbc21ac917b67647c4a683c18d9d854c7a4be9b3e7dc742013b"
+    },
+    {
+      "path": "diagrams/vm-router-request-path.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "4d5afd74ba2a00d49aa67a6a315aa6f259bac84a613d0cac5dbb3009f8468eb1"
+    },
+    {
+      "path": "diagrams/vm-router-strategy-tree.workflow.finalize-summary.json",
+      "bytes": 1549,
+      "sha256": "f0c64a4a613c62821f90197e419bb1af2119532b87e933de97ed54c7091e9a52"
+    },
+    {
+      "path": "diagrams/vm-sampler-order.workflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "73d95a674c4f4546c8bbf81f64ae9d5a593da7c048f07867920664b64b086c15"
+    },
+    {
+      "path": "diagrams/vm-sampling-params-fallback.workflow.finalize-summary.json",
+      "bytes": 1569,
+      "sha256": "f87e2db83d39c928cd4f0714034135cd62d126b53f0f60be73a8220167c64bf5"
+    },
+    {
+      "path": "diagrams/vm-scheduler-two-queues.workflow.finalize-summary.json",
+      "bytes": 1550,
+      "sha256": "a96dcd1cc81f32511616101c20242dad1d4af1984ea9c3d8448e5b50d3f660c5"
+    },
+    {
+      "path": "diagrams/vm-spec-draft-verify.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "d686a0646c2d56445be4baa7674818eb08ca8b0f68a5635dc8f0a247d4f7b7db"
+    },
+    {
+      "path": "diagrams/vm-spec-dynamic-adaptive.workflow.finalize-summary.json",
+      "bytes": 1554,
+      "sha256": "cc6e56a813d13ac0998d67780140bfc119658125aa35361aedca5ed7317b213b"
+    },
+    {
+      "path": "diagrams/vm-spec-family.workflow.finalize-summary.json",
+      "bytes": 1509,
+      "sha256": "3620d04e0efdbaa05179cca237665c833e856788329fe4d3a0176496df2eac81"
+    },
+    {
+      "path": "diagrams/vm-spec-five-routes.workflow.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "a4a24954d5600c57a7c68726a24b1b42e5b5200ab434dd9f97e359677c10b2fb"
+    },
+    {
+      "path": "diagrams/vm-spec-loss-target.workflow.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "a5d755f428385bb838fcb100f3eab4227c86f1da87cc9d584dfc230fc55adb04"
+    },
+    {
+      "path": "diagrams/vm-spec-online-vs-offline.workflow.finalize-summary.json",
+      "bytes": 1564,
+      "sha256": "0aeb6ecda625923deec4f33d5e83b9bf674ca1dc86265b56ee87e48265d8323f"
+    },
+    {
+      "path": "diagrams/vm-spec-pipeline.workflow.finalize-summary.json",
+      "bytes": 1519,
+      "sha256": "e2d00da6a24439cc37a2561ed6c8406583d0e2ee25201533b1311061d9bf0a55"
+    },
+    {
+      "path": "diagrams/vm-spec-timeline.waterfall.finalize-summary.json",
+      "bytes": 1520,
+      "sha256": "7f4b94edd20d8a6e8fadd99218076680c095962f76a9d933ecb4d56010183ba3"
+    },
+    {
+      "path": "diagrams/vm-spec-vocab-map.dataflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "8f1e82ad5fcc33d1b70bb5a11e1e37661fb1d14cd33d99952168850208a8d88b"
+    },
+    {
+      "path": "diagrams/vm-sr-boolean-tree.workflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "ec9837fcb23e7cdc13984e93dd36de0b7b509dcebaee77cb86d71d4ee79f3e37"
+    },
+    {
+      "path": "diagrams/vm-sr-decision-flow.sequence.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "84705cf7ef62b2f908eebdd722654c10bf74b19fb09786cbd173bf6bd2bd9f84"
+    },
+    {
+      "path": "diagrams/vm-sr-deployment.workflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "76208d05a25f1f4c247c0f7ca1e2bf00dfa59005471e84a137ee11bebf547b7d"
+    },
+    {
+      "path": "diagrams/vm-sr-signal-types.tree.finalize-summary.json",
+      "bytes": 1500,
+      "sha256": "83187b98154070d1738168910c5df59bc3399402a2d7e782b6ba1cb0f6f5c1ca"
+    },
+    {
+      "path": "diagrams/vm-sr-three-layer.workflow.finalize-summary.json",
+      "bytes": 1519,
+      "sha256": "c7de3fb47bc49f5a1fb65b883c2bb2690784951509dee515def7dfdd0e4589c8"
+    },
+    {
+      "path": "diagrams/vm-staged-write.dataflow.finalize-summary.json",
+      "bytes": 1509,
+      "sha256": "d0892c674d633491adffd3d2fa0b789a47f967096f2c781fa47e0a4e5813538f"
+    },
+    {
+      "path": "diagrams/vm-static-vs-continuous.dataflow.finalize-summary.json",
+      "bytes": 1550,
+      "sha256": "ea238e1e515ff50d31e18b2569a56c8d1a0e760694819665f2ea5aa189f2d16b"
+    },
+    {
+      "path": "diagrams/vm-sync-free-sampling.workflow.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "f159100b21bce5ed1c67478fda0d6462c855eef2c62016abc6cbf98fd0f220c8"
+    },
+    {
+      "path": "diagrams/vm-token-bin-count.dataflow.finalize-summary.json",
+      "bytes": 1524,
+      "sha256": "e818586b561f37de5d39278557564138b7006dce9dc54f5612a521716822eec6"
+    },
+    {
+      "path": "diagrams/vm-token-budget-model.tree.finalize-summary.json",
+      "bytes": 1516,
+      "sha256": "c0bd69478fa5ae92ef0ee301a3f09421a5e99e164cbc3d8a177b46aea3f91e07"
+    },
+    {
+      "path": "diagrams/vm-v1-async-schedule.sequence.finalize-summary.json",
+      "bytes": 1534,
+      "sha256": "368d89ac56d458c7c7dec91b88839567bfecfc11f6d926d7318c56cf675239aa"
+    },
+    {
+      "path": "diagrams/vm-v1-executor-choice.tree.finalize-summary.json",
+      "bytes": 1515,
+      "sha256": "5af74eb28f3a47faf0ad5b7c7e30a114e23da4e23c0cf845806d5915e9b29d3f"
+    },
+    {
+      "path": "diagrams/vm-v1-init-chain.workflow.finalize-summary.json",
+      "bytes": 1514,
+      "sha256": "172f2214b0a931331886b456670084db82f82587fd8fcea23c8d7491d155f991"
+    },
+    {
+      "path": "diagrams/vm-v1-request-journey.sequence.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "0dca58f13a09cfddd2bcf558e57207cbd379ae52f2f07c811b55befa530b7180"
+    },
+    {
+      "path": "diagrams/vm-v1-three-layers.architecture.finalize-summary.json",
+      "bytes": 3850,
+      "sha256": "8f367b5fc38cd7f4797baf5a0afe4b22d051cdf65f5bb9594f8cf06a483573c0"
+    },
+    {
+      "path": "diagrams/vm-vime-architecture.workflow.finalize-summary.json",
+      "bytes": 1539,
+      "sha256": "7c74a55b055dbdcfe2df7d61c3afb2996c5335ddfab6beac2d4e2d60dff00699"
+    },
+    {
+      "path": "diagrams/vm-vime-memory-topology.dataflow.finalize-summary.json",
+      "bytes": 2659,
+      "sha256": "95b510618350cf3dc582c89aa451ef4e7350250dfbe9995dc01c0e6ae59b7154"
+    },
+    {
+      "path": "diagrams/vm-vime-sync-vs-async.workflow.finalize-summary.json",
+      "bytes": 1544,
+      "sha256": "2f6811cd4ed971bf2b101733d5ca79019e7b3c2a6f7062b5becf4a869bfff2ee"
+    },
+    {
+      "path": "diagrams/vm-vime-train-loop.sequence.finalize-summary.json",
+      "bytes": 1529,
+      "sha256": "3ec9299621be47e8a82c8a7660dd8be8fcb6807590cafb2b21e98ef003fc22ce"
+    },
+    {
+      "path": "diagrams/vm-vime-weight-sync.tree.finalize-summary.json",
+      "bytes": 1510,
+      "sha256": "8095ed501b891fe4cea2fdf704d1d3bd12921aa178f4cdf41cad067f8ff9d874"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "ModelAdapter 的 LoRA 分发生命周期",
+    "subtitle": "声明式把 LoRA 工件下载并按 podSelector 热加载;replicas 只允许省略(全部匹配)或 1",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-aibrix-lora-adapter.lifecycle.html"
+  },
+  "mainPath": [
+    "pend",
+    "sched",
+    "run"
+  ],
+  "states": [
+    {
+      "id": "pend",
+      "type": "start",
+      "label": "Pending",
+      "sublabel": "声明提交"
+    },
+    {
+      "id": "sched",
+      "type": "active",
+      "label": "Scheduled",
+      "sublabel": "匹配 Pod 并下载工件"
+    },
+    {
+      "id": "run",
+      "type": "success",
+      "label": "Running",
+      "sublabel": "LoRA 已热加载"
+    },
+    {
+      "id": "fail",
+      "type": "failure",
+      "label": "Failed",
+      "sublabel": "replicas 非法/下载失败"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "t1",
+      "from": "pend",
+      "to": "sched",
+      "label": "准入通过"
+    },
+    {
+      "id": "t2",
+      "from": "sched",
+      "to": "run",
+      "label": "加载成功"
+    },
+    {
+      "id": "t3",
+      "from": "sched",
+      "to": "fail",
+      "label": "失败"
+    },
+    {
+      "id": "t4",
+      "from": "pend",
+      "to": "fail",
+      "label": "admission 拒绝"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "replicas 只认两个值",
+      "items": [
+        "省略=分发到所有匹配 Pod",
+        "1=单 Pod 热切换",
+        "填其他值会被 admission 直接拒绝"
+      ]
+    }
+  ]
+}

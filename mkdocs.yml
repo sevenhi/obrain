@@ -9,8 +9,10 @@ use_directory_urls: true        # 默认值,显式写出;iframe 路径规则依�
 exclude_docs: |
   diagrams/**/*.html
   diagrams/**/*.json
-  DIAGRAM-INDEX.md
+  SOURCE-POLICY.md
   DEPLOY.md
+  DIAGRAM-INDEX.md
+  OPTIMIZATION-SUMMARY.md
 
 # 中文全文搜索:默认 en 分词对中文无效(整段成一个 token),lang: zh 需 venv 已装 jieba
 plugins:
@@ -18,11 +20,13 @@ plugins:
       lang: zh
 theme:
   name: material
+  language: zh
   custom_dir: overrides
   font: false                   # 关掉默认 Roboto CDN,字体栈由 extra.css 接管
   features:
     - navigation.tabs
     - navigation.sections
+    - navigation.prune
     - navigation.top
     - content.code.copy
     - search.highlight
@@ -42,7 +46,11 @@ theme:
         name: 切换到亮色
 extra_css:
   - assets/css/extra.css
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 markdown_extensions:
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid

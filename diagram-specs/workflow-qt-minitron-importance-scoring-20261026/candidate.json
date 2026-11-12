@@ -1,0 +1,120 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "重要性怎么算:三宽度轴打分 + 深度轴指标",
+  "subtitle": "聚合函数必须选对:(batch=L2, seq=mean) 最优;重训 400 步后相对排序不变",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-minitron-importance-scoring.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "w",
+   "label": "宽度轴"
+  },
+  {
+   "id": "d",
+   "label": "深度轴"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "head",
+   "lane": "w",
+   "col": 0,
+   "type": "backend",
+   "label": "F_head(i)",
+   "sublabel": "Σ‖Attn(XW_Q^i…)‖₂"
+  },
+  {
+   "id": "neuron",
+   "lane": "w",
+   "col": 1,
+   "type": "backend",
+   "label": "F_neuron(i)",
+   "sublabel": "Σ X·(W₁^i)ᵀ"
+  },
+  {
+   "id": "emb",
+   "lane": "w",
+   "col": 2,
+   "type": "backend",
+   "label": "F_emb(i)",
+   "sublabel": "Σ LN(X)_i"
+  },
+  {
+   "id": "ppl",
+   "lane": "d",
+   "col": 0,
+   "type": "backend",
+   "label": "PPL",
+   "sublabel": "删单层测困惑度增量,逐层各跑一次"
+  },
+  {
+   "id": "bi",
+   "lane": "d",
+   "col": 1,
+   "type": "backend",
+   "label": "BI(Block Importance)",
+   "sublabel": "1−输入输出余弦相似度,一次前向全算"
+  },
+  {
+   "id": "task",
+   "lane": "d",
+   "col": 2,
+   "type": "security",
+   "label": "下游任务准确率",
+   "sublabel": "PPL 选出的层在下游不是最准"
+  }
+ ],
+ "edges": [
+  {
+   "from": "head",
+   "to": "neuron",
+   "label": "三轴一次校准跑完",
+   "variant": "emphasis"
+  },
+  {
+   "from": "neuron",
+   "to": "emb",
+   "label": "聚合 (batch=L2, seq=mean)"
+  },
+  {
+   "from": "ppl",
+   "to": "bi",
+   "label": "BI 快得多,可扩展连续多层",
+   "variant": "emphasis"
+  },
+  {
+   "from": "bi",
+   "to": "task",
+   "label": "深度剪枝目标挂要保的指标",
+   "variant": "dashed"
+  }
+ ],
+ "mainPath": [
+  "head",
+  "neuron",
+  "emb"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "排序的工程性质",
+   "items": [
+    "重训 400 步(~1.8B token)后相对排序不变",
+    "可放心用重训前指标做架构比较",
+    "不必为每个候选都跑完整蒸馏"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "宽度 vs 深度(交叉验证)",
+   "items": [
+    "宽度(neuron+head+emb)7.74B → val loss 2.049 最优",
+    "重训前排序是反的:四轴全剪 KL 更优",
+    "翻转发生在约 200 步(0.8B token)"
+   ]
+  }
+ ]
+}

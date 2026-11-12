@@ -1,0 +1,145 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "cuRAND 的正确用法:state 存 global,跨 launch 复用",
+    "subtitle": "curand_init() 比 curand() 慢得多,offset 越大越慢。官方 Performance Notes 的结论:初始化与生成拆成两个 kernel,state 缓存在 global memory 里反复载入载出",
+    "locale": "zh-CN",
+    "output": "diagrams/rng-curand-state-reuse.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_host", "label": "① host 侧" },
+    { "id": "ln_setup", "label": "② setup kernel" },
+    { "id": "ln_gen", "label": "③ 生成 kernel" },
+    { "id": "ln_bad", "label": "④ 反例" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "一次性准备", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "每次 launch", "fromCol": 2, "toCol": 4, "variant": "emphasis" },
+    { "id": "ph3", "label": "避免走的弯路", "fromCol": 5, "toCol": 5 }
+  ],
+  "mainPath": ["alloc", "init", "store", "load", "loop", "writeback"],
+  "nodes": [
+    {
+      "id": "alloc",
+      "lane": "ln_host",
+      "col": 0,
+      "type": "frontend",
+      "label": "global 分 state 数组",
+      "sublabel": "每线程一格",
+      "icon": "start",
+      "width": 150
+    },
+    {
+      "id": "init",
+      "lane": "ln_setup",
+      "col": 1,
+      "type": "backend",
+      "label": "curand_init",
+      "sublabel": "seed / subsequence / offset",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "store",
+      "lane": "ln_setup",
+      "col": 2,
+      "type": "database",
+      "label": "写回 global",
+      "sublabel": "state 落地一次",
+      "icon": "database",
+      "width": 150
+    },
+    {
+      "id": "load",
+      "lane": "ln_gen",
+      "col": 3,
+      "type": "backend",
+      "label": "载入 local",
+      "sublabel": "复制到寄存器变量",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "loop",
+      "lane": "ln_gen",
+      "col": 4,
+      "type": "backend",
+      "label": "循环 curand()",
+      "sublabel": "数千次都在本地",
+      "icon": "clock",
+      "width": 150
+    },
+    {
+      "id": "writeback",
+      "lane": "ln_gen",
+      "col": 5,
+      "type": "database",
+      "label": "写回 global",
+      "sublabel": "下次 launch 接着走",
+      "icon": "success",
+      "width": 150
+    },
+    {
+      "id": "rein",
+      "lane": "ln_bad",
+      "col": 2,
+      "type": "external",
+      "label": "每 kernel 重 init",
+      "sublabel": "offset 大时越来越慢",
+      "icon": "failure",
+      "width": 150,
+      "yOffset": 124
+    },
+    {
+      "id": "sameseed",
+      "lane": "ln_bad",
+      "col": 4,
+      "type": "external",
+      "label": "单 seed 但 seq=0",
+      "sublabel": "setup 快,统计保证更弱",
+      "icon": "neutral",
+      "width": 150,
+      "yOffset": 124
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "alloc", "to": "init", "label": "先有地方放", "role": "main" },
+    { "id": "e2", "from": "init", "to": "store", "label": "初始化很贵,只做一次", "role": "main", "variant": "emphasis" },
+    { "id": "e3", "from": "store", "to": "load", "label": "下次 launch 直接读", "role": "main" },
+    { "id": "e4", "from": "load", "to": "loop", "label": "本地生成才快", "role": "main" },
+    { "id": "e5", "from": "loop", "to": "writeback", "label": "进度要存住", "role": "main" },
+    { "id": "e6", "from": "writeback", "to": "load", "label": "下次再载入", "role": "return", "variant": "dashed" },
+    { "id": "e7", "from": "rein", "to": "init", "label": "不要这样", "role": "error", "variant": "dashed" },
+    { "id": "e8", "from": "sameseed", "to": "loop", "label": "省 setup 的代价", "role": "branch", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "三条官方 Performance Notes 结论",
+      "items": [
+        "curand_init() 比 curand()/curand_uniform() 慢得多,且 offset 越大越慢",
+        "保存/恢复 state 远快于反复重算初始 state",
+        "init 比生成更吃寄存器与 local memory,所以拆成两个 kernel 能提速"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "三种生成器的周期口径",
+      "items": [
+        "XORWOW / MRG32k3a:周期约 2^192,state 相当于「走了 2^67·sequence + offset 步」",
+        "Philox:周期 2^128,subsequence 长度 2^64,用尽自动进下一个",
+        "MTGP32:一 state 一序列,单 block ≤256 线程 thread-safe 协作"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "那个「更弱」的统计保证",
+      "items": [
+        "每线程不同 seed + 常数 sequence=0 能显著加速 setup",
+        "但哈希与周期的坏交互理论上可能让某些 seed 下线程输出高度相关",
+        "已知问题值不高,不适合作为默认做法"
+      ]
+    }
+  ]
+}

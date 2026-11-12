@@ -1,0 +1,217 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "为什么必须解耦 RoPE:一条反证链推到「位置分量单独存」",
+    "subtitle": "MLA 最难懂的一点不是低秩,而是「为什么 K 要拆成两半」。第 3 步是这个设计唯一的动机——低秩压缩是「所有头共享一份」,而 RoPE 是「每头每位置不同」,两者一旦纠缠就解不开",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-ds-mla-decouple-rope.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_naive",
+      "label": "① 朴素做法(会坏)"
+    },
+    {
+      "id": "ln_fail",
+      "label": "② 坏在哪"
+    },
+    {
+      "id": "ln_fix",
+      "label": "③ 解耦做法"
+    },
+    {
+      "id": "ln_result",
+      "label": "④ 结果"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "先看错的",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "拆开",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ph3",
+      "label": "各归各位",
+      "fromCol": 3,
+      "toCol": 4
+    }
+  ],
+  "mainPath": [
+    "kv",
+    "rope_on_kv",
+    "broken",
+    "split",
+    "concat"
+  ],
+  "nodes": [
+    {
+      "id": "kv",
+      "lane": "ln_naive",
+      "col": 0,
+      "type": "frontend",
+      "label": "先压成 c^KV",
+      "sublabel": "512 维,全头共享一份",
+      "icon": "start",
+      "width": 164
+    },
+    {
+      "id": "rope_on_kv",
+      "lane": "ln_naive",
+      "col": 1,
+      "type": "backend",
+      "label": "在压缩表示上转 RoPE",
+      "sublabel": "看似自然:先旋再解压",
+      "icon": "neutral",
+      "width": 164
+    },
+    {
+      "id": "broken",
+      "lane": "ln_fail",
+      "col": 2,
+      "type": "security",
+      "label": "位置信息失效",
+      "sublabel": "共享瓶颈里,每头位置无法分辨",
+      "icon": "failure",
+      "width": 164
+    },
+    {
+      "id": "split",
+      "lane": "ln_fix",
+      "col": 3,
+      "type": "backend",
+      "label": "拆成 nope + pe",
+      "sublabel": "每头 192 维:128 不旋 + 64 旋",
+      "icon": "decision",
+      "width": 164
+    },
+    {
+      "id": "concat",
+      "lane": "ln_result",
+      "col": 4,
+      "type": "cloud",
+      "label": "拼回完整 q / k",
+      "sublabel": "128+64 = 192 维/头",
+      "icon": "success",
+      "width": 164
+    },
+    {
+      "id": "kpe",
+      "lane": "ln_fix",
+      "col": 4,
+      "type": "security",
+      "label": "k_pe 只 1 头",
+      "sublabel": "MQA 式共享,只存 64 维",
+      "icon": "database",
+      "width": 164,
+      "yOffset": 116
+    },
+    {
+      "id": "why",
+      "lane": "ln_fail",
+      "col": 3,
+      "type": "backend",
+      "label": "矛盾点在这",
+      "sublabel": "压缩要「共享」,RoPE 要「每头不同」",
+      "icon": "decision",
+      "width": 164,
+      "yOffset": 116
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "kv",
+      "to": "rope_on_kv",
+      "label": "以为可以先旋再解压",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e2",
+      "from": "rope_on_kv",
+      "to": "broken",
+      "label": "解压回多头就丢位置",
+      "role": "error",
+      "variant": "security"
+    },
+    {
+      "id": "e3",
+      "from": "broken",
+      "to": "split",
+      "label": "所以位置必须绕开压缩",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e4",
+      "from": "split",
+      "to": "concat",
+      "label": "原样拼回",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "split",
+      "to": "kpe",
+      "label": "旋转的那半只留 1 份",
+      "role": "branch",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e6",
+      "from": "why",
+      "to": "split",
+      "label": "矛盾逼出这个拆法",
+      "role": "branch",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "一秒记住这个矛盾",
+      "items": [
+        "低秩压缩的收益来自「所有头共享一份 latent」——省的就是这份共享",
+        "RoPE 的语义是「同一个头里,不同位置旋转角不同」——前提是能分辨出「哪个头」",
+        "把 RoPE 旋在共享 latent 上,再解压到 128 个头,就分不出来了"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "解耦后的维数账",
+      "items": [
+        "每头 q/k = [nope 128 ; pe 64] = 192 维(注意不是 128+128)",
+        "v 仍是每头 128 维,q_head_dim 与 v_head_dim 不同",
+        "这就是公式里 softmax 分母写 √(d_h + d_h^R) 而不是 √d_h 的原因"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "k_pe 为什么要 MQA 式共享",
+      "items": [
+        "位置信息对所有头是同一份(同一个 token、同一个位置)",
+        "所以 1 头就够,不必每头一份 → 只缓存 64 维",
+        "这一条把「576 = 512 + 64」里的 64 压到了最小"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "源码里对应哪几行",
+      "items": [
+        "kv_a_proj_with_mqa 一次出 512+64,再 torch.split",
+        "k_pe.view(bsz, q_len, 1, 64) 的那个 1 就是 MQA 共享头",
+        "apply_rotary_pos_emb 只作用在 q_pe / k_pe 上"
+      ]
+    }
+  ]
+}

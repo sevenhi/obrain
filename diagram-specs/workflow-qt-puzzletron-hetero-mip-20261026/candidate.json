@@ -1,0 +1,95 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "Puzzletron:逐层异构 + BLD + MIP",
+  "subtitle": "每层 FFN 不同宽、attention 可整层删;块级局部蒸馏并行探索 + 混合整数规划全局选优",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-puzzletron-hetero-mip.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "search",
+   "label": "搜索空间"
+  },
+  {
+   "id": "eval",
+   "label": "候选评估"
+  },
+  {
+   "id": "opt",
+   "label": "全局选优"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "hetero",
+   "lane": "search",
+   "col": 0,
+   "type": "frontend",
+   "label": "逐层异构搜索",
+   "sublabel": "ffn_intermediate / attention no_op / KV heads"
+  },
+  {
+   "id": "bld",
+   "lane": "eval",
+   "col": 1,
+   "type": "backend",
+   "label": "块级局部蒸馏(BLD)",
+   "sublabel": "只蒸馏被替换的块,块间并行"
+  },
+  {
+   "id": "mip",
+   "lane": "opt",
+   "col": 2,
+   "type": "backend",
+   "label": "混合整数规划(MIP)",
+   "sublabel": "参数量/显存/延迟作硬约束"
+  }
+ ],
+ "edges": [
+  {
+   "from": "hetero",
+   "to": "bld",
+   "label": "组合爆炸,逐候选全蒸馏不可行",
+   "variant": "emphasis"
+  },
+  {
+   "from": "bld",
+   "to": "mip",
+   "label": "候选代价从训模型降到训块",
+   "variant": "emphasis"
+  },
+  {
+   "from": "mip",
+   "to": "hetero",
+   "label": "一次求解全局最优组合",
+   "variant": "dashed"
+  }
+ ],
+ "mainPath": [
+  "hetero",
+  "bld",
+  "mip"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "可复算的实测",
+   "items": [
+    "Llama-3.1-8B:target_memory=96_000 → 显存 113→96 GiB 掉 <1%",
+    "target_memory=78_000 → 删 12 层 attention,掉 4.6%",
+    "70B→Nemotron-51B 单卡 2.17× 吞吐,保留 98.4%"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "逐层维度是耦合的",
+   "items": [
+    "删了 attention 层,FFN 重要性会变",
+    "逐轴贪心处理不了这种耦合",
+    "MIP 才处理得了"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "同一份 Q 头,MHA / MQA / GQA 的 K/V 头怎么共享",
+    "subtitle": "三种结构唯一的差别就是 H_kv:MHA 每头独占、MQA 全体 1 组、GQA-g 分 g 组。KV cache 缩减倍数恒等于 H/H_kv",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-mha-mqa-gqa-heads.architecture.html",
+    "viewBox": [1040, 620]
+  },
+  "components": [
+    { "id": "qh", "type": "frontend", "label": "H 个 Q 头(三者完全相同)", "sublabel": "H=32 示例;差别不在 Q 侧", "pos": [380, 40], "size": [290, 56] },
+    { "id": "mha_kv", "type": "database", "label": "MHA:H_kv = H", "sublabel": "每头配专属 K_h、V_h", "pos": [40, 180], "size": [200, 58] },
+    { "id": "mqa_kv", "type": "database", "label": "MQA:H_kv = 1", "sublabel": "全体共享一份 K、V", "pos": [380, 180], "size": [200, 58] },
+    { "id": "gqa_kv", "type": "database", "label": "GQA-g:H_kv = g", "sublabel": "均分 g 组,组内共享", "pos": [720, 180], "size": [200, 58] },
+    { "id": "mha_c", "type": "security", "label": "cache 缩 1 倍", "sublabel": "一点没省", "pos": [40, 320], "size": [200, 56] },
+    { "id": "mqa_c", "type": "security", "label": "cache 缩 H 倍", "sublabel": "H=64 时缩 64 倍", "pos": [380, 320], "size": [200, 56] },
+    { "id": "gqa_c", "type": "security", "label": "cache 缩 H/g 倍", "sublabel": "GQA-8 → 缩 8 倍", "pos": [720, 320], "size": [200, 56] },
+    { "id": "mqa_bad", "type": "backend", "label": "MQA 的容量损失", "sublabel": "1 组 K/V 服务 H 个视角", "pos": [380, 460], "size": [200, 56] },
+    { "id": "why_gqa", "type": "cloud", "label": "为什么 GQA 成主流", "sublabel": "比例砍头 + 消除 TP 复制", "pos": [720, 460], "size": [200, 56] }
+  ],
+  "connections": [
+    { "id": "c1", "from": "qh", "to": "mha_kv", "label": "每头一份", "labelAt": [230, 140] },
+    { "id": "c2", "from": "qh", "to": "mqa_kv", "label": "全体共用一份", "labelAt": [520, 140] },
+    { "id": "c3", "from": "qh", "to": "gqa_kv", "label": "每组一份", "labelAt": [810, 140], "variant": "emphasis" },
+    { "id": "c4", "from": "mha_kv", "to": "mha_c", "label": "不省", "labelAt": [140, 290] },
+    { "id": "c5", "from": "mqa_kv", "to": "mqa_c", "label": "省最多", "labelAt": [480, 290] },
+    { "id": "c6", "from": "gqa_kv", "to": "gqa_c", "label": "按比例省", "labelAt": [820, 290] },
+    { "id": "c7", "from": "mqa_c", "to": "mqa_bad", "label": "代价是什么", "labelAt": [480, 430], "variant": "security" },
+    { "id": "c8", "from": "gqa_c", "to": "why_gqa", "label": "为什么选它", "labelAt": [820, 430], "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三行定义(只差 H_kv)",
+      "items": [
+        "MHA:o_h = softmax(q_h·K_hᵀ/√d)·V_h,每头专属",
+        "MQA:o_h = softmax(q_h·Kᵀ/√d)·V,全体共享",
+        "GQA:o_h = softmax(q_h·K^(g(h))ᵀ/√d)·V^(g(h)),g(h)=⌈h·g/H⌉"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "一条连续谱系,不是三个孤立设计",
+      "items": [
+        "GQA-1 ≡ MQA,GQA-H ≡ MHA(论文 §2.2 原文)",
+        "MHA→MQA 缩 H 倍(H=64 时缩 64 倍);MHA→GQA-8 缩 8 倍",
+        "Mistral 7B 是 32 Q / 8 KV,即缩 4 倍"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "MQA 的两笔代价",
+      "items": [
+        "容量:K/V 是「被检索的内容」,1 组要服务 H 个不同视角的 Q",
+        "稳定:论文 §1 原文写的是 quality degradation and training instability",
+        "GQA 留 g 组,给「不同 Q 看不同 K/V 视角」的余地"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "大模型偏爱 GQA 的三条理由",
+      "items": [
+        "模型越大 H 越多,MQA 砍头比例越激进;GQA 可按比例温和砍",
+        "KV cache 随维度线性涨、FLOPs 随维度平方涨 → 大模型里 attention 带宽占比相对小",
+        "张量并行:单 KV 头要被复制到每片;g≥并行度时消除这份复制浪费"
+      ]
+    }
+  ]
+}

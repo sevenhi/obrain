@@ -1,0 +1,89 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "FA4 的 flex 化:两个钩子插进同一条异步流水线",
+  "subtitle": "块稀疏决定哪些 tile 进队列;score/mask mod 在 softmax warp 里逐点应用,前向反向都有",
+  "locale": "zh-CN",
+  "output": "diagrams/at-fa4-two-hooks.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "pipe",
+   "label": "流水线"
+  },
+  {
+   "id": "sparse",
+   "label": "块稀疏钩子"
+  },
+  {
+   "id": "score",
+   "label": "score 钩子"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "tiles",
+   "lane": "pipe",
+   "col": 0,
+   "type": "frontend",
+   "label": "每 SM 一个 KV tile 队列",
+   "sublabel": "FA4 异步流水线"
+  },
+  {
+   "id": "sp",
+   "lane": "sparse",
+   "col": 1,
+   "type": "backend",
+   "label": "块稀疏:决定哪些 tile 进队列",
+   "sublabel": "跳过 empty、标记 partial"
+  },
+  {
+   "id": "sm",
+   "lane": "score",
+   "col": 2,
+   "type": "backend",
+   "label": "score/mask mod",
+   "sublabel": "在 softmax warp 内应用"
+  }
+ ],
+ "edges": [
+  {
+   "from": "tiles",
+   "to": "sp",
+   "label": "驱动 tile scheduler",
+   "variant": "emphasis"
+  },
+  {
+   "from": "sp",
+   "to": "sm",
+   "label": "进队列的 tile 在算 row max/sum 时套用",
+   "variant": "emphasis"
+  }
+ ],
+ "mainPath": [
+  "tiles",
+  "sp",
+  "sm"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "为什么不新增阶段",
+   "items": [
+    "S tile 从 TMEM 取回后本来就要算 row max/sum 并生成 P",
+    "score/mask mod 趁数据驻留 RMEM 时应用",
+    "保持 TCGEN(tensor core)与 SFU(exp)重叠"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "反向的麻烦",
+   "items": [
+    "接口同形,用自动生成的 score_mod_bwd",
+    "若导数依赖 pre-softmax 分数,S 片段要留寄存器",
+    "当前 tiling 下几乎必然 spill、明显变慢"
+   ]
+  }
+ ]
+}

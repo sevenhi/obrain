@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "数值正确性的分层定位:五级比较,从图到任务指标",
+    "subtitle": "顺序不能乱:先证明「导出没坏」,再证明「EP 没坏」,最后才归因到低精度。跳级比较等于把三种误差混在一起",
+    "locale": "zh-CN",
+    "output": "diagrams/cv-numeric-layers.dataflow.html"
+  },
+  "stages": [
+    { "label": "① 基线对照" },
+    { "label": "② EP 对照" },
+    { "label": "③ TRT 对照" },
+    { "label": "④ 低精度对照" },
+    { "label": "⑤ 任务级验收" }
+  ],
+  "nodes": [
+    {
+      "id": "pt_eager",
+      "type": "frontend",
+      "label": "PyTorch eager",
+      "sublabel": "唯一可信基线",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "onnx_out",
+      "type": "backend",
+      "label": "ONNX 输出",
+      "sublabel": "同输入同权重",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "cpu_ep",
+      "type": "cloud",
+      "label": "ORT CPU EP",
+      "sublabel": "确认导出本身无偏",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "gpu_ep",
+      "type": "cloud",
+      "label": "ORT GPU / 目标 EP",
+      "sublabel": "EP 独有的融合误差",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "trt32",
+      "type": "backend",
+      "label": "TRT FP32",
+      "sublabel": "编译器差异投到最小",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "trt16",
+      "type": "backend",
+      "label": "TRT FP16",
+      "sublabel": "第一次降精度",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "lowp",
+      "type": "backend",
+      "label": "INT8 / FP8 / FP4",
+      "sublabel": "校准集分布决定成败",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "granular",
+      "type": "security",
+      "label": "单算子→整图逐级",
+      "sublabel": "先缩范围再归因",
+      "width": 150,
+      "icon": "decision",
+      "stage": 3,
+      "row": 1
+    },
+    {
+      "id": "task",
+      "type": "cloud",
+      "label": "mAP / mIoU / top-1",
+      "sublabel": "检测还要看 NMS 后框一致",
+      "icon": "success",
+      "stage": 4,
+      "row": 0
+    },
+    {
+      "id": "biz",
+      "type": "cloud",
+      "label": "真实业务成功率",
+      "sublabel": "不是只比中间 tensor",
+      "icon": "success",
+      "stage": 4,
+      "row": 1
+    }
+  ],
+  "flows": [
+    { "from": "pt_eager", "to": "onnx_out", "label": "同输入跑两遍", "labelDy": 46 },
+    { "from": "onnx_out", "to": "cpu_ep", "label": "先排除导出问题", "labelDy": -32 },
+    { "from": "cpu_ep", "to": "gpu_ep", "label": "再隔离 EP 差异", "labelDy": 46 },
+    { "from": "gpu_ep", "to": "trt32", "label": "换 runtime 保精度", "labelDy": -32 },
+    { "from": "trt32", "to": "trt16", "label": "只动精度这一项", "labelDy": 46 },
+    { "from": "trt16", "to": "lowp", "label": "再往下压", "labelDy": -32 },
+    { "from": "lowp", "to": "granular", "label": "缩小定位范围", "labelDy": 46 },
+    { "from": "granular", "to": "task", "label": "看下游任务指标", "labelDy": -32 },
+    { "from": "task", "to": "biz", "label": "最后看业务口径", "labelDy": 46 }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "为什么平均误差小也可能失败",
+      "items": [
+        "NMS 阈值比较、top-k 排序对微小扰动极敏感",
+        "一个框的 score 从 0.51 掉到 0.49 就换了一个框",
+        "所以必须加任务级指标,不能只看 max/mean abs error"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "推荐指标的分类",
+      "items": [
+        "回归类:最大绝对误差、平均绝对误差、相对误差、cosine similarity",
+        "检测:mAP、precision/recall、NMS 后框一致性",
+        "分割:mIoU 与边界质量;分类:top-1/top-5"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "量化那一步的真正变量",
+      "items": [
+        "校准集必须接近真实输入分布,否则 scale 全错",
+        "INT4/FP4 压缩收益大,但算子覆盖与 kernel 支持更敏感",
+        "图融合与 constant folding 也会改数值误差,优化前后都要回归"
+      ]
+    }
+  ]
+}

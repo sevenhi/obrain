@@ -1,0 +1,137 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "Vime 三大块:训练 / rollout / Data Buffer",
+  "subtitle": "Megatron 学,vLLM 采,Data Buffer 与权重同步接成闭环",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-vime-architecture.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "train",
+   "label": "训练(Megatron)"
+  },
+  {
+   "id": "bridge",
+   "label": "Data Buffer 桥梁"
+  },
+  {
+   "id": "rollout",
+   "label": "rollout(vLLM+router)"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "act",
+   "lane": "train",
+   "col": 0,
+   "type": "backend",
+   "label": "actor / critic",
+   "sublabel": "megatron actor.py"
+  },
+  {
+   "id": "loss",
+   "lane": "train",
+   "col": 1,
+   "type": "backend",
+   "label": "RL loss & advantage",
+   "sublabel": "loss.py"
+  },
+  {
+   "id": "db",
+   "lane": "bridge",
+   "col": 0,
+   "type": "database",
+   "label": "Data Buffer",
+   "sublabel": "prompt 初始化/轨迹"
+  },
+  {
+   "id": "rm",
+   "lane": "bridge",
+   "col": 1,
+   "type": "backend",
+   "label": "rm_hub / filter_hub",
+   "sublabel": "reward 打分与过滤"
+  },
+  {
+   "id": "rr",
+   "lane": "rollout",
+   "col": 0,
+   "type": "frontend",
+   "label": "RolloutManager.generate",
+   "sublabel": "Ray 编排"
+  },
+  {
+   "id": "gen",
+   "lane": "rollout",
+   "col": 1,
+   "type": "frontend",
+   "label": "vllm_rollout",
+   "sublabel": "custom generate 扩展点"
+  },
+  {
+   "id": "sync",
+   "lane": "train",
+   "col": 2,
+   "type": "messagebus",
+   "label": "权重同步",
+   "sublabel": "update_weight_from_*"
+  }
+ ],
+ "edges": [
+  {
+   "from": "db",
+   "to": "rr",
+   "label": "生成请求",
+   "variant": "emphasis"
+  },
+  {
+   "from": "rr",
+   "to": "gen",
+   "label": "/inference/v1/generate"
+  },
+  {
+   "from": "gen",
+   "to": "rm",
+   "label": "轨迹+reward"
+  },
+  {
+   "from": "rm",
+   "to": "db",
+   "label": "规范化 Sample"
+  },
+  {
+   "from": "db",
+   "to": "act",
+   "label": "rollout data",
+   "variant": "emphasis"
+  },
+  {
+   "from": "act",
+   "to": "loss",
+   "label": "训练"
+  },
+  {
+   "from": "act",
+   "to": "sync",
+   "label": "训练完推送"
+  },
+  {
+   "from": "sync",
+   "to": "gen",
+   "label": "参数推送",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "换引擎不换算法",
+   "items": [
+    "算法层(GRPO/advantage/critic)仍在 Megatron loss.py",
+    "采样行为改 custom generate,reward 改 rm_hub"
+   ]
+  }
+ ]
+}

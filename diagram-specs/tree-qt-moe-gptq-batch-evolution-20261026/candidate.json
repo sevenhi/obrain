@@ -1,0 +1,54 @@
+{
+ "schema_version": 1,
+ "diagram_type": "tree",
+ "meta": {
+  "title": "逐层 batch 默认值的三段演进(版本敏感)",
+  "subtitle": "同一行代码三个版本三种语义——默认值会咬人的教科书案例",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-moe-gptq-batch-evolution.tree.html"
+ },
+ "nodes": [
+  {
+   "id": "root",
+   "label": "逐层 batch 默认值"
+  },
+  {
+   "id": "v1",
+   "parent": "root",
+   "label": "≤#2864 之前:硬编码 1",
+   "sublabel": "自动探测要跑整模型前向"
+  },
+  {
+   "id": "v2",
+   "parent": "root",
+   "label": "#2864 后:8192 token",
+   "sublabel": "seq 512→16;max(1,min(8192//seq,n))"
+  },
+  {
+   "id": "v3",
+   "parent": "root",
+   "label": "#2945(open):实测探测",
+   "sublabel": "上限 32768 token;seq 512→64"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "pad 不随 batch 变(更正)",
+   "items": [
+    "dataset_utils 一次性 pad 全部样本再切 batch",
+    "所以 batch 大小不改变哪些 token 是 pad",
+    "input_scale 差异来自规约次序,不是 pad 口径"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "实践结论",
+   "items": [
+    "要对比两次运行,显式钉死 --batch_size",
+    "公开数字里「batch 变但结果等价」先问是权重还是激活 scale",
+    "batching 也是校准协议的一部分"
+   ]
+  }
+ ]
+}

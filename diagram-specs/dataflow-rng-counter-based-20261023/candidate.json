@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "counter-based 的关键翻转:状态退化成计数器,复杂度全压到 b_k 上",
+    "subtitle": "传统 PRNG 是「复杂 f + 平凡 g」,counter-based 反过来。第 n 个随机数 = h_j(b_k(n)),b_k 是密钥化双射,不需要存任何中间状态",
+    "locale": "zh-CN",
+    "output": "diagrams/rng-counter-based.dataflow.html"
+  },
+  "stages": [
+    { "label": "① 两个输入" },
+    { "label": "② 密钥化双射" },
+    { "label": "③ 切块取值" },
+    { "label": "④ 归一化" }
+  ],
+  "nodes": [
+    {
+      "id": "key",
+      "type": "security",
+      "label": "key k",
+      "sublabel": "流标识,可派生自线程/粒子 id",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "counter",
+      "type": "frontend",
+      "label": "counter n",
+      "sublabel": "p-bit 整数,自增即状态",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "bijection",
+      "type": "backend",
+      "label": "b_k 双射混淆",
+      "sublabel": "类 block cipher 的扩散函数",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "avalanche",
+      "type": "external",
+      "label": "avalanche 判据",
+      "sublabel": "单 bit 翻转为 50% 输出翻转",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "chunk",
+      "type": "backend",
+      "label": "h_j 取第 j 块",
+      "sublabel": "128-bit 出 4 个 32-bit",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "period",
+      "type": "database",
+      "label": "周期 J·2^p",
+      "sublabel": "实测即最小周期",
+      "icon": "database",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "unit",
+      "type": "cloud",
+      "label": "映射到 [0,1)",
+      "sublabel": "供蒙特卡洛直接用",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "repro",
+      "type": "cloud",
+      "label": "机器无关随机流",
+      "sublabel": "换硬件换并行度仍同序列",
+      "icon": "success",
+      "stage": 3,
+      "row": 1
+    }
+  ],
+  "flows": [
+    { "from": "key", "to": "bijection", "label": "决定属于哪条流" },
+    { "from": "counter", "to": "bijection", "label": "决定流内第几个值" },
+    { "from": "bijection", "to": "avalanche", "label": "质量靠扩散保证" },
+    { "from": "bijection", "to": "chunk", "label": "一次算出一整块" },
+    { "from": "chunk", "to": "period", "label": "共 J 份,周期乘 J" },
+    { "from": "chunk", "to": "unit", "label": "取一份做标量" },
+    { "from": "unit", "to": "repro", "label": "无需存状态即可重放" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "传统 PRNG 的两难",
+      "items": [
+        "递推式 s_{n+1}=f(s_n) 逐值依赖前值,本质串行",
+        "一线程一 generator:MT19937 要 2.5 KB 状态,片上内存直接爆",
+        "共享一个 generator:又变回串行瓶颈"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "为什么 API 把 k 和 n 交给应用是关键",
+      "items": [
+        "k 可用机器参数(core/rank/thread id)派生,也可用应用变量(粒子 id、体素号、时间步)派生",
+        "后者给出机器无关的随机流:换并行度、换硬件都出同一序列",
+        "代价是传统 PRNG 要给亿万对象各存一份状态,做不到"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "substream 与 multistream 的区别",
+      "items": [
+        "multistream:每计算单元分配不同 key,各自自增 counter",
+        "substream:key 相同,把 counter 空间按 block/stride 分给各单元",
+        "两种都不需要「把一条序列切成不相交子流」的前置条件"
+      ]
+    }
+  ]
+}

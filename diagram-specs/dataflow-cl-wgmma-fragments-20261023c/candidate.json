@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "tCsA / tCrA / tCrC:哪些是真数据、哪些是描述符",
+    "subtitle": "SS 模式下最反直觉的一点:tCrA/tCrB 名字里带 r(register),但它们是 GMMA::DescriptorIterator——SMEM 数据根本不会拷进寄存器,「读 tCrA 的值」读的是 descriptor",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-wgmma-fragments.dataflow.html",
+    "viewBox": [1000, 600]
+  },
+  "stages": [
+    { "label": "① 源数据" },
+    { "label": "② 分给线程" },
+    { "label": "③ 造 fragment" },
+    { "label": "④ 送进 wgmma" }
+  ],
+  "nodes": [
+    { "id": "s", "type": "database", "label": "sA / sB(SMEM)", "sublabel": "canonical atom 布局", "stage": 0, "row": 0, "width": 150 },
+    { "id": "g", "type": "backend", "label": "gC(GMEM)", "sublabel": "要写回的地方", "stage": 0, "row": 2, "width": 150 },
+    { "id": "cs", "type": "backend", "label": "tCsA / tCsB", "sublabel": "整块 SMEM 换布局", "stage": 1, "row": 0, "width": 160 },
+    { "id": "cg", "type": "backend", "label": "tCgC", "sublabel": "线程级 GMEM 分片", "stage": 1, "row": 2, "width": 160 },
+    { "id": "crA", "type": "security", "label": "tCrA / tCrB", "sublabel": "DescriptorIterator", "stage": 2, "row": 0, "width": 165 },
+    { "id": "crC", "type": "backend", "label": "tCrC", "sublabel": "真寄存器累加器", "stage": 2, "row": 2, "width": 160 },
+    { "id": "ptx", "type": "external", "label": "64-bit descriptor", "sublabel": "desc_a / desc_b", "stage": 3, "row": 0, "width": 160 },
+    { "id": "acc", "type": "external", "label": "16 个 uint32", "sublabel": "每线程 32 个值(64×64)", "stage": 3, "row": 2, "width": 175 }
+  ],
+  "flows": [
+    { "from": "s", "to": "cs", "label": "换布局,不是切片", "labelDy": 54 },
+    { "from": "g", "to": "cg", "label": "按 tile 分片", "labelDy": -30 },
+    { "from": "cs", "to": "crA", "label": "只生成迭代器", "labelDy": 54 },
+    { "from": "cg", "to": "crC", "label": "真的分配寄存器", "labelDy": -30 },
+    { "from": "crA", "to": "ptx", "label": "只持当前一条", "labelDy": 54 },
+    { "from": "crC", "to": "acc", "label": "Z 字形 replicated", "labelDy": -30 }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "调试时最常犯的错",
+      "items": [
+        "print(tCrA) 看不到数值——它压根不是数据",
+        "要看数据:看 tCsA/tCsB(SMEM)与 tCrC(累加器)",
+        "把 tCrA 当寄存器切片去索引,得到的是 descriptor 字段"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么 tCsA 不是线程切片",
+      "items": [
+        "wgmma 是 warpgroup 集体指令,操作数不属于任何单线程",
+        "shape 是 (MMA,MMA_M,MMA_K,PIPE)",
+        "MMA_M = bM/64、MMA_K = bK/16"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "三个 tensor 一句话记住",
+      "items": [
+        "tCsA:整块 SMEM + 重排布局(集体视角)",
+        "tCrA:descriptor 迭代器,不是数据",
+        "tCrC:唯一的真寄存器 tensor,累加器"
+      ]
+    }
+  ]
+}

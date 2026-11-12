@@ -11,10 +11,12 @@ source:
   - "pdf: Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 前驱) | arXiv:2112.05682"
   - "pdf: FlashAttention FA1/FA2/FA3/FA4 | arXiv:2205.14135 / 2307.08691 / 2407.08608 / 2603.05451(详细 source 见 implementation/flash-attention-implementation.md frontmatter)"
   - "code: github.com/Dao-AILab/flash-attention | Star 24.7k;CuTe 后端 HEAD 98c1cee(2026-10-24,#3034 CLC 2CTA 坐标修复)一手实读"
-date: 2026-10
+date: 2026-11
 ---
 
 # Attention(算法层 algorithm/ + 实现层 implementation/ + 框架层 frameworks/)
+
+**快速入口**:[Transformer 基础](algorithm/attention-is-all-you-need.md) · [流式 KV](algorithm/attention-sinks-streaming.md) · [精确省显存谱系](algorithm/exact-attention-memory-lineage.md) · [FA 四代内核](implementation/flash-attention-implementation.md) · [FlexAttention 接口](frameworks/flexattention.md) · [来源](references.md)。
 
 > 领域索引(导航起始页)。**领域知识本体分三层目录:`algorithm/`(理论/算法)、`implementation/`(GPU 内核/工程)与 `frameworks/`(用户编程接口/编译器后端)**,每篇一个专题、可独立打开读懂;本页放定位、关键事实与导航,不重复正文。外部链接索引见 [references.md](references.md)。
 > 沿革:2026-09 由原 `attention-and-transformers` 与 `flash-attention` 两域合并;同月二次整合——concepts 平铺改为 algorithm/implementation 两层,三篇 FA 内核篇(io-aware-tiling/work-partitioning/fa3-hopper-async)合成为一篇 `implementation/flash-attention-implementation.md`,LLaMA 架构篇移出为独立域 [`model-architecture/`](../model-architecture/index.md)(扩展为通用 LLM 架构篇)。
@@ -33,11 +35,12 @@ date: 2026-10
 | [megabyte-multiscale](algorithm/megabyte-multiscale.md) | concept | 多尺度分解:Global(patch 间)+ Local(patch 内字节),attention O(T^4/3)、FFN per-patch → 同算力 P 倍大模型;tokenization-free 追平 subword | ✅ 已入库 |
 | [exact-attention-memory-lineage](algorithm/exact-attention-memory-lineage.md) | concept | FA 前驱:Rabe & Staats lazy softmax+在线 max 重归一 → O(1) 存注意力;R&S 省"显存峰值"、FA 省"访存次数"(arXiv 2112.05682) | ✅ 已入库 |
 
-## 实现层 implementation/(1 篇,原 3 篇合成)
+## 实现层 implementation/(2 篇)
 
 | 条目 | 类型 | 一句话 | 状态 |
 |---|---|---|---|
 | [flash-attention-implementation](implementation/flash-attention-implementation.md) | concept | FA 四代主线合成篇:FA1 IO-aware tiling + online softmax(算法伪代码、Θ(N²d²/M) 推导、4d 块大小)→ FA2 work partitioning(减 non-matmul、warp 按 Q 行切、序列维并行)→ FA3 Hopper 异步(WGMMA/TMA/overlap/pingpong/FP8)→ FA4 Blackwell(CuTe DSL/UMMA/TMEM);反向重算、实践 checklist、全部溯源 | ✅ 已入库 |
+| [lse-sequence-split-merge](implementation/lse-sequence-split-merge.md) | concept | KV sequence 分块(split-K)的局部输出+LSE如何恢复全局 softmax;`global_lse=logsumexp(local_lse)`、`exp(local_lse-global_lse)`加权合并;稳定`(m,l,acc)`状态、分布式归约、Q 分块直接 concat 与可运行 PyTorch 验证 | ✅ 已入库 |
 
 ## 框架层 frameworks/(1 篇)
 
@@ -87,6 +90,7 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
 - **[`model-architecture/`](../model-architecture/index.md)**:LLM 整体架构域(LLaMA 三件套/位置编码演进/GQA/训练哲学),自本域 llama-architecture 篇扩展而来;attention 是其中被"改进定型"的组件,机制基础仍在本域。线性注意力主线(softmax attention 之外的第三条架构主轴:Mamba/RWKV/Gated DeltaNet/Qwen3-Next)见 [hybrid-linear-attention](../model-architecture/concepts/hybrid-linear-attention.md)。
 - **[`vllm/`](../vllm/index.md)**:StreamingLLM(逐出谁)与 PagedAttention/KV cache 分页(装得下就全留,见 [`vllm/concepts/paged-attention.md`](../vllm/concepts/paged-attention.md))正交互补——长上下文/常驻流式服务的两个半边;vLLM 未内置 sink 逐出,TensorRT-LLM/HF 已内置(SGLang 主线仍支持 attention sink:sinks kwarg / learnable sink / speculative draft sink 等多个 backend)。vLLM 集成的注意力内核即本域 FA 谱系。
 - **[`quantization/`](../quantization/index.md)**:SpAtten progressive quantization(attention 输入 MSB/LSB)与 LLM 权重量化(SpQR/GPTQ/AWQ)是量化谱系的两侧;FA3 的 FP8 block-quantize 是"量化进 attention kernel"的实例;attention sink 与量化 outlier 同源(softmax 和为 1 制造极端 token)。
+- **[`lse-sequence-split-merge`](implementation/lse-sequence-split-merge.md)**:实现层的 split-K 专题——当 KV 沿 sequence 分片时，使用局部 LSE 重建全局 softmax；当 Q 沿 sequence 分片时，结果直接拼接。
 - **[`cutlass/`](../cutlass/index.md)**:FA 内核的底座(FA2 用 CuTe 原语写 tiling、FA3 基于 CUTLASS 3.x collective 抽象构建);本域 SpAtten 代表"绕开通用 GEMM 库造专用 attention 硬件"的对照路线。
 - **[`computer-vision/`](../computer-vision/index.md)**:NeRF/TRT-ViT 的「访存而非算力是瓶颈」判断,与本域 FA 的 IO-aware 分析同一方法论;ViT 基础机制(patchify/CLS,[vision-transformer-basics](../computer-vision/concepts/vision-transformer-basics.md))与 DETR 交叉注意力([object-detection-segmentation](../computer-vision/concepts/object-detection-segmentation.md))的 encoder/decoder attention 均以本域 AIANY 为机制源头。
 
@@ -104,6 +108,7 @@ Attention Is All You Need (2017)  ← 根:QKV/多头/√d_k/位置编码/O(n²) 
 **实现层**
 
 - 为什么慢:标准 attention 中 `S = Q@Kᵀ·scale`、`P = softmax(S)` 都是 N×N 矩阵,需写入 HBM 再读回;N=8192、d=128 时 S 占 ~128MB,远超 GPU SRAM(~192KB)。**瓶颈是内存搬运,不是计算**;
+- **split-K 的 LSE 合并**:局部 chunk 输出 `O_c` 与 `LSE_c` 可精确恢复全局结果:`LSE=logsumexp_c(LSE_c)`, `O=Σ_c exp(LSE_c−LSE)O_c`;切 Q sequence 则只需沿 query 维 concat。稳定 kernel 形式是合并 `(m,l,acc)`,而不是直接累加未平移的 `exp(score)`。
 - IO 复杂度:标准 attention Θ(Nd + N²)(元素访问)→ FlashAttention **Θ(N²d²/M)**(M=SRAM 容量),显存 O(N²)→O(N),且不损失精度(精确);
 - FA2 快 2× 的来源:减 non-matmul FLOPs、warp 按 Q 行切分免通信、序列维并行(切 Q 免归并,切 KV 才要 split-K 归并);
 - FA3(H100):异步 WGMMA + TMA + softmax/matmul/load 重叠 pipeline + FP8;论文口径 BF16 相对 FA2 加速 1.5-2×,FP16 前向最高 740 TFLOPS(≈H100 dense 峰值的 75%);

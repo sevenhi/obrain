@@ -1,0 +1,101 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "StormService 的 PD 分离编排(prefill/decode + NIXL)",
+    "subtitle": "同一资源声明两个 role,prefill 产出 KV 经 NIXL 侧信道交给 decode;只配角色不配传输会退化成慢一倍的单体",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-aibrix-pd-storm.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_pre",
+      "label": "① prefill 角色"
+    },
+    {
+      "id": "ln_chan",
+      "label": "② NIXL 传输"
+    },
+    {
+      "id": "ln_dec",
+      "label": "③ decode 角色"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "pre",
+      "lane": "ln_pre",
+      "col": 0,
+      "type": "backend",
+      "label": "prefill 副本",
+      "sublabel": "kv_role=kv_both"
+    },
+    {
+      "id": "side",
+      "lane": "ln_chan",
+      "col": 1,
+      "type": "messagebus",
+      "label": "NIXL side channel",
+      "sublabel": "VLLM_NIXL_* :5558"
+    },
+    {
+      "id": "dec",
+      "lane": "ln_dec",
+      "col": 2,
+      "type": "cloud",
+      "label": "decode 副本",
+      "sublabel": "对侧 KV 配置"
+    },
+    {
+      "id": "mono",
+      "lane": "ln_dec",
+      "col": 2,
+      "type": "external",
+      "label": "退化单体",
+      "sublabel": "KV 传不过去",
+      "yOffset": 120
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "pre",
+      "to": "side",
+      "label": "导出 KV(kv_connector=NixlConnector)",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "side",
+      "to": "dec",
+      "label": "READ 拉取 KV",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "pre",
+      "to": "mono",
+      "label": "缺传输配置→KV 交不出",
+      "role": "error",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "pre",
+    "side",
+    "dec"
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "PD 的坑在传输不在角色",
+      "items": [
+        "分 prefill/decode 角色只是第一步",
+        "kv_transfer_config 与 NIXL 环境变量必须成对",
+        "否则 PD 比混批更慢(慢一倍的单体)"
+      ]
+    }
+  ]
+}

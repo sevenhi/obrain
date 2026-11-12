@@ -1,0 +1,180 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "aux-loss-free 负载均衡:用 bias 项在训练中自己找平",
+    "subtitle": "bias 只参与「选哪几个专家」,不参与 gating 值的计算——所以它调负载时完全不扰动梯度与表示。这是 V3 相对 V2 纯 aux loss 的根本改进:不再为了均衡牺牲模型质量",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-v3-auxfree.lifecycle.html"
+  },
+  "mainPath": [
+    "init",
+    "train",
+    "observe",
+    "adjust",
+    "stable"
+  ],
+  "states": [
+    {
+      "id": "init",
+      "type": "start",
+      "label": "初始 bias=0",
+      "sublabel": "每专家一个 b_i,全零起步"
+    },
+    {
+      "id": "train",
+      "type": "active",
+      "label": "前向:选路",
+      "sublabel": "用 s_i + b_i 做 top-k"
+    },
+    {
+      "id": "observe",
+      "type": "waiting",
+      "label": "统计整 batch 负载",
+      "sublabel": "每专家被选中多少 token"
+    },
+    {
+      "id": "adjust",
+      "type": "decision",
+      "label": "过载减 / 欠载加",
+      "sublabel": "b_i -= γ 或 b_i += γ"
+    },
+    {
+      "id": "stable",
+      "type": "success",
+      "label": "负载长期均衡",
+      "sublabel": "不掉 token(no token-dropping)"
+    },
+    {
+      "id": "gamma",
+      "type": "active",
+      "label": "γ = bias 更新速度",
+      "sublabel": "前 14.3T token 取 0.001"
+    },
+    {
+      "id": "freeze",
+      "type": "neutral",
+      "label": "后 500B 冻结 γ=0",
+      "sublabel": "末段不再调,稳定收敛"
+    },
+    {
+      "id": "aux",
+      "type": "external",
+      "label": "互补 sequence-wise loss",
+      "sublabel": "α=0.0001,只在极端失衡时兜底"
+    },
+    {
+      "id": "gate",
+      "type": "neutral",
+      "label": "gating 值仍用原始 s_i",
+      "sublabel": "bias 不进权重,只进选择"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "t1",
+      "from": "init",
+      "to": "train",
+      "label": "开训"
+    },
+    {
+      "id": "t2",
+      "from": "train",
+      "to": "observe",
+      "label": "本步算完",
+      "variant": "emphasis"
+    },
+    {
+      "id": "t3",
+      "from": "observe",
+      "to": "adjust",
+      "label": "算出谁过载谁欠载",
+      "variant": "emphasis"
+    },
+    {
+      "id": "t4",
+      "from": "adjust",
+      "to": "train",
+      "label": "下一步用新 bias 选路",
+      "variant": "emphasis"
+    },
+    {
+      "id": "t5",
+      "from": "adjust",
+      "to": "stable",
+      "label": "长期收敛"
+    },
+    {
+      "id": "t6",
+      "from": "gamma",
+      "to": "adjust",
+      "label": "决定调整幅度"
+    },
+    {
+      "id": "t7",
+      "from": "gamma",
+      "to": "freeze",
+      "label": "后 500B 转为冻结",
+      "variant": "dashed"
+    },
+    {
+      "id": "t8",
+      "from": "freeze",
+      "to": "stable",
+      "label": "不再动即稳定",
+      "variant": "dashed"
+    },
+    {
+      "id": "t9",
+      "from": "aux",
+      "to": "observe",
+      "label": "极端失衡才介入",
+      "variant": "dashed"
+    },
+    {
+      "id": "t10",
+      "from": "gate",
+      "to": "train",
+      "label": "bias 不扰动梯度",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "为什么这叫「免辅助损失」",
+      "items": [
+        "V2 靠 L_aux 把负载往均衡推,但 aux loss 与语言建模目标冲突,太大会拉低质量",
+        "V3 把「均衡」移出损失函数,变成一个不参与梯度的 bias 项",
+        "所以模型质量与负载均衡第一次不再互相拉扯"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "三个数字要记牢",
+      "items": [
+        "γ 前 14.3T token = 0.001,后 500B token = 0.0(冻结)",
+        "兜底 sequence-wise loss 的 α = 0.0001(比 V2 的 0.001 再小一个量级)",
+        "route_scale = 2.5(V2 是 routed_scaling_factor = 16.0)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "源码对应",
+      "items": [
+        "HF MoEGate 的 topk_method=\"noaux_tc\"",
+        "e_score_correction_bias 就是 b_i",
+        "选择时用 scores + bias 做 topk,权重回落到原始 scores"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "和 V2 的一句话对比",
+      "items": [
+        "V2:softmax 打分 + 不归一化 ×16 + 纯 aux loss(seq_aux, α=0.001)",
+        "V3:sigmoid 打分 + top-k 归一化 ×2.5 + bias 项 + 极小兜底 loss",
+        "改动全在路由与训练目标,注意力结构一行没动"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "为什么解码瓶颈是「加载 K/V」而不是算力",
+    "subtitle": "自回归解码每步只算 1 个新 token 的 Q,却要把全部历史 K/V 从 HBM 读一遍;权重流量固定,KV 流量随 seq_len×batch 线性涨",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-kv-cache-bandwidth.workflow.html"
+  },
+  "lanes": [
+    { "id": "step", "label": "单步解码" },
+    { "id": "mem", "label": "显存流量" },
+    { "id": "math", "label": "算术强度" },
+    { "id": "fix", "label": "结构性解法" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "算得很小", "fromCol": 0, "toCol": 1 },
+    { "id": "p2", "label": "搬得很多", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "p3", "label": "砍带宽", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["newq", "qkv_calc", "read_kv", "bound", "cut_kv"],
+  "nodes": [
+    { "id": "newq", "lane": "step", "col": 0, "type": "frontend", "label": "1 个新 token", "sublabel": "只算这一行的 Q", "width": 146 },
+    { "id": "qkv_calc", "lane": "step", "col": 1, "type": "backend", "label": "attention 内积与加权", "sublabel": "对全部历史位置做 q·k 与 Σ·v", "width": 146 },
+    { "id": "read_kv", "lane": "mem", "col": 2, "type": "database", "label": "读整份 KV cache", "sublabel": "每步从 HBM 到 SM 一遍", "width": 146 },
+    { "id": "weights", "lane": "mem", "col": 3, "type": "database", "label": "读模型权重", "sublabel": "这部分流量是固定的", "width": 146 },
+    { "id": "bound", "lane": "math", "col": 4, "type": "security", "label": "FLOPs 极小 + 带宽满", "sublabel": "典型 memory-bound,算力大量闲置", "width": 146 },
+    { "id": "cut_kv", "lane": "fix", "col": 5, "type": "external", "label": "线性砍 KV 头数", "sublabel": "H_kv 减少 = 流量按比例减", "width": 146 },
+    { "id": "scale", "lane": "mem", "col": 4, "type": "cloud", "label": "KV 随 seq_len×batch 涨", "sublabel": "长上下文/大 batch 时主导延迟", "width": 146, "yOffset": 104 },
+    { "id": "gqa", "lane": "fix", "col": 5, "type": "backend", "label": "GQA / MLA", "sublabel": "共享 → 压缩,两条同源路线", "width": 146, "yOffset": 104 },
+    { "id": "formula", "lane": "math", "col": 3, "type": "database", "label": "2·L·H_kv·d·S·B·bytes", "sublabel": "缩小 H_kv 就是缩这条公式", "width": 146, "yOffset": 104 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "newq", "to": "qkv_calc", "variant": "emphasis", "label": "每步只 1 次前向" },
+    { "id": "e2", "from": "qkv_calc", "to": "read_kv", "variant": "emphasis", "label": "要和全部历史 K/V 比" },
+    { "id": "e3", "from": "read_kv", "to": "bound", "variant": "emphasis", "label": "搬的量 ≫ 算的量" },
+    { "id": "e4", "from": "weights", "to": "bound", "variant": "default", "label": "固定开销" },
+    { "id": "e5", "from": "bound", "to": "cut_kv", "variant": "emphasis", "label": "那就砍流量" },
+    { "id": "e6", "from": "cut_kv", "to": "gqa", "variant": "emphasis", "label": "H_kv 从 H 降到 g" },
+    { "id": "e7", "from": "scale", "to": "read_kv", "variant": "dashed", "label": "越长越痛" },
+    { "id": "e8", "from": "formula", "to": "cut_kv", "variant": "dashed", "label": "H_kv 是唯一可砍的因子" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "带宽账单",
+      "items": [
+        "每步解码内存流量 ≈ 模型权重 + KV cache",
+        "KV cache = 2(K,V) × n_layers × n_kv_heads × head_dim × seq_len × batch × bytes",
+        "权重流量固定,KV 流量随 seq_len×batch 线性涨"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "原始表述",
+      "items": [
+        "Shazeer 2019 §1:增量推理速度被「重新加载 keys/values 大张量」的内存带宽限制",
+        "解码每步 FLOPs 极小而 GPU 算力闲置 —— 典型带宽受限场景",
+        "砍 KV 头数是线性砍流量,几乎不损算力吞吐"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "手算核对(bf16,2B/元素)",
+      "items": [
+        "Llama-2-7B(MHA,32 层,32 KV,128 维):每 token 512 KB → 4K 序列 2 GB",
+        "Llama-3.1-8B(GQA-8,32 层,8 KV,128 维):每 token 128 KB → 128K 序列 16 GB",
+        "所以 128K 长上下文模型必须 GQA 起步,再叠 KV 量化或 MLA"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "别混口径",
+      "items": [
+        "GQA 是「头级共享」,MLA 是「低秩压缩」,目标同源但手段不同",
+        "MLA:V3 每 token cache ≈ 512(d_c)+64(RoPE)维,而非 128×128×2",
+        "DeepSeek-V2 口径:比同系 67B(MHA)KV cache 省 93.3%"
+      ]
+    }
+  ]
+}

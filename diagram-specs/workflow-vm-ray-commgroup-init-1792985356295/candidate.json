@@ -1,0 +1,127 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "通信组初始化:固定序列 + PP×TP 二维编址",
+  "subtitle": "TCP rendezvous 地址 + init_worker→init_device→load_model",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-ray-commgroup-init.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "addr",
+   "label": "地址"
+  },
+  {
+   "id": "seq",
+   "label": "固定序列"
+  },
+  {
+   "id": "mesh",
+   "label": "编址"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "ip0",
+   "lane": "addr",
+   "col": 0,
+   "type": "backend",
+   "label": "driver_ip",
+   "sublabel": "单节点退化 127.0.0.1"
+  },
+  {
+   "id": "port",
+   "lane": "addr",
+   "col": 1,
+   "type": "backend",
+   "label": "get_open_port",
+   "sublabel": "tcp://ip:port"
+  },
+  {
+   "id": "iw",
+   "lane": "seq",
+   "col": 0,
+   "type": "backend",
+   "label": "init_worker",
+   "sublabel": "collective_rpc"
+  },
+  {
+   "id": "id",
+   "lane": "seq",
+   "col": 1,
+   "type": "backend",
+   "label": "init_device",
+   "sublabel": "collective_rpc"
+  },
+  {
+   "id": "lm",
+   "lane": "seq",
+   "col": 2,
+   "type": "backend",
+   "label": "load_model",
+   "sublabel": "弹性 EP 走 elastic_ep"
+  },
+  {
+   "id": "p0",
+   "lane": "mesh",
+   "col": 0,
+   "type": "backend",
+   "label": "PP=2/TP=4",
+   "sublabel": "[[0,1,2,3],[4,5,6,7]]"
+  },
+  {
+   "id": "drv",
+   "lane": "mesh",
+   "col": 1,
+   "type": "backend",
+   "label": "driver worker",
+   "sublabel": "rank % TP == 0"
+  }
+ ],
+ "edges": [
+  {
+   "from": "ip0",
+   "to": "port",
+   "label": "组地址",
+   "variant": "emphasis"
+  },
+  {
+   "from": "port",
+   "to": "iw",
+   "label": "下发"
+  },
+  {
+   "from": "iw",
+   "to": "id",
+   "label": "顺序",
+   "variant": "emphasis"
+  },
+  {
+   "from": "id",
+   "to": "lm",
+   "label": "顺序"
+  },
+  {
+   "from": "lm",
+   "to": "p0",
+   "label": "rank = pp*TP+tp"
+  },
+  {
+   "from": "p0",
+   "to": "drv",
+   "label": "每 PP 组首 rank"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "复用它不重造",
+   "items": [
+    "vLLM 复用 torch.distributed+NCCL",
+    "只负责编排 worker、重排 rank、下发环境变量与地址",
+    "瓶颈通常在编排,不在通信本身"
+   ]
+  }
+ ]
+}

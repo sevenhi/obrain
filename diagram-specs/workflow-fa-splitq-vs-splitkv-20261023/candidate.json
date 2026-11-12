@@ -1,0 +1,201 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "序列并行:切 Q(免合并) vs 切 KV(需归并)",
+    "subtitle": "同样为了把更多 threadblock 塞进 GPU:沿 Q 切各行独立直接写;沿 K/V 切每行分段,必须按 LSE 加权归并",
+    "locale": "zh-CN",
+    "output": "diagrams/fa-splitq-vs-splitkv.workflow.html",
+    "viewBox": [
+      1150,
+      560
+    ]
+  },
+  "lanes": [
+    {
+      "id": "ln_q",
+      "label": "沿 Q 切(FA2 序列并行)"
+    },
+    {
+      "id": "ln_kv",
+      "label": "沿 K/V 切(FlashDecoding / split-K)",
+      "variant": "exception"
+    },
+    {
+      "id": "ln_common",
+      "label": "共同动机"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "qg",
+      "lane": "ln_q",
+      "col": 0,
+      "type": "external",
+      "label": "grid 沿 Q 行切",
+      "sublabel": "(num_q_blocks,b,h)",
+      "icon": "start"
+    },
+    {
+      "id": "qb",
+      "lane": "ln_q",
+      "col": 1,
+      "type": "backend",
+      "label": "每 block 一段 Q 行",
+      "sublabel": "各自算完整 softmax",
+      "width": 124
+    },
+    {
+      "id": "qw",
+      "lane": "ln_q",
+      "col": 2,
+      "type": "backend",
+      "label": "各自写自己的 O",
+      "sublabel": "block 间零通信",
+      "icon": "success",
+      "width": 124
+    },
+    {
+      "id": "kg",
+      "lane": "ln_kv",
+      "col": 0,
+      "type": "external",
+      "label": "grid 沿 K/V 切",
+      "sublabel": "(b,h,n_splits)",
+      "icon": "start"
+    },
+    {
+      "id": "kb",
+      "lane": "ln_kv",
+      "col": 1,
+      "type": "backend",
+      "label": "各 block 一段 K/V",
+      "sublabel": "同样 Q 行,不同 K/V 段",
+      "width": 124
+    },
+    {
+      "id": "kp",
+      "lane": "ln_kv",
+      "col": 2,
+      "type": "backend",
+      "label": "局部 O_split+LSE",
+      "sublabel": "每行只覆盖一部分",
+      "width": 124
+    },
+    {
+      "id": "kr",
+      "lane": "ln_kv",
+      "col": 3,
+      "type": "database",
+      "label": "reduction 归并",
+      "sublabel": "按 LSE 加权合并",
+      "icon": "active",
+      "width": 124
+    },
+    {
+      "id": "ko",
+      "lane": "ln_kv",
+      "col": 4,
+      "type": "backend",
+      "label": "O/=l 归一化",
+      "sublabel": "最终归一化",
+      "icon": "success",
+      "width": 124
+    },
+    {
+      "id": "motive",
+      "lane": "ln_common",
+      "col": 0,
+      "type": "cloud",
+      "label": "共同动机",
+      "sublabel": "长序列补 occupancy"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "qg",
+      "to": "qb",
+      "label": "Q 行块",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "qb",
+      "to": "qw",
+      "label": "行间独立,免归并",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "kg",
+      "to": "kb",
+      "label": "K/V 分段",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "kb",
+      "to": "kp",
+      "label": "局部 softmax 分母",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "kp",
+      "to": "kr",
+      "label": "O_split + m/l 要合并",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "kr",
+      "to": "ko",
+      "label": "按新 max 加权累加",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "motive",
+      "to": "qg",
+      "label": "喂不满 SM 时",
+      "role": "branch"
+    },
+    {
+      "id": "e8",
+      "from": "motive",
+      "to": "kg",
+      "label": "decode 长序列时",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "切 Q 为什么免归并",
+      "items": [
+        "attention 的 softmax 在 Q 行间完全独立",
+        "FA2 论文:\"no communication at all\"",
+        "FA1 只有 batch×heads 并行;FA2 新增序列维(切 Q)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "切 KV 为什么必须归并",
+      "items": [
+        "同一 Q 行被分成多段,每段只见部分 key",
+        "合并公式:scale=exp(m_s-m_final);O+=O_s·scale",
+        "类比 CUTLASS split-K / Stream-K"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "防混淆脚注",
+      "items": [
+        "FA1 开源实现的 grid 第三维是 num_splits 启发式,不是 Q 块数",
+        "\"FA1 早已沿 Q 并行\"是误读;论文口径:FA1 仅 batch×heads",
+        "切 KV 要归并是 FlashDecoding 的事,别与 FA2 混"
+      ]
+    }
+  ]
+}

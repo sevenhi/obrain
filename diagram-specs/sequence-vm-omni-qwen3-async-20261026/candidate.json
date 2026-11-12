@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Qwen3-Omni 一次请求的异步 chunk 时序",
+    "subtitle": "Talker/Code2Wav 在 Thinker 还在解码时就消费已到 chunk,级间重叠压 TTFP;同步路径则等上游完成",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-omni-qwen3-async.sequence.html"
+  },
+  "participants": [
+    {
+      "id": "c",
+      "type": "frontend",
+      "label": "Client"
+    },
+    {
+      "id": "o",
+      "type": "backend",
+      "label": "Orchestrator"
+    },
+    {
+      "id": "t",
+      "type": "cloud",
+      "label": "Thinker (AR,stage0)"
+    },
+    {
+      "id": "k",
+      "type": "cloud",
+      "label": "Talker (stage1)"
+    },
+    {
+      "id": "w",
+      "type": "cloud",
+      "label": "Code2Wav (stage2)"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "c",
+      "to": "o",
+      "y": 180,
+      "label": "文本/图/音/视频 prompt"
+    },
+    {
+      "id": "m2",
+      "from": "o",
+      "to": "t",
+      "y": 250,
+      "label": "提交 stage0(采样参数#0)"
+    },
+    {
+      "id": "m3",
+      "from": "t",
+      "to": "k",
+      "y": 320,
+      "label": "文本 token+conditioning(chunk 流)",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m4",
+      "from": "k",
+      "to": "w",
+      "y": 390,
+      "label": "codec token chunk"
+    },
+    {
+      "id": "m5",
+      "from": "w",
+      "to": "o",
+      "y": 460,
+      "label": "音频波形块"
+    },
+    {
+      "id": "m6",
+      "from": "o",
+      "to": "c",
+      "y": 530,
+      "label": "流式 text+audio(TTFP 优先)",
+      "variant": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "async chunk 的价值",
+      "items": [
+        "级间重叠:下游不等 stage0 结束就开跑",
+        "压下来的指标是首包音频时间 TTFP",
+        "同步 async_chunk:false 实现更简单,交互延迟差"
+      ]
+    }
+  ]
+}

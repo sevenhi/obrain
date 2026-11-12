@@ -1,0 +1,166 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Semantic Router 三层架构:信号 → 决策 → 插件",
+    "subtitle": "请求先做信号提取,再布尔决策选模型,最后走插件链(安全/成本/缓存);同一架构不同配置覆盖多场景",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-sr-three-layer.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_cli",
+      "label": "① 调用方"
+    },
+    {
+      "id": "ln_sr",
+      "label": "② SR(Go)"
+    },
+    {
+      "id": "ln_be",
+      "label": "③ 后端池"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "ag",
+      "lane": "ln_cli",
+      "col": 0,
+      "type": "frontend",
+      "label": "Agent harness",
+      "sublabel": "POST /v1/chat/completions"
+    },
+    {
+      "id": "sig",
+      "lane": "ln_sr",
+      "col": 1,
+      "type": "backend",
+      "label": "信号提取层",
+      "sublabel": "13 类信号并行评估"
+    },
+    {
+      "id": "dec",
+      "lane": "ln_sr",
+      "col": 1,
+      "type": "security",
+      "label": "决策层 DecisionEngine",
+      "sublabel": "布尔规则树 priority",
+      "yOffset": 110
+    },
+    {
+      "id": "sel",
+      "lane": "ln_sr",
+      "col": 1,
+      "type": "database",
+      "label": "选择层 Selection",
+      "sublabel": "static/elo/decision-model",
+      "yOffset": 220
+    },
+    {
+      "id": "plg",
+      "lane": "ln_sr",
+      "col": 2,
+      "type": "backend",
+      "label": "插件链 Plugins",
+      "sublabel": "system_prompt/cache/compression"
+    },
+    {
+      "id": "vllm",
+      "lane": "ln_be",
+      "col": 3,
+      "type": "cloud",
+      "label": "本地 vLLM",
+      "sublabel": "qwen3-8b/32b"
+    },
+    {
+      "id": "small",
+      "lane": "ln_be",
+      "col": 3,
+      "type": "security",
+      "label": "Decision/Vela 小模型",
+      "sublabel": "分类/选模/安全",
+      "yOffset": 110
+    },
+    {
+      "id": "cloud",
+      "lane": "ln_be",
+      "col": 3,
+      "type": "external",
+      "label": "云端 API",
+      "sublabel": "OpenAI/Anthropic",
+      "yOffset": 220
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "ag",
+      "to": "sig",
+      "label": "model: vllm-sr/auto",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "sig",
+      "to": "dec",
+      "label": "SignalMatches",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "dec",
+      "to": "sel",
+      "label": "命中决策候选集",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "sel",
+      "to": "plg",
+      "label": "选定 m* + 插件链",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "plg",
+      "to": "vllm",
+      "label": "转发",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "plg",
+      "to": "small",
+      "label": "",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e7",
+      "from": "plg",
+      "to": "cloud",
+      "label": "",
+      "role": "main",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "ag",
+    "sig",
+    "dec",
+    "sel",
+    "plg",
+    "vllm"
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "先记住一个反转直觉",
+      "items": [
+        "瓶颈不只是「模型不够强」,而是「哪条请求用哪个模型」",
+        "SR 把它做成可组合的信号-决策管道,而不是每个应用自己写路由 if"
+      ]
+    }
+  ]
+}

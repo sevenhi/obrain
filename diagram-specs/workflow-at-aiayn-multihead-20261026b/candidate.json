@@ -1,0 +1,111 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "多头注意力:为什么 h 份 64 维而非 1 份 512 维",
+    "locale": "zh-CN",
+    "subtitle": "单头输出是 value 的加权平均,会抹掉信息;h 组低维投影并行 attend,各学一种关注模式",
+    "output": "diagrams/at-aiayn-multihead.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_proj",
+      "label": "投影与拆分"
+    },
+    {
+      "id": "ln_heads",
+      "label": "h 头并行"
+    },
+    {
+      "id": "ln_out",
+      "label": "拼接与输出"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "qkv",
+      "lane": "ln_proj",
+      "col": 0,
+      "type": "backend",
+      "label": "Q / K / V 输入",
+      "sublabel": "d_model = 512",
+      "icon": "start"
+    },
+    {
+      "id": "proj",
+      "lane": "ln_proj",
+      "col": 1,
+      "type": "backend",
+      "label": "h 组学习投影",
+      "sublabel": "QWᵢQ·KWᵢK·VWᵢV → d_k=d_v=64",
+      "icon": "active"
+    },
+    {
+      "id": "heads",
+      "lane": "ln_heads",
+      "col": 1,
+      "type": "backend",
+      "label": "head₁ … head_h",
+      "sublabel": "h=8 次缩放点积并行,总计算≈单头",
+      "icon": "active"
+    },
+    {
+      "id": "wo",
+      "lane": "ln_out",
+      "col": 2,
+      "type": "backend",
+      "label": "Concat + Wᴼ 投影",
+      "sublabel": "h×64 拼回 512",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "qkv",
+      "to": "proj",
+      "label": "分 h 份降到低维",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "proj",
+      "to": "heads",
+      "label": "h 份各自 attend",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "heads",
+      "to": "wo",
+      "label": "拼接后再过 Wᴼ",
+      "role": "main"
+    }
+  ],
+  "mainPath": [
+    "qkv",
+    "proj",
+    "heads",
+    "wo"
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "消融(Table 3 行 A,dev BLEU)",
+      "items": [
+        "h=1 → 24.9;h=8 → 25.8(最优);h=32 → 25.4",
+        "头太少表达不够,太多每头维度过低",
+        "压缩 d_k 伤质量(行 B)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "不同头学不同任务(附录 Fig 3-5)",
+      "items": [
+        "长距离短语绑定(making…more difficult)",
+        "指代消解(its 指向先行词)",
+        "有的头对应句法结构"
+      ]
+    }
+  ]
+}

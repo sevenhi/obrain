@@ -1,0 +1,120 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "四步流程:dispatch → 本地专家 → combine",
+  "subtitle": "两次 all-to-all;路由权重不上路,留在 token 属主 rank 保持原 dtype",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-ep-ptq-four-steps.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "dispatch",
+   "label": "dispatch"
+  },
+  {
+   "id": "local",
+   "label": "本地计算"
+  },
+  {
+   "id": "combine",
+   "label": "combine"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "d1",
+   "lane": "dispatch",
+   "col": 0,
+   "type": "backend",
+   "label": "(tok,expert) 展开",
+   "sublabel": "dest = global_expert // num_local"
+  },
+  {
+   "id": "d2",
+   "lane": "dispatch",
+   "col": 1,
+   "type": "backend",
+   "label": "all_to_all 发 token + 本地 eid",
+   "sublabel": "token 以模型 dtype 上路"
+  },
+  {
+   "id": "l1",
+   "lane": "local",
+   "col": 2,
+   "type": "backend",
+   "label": "本地 _grouped_linear",
+   "sublabel": "按 recv_eid 排序分组"
+  },
+  {
+   "id": "c1",
+   "lane": "combine",
+   "col": 3,
+   "type": "backend",
+   "label": "all_to_all 发回专家结果",
+   "sublabel": "不带权回来"
+  },
+  {
+   "id": "c2",
+   "lane": "combine",
+   "col": 4,
+   "type": "backend",
+   "label": "本地权重定序加权求和",
+   "sublabel": "view(n,top_k,H).sum(1)"
+  }
+ ],
+ "edges": [
+  {
+   "from": "d1",
+   "to": "d2",
+   "label": "-1 槽位不发送",
+   "variant": "emphasis"
+  },
+  {
+   "from": "d2",
+   "to": "l1",
+   "label": "owner rank 收下 token",
+   "variant": "emphasis"
+  },
+  {
+   "from": "l1",
+   "to": "c1",
+   "label": "结果不带权回来",
+   "variant": "emphasis"
+  },
+  {
+   "from": "c1",
+   "to": "c2",
+   "label": "属主 rank 用原 dtype 权重加权",
+   "variant": "emphasis"
+  }
+ ],
+ "mainPath": [
+  "d1",
+  "d2",
+  "l1",
+  "c1",
+  "c2"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "八个必须做对的细节",
+   "items": [
+    "① -1 槽位不发送 ② 计数交换后 host 必须 wait",
+    "③ 路由权重不上路 ④ combine 必须定序",
+    "⑤ 2^31 溢出沿 hidden 切片 ⑥ 缓冲尽早释放",
+    "⑦ 塌缩告警判据用「任何 rank 最大值」⑧ 梯度过得去"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "定序 combine 的关键",
+   "items": [
+    "index_add_ 是 CUDA 原子加,求和次序随 token 分布变",
+    "旧版:27% input scale 与单卡不同、最大偏 28%",
+    "定序版:EP=1 对照 grouped_mm 从 223 差异降到 0"
+   ]
+  }
+ ]
+}

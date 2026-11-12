@@ -1,0 +1,112 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "在线 vs 离线怎么选",
+  "subtitle": "hidden states、GPU、数据复用、verifier 对齐四个维度的取舍",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-spec-online-vs-offline.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "hs",
+   "label": "hidden states"
+  },
+  {
+   "id": "gpu",
+   "label": "GPU 用法"
+  },
+  {
+   "id": "reuse",
+   "label": "数据复用"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "oh",
+   "lane": "hs",
+   "col": 0,
+   "type": "backend",
+   "label": "离线",
+   "sublabel": "一次生成存盘"
+  },
+  {
+   "id": "nh",
+   "lane": "hs",
+   "col": 1,
+   "type": "backend",
+   "label": "在线",
+   "sublabel": "训练时从 vLLM 抽"
+  },
+  {
+   "id": "og",
+   "lane": "gpu",
+   "col": 0,
+   "type": "backend",
+   "label": "串行复用同批卡",
+   "sublabel": "采样与训练错开"
+  },
+  {
+   "id": "ng",
+   "lane": "gpu",
+   "col": 1,
+   "type": "backend",
+   "label": "必须分卡",
+   "sublabel": "vLLM/Trainer 并存"
+  },
+  {
+   "id": "or",
+   "lane": "reuse",
+   "col": 0,
+   "type": "backend",
+   "label": "高",
+   "sublabel": "多组超参反复训"
+  },
+  {
+   "id": "nr",
+   "lane": "reuse",
+   "col": 1,
+   "type": "backend",
+   "label": "低",
+   "sublabel": "边采边训"
+  }
+ ],
+ "edges": [
+  {
+   "from": "oh",
+   "to": "og",
+   "label": "关 vLLM 再训"
+  },
+  {
+   "from": "nh",
+   "to": "ng",
+   "label": "并存分卡"
+  },
+  {
+   "from": "og",
+   "to": "or",
+   "label": "可反复"
+  },
+  {
+   "from": "ng",
+   "to": "nr",
+   "label": "不反复"
+  },
+  {
+   "from": "oh",
+   "to": "nh",
+   "label": "多机无共享盘→在线",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "典型场景",
+   "items": [
+    "首次打通/算法对比 → 离线",
+    "领域微调/大规模持续训练 → 在线"
+   ]
+  }
+ ]
+}

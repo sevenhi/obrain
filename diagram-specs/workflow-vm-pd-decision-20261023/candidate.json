@@ -1,0 +1,282 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "该不该上 PD 分离:四道门按顺序问,任何一道不过就停在软融合",
+    "subtitle": "口袋规则:先证明「混批在互相污染」,再证明「传输不贵」,最后才谈异构专化。顺序颠倒就会买一整套网络与运维复杂度,却换不回 TTFT",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-pd-decision.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_base",
+      "label": "① 先有基线"
+    },
+    {
+      "id": "ln_diag",
+      "label": "② 诊断真有污染吗"
+    },
+    {
+      "id": "ln_cost",
+      "label": "③ 传输贵不贵"
+    },
+    {
+      "id": "ln_gain",
+      "label": "④ 收益覆盖成本"
+    },
+    {
+      "id": "ln_end",
+      "label": "落地结论"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "不许跳过基线",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "两道硬门槛",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ph3",
+      "label": "结论与顺序",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "baseline",
+    "pollute",
+    "tput",
+    "cheap",
+    "gain",
+    "adopt"
+  ],
+  "nodes": [
+    {
+      "id": "baseline",
+      "lane": "ln_base",
+      "col": 0,
+      "type": "frontend",
+      "label": "单体基线跑三条曲线",
+      "sublabel": "chunked prefill + continuous batching",
+      "icon": "start",
+      "width": 168
+    },
+    {
+      "id": "pollute",
+      "lane": "ln_diag",
+      "col": 1,
+      "type": "security",
+      "label": "长 prompt 在污染 TPOT?",
+      "sublabel": "TPOT p95/p99 随长 prompt 抖吗",
+      "icon": "decision",
+      "width": 168
+    },
+    {
+      "id": "tput",
+      "lane": "ln_diag",
+      "col": 2,
+      "type": "security",
+      "label": "量出 TTFT / TPOT 分位",
+      "sublabel": "两池分开看,别混着平均",
+      "icon": "clock",
+      "width": 168
+    },
+    {
+      "id": "cheap",
+      "lane": "ln_cost",
+      "col": 3,
+      "type": "security",
+      "label": "KV 传输 < TTFT 预算?",
+      "sublabel": "同节点双实例先打日志实测时延",
+      "icon": "decision",
+      "width": 168
+    },
+    {
+      "id": "gain",
+      "lane": "ln_gain",
+      "col": 4,
+      "type": "security",
+      "label": "goodput 真涨了?",
+      "sublabel": "双 SLO 同时达标的请求比例",
+      "icon": "decision",
+      "width": 168
+    },
+    {
+      "id": "adopt",
+      "lane": "ln_end",
+      "col": 5,
+      "type": "cloud",
+      "label": "上 PD:同节点 → 跨节点",
+      "sublabel": "先 NVLink,再 RDMA/NIXL;不达标就回退",
+      "icon": "success",
+      "width": 168
+    },
+    {
+      "id": "stay",
+      "lane": "ln_end",
+      "col": 5,
+      "type": "backend",
+      "label": "停在软融合",
+      "sublabel": "修分页与显存预算,别上 PD",
+      "icon": "stop",
+      "width": 168,
+      "yOffset": 118
+    },
+    {
+      "id": "small",
+      "lane": "ln_base",
+      "col": 1,
+      "type": "backend",
+      "label": "小模型 / 单卡吃满",
+      "sublabel": "≤7B 或单卡就够 → 通常不值得",
+      "icon": "neutral",
+      "width": 168,
+      "yOffset": 118
+    },
+    {
+      "id": "preempt",
+      "lane": "ln_diag",
+      "col": 2,
+      "type": "database",
+      "label": "抢占率才是瓶颈?",
+      "sublabel": "preemptions_total 高 → 先修分页",
+      "icon": "failure",
+      "width": 168,
+      "yOffset": 118
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "baseline",
+      "to": "pollute",
+      "label": "有曲线才能谈污染",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e2",
+      "from": "pollute",
+      "to": "tput",
+      "label": "抖了 → 量化两侧分位",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "tput",
+      "to": "cheap",
+      "label": "拿到 TTFT 预算基线",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "cheap",
+      "to": "gain",
+      "label": "不贵才继续",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "gain",
+      "to": "adopt",
+      "label": "涨了 → 扩到跨节点",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "baseline",
+      "to": "small",
+      "label": "先排除小模型场景",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e7",
+      "from": "small",
+      "to": "stay",
+      "label": "不值得 → 先调 continuous batching",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e8",
+      "from": "pollute",
+      "to": "preempt",
+      "label": "不抖 → 查是否装不下",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e9",
+      "from": "preempt",
+      "to": "stay",
+      "label": "抢占高 → 修分页与显存",
+      "role": "branch",
+      "variant": "security"
+    },
+    {
+      "id": "e10",
+      "from": "cheap",
+      "to": "stay",
+      "label": "太贵 → 停在同节点或回退",
+      "role": "error",
+      "variant": "security"
+    },
+    {
+      "id": "e11",
+      "from": "gain",
+      "to": "stay",
+      "label": "没涨 → 回退单体",
+      "role": "error",
+      "variant": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "三个「先别上」的信号",
+      "items": [
+        "短 prompt / 高并发 / 输出短(分类、改写、轻聊天):prefill 占比低,传输与调度开销吃掉收益",
+        "小模型(≤7B)或单卡就吃满:传输 + 运维成本超过收益",
+        "KV 使用率与抢占才是瓶颈:PD 不解决「装不下」"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "该上的三类场景",
+      "items": [
+        "长 prompt、输出中短、并发中等(文档问答 / RAG / agent 入口)",
+        "超长上下文、多轮共享前缀:配 KV 池,前缀复用 + 跨实例共享收益大",
+        "已有大规模多实例 / 异构 GPU:高算力卡跑 prefill、高带宽卡跑 decode 是直接红利"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "与相邻优化的关系(别叠错 buff)",
+      "items": [
+        "投机解码 / MTP:正交,落在 decode 池内,改变不了 prefill/decode 资源画像",
+        "Prefix caching:强相关,分离后更需要跨实例共享,否则每次重算 system prompt",
+        "KV 量化:正交且同步降低传输量,但两端格式必须一致"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "成本表(定性)",
+      "items": [
+        "GPU 算力:更贴负载可异构,但总卡数未必减少",
+        "网络:多出 KV 传输带宽与尾延迟,跨节点时不可忽视",
+        "运维:两套实例、两套指标、一套配对路由,故障面翻倍"
+      ]
+    }
+  ]
+}

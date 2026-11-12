@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "一个 Config 管三类层:get_quant_method() 的三路分派",
+    "subtitle": "Fp8Config 范例:同一个 Config 既分派离线(checkpoint)也分派在线(online 子包),不是两个独立 Config",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-quant-by-layer.architecture.html"
+  },
+  "layout": { "mode": "grid", "cols": 4, "gapX": 46, "gapY": 54, "cellW": 168, "cellH": 96 },
+  "components": [
+    {
+      "id": "cfg",
+      "type": "backend",
+      "label": "Fp8Config",
+      "sublabel": "量化方法的唯一入口",
+      "icon": "backend",
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "lin",
+      "type": "backend",
+      "label": "Linear 层",
+      "sublabel": "Fp8LinearMethod",
+      "row": 0,
+      "col": 2
+    },
+    {
+      "id": "lin_online",
+      "type": "cloud",
+      "label": "在线 Linear",
+      "sublabel": "PerTensorOnline",
+      "row": 0,
+      "col": 3
+    },
+    {
+      "id": "lin_skip",
+      "type": "external",
+      "label": "被忽略层",
+      "sublabel": "Unquantized",
+      "icon": "stop",
+      "row": 1,
+      "col": 3
+    },
+    {
+      "id": "moe",
+      "type": "messagebus",
+      "label": "RoutedExperts",
+      "sublabel": "MoE 独立后端",
+      "row": 2,
+      "col": 2
+    },
+    {
+      "id": "mxfp4",
+      "type": "cloud",
+      "label": "mxfp4 存储",
+      "sublabel": "Mxfp4MoEMethod",
+      "row": 2,
+      "col": 3
+    },
+    {
+      "id": "attn",
+      "type": "security",
+      "label": "Attention",
+      "sublabel": "KV cache 量化",
+      "row": 3,
+      "col": 2
+    },
+    {
+      "id": "kv",
+      "type": "database",
+      "label": "Fp8KVCacheMethod",
+      "sublabel": "与先验 kernel 无关",
+      "icon": "database",
+      "row": 3,
+      "col": 3
+    },
+    {
+      "id": "card_ignored",
+      "type": "external",
+      "label": "IGNORED_LAYERS",
+      "sublabel": "分派链第一个出口",
+      "row": 1,
+      "col": 2
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "同一个 Config 内部(语义层)",
+      "wraps": ["lin", "moe", "attn", "card_ignored"],
+      "pad": 18
+    }
+  ],
+  "connections": [
+    { "from": "cfg", "to": "card_ignored", "label": "先查忽略名单", "variant": "dashed" },
+    { "from": "card_ignored", "to": "lin", "label": "不在名单才量化" },
+    { "from": "cfg", "to": "lin", "label": "LinearBase 分支", "variant": "emphasis" },
+    { "from": "lin", "to": "lin_online", "label": "在线量化走这里", "variant": "dashed" },
+    { "from": "lin", "to": "lin_skip", "label": "命中则直通", "variant": "dashed" },
+    { "from": "cfg", "to": "moe", "label": "MoE 分支" },
+    { "from": "moe", "to": "mxfp4", "label": "store_dtype 判定", "variant": "dashed" },
+    { "from": "cfg", "to": "attn", "label": "Attention 分支" },
+    { "from": "attn", "to": "kv", "label": "只量化 KV cache" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三路分派各自的关键点",
+      "items": [
+        "Linear:序列化 checkpoint 走 Fp8LinearMethod,在线走 PerTensorOnline",
+        "MoE:VLLM 有独立的 backend 选择,不受 Linear 影响",
+        "Attention:只做 KV cache 量化,与权重内核完全解耦"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "被忽略层是第一个出口",
+      "items": [
+        "ignored_layers 命中就返回 UnquantizedLinearMethod",
+        "在进 kernel 选型之前就退出了,不会再走任何量化分支",
+        "排查「为什么这层没量化」先看这里"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "曾以为错的认知",
+      "items": [
+        "以为在线量化要单独配 / 单独 Config —— 错",
+        "同一个 Fp8Config 里 setdefault 注册在线短名",
+        "保证既有 checkpoint 方法名不被覆盖"
+      ]
+    }
+  ]
+}

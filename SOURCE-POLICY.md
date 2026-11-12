@@ -2,7 +2,7 @@
 title: 多来源登记策略 (SOURCE-POLICY)
 type: reference
 tags: [knowledge-base, sourcing, dedup]
-date: 2026-09
+date: 2026-11
 ---
 
 # 多来源登记策略
@@ -66,15 +66,17 @@ date: 2026-09
 | `concepts/` | concept(机制原理) | 强约定 |
 | `cases/` | case(事故复盘) | 强约定 |
 | `practices/` | checklist(清单) | 强约定;例外:vllm/practices/inference-engine-selection.md 为 comparison(选型对比);vllm/practices/attention-backend-selection.md 为 comparison(选型对比) |
-|| `implementation/`(attention 域) | implementation | 弱约定;目录独有 |
-|| `algorithm/`(attention 域) | algorithm | 弱约定;目录独有 |
-|| `ecosystem/`(vllm 域) | concept(生态构件深读) | 弱约定;2026-10 合入 vllm-project 域后沿用 concepts 同款 |
+| `implementation/`(attention 域) | concept | 弱约定;按实现层组织,不增加 type 词项 |
+| `algorithm/`(attention 域) | concept | 弱约定;按算法层组织,不增加 type 词项 |
+| `ecosystem/`(vllm 域) | concept(生态构件深读) | 弱约定;例外:vllm/ecosystem/guidellm-bench.md 为 howto(基准评测与容量规划) |
 | `notes/` | 源码一手实读笔记(**豁免** TL;DR/frontmatter 要求,见 §6) | 强约定(豁免) |
 | `frameworks/` | howto(工具上手) | 弱约定;例外:attention/frameworks/flexattention.md 为 concept(编程模型+编译器机制深读,2026-10 登记) |
 | `references.md`(领域根) | reference(链接索引) | 补充映射 |
 | `index.md`(领域根) | domain(领域导航页) | 补充映射 |
 
 > 原则:目录是组织,type 是内容属性;两者默认对齐,冲突时以实际内容定 type、并在此表登记例外,避免新规范自己引入新矛盾。
+
+type 表示主要阅读目的,不是禁止概念篇包含示例、短清单或实践提醒。只有能独立使用的操作流程/复盘/对比才按需拆篇;同主题跨域时明确机制主篇与操作入口并双向链接,不重复维护完整解释。领域 references 按 arXiv/DOI/官方仓库等稳定身份聚合来源,论文 ID 应附可点击公开链接;维护日期与来源版本/核验日期分开。
 
 ## 6. notes/ 豁免条款
 
@@ -90,5 +92,7 @@ date: 2026-09
 - 根目录 `README.md`(豁免全部 frontmatter)
 
 ## 对现有库的说明
+
+`reviewed: YYYY-MM-DD` 表示该篇有断言在该日复核；正文应指出所核验的范围、固定来源版本和限制。它不表示整篇通过认证，更不表示其中训练、精度或性能数字已在本机复现。来源提供的结果、源码核对和实际运行验证应分别说明。
 
 本库的多来源合并已示范在多个领域(如 FlashAttention 篇的 source 同时含 arXiv 论文多个来源、quantization 篇含论文来源)。后续每接一个新来源,按本策略补 `source` 即可。

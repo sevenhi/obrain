@@ -1,0 +1,188 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "FA1 Forward:外层 Q 块 × 内层 K/V 块的双层 tiling",
+    "subtitle": "Q 块只读一次;每个 K/V 块载入 SRAM 后,分数、softmax、累加全部在片上完成,不写任何 N×N 矩阵",
+    "locale": "zh-CN",
+    "output": "diagrams/fa-fa1-tiling.workflow.html",
+    "viewBox": [
+      1100,
+      700
+    ]
+  },
+  "lanes": [
+    {
+      "id": "ln_outer",
+      "label": "外层:遍历 Q 块(i)"
+    },
+    {
+      "id": "ln_inner",
+      "label": "内层:遍历 K/V 块(j)"
+    },
+    {
+      "id": "ln_write",
+      "label": "收尾"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "n_init",
+      "lane": "ln_outer",
+      "col": 0,
+      "type": "backend",
+      "label": "定块大小 Br,Bc",
+      "sublabel": "Bc≈M/(4d):SRAM 预算",
+      "icon": "start"
+    },
+    {
+      "id": "n_qi",
+      "lane": "ln_outer",
+      "col": 1,
+      "type": "database",
+      "label": "载入 Q 块 Qi",
+      "sublabel": "读一次,驻留 SRAM",
+      "icon": "database"
+    },
+    {
+      "id": "n_state",
+      "lane": "ln_outer",
+      "col": 2,
+      "type": "backend",
+      "label": "初始化 Oi/mi/li",
+      "sublabel": "O=0,m=-inf,l=0",
+      "icon": "active",
+      "width": 124
+    },
+    {
+      "id": "n_kv",
+      "lane": "ln_inner",
+      "col": 3,
+      "type": "database",
+      "label": "载入 Kj,Vj",
+      "sublabel": "每轮一块,片上复用",
+      "icon": "database",
+      "width": 124
+    },
+    {
+      "id": "n_sij",
+      "lane": "ln_inner",
+      "col": 4,
+      "type": "backend",
+      "label": "Sij=Qi@Kjᵀ·s",
+      "sublabel": "[Br,Bc] 只存 SRAM",
+      "width": 124
+    },
+    {
+      "id": "n_online",
+      "lane": "ln_inner",
+      "col": 5,
+      "type": "backend",
+      "label": "online softmax",
+      "sublabel": "rescale m、l、Oi 后累加",
+      "icon": "active",
+      "width": 124
+    },
+    {
+      "id": "n_norm",
+      "lane": "ln_write",
+      "col": 5,
+      "type": "database",
+      "label": "Oi=Oi/li 写回",
+      "sublabel": "整行一次除法,一次写出",
+      "icon": "success",
+      "width": 124
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "n_init",
+      "to": "n_qi",
+      "label": "Br = min(⌈M/4d⌉, d)",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "n_qi",
+      "to": "n_state",
+      "label": "Qi 就绪",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "n_state",
+      "to": "n_kv",
+      "label": "进入内层循环",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "n_kv",
+      "to": "n_sij",
+      "label": "Kj、Vj 就绪",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "n_sij",
+      "to": "n_online",
+      "label": "分数块不出 SRAM",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "n_online",
+      "to": "n_kv",
+      "label": "j+1:下一 K/V 块",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e7",
+      "from": "n_online",
+      "to": "n_norm",
+      "label": "内层结束",
+      "role": "main"
+    }
+  ],
+  "mainPath": [
+    "n_init",
+    "n_qi",
+    "n_state",
+    "n_kv",
+    "n_sij",
+    "n_online",
+    "n_norm"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "块大小从哪来",
+      "items": [
+        "SRAM 需同时装 Q、K、V、O 四块(各 Bc·d)+ S 块(Bc²)",
+        "4·Bc·d + Bc² ≈ M → Bc ≈ M/(4d)",
+        "A100 实数参考:d=64 时 ≈128,d=128 时 ≈64"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "每一步的读写位置",
+      "items": [
+        "Q 块:读一次,整个内层循环复用",
+        "K/V 块:每轮读一次,SRAM 内被 Q 块所有行复用",
+        "S、P:只在 SRAM,从不写 HBM",
+        "输出 Oi:每个 Q 块最终只写一次"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "注意(读论文时)",
+      "items": [
+        "论文 Algorithm 1 外层是 K/V、内层是 Q(与本图相反)",
+        "本图是逻辑等价的简化变体,更贴合\"每行输出遇到的 KV 序列\"",
+        "FA2 才把循环翻成外层 Q、内层 K/V"
+      ]
+    }
+  ]
+}

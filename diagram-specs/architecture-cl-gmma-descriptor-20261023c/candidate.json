@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "core matrix 与 matrix descriptor 的 5 个参数",
+    "subtitle": "wgmma 把 atom tile wA(64×K)/wB(N×K)切成 core matrix:每个在 strided 方向长 8、contiguous 方向长 16 字节。descriptor 就是「告诉硬件这些小块在 SMEM 里怎么排」的 5 个数",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-gmma-descriptor.architecture.html",
+    "viewBox": [
+      1130,
+      560
+    ]
+  },
+  "components": [
+    {
+      "id": "wa",
+      "type": "backend",
+      "label": "wA = 64×K",
+      "sublabel": "8×2 个 core matrix",
+      "pos": [
+        30,
+        70
+      ],
+      "size": [
+        250,
+        80
+      ]
+    },
+    {
+      "id": "wb",
+      "type": "backend",
+      "label": "wB = N×K",
+      "sublabel": "2×(N/8) 个 core matrix",
+      "pos": [
+        30,
+        190
+      ],
+      "size": [
+        250,
+        80
+      ]
+    },
+    {
+      "id": "cm",
+      "type": "database",
+      "label": "core matrix",
+      "sublabel": "strided 长 8 / contiguous 16B",
+      "pos": [
+        310,
+        130
+      ],
+      "size": [
+        280,
+        80
+      ],
+      "icon": "database"
+    },
+    {
+      "id": "p_addr",
+      "type": "security",
+      "label": "① Start address",
+      "sublabel": "操作数在 SMEM 的基址",
+      "pos": [
+        640,
+        50
+      ],
+      "size": [
+        250,
+        56
+      ]
+    },
+    {
+      "id": "p_lbo",
+      "type": "security",
+      "label": "② LBO",
+      "sublabel": "K 方向相邻 core matrix 距离",
+      "pos": [
+        640,
+        116
+      ],
+      "size": [
+        290,
+        56
+      ]
+    },
+    {
+      "id": "p_sbo",
+      "type": "security",
+      "label": "③ SBO",
+      "sublabel": "M/N 方向相邻 core matrix 距离",
+      "pos": [
+        640,
+        182
+      ],
+      "size": [
+        290,
+        56
+      ]
+    },
+    {
+      "id": "p_sw",
+      "type": "security",
+      "label": "④ Swizzling mode",
+      "sublabel": "none / 32 / 64 / 128 字节",
+      "pos": [
+        640,
+        248
+      ],
+      "size": [
+        290,
+        56
+      ]
+    },
+    {
+      "id": "p_base",
+      "type": "security",
+      "label": "⑤ Matrix base offset",
+      "sublabel": "地址未按 swizzle 对齐时的补偿",
+      "pos": [
+        640,
+        314
+      ],
+      "size": [
+        290,
+        56
+      ]
+    },
+    {
+      "id": "desc",
+      "type": "cloud",
+      "label": "GmmaDescriptor(64-bit)",
+      "sublabel": "由 make_gmma_desc 从布局构造",
+      "pos": [
+        340,
+        330
+      ],
+      "size": [
+        260,
+        70
+      ],
+      "icon": "cloud"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "descriptor 编码的 5 个量",
+      "wraps": [
+        "p_addr",
+        "p_lbo",
+        "p_sbo",
+        "p_sw",
+        "p_base"
+      ],
+      "pad": 10
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "wa",
+      "to": "cm",
+      "label": "按 64×K 切",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [
+        295,
+        50
+      ]
+    },
+    {
+      "id": "c2",
+      "from": "wb",
+      "to": "cm",
+      "label": "按 N×K 切",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [
+        295,
+        305
+      ]
+    },
+    {
+      "id": "c3",
+      "from": "cm",
+      "to": "desc",
+      "label": "布局决定 LBO/SBO",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        450,
+        300
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两个 offset 各指哪个方向",
+      "items": [
+        "LBO(leading dimension byte offset):K 方向相邻 core matrix 的距离",
+        "SBO(stride dimension byte offset):M/N 方向相邻的距离",
+        "名字里的 leading/stride 按 BLAS 习惯,不是按行主/列主"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么「自动算对」有前提",
+      "items": [
+        "布局出自 canonical atom + tile_to_shape 时,make_gmma_desc 才能算对 LBO/SBO/swizzle",
+        "手写 shape/stride 时这两个 offset 需要你自己推,推错不报错",
+        "64/128B swizzle 下布局是非 compact 的,别按线性去想"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "两个打印结果对照",
+      "items": [
+        "无 swizzle:LBO=128B, SBO=256B(K-major FP16)",
+        "128B swizzle:SBO=1024B, 且 K 方向被交错",
+        "tCsA 的 K 模打印成 (_8,_2) 就是这种交错"
+      ]
+    }
+  ]
+}

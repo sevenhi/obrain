@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "vLLM V1 三层:API 层 / EngineCore 独立进程 / 每 GPU 一个 Worker",
+    "subtitle": "V1 的唯一主轴是「调度搬进独立进程 + 每步全量重排 + 异步下发」。注意 Worker 是否独立进程取决于 Executor:单卡 UniProc 与 EngineCore 同进程,跨进程保证的核心是 前端(AsyncLLM)↔ EngineCore",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-v1-three-layers.architecture.html",
+    "viewBox": [1100, 760]
+  },
+  "components": [
+    { "id": "client", "type": "external", "label": "HTTP 客户端", "sublabel": "POST /v1/chat/completions", "pos": [40, 44], "size": [230, 64] },
+    { "id": "api", "type": "frontend", "label": "AsyncLLM(API 层)", "sublabel": "asyncio 接口:请求队列 + 流式输出", "pos": [330, 44], "size": [420, 64] },
+    { "id": "outproc", "type": "frontend", "label": "OutputProcessor / Detokenizer", "sublabel": "decode 与流式发送留在 API 侧", "pos": [800, 44], "size": [240, 70] },
+
+    { "id": "engine", "type": "backend", "label": "EngineCore(独立进程)", "sublabel": "core.py:597 step() / :638 step_with_batch_queue()", "pos": [330, 180], "size": [420, 72] },
+    { "id": "sched", "type": "backend", "label": "Scheduler", "sublabel": "sched/scheduler.py · 每步全量重排", "pos": [150, 310], "size": [210, 66] },
+    { "id": "kv", "type": "database", "label": "KVCacheManager", "sublabel": "操作分页块的唯一入口", "pos": [390, 310], "size": [210, 66] },
+    { "id": "exec", "type": "backend", "label": "ModelExecutor(抽象)", "sublabel": "executor/abstract.py:49 get_class()", "pos": [630, 310], "size": [230, 66] },
+
+    { "id": "worker", "type": "backend", "label": "Worker(每 GPU 一个)", "sublabel": "跑模型前向,不关心「为什么排这个批」", "pos": [330, 448], "size": [420, 66] },
+    { "id": "mr", "type": "backend", "label": "GPUModelRunner(执行的编舞)", "sublabel": "_prepare_inputs → _model_forward → _sample", "pos": [330, 560], "size": [420, 66] },
+    { "id": "attn", "type": "security", "label": "AttentionBackend 可插拔", "sublabel": "do_kv_cache_update + 分页注意力内核", "pos": [800, 556], "size": [240, 74] },
+    { "id": "w", "type": "database", "label": "模型权重 nn.Module", "sublabel": "torch.compile 编译后的前向", "pos": [330, 668], "size": [420, 60] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "API 进程:薄 HTTP 层 + 流式输出(不碰调度)", "wraps": ["api", "outproc"] },
+    { "kind": "region", "label": "EngineCore 进程:调度状态只此一份,不阻塞在 API 事件循环里", "wraps": ["engine", "sched", "kv", "exec"] },
+    { "kind": "region", "label": "执行进程:按 SchedulerOutput 无脑执行(UniProc 时与 EngineCore 同进程)", "wraps": ["worker", "mr", "attn", "w"] }
+  ],
+  "connections": [
+    { "id": "c1", "from": "client", "to": "api", "label": "HTTP 请求", "labelAt": [300, 76] },
+    { "id": "c2", "from": "api", "to": "engine", "label": "ZMQ socket 传 add_request", "variant": "emphasis", "labelAt": [540, 150] },
+    { "id": "c3", "from": "engine", "to": "outproc", "label": "logits 经 ZMQ 回前端", "variant": "dashed", "labelAt": [790, 130], "fromSide": "right", "toSide": "bottom" },
+    { "id": "c4", "from": "outproc", "to": "client", "label": "SSE 逐 token 流式返回", "variant": "dashed", "fromSide": "top", "toSide": "top", "via": [[920, 16], [155, 16]], "labelAt": [540, 16] },
+    { "id": "c5", "from": "engine", "to": "sched", "label": "每步先调 schedule()", "labelAt": [250, 288] },
+    { "id": "c6", "from": "sched", "to": "kv", "label": "allocate_slots 要块", "labelAt": [375, 392] },
+    { "id": "c7", "from": "sched", "to": "exec", "label": "产出 SchedulerOutput", "variant": "emphasis", "labelAt": [620, 392] },
+    { "id": "c8", "from": "exec", "to": "worker", "label": "RPC / 共享内存张量下发", "variant": "emphasis", "labelAt": [650, 428], "fromSide": "bottom", "toSide": "right" },
+    { "id": "c9", "from": "worker", "to": "mr", "label": "execute_model()", "labelAt": [540, 536] },
+    { "id": "c10", "from": "mr", "to": "attn", "label": "AttentionImpl.forward()", "labelAt": [790, 545] },
+    { "id": "c11", "from": "mr", "to": "w", "label": "调用编译后的 nn.Module", "labelAt": [540, 650] }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三层各管一件事",
+      "items": [
+        "API 层(AsyncLLM):asyncio 接口、请求队列、流式输出;不做调度决策",
+        "EngineCore:调度决策的唯一持有者(预算/块/抢占),独立进程",
+        "执行层(Worker/GPUModelRunner):只消费 SchedulerOutput,无状态地跑"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "两个 step 路径要分清",
+      "items": [
+        "不启用异步:step()(core.py:597)排的是本步 batch N,future.result() 等的就是这个批",
+        "启用异步:step_with_batch_queue()(core.py:638),GPU 跑 batch N 时 CPU 已排好 N+1",
+        "batch queue 仅当 max_concurrent_batches > 1(PP>1 或显式异步)才存在"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "进程模型的三个坑",
+      "items": [
+        "别以为 Worker 一定独立进程:单卡 UniProc 与 EngineCore 同进程持有",
+        "async_scheduling 默认由 VllmConfig 裁决,多特性组合下会被强制关,别默认它开着",
+        "只有 EngineCore↔AsyncLLM 这一段是稳定跨进程的(ZMQ)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "SchedulerOutput 是「指令」不是「函数调用」",
+      "items": [
+        "scheduled_new_reqs / cached_reqs / running_reqs 三类",
+        "num_scheduled_tokens 是本步喂给 GPU 的 token 总量",
+        "req_to_new_blocks 给新请求分块,preempted_reqs 触发 recompute"
+      ]
+    }
+  ]
+}

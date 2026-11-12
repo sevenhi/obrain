@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "GEMM 的两段:mainloop(搬+算)与 epilogue(写回)",
+    "subtitle": "A/B tile 从 HBM 经 smem 进 register,Tensor Core 在 register 里累加 C 的部分和;走完整个 K 维度才进 epilogue 做后处理与写回",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-mainloop-epilogue.dataflow.html",
+    "viewBox": [
+      1080,
+      470
+    ]
+  },
+  "stages": [
+    {
+      "label": "① HBM 取 tile"
+    },
+    {
+      "label": "② 落 smem"
+    },
+    {
+      "label": "③ 进 register"
+    },
+    {
+      "label": "④ 累加 K"
+    },
+    {
+      "label": "⑤ 写回"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "hbm",
+      "type": "database",
+      "label": "global memory",
+      "sublabel": "A/B 的 tile",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "smem",
+      "type": "database",
+      "label": "shared memory",
+      "sublabel": "CTA 级共享",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "reg",
+      "type": "backend",
+      "label": "registers",
+      "sublabel": "每 warp 自己的子块",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "mma",
+      "type": "backend",
+      "label": "Tensor Core 累加",
+      "sublabel": "走到 K 尽头",
+      "stage": 3,
+      "row": 1
+    },
+    {
+      "id": "epi",
+      "type": "backend",
+      "label": "bias / ReLU / scale",
+      "sublabel": "element-wise 后处理",
+      "stage": 4,
+      "row": 0
+    },
+    {
+      "id": "cout",
+      "type": "external",
+      "label": "写回 C",
+      "sublabel": "注意读写合并",
+      "stage": 4,
+      "row": 1
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "hbm",
+      "to": "smem",
+      "label": "异步拷贝(cp.async / TMA)"
+    },
+    {
+      "id": "f2",
+      "from": "smem",
+      "to": "reg",
+      "label": "按 warp tile 读子块"
+    },
+    {
+      "id": "f3",
+      "from": "reg",
+      "to": "mma",
+      "label": "发 mma 指令"
+    },
+    {
+      "id": "f4",
+      "from": "mma",
+      "to": "epi",
+      "label": "K 走完进 epilogue"
+    },
+    {
+      "id": "f5",
+      "from": "epi",
+      "to": "cout",
+      "label": "写 C,避免非连续写",
+      "labelAt": [
+        960,
+        200
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "为什么 mainloop 决定快不快",
+      "items": [
+        "mainloop 负责「喂 Tensor Core」:搬 tile + 做 mma 累加",
+        "这一段是 HBM 带宽与 Tensor Core 吞吐的赛跑",
+        "epilogue 通常不是瓶颈(但写 C 要注意合并)",
+        "核心张力:H200 FP16 ~989 TFLOPS vs HBM 仅 ~4.8 TB/s"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "不 tiling 会怎样",
+      "items": [
+        "算一块读一块 → 计算单元绝大部分时间在等数据",
+        "利用率可能只有个位数百分比",
+        "tiling 把计算密集的循环压进片上(smem/register)",
+        "顺带把数据流动组织成可重叠的形状(见 pipelining)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "两层局部性对应两层搬运",
+      "items": [
+        "global→smem:tile 落在 CTA 级,一次搬一整块供 CTA 内共享",
+        "smem→register:数据分给 warp,各 warp 独立",
+        "两层搬移在不同并发层穿插进行",
+        "「谁先谁后」正是 pipelining 要重叠与同步的东西"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {"title": "ViT 数据敏感性：偏置、数据与训练配方", "subtitle": "2026-11-04 纠错：ViT 的 CNN 式归纳偏置较少，不是无先验；小数据也不意味着必输。", "locale": "zh-CN", "quality_profile": "showcase", "output": "diagrams/cv-vit-why-data.workflow.html"},
+  "lanes": [{"id": "small", "label": "有限数据"}, {"id": "large", "label": "大规模预训练"}],
+  "nodes": [
+    {"id": "bias", "lane": "small", "col": 0, "type": "backend", "label": "CNN 式偏置", "sublabel": "局部性与平移等变"},
+    {"id": "recipe", "lane": "small", "col": 1, "type": "backend", "label": "比较具体配方", "sublabel": "原 ViT 小数据表现较弱"},
+    {"id": "deit", "lane": "small", "col": 2, "type": "backend", "label": "DeiT 改进训练", "sublabel": "ImageNet-only 也可训练"},
+    {"id": "vit", "lane": "large", "col": 0, "type": "backend", "label": "ViT 偏置较少", "sublabel": "不是完全没有归纳偏置"},
+    {"id": "result", "lane": "large", "col": 1, "type": "backend", "label": "论文 JFT-300M 结果", "sublabel": "ViT-H/14：88.55% top-1"},
+    {"id": "compute", "lane": "large", "col": 2, "type": "backend", "label": "论文预训练计算量", "sublabel": "2.5k TPUv3-core-days"}
+  ],
+  "edges": [
+    {"from": "bias", "to": "recipe", "label": "影响样本效率", "role": "main"},
+    {"from": "recipe", "to": "deit", "label": "配方可改变结论", "role": "main"},
+    {"from": "vit", "to": "result", "label": "规模化训练", "role": "main"},
+    {"from": "result", "to": "compute", "label": "同表计算量", "role": "main"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "限定论文实验", "items": ["ViT-H/14 的 2.5k 与 BiT-L 的 9.9k 单位均为 TPUv3-core-days；不是任意实现的速度比，也不是本轮复现。", "https://arxiv.org/html/2010.11929v2"]},
+    {"dot": "amber", "title": "小数据不是必输定理", "items": ["强增强、正则化与蒸馏会改变数据效率；DeiT 是 ImageNet-only 训练的重要反例。CNN 的偏置也不能普遍称作大数据天花板。", "https://arxiv.org/abs/2012.12877v1"]}
+  ]
+}

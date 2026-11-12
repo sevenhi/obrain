@@ -1,0 +1,217 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "BLIS 的三条成功公式,为什么在 GPU 上逐个失效",
+    "subtitle": "CPU 的 microkernel 是「单线程发 SIMD」,多线程只切最外层;GPU 的 microkernel 是「一群线程发 3D tensor core」,切分图案每代都换 —— 三条前提全塌",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-blis-formula-breaks.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_cpu",
+      "label": "CPU / BLIS:三条公式成立"
+    },
+    {
+      "id": "ln_gpu",
+      "label": "GPU:换成什么"
+    },
+    {
+      "id": "ln_out",
+      "label": "后果"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "并行 agent 与指令形态",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "切分图案与执行模型",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "c_agent",
+    "g_agent",
+    "g_inst",
+    "g_part"
+  ],
+  "nodes": [
+    {
+      "id": "c_agent",
+      "lane": "ln_cpu",
+      "col": 0,
+      "type": "frontend",
+      "label": "单线程 agent",
+      "sublabel": "单线程 + 1D SIMD",
+      "icon": "start",
+      "width": 130
+    },
+    {
+      "id": "c_part",
+      "lane": "ln_cpu",
+      "col": 1,
+      "type": "backend",
+      "label": "只切最外层循环",
+      "sublabel": "microkernel 不感知并行",
+      "width": 130
+    },
+    {
+      "id": "c_exec",
+      "lane": "ln_cpu",
+      "col": 2,
+      "type": "backend",
+      "label": "同步执行为主",
+      "sublabel": "无手工流水线负担",
+      "width": 130
+    },
+    {
+      "id": "g_agent",
+      "lane": "ln_gpu",
+      "col": 0,
+      "type": "security",
+      "label": "多线程 collective",
+      "sublabel": "quadpair/warp",
+      "width": 135
+    },
+    {
+      "id": "g_inst",
+      "lane": "ln_gpu",
+      "col": 1,
+      "type": "security",
+      "label": "发 3D tensor core",
+      "sublabel": "一条指令整组线程协作",
+      "width": 135
+    },
+    {
+      "id": "g_part",
+      "lane": "ln_gpu",
+      "col": 2,
+      "type": "security",
+      "label": "每代换线程×数据布局",
+      "sublabel": "copy/compute 图案不共享",
+      "width": 145
+    },
+    {
+      "id": "g_exec",
+      "lane": "ln_gpu",
+      "col": 3,
+      "type": "security",
+      "label": "深软件流水线",
+      "sublabel": "scratchpad + 异步",
+      "width": 140
+    },
+    {
+      "id": "o_part",
+      "lane": "ln_out",
+      "col": 2,
+      "type": "cloud",
+      "label": "partitioning 定义不变",
+      "sublabel": "逻辑坐标→哪个 agent",
+      "width": 150
+    },
+    {
+      "id": "o_bill",
+      "lane": "ln_out",
+      "col": 3,
+      "type": "external",
+      "label": "但实现无法跨代泛化",
+      "sublabel": "2.x 痛苦的根源",
+      "icon": "failure",
+      "width": 140
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c_agent",
+      "to": "c_part",
+      "label": "所以能一次写处处用",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "c_part",
+      "to": "c_exec",
+      "label": "分层暴露 1m/3m/5m",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "c_agent",
+      "to": "g_agent",
+      "label": "公式一失效:agent 变一群",
+      "role": "branch"
+    },
+    {
+      "id": "e4",
+      "from": "g_agent",
+      "to": "g_inst",
+      "label": "指令跟着变 3D",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "g_inst",
+      "to": "g_part",
+      "label": "公式二失效:布局每代重写",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "g_part",
+      "to": "g_exec",
+      "label": "公式三失效:要自己排流水",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "g_part",
+      "to": "o_part",
+      "label": "切分这件事本身没变",
+      "role": "branch"
+    },
+    {
+      "id": "e8",
+      "from": "o_part",
+      "to": "o_bill",
+      "label": "变的是它的实现",
+      "role": "error"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "partitioning 的原文定义",
+      "items": [
+        "Determining which logical coordinates of data map to a given parallel agent",
+        "即:决定数据的哪些逻辑坐标映射到哪个并行 agent",
+        "概念在 CPU/GPU 上都成立,GPU 上崩的是「怎么实现它」"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "GPU 上三条公式的具体失效点(§1.2 表)",
+      "items": [
+        "agent:单线程 + 1D SIMD → 多线程 collective(quadpair/warp/warpgroup)+ 3D tensor core 指令",
+        "partitioning:只动最外层 → 每代 tensor core 都换线程×数据布局,且 copy 与 compute 的图案不共享",
+        "执行模型:同步为主 → scratchpad 上的深软件流水线,warp-specialized 异步生产者消费者;Hopper 连 MMA 本身(wgmma)都是异步的"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "BLIS 仍然值得抄的地方",
+      "items": [
+        "把「跨代不变」做进接口,「每代都变」做进 traits —— 这是 CUTLASS 3.x 照抄的那一半",
+        "分层暴露、各层可独立定制:对应 Atom / TiledMMA / Collective / Kernel / Device",
+        "「一次写 microkernel、处处能用」的目标没变,只是微内核从一层变成两级"
+      ]
+    }
+  ]
+}

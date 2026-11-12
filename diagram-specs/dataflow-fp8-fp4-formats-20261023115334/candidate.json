@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "FP8/FP4 低比特量化数据流:格式 → scale 粒度 → GEMM 路径",
+    "subtitle": "同一量化模板 q = cast(x/s) 下,权重与激活走不同粒度,FP8/FP4/INT8 三路线分流",
+    "output": "diagrams/fp8-fp4-formats.dataflow.html",
+    "animation": "trace",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase"
+  },
+  "stages": [
+    { "label": "高精度输入" },
+    { "label": "Scale 统计" },
+    { "label": "量化 cast" },
+    { "label": "低比特 GEMM" },
+    { "label": "输出/消费" }
+  ],
+  "nodes": [
+    { "id": "weights", "type": "database", "label": "权重 W (BF16)", "sublabel": "训练后 checkpoint", "stage": 0, "row": 0, "tag": "静态 scale" },
+    { "id": "acts", "type": "frontend", "label": "激活 X (BF16)", "sublabel": "每层前向现算", "stage": 0, "row": 2, "tag": "动态 scale" },
+    { "id": "wblock", "type": "security", "label": "权重 per-block amax", "sublabel": "128×128 tile, s = amax/448", "stage": 1, "row": 0, "tag": "DeepSeek-V3 粒度" },
+    { "id": "tokgroup", "type": "security", "label": "激活逐token分组", "sublabel": "1×128 组,在线量化", "stage": 1, "row": 2, "tag": "JIT,不缓存过期 amax" },
+    { "id": "e4m3", "type": "cloud", "label": "E4M3 (FP8)", "sublabel": "4 指数 3 尾数, max 448", "stage": 2, "row": 0, "tag": "前向权重/激活" },
+    { "id": "e5m2", "type": "cloud", "label": "E5M2 (FP8)", "sublabel": "5 指数 2 尾数, max 57344", "stage": 2, "row": 1, "tag": "反向梯度" },
+    { "id": "e2m1", "type": "cloud", "label": "E2M1 (FP4)", "sublabel": "非零幅值 {0.5..6} 共 16 码点", "stage": 2, "row": 2, "tag": "Blackwell 权重/激活" },
+    { "id": "mxfp4", "type": "messagebus", "label": "MXFP4 / NVFP4", "sublabel": "块 32(E8M0) / 块 16(FP8 scale)", "stage": 2, "row": 3, "tag": "OCP MX vs NVIDIA" },
+    { "id": "tcgemm", "type": "backend", "label": "FP8 TC GEMM", "sublabel": "Hopper 原生 dense 路径", "stage": 3, "row": 0, "tag": "DeepGEMM/TE/cuBLASLt" },
+    { "id": "tcgen05", "type": "backend", "label": "tcgen05 FP4 GEMM", "sublabel": "Blackwell 指令集直通", "stage": 3, "row": 2, "tag": "与 FP8 同构 tiling" },
+    { "id": "accum", "type": "security", "label": "高精度累加器", "sublabel": "FP16/FP32 accum 承接", "stage": 4, "row": 0, "tag": "长 K 维防丢精度" },
+    { "id": "dequant", "type": "backend", "label": "dequant 输出", "sublabel": "x̂ = dequant(q) × s", "stage": 4, "row": 2, "tag": "scale 元数据 ~0.02%" },
+    { "id": "grads", "type": "database", "label": "梯度 (反向)", "sublabel": "动态范围极大", "stage": 0, "row": 1, "tag": "下溢敏感度低" }
+  ],
+  "flows": [
+    { "id": "w-to-block", "from": "weights", "to": "wblock", "label": "按 tile 求 amax", "classification": "权重侧", "variant": "emphasis" },
+    { "id": "a-to-tok", "from": "acts", "to": "tokgroup", "label": "按 1×128 组求 amax", "classification": "激活侧", "variant": "emphasis" },
+    { "id": "g-to-e5m2", "from": "grads", "to": "e5m2", "label": "延迟大范围需求", "classification": "反向", "variant": "dashed" },
+    { "id": "wblock-e4m3", "from": "wblock", "to": "e4m3", "label": "cast(x/s)", "classification": "量化", "variant": "default" },
+    { "id": "tok-e4m3", "from": "tokgroup", "to": "e4m3", "label": "cast(x/s)", "classification": "量化", "variant": "default" },
+    { "id": "tok-e2m1", "from": "tokgroup", "to": "e2m1", "label": "4-bit cast", "classification": "量化", "variant": "dashed" },
+    { "id": "e2m1-mx", "from": "e2m1", "to": "mxfp4", "label": "套共享 scale 块", "classification": "微缩放容器", "variant": "default" },
+    { "id": "e4m3-gemm", "from": "e4m3", "to": "tcgemm", "label": "dense FP8 GEMM", "classification": "Tensor Core", "variant": "emphasis" },
+    { "id": "mx-tcgen05", "from": "mxfp4", "to": "tcgen05", "label": "FP4 操作数", "classification": "Tensor Core", "variant": "emphasis" },
+    { "id": "gemm-accum", "from": "tcgemm", "to": "accum", "label": "部分和", "classification": "累加", "variant": "security" },
+    { "id": "tcgen05-accum", "from": "tcgen05", "to": "accum", "label": "部分和", "classification": "累加", "variant": "security" },
+    { "id": "accum-dequant", "from": "accum", "to": "dequant", "label": "还原 ×s", "classification": "还原", "variant": "default" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "统一量化模板",
+      "items": [
+        "前向 q = cast_fp8(x / s),还原 x̂ = dequant(q) × s",
+        "scale 的角色是把分布对齐到浮点非均匀网格,不是把数变小",
+        "E4M3 小指数区密、大指数区疏,分布落点决定有效精度"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Scale 粒度是成败变量",
+      "items": [
+        "per-tensor 一个 outlier 决定全张量;block-wise 污染范围缩到 tile",
+        "DeepSeek-V3:权重 128×128 block + 激活 1×128 组,配合在线量化",
+        "元数据开销 ~0.02% 可忽略,代价在 kernel 按 tile 读 scale"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "格式分工",
+      "items": [
+        "E4M3:448 上限、E4M3FN 无 Inf,前向权重/激活(要精度)",
+        "E5M2:57344 上限沿用 IEEE 语义,反向梯度(要范围)",
+        "E2M1/FP4:无 scale 几乎不可用,天然是微缩放格式"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "FP4 时代与易错点",
+      "items": [
+        "MXFP4(OCP, 块 32, E8M0 scale)与 NVFP4(NVIDIA, 块 16, FP8 scale)layout 不同,不能默认互转",
+        "累加器必须高精度(FP16/FP32),低比特只作用于操作数",
+        "「checkpoint 是 FP8 ≠ 服务走 FP8 Tensor Core」,要 profile 确认指令路径"
+      ]
+    }
+  ]
+}

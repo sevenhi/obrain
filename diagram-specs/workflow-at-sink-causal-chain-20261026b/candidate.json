@@ -1,0 +1,108 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "attention sink 的因果链",
+    "locale": "zh-CN",
+    "subtitle": "softmax 强制权重和为 1,query 无处匹配时多余注意力必须倒给某 token——开头 token 被训成 sink",
+    "output": "diagrams/at-sink-causal-chain.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_cause",
+      "label": "根因链"
+    },
+    {
+      "id": "ln_exp",
+      "label": "两个判别实验"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "c0",
+      "lane": "ln_cause",
+      "col": 0,
+      "type": "backend",
+      "label": "softmax 要求 Σ=1",
+      "sublabel": "注意力权重和为 1",
+      "icon": "start"
+    },
+    {
+      "id": "c1",
+      "lane": "ln_cause",
+      "col": 1,
+      "type": "backend",
+      "label": "query 无处匹配",
+      "sublabel": "多余注意力必须倒给某 token",
+      "icon": "active"
+    },
+    {
+      "id": "c2",
+      "lane": "ln_cause",
+      "col": 2,
+      "type": "backend",
+      "label": "倒给开头 token",
+      "sublabel": "对所有后续可见,被训成 sink",
+      "icon": "success"
+    },
+    {
+      "id": "x0",
+      "lane": "ln_exp",
+      "col": 0,
+      "type": "backend",
+      "label": "换开头 4 个 token 为 \\n",
+      "sublabel": "照样重度关注 → 与内容无关",
+      "icon": "decision"
+    },
+    {
+      "id": "x1",
+      "lane": "ln_exp",
+      "col": 1,
+      "type": "backend",
+      "label": "只删开头 KV",
+      "sublabel": "PPL 立即爆炸 → sink 消失即崩",
+      "icon": "failure"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "c0",
+      "to": "c1",
+      "label": "强约束",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "c1",
+      "to": "c2",
+      "label": "sink 诞生",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "c2",
+      "to": "x0",
+      "label": "实验 1:验证位置而非内容",
+      "role": "branch"
+    },
+    {
+      "id": "e4",
+      "from": "c2",
+      "to": "x1",
+      "label": "实验 2:验证充分必要条件",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两个判别实验结论",
+      "items": [
+        "换 \\n 后 PPL 5.60 vs 原 5.40——重要的是「绝对位置在开头」",
+        "逐出开头 KV 其余全留,PPL 立即爆炸",
+        "崩溃的充分必要条件是 sink 消失"
+      ]
+    }
+  ]
+}

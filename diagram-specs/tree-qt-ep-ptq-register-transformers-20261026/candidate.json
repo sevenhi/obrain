@@ -1,0 +1,72 @@
+{
+ "schema_version": 1,
+ "diagram_type": "tree",
+ "meta": {
+  "title": "register_torch_a2a():接进 stock transformers 的 EP 基础设施",
+  "subtitle": "两个 style 注册;必须 lazy;5.16 改名 hook 与 per-expert bias 分片是坑",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-ep-ptq-register-transformers.tree.html"
+ },
+ "nodes": [
+  {
+   "id": "root",
+   "label": "register_torch_a2a()"
+  },
+  {
+   "id": "r",
+   "parent": "root",
+   "label": "注册内容",
+   "sublabel": "ALL_EXPERTS_FUNCTIONS + 两个 style"
+  },
+  {
+   "id": "r1",
+   "parent": "r",
+   "label": "torch_a2a_router",
+   "sublabel": "RouterParallel,原样透传 router 输出"
+  },
+  {
+   "id": "r2",
+   "parent": "r",
+   "label": "torch_a2a_experts",
+   "sublabel": "TensorParallelLayer,注入 EP process_group"
+  },
+  {
+   "id": "lazy",
+   "parent": "root",
+   "label": "必须 lazy 注册",
+   "sublabel": "import 时不带 transformers 副作用"
+  },
+  {
+   "id": "ver",
+   "parent": "root",
+   "label": "版本兼容坑",
+   "sublabel": "5.16.0 缺别名 / >=5.16 改名 hook"
+  },
+  {
+   "id": "bias",
+   "parent": "root",
+   "label": "per-expert bias 随权重分片",
+   "sublabel": "GPT-OSS,分片计划只切权重→静默错"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "router style 的关键",
+   "items": [
+    "必须发全局、未被 mask 的 expert id",
+    "dispatch 靠 global_expert // num_local 定目的 rank",
+    "基类 _prepare_output_fn 会 mask 掉非本 rank→路由信息丢失"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "bias 静默错",
+   "items": [
+    "每个非首 rank 会加上别的专家的 bias",
+    "任何 collective 前检查 bias 行数 == 本 rank 专家数",
+    "不符直接 raise:出错好过静默错"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "diagram_type": "timeline",
+  "meta": {
+    "title": "R1 谱系:同一条 GRPO + 规则 reward 的主线,三个分叉",
+    "subtitle": "GRPO 是 DeepSeekMath 先提出的「去掉 critic 的 PPO」;R1-Zero 把它放大成 671B 主模型的核心训练范式;R1 加上冷启动修可读性;蒸馏把它压进 1.5B–70B dense 模型",
+    "locale": "zh-CN",
+    "evidence": "observed",
+    "output": "diagrams/dm-r1-lineage.timeline.html"
+  },
+  "layout": { "width": 1000, "breaks": "none" },
+  "lanes": [
+    { "id": "ln_math", "label": "算法来源" },
+    { "id": "ln_r1", "label": "R1 主线" },
+    { "id": "ln_distill", "label": "蒸馏分支" }
+  ],
+  "events": [
+    {
+      "id": "e_math",
+      "at": "2024-02-05T00:00:00Z",
+      "lane": "ln_math",
+      "title": "DeepSeekMath:提出 GRPO",
+      "detail": "把 PPO 的 critic 去掉,用「同一问题 G 个回答组内标准化」做优势估计;当时还只是数学 7B 模型的 RL 收尾步骤",
+      "kind": "default"
+    },
+    {
+      "id": "e_zero",
+      "at": "2024-11-20T00:00:00Z",
+      "lane": "ln_r1",
+      "title": "R1-Zero:V3-Base 直接上 GRPO,零 SFT",
+      "detail": "AIME 2024 15.6% → 71.0%(训练中持续上涨),cons@64 = 86.7%;涌现长 CoT、反思、aha moment;但可读性差、语言混杂",
+      "kind": "change"
+    },
+    {
+      "id": "e_r1",
+      "at": "2025-01-22T00:00:00Z",
+      "lane": "ln_r1",
+      "title": "R1 正式版:四阶段流水线",
+      "detail": "冷启动 SFT → 推理 RL(加语言一致性 reward)→ 拒采样 SFT(~800k 样本,2 epoch)→ 全场景 RL;AIME 79.8 / MATH-500 97.3,对标 o1-1217",
+      "kind": "change"
+    },
+    {
+      "id": "e_distill",
+      "at": "2025-01-22T00:01:00Z",
+      "lane": "ln_distill",
+      "title": "R1-Distill 六个 dense 模型(1.5B–70B)",
+      "detail": "用 R1 生成的 800k 样本,只做 SFT 不做 RL;Distill-Qwen-32B AIME 72.6(超 o1-mini 的 63.6),Distill-1.5B AIME 28.9(超 GPT-4o 的 9.3)",
+      "kind": "action"
+    },
+    {
+      "id": "e_fail",
+      "at": "2025-01-22T00:02:00Z",
+      "lane": "ln_math",
+      "title": "被放弃的两条路:PRM 与 MCTS",
+      "detail": "PRM:细粒度步骤难定义、中间步判定不可靠、必被 reward hacking,只适合 top-N 重排;MCTS:token 搜索空间指数级大于棋类,细粒度 value model 难训、难自举",
+      "kind": "alert"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "一句话记住谱系",
+      "items": [
+        "GRPO + 规则 reward 是算法底座,DeepSeekMath 提的",
+        "R1-Zero 证明「无 SFT 也能涌现推理」",
+        "R1 用「少量高质量冷启动 + 迭代式 RL/SFT 交替」换来收敛起点、可读性和通用能力",
+        "蒸馏证明:小模型学推理,抄大模型轨迹比自己 RL 更划算(72.6 vs 47.0)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "R1 没有新网络结构",
+      "items": [
+        "底座就是 V3-Base 的 MLA + 256 专家 MoE + MTP",
+        "R1 的贡献全在训练范式(RL 谱系),不在架构",
+        "结构视角见 model-architecture/concepts/deepseek-arch-v32-r1.md,与本篇不重复"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两个常被误读的点",
+      "items": [
+        "R1 论文里的 MCTS 失败是「通用推理 + 自举训练」场景,Prover 的 RMaxTS 是「有编译器反馈的形式化」场景,不矛盾",
+        "蒸馏 vs RL 的 47.0 是「同底座自己跑大规模 RL」,不是「R1-Zero 全量」的成绩"
+      ]
+    }
+  ]
+}

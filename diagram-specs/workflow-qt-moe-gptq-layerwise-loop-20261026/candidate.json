@@ -1,0 +1,100 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "逐层校准:一次 loop interchange 换一层驻留",
+  "subtitle": "数据在外、深度在内 → 深度在外、数据在内;边界激活 ~2 GiB 换掉 ~600–900 GiB 常驻权重",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-moe-gptq-layerwise-loop.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "reg",
+   "label": "常规校准"
+  },
+  {
+   "id": "lay",
+   "label": "逐层校准"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "reg",
+   "lane": "reg",
+   "col": 0,
+   "type": "backend",
+   "label": "常规:for batch → for 92 层",
+   "sublabel": "整模型必须驻留"
+  },
+  {
+   "id": "pre",
+   "lane": "lay",
+   "col": 0,
+   "type": "frontend",
+   "label": "先算好全部边界激活 acts",
+   "sublabel": "只留每层入口的激活"
+  },
+  {
+   "id": "loop",
+   "lane": "lay",
+   "col": 1,
+   "type": "backend",
+   "label": "for layer:校准+量化+导出+释放",
+   "sublabel": "深度在外,数据在内"
+  },
+  {
+   "id": "res",
+   "lane": "lay",
+   "col": 2,
+   "type": "backend",
+   "label": "层 shard 即产物,可续跑",
+   "sublabel": "不需第二次全模型遍历"
+  }
+ ],
+ "edges": [
+  {
+   "from": "reg",
+   "to": "loop",
+   "label": "代价:常驻权重 ~600–900 GiB",
+   "variant": "dashed"
+  },
+  {
+   "from": "pre",
+   "to": "loop",
+   "label": "进入一层的激活就绪",
+   "variant": "emphasis"
+  },
+  {
+   "from": "loop",
+   "to": "res",
+   "label": "内层结束=该层数据全见完",
+   "variant": "emphasis"
+  }
+ ],
+ "mainPath": [
+  "pre",
+  "loop",
+  "res"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "边界代价与层数无关",
+   "items": [
+    "512×512×2560 → 1.25 GiB",
+    "512×512×4096 → 2.00 GiB",
+    "1024×512×4096 → 4.00 GiB",
+    "对照单 batch(16×512×4096)= 0.06 GiB"
+   ]
+  },
+  {
+   "dot": "emerald",
+   "title": "正确性来自依赖关系",
+   "items": [
+    "第 i 层校准统计只依赖进入第 i 层的激活",
+    "第 i−1 层刚产出它",
+    "同一步里校准→量化→导出→释放,不再第二次遍历"
+   ]
+  }
+ ]
+}

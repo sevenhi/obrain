@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "StreamingLLM 的 KV cache 布局与滚动",
+    "locale": "zh-CN",
+    "subtitle": "cache = 前 4 个 sink token 的 KV + 最近窗口 token 的 KV(FIFO);位置编码按 cache 内槽位重编号",
+    "output": "diagrams/at-sink-cache-layout.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_layout",
+      "label": "cache 分区"
+    },
+    {
+      "id": "ln_roll",
+      "label": "滚动更新"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "sink",
+      "lane": "ln_layout",
+      "col": 0,
+      "type": "backend",
+      "label": "sink 区(前 4 个)",
+      "sublabel": "固定不逐出",
+      "icon": "start"
+    },
+    {
+      "id": "roll",
+      "lane": "ln_layout",
+      "col": 1,
+      "type": "backend",
+      "label": "rolling 区(最近 N−4)",
+      "sublabel": "FIFO 逐出最旧",
+      "icon": "active"
+    },
+    {
+      "id": "append",
+      "lane": "ln_roll",
+      "col": 1,
+      "type": "backend",
+      "label": "新 token 追加",
+      "sublabel": "逐出 rolling 最旧一个",
+      "icon": "active"
+    },
+    {
+      "id": "renum",
+      "lane": "ln_roll",
+      "col": 2,
+      "type": "backend",
+      "label": "位置按 cache 槽位重编号",
+      "sublabel": "RoPE 存旋转前 K,每步重旋",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "sink",
+      "to": "roll",
+      "label": "两段拼接",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "roll",
+      "to": "append",
+      "label": "逐出谁",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "append",
+      "to": "renum",
+      "label": "重排位置",
+      "role": "main"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "为什么是 4 个 sink(Table 2)",
+      "items": [
+        "0+4096(纯窗)PPL=3359.95",
+        "1+4095 → 11.88;2+4094 → 10.51",
+        "4+4092 → 9.59;8+4088 → 9.54(饱和)",
+        "Llama-2 的 <s> 在分块前加,第 0 位近乎随机"
+      ]
+    }
+  ]
+}

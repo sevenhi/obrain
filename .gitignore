@@ -35,5 +35,12 @@ diagrams/*.delivery.json
 diagrams/*.browser-check.json
 diagrams/*.visual-check.json
 
-# archify 可渲染产物(HTML 可随时从 markdown 重生成,不入库)
+# 图 HTML 由独立校验备份保全；diagram-specs/ 与 diagram-assets.json 入库。
+# 不承诺从正文或候选规格确定性重建现有 HTML；恢复必须使用备份包。
 diagrams/*.html
+
+diagram-specs/**/review-*/
+
+# 整站快照(本地回滚用临时副本,含 diagrams 体积数百 MB,不入库;回滚用 git)
+site-before-*/
+site-old-lse/

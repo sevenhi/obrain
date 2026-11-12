@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "diagram_type": "waterfall",
+  "meta": {
+    "title": "多级流水(multistage):搬与算如何重叠",
+    "subtitle": "给 smem 里的 A/B 开 N 份 buffer,异步拷贝把下一 stage 的数据搬进来,Tensor Core 同时算当前 stage;级数太少等待暴露,太多 smem 被占满、占用率下降",
+    "locale": "zh-CN",
+    "evidence": "illustrative",
+    "unit": "us",
+    "output": "diagrams/cl-multistage-pipeline.waterfall.html"
+  },
+  "spans": [
+    { "id": "copy1", "name": "copy A1/B1 → buf0", "start": 0, "end": 10, "service": "搬运(cp.async / TMA)", "detail": "第一个 stage 只有搬运,没有可重叠的计算——这就是「等数据」的固有延迟", "status": "ok" },
+    { "id": "mma1", "name": "mma B1", "start": 10, "end": 22, "service": "Tensor Core", "detail": "buf0 就绪后开始累加", "status": "ok" },
+    { "id": "copy2", "name": "copy A2/B2 → buf1", "start": 10, "end": 20, "service": "搬运(cp.async / TMA)", "detail": "关键:算第 1 块的同时已经在搬第 2 块", "status": "ok" },
+    { "id": "mma2", "name": "mma B2", "start": 20, "end": 32, "service": "Tensor Core", "detail": "buf1 已就绪,无缝接上", "status": "ok" },
+    { "id": "copy3", "name": "copy A3/B3 → buf0", "start": 20, "end": 30, "service": "搬运(cp.async / TMA)", "detail": "buf0 已被算完,可以安全复用(需要同步保证)", "status": "ok" },
+    { "id": "mma3", "name": "mma B3", "start": 30, "end": 42, "service": "Tensor Core", "detail": "稳态:搬运完全藏在计算背后", "status": "ok" },
+    { "id": "copy4", "name": "copy A4/B4 → buf1", "start": 30, "end": 40, "service": "搬运(cp.async / TMA)", "detail": "循环推进", "status": "ok" },
+    { "id": "idle", "name": "首 stage 的等待(无法重叠)", "start": 0, "end": 10, "service": "等待(smem 空)", "detail": "pipelining 消不掉的固有启动开销:级数越多,这段摊薄得越厉害", "status": "incomplete" },
+    { "id": "warp_spec", "name": "warp specialization(Hopper):producer 只发 TMA", "start": 0, "end": 42, "service": "producer warp", "detail": "搬运与计算分成两拨 warp 并发,靠 named barrier 同步;consumer 只发 wgmma", "status": "ok" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "级数怎么选(三者互相拉扯)",
+      "items": [
+        "太少 → 搬算无法重叠,等待暴露",
+        "太多 → smem 被缓冲区占满,occupancy 下降,能跑的 CTA 变少",
+        "经验上 3–6 级常见",
+        "CtaTileK 决定单 stage 数据量 → 直接影响所需级数与 smem 占用"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "搬运指令的代际差异",
+      "items": [
+        "Ampere/Ada:cp.async,per-thread 粒度,可带 cache-bypass hint",
+        "Hopper:TMA(cp.async.bulk.tensor),整块 bulk + 硬件处理 strided tile",
+        "Blackwell:tcgen05 UMMA,wgmma 为 Hopper-only",
+        "Volta/Turing 及更早:无异步拷贝,需显式 barrier,难隐藏延迟"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "正确性靠什么保证",
+      "items": [
+        "数据依赖:一块 smem buffer 必须被本轮 mma 读完,才允许下一轮 copy 覆盖",
+        "barrier / fence / named barrier 实现这条依赖",
+        "CUTLASS 用 PipelineTmaAsync / PipelineAsync / PipelineTmaUmmaAsync 封装",
+        "手写时最容易漏、最容易出 race 的就是这里"
+      ]
+    }
+  ]
+}

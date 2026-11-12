@@ -1,0 +1,361 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Warp 划分:FA1 split-KV(要合并) vs FA2 按 Q 行切(免通信)",
+    "subtitle": "同一个 Q 块的四种分法:FA1 让 4 个 warp 各算不同 K/V 块、结果跨 warp 归约;FA2 让 warp 各算同一 K/V 的连续 Q 行、独立写输出",
+    "locale": "zh-CN",
+    "output": "diagrams/fa-warp-partition.architecture.html",
+    "viewBox": [
+      1090,
+      840
+    ]
+  },
+  "components": [
+    {
+      "id": "q_fa1",
+      "type": "frontend",
+      "label": "Q 块(FA1)",
+      "sublabel": "同一个 Q block,4 个 warp 共用",
+      "size": [
+        200,
+        54
+      ],
+      "pos": [
+        460,
+        50
+      ]
+    },
+    {
+      "id": "w0_fa1",
+      "type": "backend",
+      "label": "Warp 0",
+      "sublabel": "算 K/V 块 b0",
+      "size": [
+        170,
+        60
+      ],
+      "pos": [
+        40,
+        160
+      ]
+    },
+    {
+      "id": "w1_fa1",
+      "type": "backend",
+      "label": "Warp 1",
+      "sublabel": "算 K/V 块 b1",
+      "size": [
+        170,
+        60
+      ],
+      "pos": [
+        310,
+        160
+      ]
+    },
+    {
+      "id": "w2_fa1",
+      "type": "backend",
+      "label": "Warp 2",
+      "sublabel": "算 K/V 块 b2",
+      "size": [
+        170,
+        60
+      ],
+      "pos": [
+        580,
+        160
+      ]
+    },
+    {
+      "id": "w3_fa1",
+      "type": "backend",
+      "label": "Warp 3",
+      "sublabel": "算 K/V 块 b3",
+      "size": [
+        170,
+        60
+      ],
+      "pos": [
+        850,
+        160
+      ]
+    },
+    {
+      "id": "smem_fa1",
+      "type": "database",
+      "label": "SMEM 归约(FA1)",
+      "sublabel": "跨 warp sync+reduce 合并",
+      "size": [
+        200,
+        60
+      ],
+      "pos": [
+        460,
+        280
+      ]
+    },
+    {
+      "id": "o_fa1",
+      "type": "external",
+      "label": "O(FA1)",
+      "sublabel": "合并后才能写出",
+      "size": [
+        200,
+        54
+      ],
+      "pos": [
+        460,
+        390
+      ]
+    },
+    {
+      "id": "kv_fa2",
+      "type": "frontend",
+      "label": "K/V 块(FA2)",
+      "sublabel": "载入 shared memory 共享",
+      "size": [
+        200,
+        54
+      ],
+      "pos": [
+        460,
+        490
+      ]
+    },
+    {
+      "id": "r0_fa2",
+      "type": "backend",
+      "label": "Warp 0",
+      "sublabel": "算 Q 行 0-31",
+      "size": [
+        170,
+        60
+      ],
+      "pos": [
+        40,
+        590
+      ]
+    },
+    {
+      "id": "r1_fa2",
+      "type": "backend",
+      "label": "Warp 1",
+      "sublabel": "算 Q 行 32-63",
+      "size": [
+        170,
+        60
+      ],
+      "pos": [
+        310,
+        590
+      ]
+    },
+    {
+      "id": "r2_fa2",
+      "type": "backend",
+      "label": "Warp 2",
+      "sublabel": "算 Q 行 64-95",
+      "size": [
+        170,
+        60
+      ],
+      "pos": [
+        580,
+        590
+      ]
+    },
+    {
+      "id": "r3_fa2",
+      "type": "backend",
+      "label": "Warp 3",
+      "sublabel": "算 Q 行 96-127",
+      "size": [
+        170,
+        60
+      ],
+      "pos": [
+        850,
+        590
+      ]
+    },
+    {
+      "id": "o_fa2",
+      "type": "external",
+      "label": "O(FA2)",
+      "sublabel": "各 warp 独立写自己的行",
+      "size": [
+        200,
+        54
+      ],
+      "pos": [
+        460,
+        710
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "FA1:4 warp 各算不同 K/V 块 → 分数按列切 → 必须归约",
+      "wraps": [
+        "q_fa1",
+        "w0_fa1",
+        "w1_fa1",
+        "w2_fa1",
+        "w3_fa1",
+        "smem_fa1",
+        "o_fa1"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "FA2:4 warp 各算同一 K/V 的连续 Q 行 → 行间独立 → 免通信",
+      "wraps": [
+        "kv_fa2",
+        "r0_fa2",
+        "r1_fa2",
+        "r2_fa2",
+        "r3_fa2",
+        "o_fa2"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "q_fa1",
+      "to": "w0_fa1",
+      "label": "同一 Q 块",
+      "variant": "dashed"
+    },
+    {
+      "id": "c2",
+      "from": "q_fa1",
+      "to": "w1_fa1",
+      "variant": "dashed"
+    },
+    {
+      "id": "c3",
+      "from": "q_fa1",
+      "to": "w2_fa1",
+      "variant": "dashed"
+    },
+    {
+      "id": "c4",
+      "from": "q_fa1",
+      "to": "w3_fa1",
+      "variant": "dashed"
+    },
+    {
+      "id": "c5",
+      "from": "w0_fa1",
+      "to": "smem_fa1",
+      "label": "部分分数行",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c6",
+      "from": "w1_fa1",
+      "to": "smem_fa1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c7",
+      "from": "w2_fa1",
+      "to": "smem_fa1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c8",
+      "from": "w3_fa1",
+      "to": "smem_fa1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c9",
+      "from": "smem_fa1",
+      "to": "o_fa1"
+    },
+    {
+      "id": "c10",
+      "from": "kv_fa2",
+      "to": "r0_fa2",
+      "label": "共享同一份 K/V",
+      "variant": "dashed"
+    },
+    {
+      "id": "c11",
+      "from": "kv_fa2",
+      "to": "r1_fa2",
+      "variant": "dashed"
+    },
+    {
+      "id": "c12",
+      "from": "kv_fa2",
+      "to": "r2_fa2",
+      "variant": "dashed"
+    },
+    {
+      "id": "c13",
+      "from": "kv_fa2",
+      "to": "r3_fa2",
+      "variant": "dashed"
+    },
+    {
+      "id": "c14",
+      "from": "r0_fa2",
+      "to": "o_fa2",
+      "label": "独立写 O[0:32]",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c15",
+      "from": "r1_fa2",
+      "to": "o_fa2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c16",
+      "from": "r2_fa2",
+      "to": "o_fa2",
+      "variant": "emphasis"
+    },
+    {
+      "id": "c17",
+      "from": "r3_fa2",
+      "to": "o_fa2",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "FA1 的通信开销",
+      "items": [
+        "4 warp 对同一 Q 块各算一部分 K/V",
+        "分数行按列切,必须跨 warp 归约",
+        "shared memory sync + reduce:通信 + 同步都多"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "FA2 为什么免通信",
+      "items": [
+        "Q 各行在 K/V 维上的 softmax 完全独立",
+        "按 Q 行切 = 各 warp 完全独立",
+        "自己算、自己写,免除合并同步"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "延伸",
+      "items": [
+        "threadblock 级同理:沿 Q 切免归并(FA2 序列并行)",
+        "沿 K/V 切才要 split-K 归并(FlashDecoding)",
+        "warp tile 粒度 ~32-64 行/ warp"
+      ]
+    }
+  ]
+}

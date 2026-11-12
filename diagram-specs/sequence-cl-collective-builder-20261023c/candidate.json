@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "CollectiveBuilder 的推导链:你给准则,它填模板",
+    "subtitle": "第二个实参是算符类别 OpClassTensorOp,不是 DispatchPolicy——后者恰恰是 builder 的推导产物。这条链说明「高层准则 → 底层参数」是怎么落地的",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-collective-builder.sequence.html"
+  },
+  "participants": [
+    {
+      "id": "dev",
+      "type": "frontend",
+      "label": "你的 kernel 代码",
+      "sublabel": "只写准则"
+    },
+    {
+      "id": "cb",
+      "type": "backend",
+      "label": "CollectiveBuilder",
+      "sublabel": "模板推导"
+    },
+    {
+      "id": "ml",
+      "type": "backend",
+      "label": "CollectiveMainloop",
+      "sublabel": "推导产物"
+    },
+    {
+      "id": "ku",
+      "type": "backend",
+      "label": "GemmUniversal",
+      "sublabel": "ProblemShape 打头"
+    },
+    {
+      "id": "ad",
+      "type": "database",
+      "label": "GemmUniversalAdapter",
+      "sublabel": "可直接调用"
+    }
+  ],
+  "segments": [
+    {
+      "from": 160,
+      "to": 330,
+      "label": "给准则"
+    },
+    {
+      "from": 346,
+      "to": 470,
+      "label": "推导"
+    },
+    {
+      "from": 486,
+      "to": 600,
+      "label": "组装"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "dev",
+      "to": "cb",
+      "y": 180,
+      "label": "架构 Sm90 + OpClassTensorOp"
+    },
+    {
+      "id": "m2",
+      "from": "dev",
+      "to": "cb",
+      "y": 228,
+      "label": "A/B 的 Element/Layout/Alignment(三项都不能缺)"
+    },
+    {
+      "id": "m3",
+      "from": "dev",
+      "to": "cb",
+      "y": 276,
+      "label": "TileShape + ClusterShape(Hopper 必需)"
+    },
+    {
+      "id": "m4",
+      "from": "cb",
+      "to": "ml",
+      "y": 352,
+      "label": "推出 DispatchPolicy、stage 数、smem 布局",
+      "variant": "return"
+    },
+    {
+      "id": "m5",
+      "from": "dev",
+      "to": "ku",
+      "y": 392,
+      "label": "ProblemShape(mm,mn,mk,kl) 当第一实参",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m6",
+      "from": "ml",
+      "to": "ku",
+      "y": 450,
+      "label": "CollectiveMainloop + CollectiveEpilogue",
+      "variant": "return"
+    },
+    {
+      "id": "m7",
+      "from": "ku",
+      "to": "ad",
+      "y": 510,
+      "label": "包一层 Adapter",
+      "variant": "return"
+    },
+    {
+      "id": "m8",
+      "from": "ad",
+      "to": "dev",
+      "y": 560,
+      "label": "像普通 kernel 一样调用",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "新手最高频报错的两处",
+      "items": [
+        "漏了 AlignmentA/AlignmentB:编译不过",
+        "GemmUniversal 第一实参必须是 ProblemShape,不是 TileShape"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Auto 必须配套",
+      "items": [
+        "mainloop 用 KernelScheduleAuto,epilogue 也要 EpilogueScheduleAuto",
+        "不配套会在编译期报模板不匹配",
+        "大 epilogue 需要 StageCountAutoCarveout 从 smem 里 carve out"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "从哪个示例抄",
+      "items": [
+        "Hopper:examples/49_hopper_gemm_with_collective_builder",
+        "Blackwell:examples/71(含 epilogue visitor tree)",
+        "别照抄博客里的旧签名,以仓库源码为准"
+      ]
+    }
+  ]
+}

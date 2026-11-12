@@ -2,7 +2,7 @@
 title: deepseek-vision 外部链接索引
 type: reference
 tags: [deepseek, vision, multimodal, vl, vl2, ocr, janus, dreamcraft3d, references]
-date: 2026-10
+date: 2026-11
 ---
 
 # References — deepseek-vision
@@ -38,6 +38,11 @@ date: 2026-10
 > 注:OCR/OCR-2 的 arXiv 号注意 2410.06571 为无关论文号,已排除。正确号经 web_search 核对为 **2510.18234**(OCR)与 **2601.20552**(OCR-2)。
 
 ## 模型卡 / config 口径(HF raw)
+
+- OCR 一代官方仓库固定快照(源码与 Native/Gundam 模式联合核对) — https://github.com/deepseek-ai/DeepSeek-OCR/tree/09eaf526153e7a01ed16c9dea8c96282aaea29c0
+
+- OCR 一代官方 forward(SAM 特征送入 vision_model,随后拼接两级特征;固定快照) — https://github.com/deepseek-ai/DeepSeek-OCR/blob/09eaf526153e7a01ed16c9dea8c96282aaea29c0/DeepSeek-OCR-master/DeepSeek-OCR-vllm/deepseek_ocr.py#L394
+- OCR 一代 Native/Gundam 动态分块模式(固定快照 README) — https://github.com/deepseek-ai/DeepSeek-OCR/blob/09eaf526153e7a01ed16c9dea8c96282aaea29c0/README.md#L192
 
 - DeepSeek-VL-7B-chat:https://huggingface.co/deepseek-ai/deepseek-vl-7b-chat
 - DeepSeek-VL2(full/tiny/small):https://huggingface.co/deepseek-ai/deepseek-vl2 、-tiny 、-small

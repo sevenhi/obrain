@@ -1,0 +1,158 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "导出阶段三个决策:契约、动态 shape、算子缺口",
+    "subtitle": "最常见的事故不在 TensorRT 数学里,而在这三件事没写清楚。契约先行,profile 次之,算子缺口最后处理",
+    "locale": "zh-CN",
+    "output": "diagrams/cv-export-decisions.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_contract", "label": "① 写清契约" },
+    { "id": "ln_shape", "label": "② 定形状" },
+    { "id": "ln_ops", "label": "③ 处置算子缺口" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "先定 I/O", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "再定形状", "fromCol": 2, "toCol": 3 },
+    { "id": "ph3", "label": "最后补算子", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["io", "pre", "post", "dyn", "profile", "gap", "rewrite"],
+  "nodes": [
+    {
+      "id": "io",
+      "lane": "ln_contract",
+      "col": 0,
+      "type": "frontend",
+      "label": "张量契约",
+      "sublabel": "名称 / dtype / layout / 颜色序",
+      "icon": "start",
+      "width": 150
+    },
+    {
+      "id": "pre",
+      "lane": "ln_contract",
+      "col": 1,
+      "type": "backend",
+      "label": "预处理归属",
+      "sublabel": "resize/normalize 在图内还是图外",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "post",
+      "lane": "ln_contract",
+      "col": 2,
+      "type": "backend",
+      "label": "后处理归属",
+      "sublabel": "NMS 交给图、runtime 还是业务",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "dyn",
+      "lane": "ln_shape",
+      "col": 3,
+      "type": "security",
+      "label": "batch/h/w 动态 ?",
+      "sublabel": "标 dynamic_axes",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "profile",
+      "lane": "ln_shape",
+      "col": 4,
+      "type": "database",
+      "label": "min / opt / max",
+      "sublabel": "opt 贴生产流量中心",
+      "icon": "database",
+      "width": 150
+    },
+    {
+      "id": "gap",
+      "lane": "ln_ops",
+      "col": 5,
+      "type": "security",
+      "label": "parser 全认 ?",
+      "sublabel": "不认就得四条处置",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "rewrite",
+      "lane": "ln_ops",
+      "col": 5,
+      "type": "cloud",
+      "label": "改写图或加 plugin",
+      "sublabel": "先试简化,再考虑插件",
+      "icon": "success",
+      "width": 150,
+      "yOffset": 132
+    },
+    {
+      "id": "split",
+      "lane": "ln_shape",
+      "col": 3,
+      "type": "external",
+      "label": "多分辨率多 profile",
+      "sublabel": "离散 shape 别硬塞一个",
+      "icon": "neutral",
+      "width": 150,
+      "yOffset": 132
+    },
+    {
+      "id": "drift",
+      "lane": "ln_contract",
+      "col": 2,
+      "type": "external",
+      "label": "预处理不一致",
+      "sublabel": "精度下降的第一嫌疑",
+      "icon": "failure",
+      "width": 150,
+      "yOffset": 132
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "io", "to": "pre", "label": "先定输入长什么样", "role": "main" },
+    { "id": "e2", "from": "pre", "to": "post", "label": "再定输出到哪结束", "role": "main" },
+    { "id": "e3", "from": "post", "to": "dyn", "label": "契约清了才谈形状", "role": "main" },
+    { "id": "e4", "from": "dyn", "to": "profile", "label": "动态就要三档", "role": "main", "variant": "emphasis" },
+    { "id": "e5", "from": "dyn", "to": "split", "label": "shape 离散就分 engine", "role": "branch", "variant": "dashed" },
+    { "id": "e6", "from": "profile", "to": "gap", "label": "形状定了再看算子", "role": "main" },
+    { "id": "e7", "from": "gap", "to": "rewrite", "label": "有缺口:先改写再插件", "role": "branch", "variant": "emphasis" },
+    { "id": "e8", "from": "pre", "to": "drift", "label": "没写清就会漂", "role": "error", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "「精度下降」的五个真凶",
+      "items": [
+        "resize 插值方式、对齐方式(letterbox 的 pad 位置)",
+        "normalize 的均值/方差、是否除 255",
+        "RGB / BGR 通道顺序搞反",
+        "NMS 阈值与坐标变换在两处实现里不一致",
+        "以上都不在 TensorRT 里,却在 TensorRT 上暴雷"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "profile 的三个数字怎么取",
+      "items": [
+        "opt 应靠近生产流量中心,不是随手取中间值",
+        "max 过大会抬高 build 搜索空间与 workspace 压力",
+        "线上 shape 离散时,按常见分辨率建多个 profile 或 engine 更划算"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "算子缺口的四条处置(有顺序)",
+      "items": [
+        "1 改写模型,让它落进常见算子集合",
+        "2 导出前做 constant folding / shape 推导 / 图简化",
+        "3 写 TensorRT plugin",
+        "4 让该子图由 ORT 或其他 backend 执行"
+      ]
+    }
+  ]
+}

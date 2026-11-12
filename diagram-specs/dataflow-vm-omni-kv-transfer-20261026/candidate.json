@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "跨阶段 KV/payload 传输:三种 connector",
+    "subtitle": "共享内存同车间手递手,Mooncake 园区物流,NIXL 跨厂区高速专线;货物不落地成文本序列化",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-omni-kv-transfer.dataflow.html"
+  },
+  "stages": [
+    {
+      "label": "① 生产者阶段"
+    },
+    {
+      "label": "② 传输层"
+    },
+    {
+      "label": "③ 消费者阶段"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "pro",
+      "type": "cloud",
+      "label": "AR/上游 stage",
+      "sublabel": "产出 paged KV / payload",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "shm",
+      "type": "backend",
+      "label": "SharedMemory",
+      "sublabel": "同节点手递手",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "moon",
+      "type": "messagebus",
+      "label": "MooncakeConnector",
+      "sublabel": "AR→DiT KV handoff",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "nixl",
+      "type": "database",
+      "label": "NixlConnector",
+      "sublabel": "RDMA/UCX 跨节点",
+      "stage": 1,
+      "row": 2
+    },
+    {
+      "id": "con",
+      "type": "cloud",
+      "label": "DiT/下游 stage",
+      "sublabel": "目标页装载",
+      "stage": 2,
+      "row": 1
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "pro",
+      "to": "shm",
+      "label": "payload 直传"
+    },
+    {
+      "id": "f2",
+      "from": "pro",
+      "to": "moon",
+      "label": "transfer ticket + KV 页"
+    },
+    {
+      "id": "f3",
+      "from": "pro",
+      "to": "nixl",
+      "label": "READ 拉取生产者张量"
+    },
+    {
+      "id": "f4",
+      "from": "shm",
+      "to": "con",
+      "label": "到显存页"
+    },
+    {
+      "id": "f5",
+      "from": "moon",
+      "to": "con",
+      "label": "各 rank 装载完释放源页"
+    },
+    {
+      "id": "f6",
+      "from": "nixl",
+      "to": "con",
+      "label": "原子认领源分配"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "正确性>微小加速",
+      "items": [
+        "Mooncake 原生路径比旧 OmniKVTransferManager 吞吐高 0.63%",
+        "prefix/attention 输出 bit 级一致",
+        "价值在正确性与统一生命周期,不只是加速"
+      ]
+    }
+  ]
+}

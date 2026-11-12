@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "V2/V3 的组合拳:MoE 省算力、MLA 省 KV cache",
+    "subtitle": "两条省法叠加在同一个 block 里:FFN 换成 257 个专家只激活 8 个;attention 把 KV 压成低秩潜向量只缓存那一份。V3 相对同规模 dense,总参涨 10 倍而每 token 算力只涨一点",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-v2-v3-combo.dataflow.html"
+  },
+  "stages": [
+    { "label": "① token 进 block" },
+    { "label": "② attention:MLA" },
+    { "label": "③ FFN:MoE" },
+    { "label": "④ 出口" }
+  ],
+  "nodes": [
+    {
+      "id": "x",
+      "type": "database",
+      "label": "hidden 7168",
+      "sublabel": "61 层,每层都走这两步",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "kv",
+      "type": "backend",
+      "label": "KV 低秩压缩",
+      "sublabel": "d_c = 512,只缓存潜向量",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "q",
+      "type": "backend",
+      "label": "Q 也低秩投影",
+      "sublabel": "query 压缩维 1536",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "rope",
+      "type": "backend",
+      "label": "解耦 RoPE 维 64",
+      "sublabel": "位置信息单独带,不进低秩",
+      "stage": 1,
+      "row": 2
+    },
+    {
+      "id": "cache",
+      "type": "database",
+      "label": "KV cache 省 93.3%",
+      "sublabel": "V2 实测;吞吐 5.76×",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "router",
+      "type": "backend",
+      "label": "sigmoid 打分 + bias",
+      "sublabel": "aux-loss-free,只影响选谁",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "exp",
+      "type": "security",
+      "label": "256 路由 + 1 共享",
+      "sublabel": "top-8,每专家内维 2048",
+      "stage": 2,
+      "row": 2
+    },
+    {
+      "id": "out",
+      "type": "frontend",
+      "label": "下一层",
+      "sublabel": "37B 激活 / 671B 总参",
+      "stage": 3,
+      "row": 1
+    }
+  ],
+  "flows": [
+    { "id": "f1", "from": "x", "to": "kv", "label": "投影成潜向量" },
+    { "id": "f2", "from": "x", "to": "q", "label": "Q 侧同样压缩" },
+    { "id": "f3", "from": "x", "to": "rope", "label": "位置单独注入" },
+    { "id": "f4", "from": "kv", "to": "cache", "label": "缓存变小是主收益" },
+    { "id": "f5", "from": "q", "to": "router", "label": "attention 输出进 FFN" },
+    { "id": "f6", "from": "router", "to": "exp", "label": "选 8 个专家" },
+    { "id": "f7", "from": "exp", "to": "out", "label": "加权求和" },
+    { "id": "f8", "from": "rope", "to": "out", "label": "位置不丢" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两条省法省的不是同一样东西",
+      "items": [
+        "MoE 省「每 token 的算力」:总参 671B,激活只 37B",
+        "MLA 省「KV cache 显存与带宽」:缓存的是潜向量而非完整 K/V",
+        "两者正交,可以叠加 —— 这就是 V3 能「又大又便宜」的原因"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "V2/V3 的关键数字",
+      "items": [
+        "V2:236B/21B,128K ctx,8.1T tokens,KV cache −93.3%,吞吐 5.76×",
+        "V3:671B/37B,61 层 hidden 7168,d_c=512,MLP 内维 2048",
+        "V3:14.8T tokens,2.788M H800 GPU 时(≈$5.5M)",
+        "训练成本较 67B dense 省 42.5%(V2 论文口径)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "别把 MLA 当成「所有 DeepSeek 系都有」",
+      "items": [
+        "DeepSeek-VL2 的开源 config:use_mla = false(MHA)",
+        "DeepSeek-OCR / OCR-2:use_mla = false",
+        "MLA 是 V2/V3 主干的选择,不是 DeepSeek 品牌的默认值"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "部署侧的两个约束",
+      "items": [
+        "每 token 最多发往 4 个节点 —— 限制 all-to-all 通信爆炸",
+        "专家并行需要 NVLink/IB,普通以太网下 all-to-all 成为新瓶颈",
+        "MTP 深度 1 可直接当投机解码草稿头(与 vllm 域联动)"
+      ]
+    }
+  ]
+}

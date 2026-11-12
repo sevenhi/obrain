@@ -1,0 +1,153 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "2025-26 的两个「救场」机制:dynamic SD 调 γ,adaptive verification 挑槽位",
+    "subtitle": "两者解的是同一个问题——高并发下验证把 memory-bound 推成 compute-bound,草稿变成抢算力的负担;一个从「猜多少」下手,一个从「哪些槽位值得验」下手",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-spec-dynamic-adaptive.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_sig", "label": "观测信号" },
+    { "id": "ln_dyn", "label": "dynamic SD:调 γ" },
+    { "id": "ln_adp", "label": "adaptive:挑槽位" },
+    { "id": "ln_lim", "label": "限制 / 代价", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 看有效 batch", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 两条不同的干预路径", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "③ 落地约束", "fromCol": 4, "toCol": 5 }
+  ],
+  "nodes": [
+    {
+      "id": "bs",
+      "lane": "ln_sig",
+      "col": 0,
+      "type": "database",
+      "label": "有效 batch = BS × K",
+      "sublabel": "并发数 × 每步候选数",
+      "icon": "database"
+    },
+    {
+      "id": "tpot",
+      "lane": "ln_sig",
+      "col": 1,
+      "type": "backend",
+      "label": "TPOT 反而变慢",
+      "sublabel": "越界后 SD 收益转负",
+      "icon": "clock"
+    },
+    {
+      "id": "cfg",
+      "lane": "ln_dyn",
+      "col": 2,
+      "type": "backend",
+      "label": "按并发区间切档",
+      "sublabel": "num_spec_tokens_per_batch_size",
+      "icon": "decision"
+    },
+    {
+      "id": "gamma",
+      "lane": "ln_dyn",
+      "col": 3,
+      "type": "security",
+      "label": "每档给一个 γ",
+      "sublabel": "并发越高 γ 越小",
+      "icon": "success"
+    },
+    {
+      "id": "score",
+      "lane": "ln_adp",
+      "col": 2,
+      "type": "backend",
+      "label": "给每个槽位打生存概率",
+      "sublabel": "各位置置信度连乘",
+      "icon": "active"
+    },
+    {
+      "id": "budget",
+      "lane": "ln_adp",
+      "col": 3,
+      "type": "security",
+      "label": "按全局预算录取",
+      "sublabel": "预算来自启动 profiling 成本模型",
+      "icon": "decision"
+    },
+    {
+      "id": "cut",
+      "lane": "ln_adp",
+      "col": 4,
+      "type": "backend",
+      "label": "低置信请求提前截断",
+      "sublabel": "高置信保留整块",
+      "icon": "neutral"
+    },
+    {
+      "id": "only",
+      "lane": "ln_lim",
+      "col": 5,
+      "type": "security",
+      "label": "adaptive 仅 DSpark",
+      "sublabel": "需 confidence head",
+      "icon": "failure"
+    },
+    {
+      "id": "cudagraph",
+      "lane": "ln_lim",
+      "col": 4,
+      "type": "backend",
+      "label": "强制 full cudagraph",
+      "sublabel": "不支持 LoRA / 流水线并行",
+      "icon": "failure"
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "bs", "to": "tpot", "label": "越过临界点", "role": "main" },
+    { "id": "e2", "from": "tpot", "to": "cfg", "label": "先动「猜多少」", "role": "main" },
+    { "id": "e3", "from": "cfg", "to": "gamma", "label": "查表得 γ", "role": "main" },
+    { "id": "e4", "from": "tpot", "to": "score", "label": "另一种解:不动 γ", "role": "branch" },
+    { "id": "e5", "from": "score", "to": "budget", "label": "排序后按预算切", "role": "main" },
+    { "id": "e6", "from": "budget", "to": "cut", "label": "超预算的低分槽位丢掉", "role": "main" },
+    { "id": "e7", "from": "cut", "to": "only", "label": "需模型自带置信度头", "role": "error" },
+    { "id": "e8", "from": "cut", "to": "cudagraph", "label": "还要整图捕获", "role": "error" }
+  ],
+  "mainPath": ["bs", "tpot", "cfg", "gamma"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两者不是替代关系",
+      "items": [
+        "dynamic SD:粗粒度,按 batch 档位统一改 γ,任何方法都能用",
+        "adaptive:细粒度,按 (request, position) 逐个槽位决定要不要验",
+        "同时开不冲突 —— 但 adaptive 的覆盖实测只到 DSpark"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "dynamic SD 的真实覆盖面",
+      "items": [
+        "实测覆盖 Eagle / Eagle-3 / DFlash",
+        "其他方法「可能不 out of the box」—— 官方措辞留了口子",
+        "典型场景:同部署波动并发、RL rollout 的长尾请求"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "adaptive 的三个硬约束",
+      "items": [
+        "只支持 DSpark(必须带 confidence head)",
+        "强制 full cudagraph —— 否则每步形状可变跑不起来",
+        "不支持 LoRA,不支持流水线并行"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "第三个机制是「能看见」",
+      "items": [
+        "Per-Request Acceptance Metrics:--per-request-spec-decode-metrics",
+        "响应里回 mean_acceptance_length / draft_acceptance_rate / acceptance_histogram",
+        "没有它,α 只能靠猜;有了它才能决定开不开、γ 调多少"
+      ]
+    }
+  ]
+}

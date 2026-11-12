@@ -1,0 +1,80 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Attention KV 序列分块与 LSE 合并",
+    "locale": "zh-CN",
+    "subtitle": "局部 softmax 先算，LSE 恢复全局归一化；Q 分块则直接拼接",
+    "visual_preset": "signal-flow",
+    "quality_profile": "showcase",
+    "output": "diagrams/at-lse-sequence-merge.workflow.html"
+  },
+  "lanes": [
+    { "id": "query", "label": "Query 行" },
+    { "id": "partition", "label": "序列分块" },
+    { "id": "local", "label": "局部计算" },
+    { "id": "merge", "label": "LSE 归约" },
+    { "id": "result", "label": "结果" },
+    { "id": "note", "label": "边界与变体", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "prepare", "label": "准备 Q/K/V", "fromCol": 0, "toCol": 1 },
+    { "id": "local-phase", "label": "各 KV 分块独立计算", "fromCol": 2, "toCol": 2, "variant": "emphasis" },
+    { "id": "reduce-phase", "label": "恢复全局 softmax", "fromCol": 3, "toCol": 4, "variant": "emphasis" },
+    { "id": "emit", "label": "输出与并行变体", "fromCol": 5, "toCol": 5 }
+  ],
+  "groups": [
+    { "id": "kv-shards", "label": "KV sequence shards", "lane": "partition", "fromCol": 1, "toCol": 2, "variant": "dashed" },
+    { "id": "local-softmax", "label": "每个 chunk 的局部统计", "lane": "local", "fromCol": 2, "toCol": 2, "variant": "emphasis" },
+    { "id": "stable-reduction", "label": "数值稳定的全局归约", "lane": "merge", "fromCol": 3, "toCol": 4, "variant": "emphasis" },
+    { "id": "q-variant", "label": "若拆 Q sequence：直接 concat", "lane": "note", "fromCol": 1, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": ["q-row", "q-broadcast", "kv-split", "kv-chunks", "local-attention", "global-lse", "weights", "weighted-sum", "global-output"],
+  "nodes": [
+    { "id": "q-row", "lane": "query", "col": 0, "type": "frontend", "label": "Q 行 qᵢ", "sublabel": "每行独立", "icon": "start", "width": 120 },
+    { "id": "q-broadcast", "lane": "query", "col": 1, "type": "messagebus", "label": "广播 qᵢ", "sublabel": "送入各 chunk", "width": 120 },
+    { "id": "kv-split", "lane": "partition", "col": 1, "type": "backend", "label": "KV 序列切分", "sublabel": "K/V → chunks", "icon": "decision", "width": 130 },
+    { "id": "kv-chunks", "lane": "partition", "col": 2, "type": "database", "label": "KV chunks c=0…C−1", "sublabel": "Kc,Vc", "tag": "并行 / 分布式", "width": 150 },
+    { "id": "local-attention", "lane": "local", "col": 2, "type": "backend", "label": "局部 attention × C", "sublabel": "Sc → Oc,LSEc", "tag": "各块归一化", "width": 160 },
+    { "id": "global-lse", "lane": "merge", "col": 3, "type": "backend", "label": "全局 LSE", "sublabel": "logsumexp(LSEc)", "icon": "active", "width": 150 },
+    { "id": "weights", "lane": "merge", "col": 4, "type": "backend", "label": "权重 αc", "sublabel": "exp(LSEc−LSE)", "tag": "全局分母", "width": 140 },
+    { "id": "weighted-sum", "lane": "result", "col": 4, "type": "backend", "label": "加权合并", "sublabel": "Σ αcOc", "icon": "active", "width": 130 },
+    { "id": "global-output", "lane": "result", "col": 5, "type": "frontend", "label": "全局输出 Oᵢ", "sublabel": "精确结果", "icon": "success", "width": 130 },
+    { "id": "q-split", "lane": "note", "col": 2, "type": "backend", "label": "若拆 Q sequence", "sublabel": "各 Q 块独立算完整 KV", "icon": "neutral", "width": 175 },
+    { "id": "q-concat", "lane": "note", "col": 5, "type": "backend", "label": "直接 concat", "sublabel": "O = cat(O₀,O₁), LSE 同样拼接", "icon": "success", "width": 185 }
+  ],
+  "edges": [
+    { "id": "q-to-broadcast", "from": "q-row", "to": "q-broadcast", "label": "同一 qᵢ", "variant": "default", "role": "main" },
+    { "id": "broadcast-to-split", "from": "q-broadcast", "to": "kv-split", "label": "同一 qᵢ 配对 KV", "variant": "default", "role": "main" },
+    { "id": "split-to-chunks", "from": "kv-split", "to": "kv-chunks", "label": "K/V 分片", "variant": "dashed" },
+    { "id": "broadcast-to-local", "from": "q-broadcast", "to": "local-attention", "label": "qᵢ 广播", "variant": "emphasis" },
+    { "id": "chunks-to-local", "from": "kv-chunks", "to": "local-attention", "label": "各 Kc,Vc", "variant": "default", "role": "main" },
+    { "id": "local-to-lse", "from": "local-attention", "to": "global-lse", "label": "LSEc (c=0…C−1)", "variant": "emphasis", "role": "main" },
+    { "id": "lse-to-weights", "from": "global-lse", "to": "weights", "label": "全局归一化因子", "variant": "emphasis", "role": "main" },
+    { "id": "local-to-sum", "from": "local-attention", "to": "weighted-sum", "label": "Oc (c=0…C−1)", "variant": "default" },
+    { "id": "weights-to-sum", "from": "weights", "to": "weighted-sum", "label": "αc 加权", "variant": "emphasis", "role": "main" },
+    { "id": "sum-to-output", "from": "weighted-sum", "to": "global-output", "label": "Oᵢ = Σ αcOc", "variant": "emphasis", "role": "main" },
+    { "id": "q-to-qsplit", "from": "q-row", "to": "q-split", "label": "另一种拆分方向", "variant": "dashed", "role": "branch" },
+    { "id": "qsplit-to-concat", "from": "q-split", "to": "q-concat", "label": "不做 LSE 跨块归约", "variant": "dashed", "role": "branch" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么 LSE 足够",
+      "items": [
+        "exp(LSEc) 就是该 KV chunk 的 softmax 分母贡献",
+        "全局 LSE = logsumexp(各 chunk 的 LSE)",
+        "αc = exp(LSEc − 全局 LSE) 是该 chunk 的全局权重"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "工程边界",
+      "items": [
+        "所有 chunk 必须使用相同 scale、mask、位置偏置和精度口径",
+        "空 chunk 的 LSE 设为 −∞，权重自然为 0",
+        "训练 dropout 需要额外处理；推理阶段可直接按此式合并"
+      ]
+    }
+  ]
+}

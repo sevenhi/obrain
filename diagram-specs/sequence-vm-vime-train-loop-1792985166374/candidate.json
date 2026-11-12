@@ -1,0 +1,101 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "一个 rollout_id 的训练-采样闭环",
+  "subtitle": "Data Buffer → RolloutManager → vLLM → rm_hub → Actor",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-vime-train-loop.sequence.html"
+ },
+ "participants": [
+  {
+   "id": "db",
+   "type": "database",
+   "label": "Data Buffer"
+  },
+  {
+   "id": "rm",
+   "type": "backend",
+   "label": "RolloutManager"
+  },
+  {
+   "id": "v",
+   "type": "frontend",
+   "label": "vLLM engines"
+  },
+  {
+   "id": "hub",
+   "type": "backend",
+   "label": "rm_hub"
+  },
+  {
+   "id": "a",
+   "type": "backend",
+   "label": "Megatron Actor"
+  }
+ ],
+ "messages": [
+  {
+   "from": "db",
+   "to": "rm",
+   "y": 160,
+   "label": "生成请求(prompt/custom generate)"
+  },
+  {
+   "from": "rm",
+   "to": "v",
+   "y": 220,
+   "label": "批量采样 /inference/v1/generate"
+  },
+  {
+   "from": "v",
+   "to": "rm",
+   "y": 280,
+   "label": "轨迹 token",
+   "variant": "return"
+  },
+  {
+   "from": "rm",
+   "to": "hub",
+   "y": 340,
+   "label": "轨迹送打分"
+  },
+  {
+   "from": "hub",
+   "to": "rm",
+   "y": 400,
+   "label": "reward / 过滤",
+   "variant": "return"
+  },
+  {
+   "from": "rm",
+   "to": "db",
+   "y": 460,
+   "label": "rollout data",
+   "variant": "return"
+  },
+  {
+   "from": "db",
+   "to": "a",
+   "y": 520,
+   "label": "训练 batch"
+  },
+  {
+   "from": "a",
+   "to": "v",
+   "y": 620,
+   "label": "update_weights(周期推送)",
+   "variant": "emphasis"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "reward 只在 rollout 侧",
+   "items": [
+    "rm_hub/filter_hub 改采样结果,不改 loss",
+    "换 reward 函数不需要改训练代码"
+   ]
+  }
+ ]
+}

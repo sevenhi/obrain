@@ -1,0 +1,138 @@
+{
+ "schema_version": 1,
+ "diagram_type": "dataflow",
+ "meta": {
+  "title": "一层 MoE 的 Hessian 有多大(可自己算)",
+  "subtitle": "每个专家每个投影贡献 in_features²×4B 的 fp32 Hessian;一层 = num_experts × Σ 4·in²",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-moe-gptq-memory-formula.dataflow.html"
+ },
+ "stages": [
+  {
+   "label": "① 维度"
+  },
+  {
+   "label": "② 每投影"
+  },
+  {
+   "label": "③ 每专家"
+  },
+  {
+   "label": "④ 每层"
+  },
+  {
+   "label": "⑤ 整模型"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "dim",
+   "type": "database",
+   "label": "hidden 2560 / int 640",
+   "sublabel": "in_features",
+   "stage": 0,
+   "row": 0,
+   "width": 150
+  },
+  {
+   "id": "hu",
+   "type": "backend",
+   "label": "gate_up 4·2560²",
+   "sublabel": "26.2 MB",
+   "stage": 1,
+   "row": 0
+  },
+  {
+   "id": "hd",
+   "type": "backend",
+   "label": "down 4·640²",
+   "sublabel": "1.6 MB",
+   "stage": 1,
+   "row": 1
+  },
+  {
+   "id": "exp",
+   "type": "backend",
+   "label": "每专家 ≈27.9 MB",
+   "sublabel": "gate_up + down",
+   "stage": 2,
+   "row": 0
+  },
+  {
+   "id": "layer",
+   "type": "backend",
+   "label": "每层 13.3 GiB",
+   "sublabel": "512 专家",
+   "stage": 3,
+   "row": 0
+  },
+  {
+   "id": "model",
+   "type": "security",
+   "label": "整模型 638 GiB",
+   "sublabel": "48 层",
+   "stage": 4,
+   "row": 0
+  }
+ ],
+ "flows": [
+  {
+   "from": "dim",
+   "to": "hu",
+   "label": "gate_up 平方×4B",
+   "route": "straight",
+   "labelDy": -18
+  },
+  {
+   "from": "dim",
+   "to": "hd",
+   "label": "down 平方×4B",
+   "route": "straight",
+   "labelDy": 30
+  },
+  {
+   "from": "hu",
+   "to": "exp",
+   "label": "求和",
+   "route": "straight"
+  },
+  {
+   "from": "hd",
+   "to": "exp",
+   "label": "求和",
+   "route": "straight"
+  },
+  {
+   "from": "exp",
+   "to": "layer",
+   "label": "×512 专家",
+   "route": "straight"
+  },
+  {
+   "from": "layer",
+   "to": "model",
+   "label": "×48 层",
+   "route": "straight"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "GLM-5.3-Flash 对照",
+   "items": [
+    "每专家 83.9 MB(288 专家,hidden 4096,int 2048)",
+    "每层 22.5 GiB",
+    "整模型 945 GiB(42 个 MoE 层)"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "结论",
+   "items": [
+    "638–945 GiB 的 Hessian 不可能与 BF16 权重常驻",
+    "这就是 IQ 系列 recipe 默认开 layerwise 的原因",
+    "gptq() 分配前先报大小,超了就警告"
+   ]
+  }
+ ]
+}

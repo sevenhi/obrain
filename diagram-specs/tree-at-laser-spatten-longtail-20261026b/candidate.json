@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "同一长尾分布的三侧推论",
+    "locale": "zh-CN",
+    "subtitle": "softmax 后注意力概率在真实 LLM 中极度长尾,LASER/SpAtten/StreamingLLM 各是它的一个侧面推论",
+    "output": "diagrams/at-laser-spatten-longtail.tree.html"
+  },
+  "layout": {
+    "direction": "right",
+    "nodeW": 220,
+    "gapX": 30,
+    "gapY": 40
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "softmax 后注意力概率极度长尾"
+    },
+    {
+      "id": "laser",
+      "label": "LASER(训练侧)",
+      "parent": "root",
+      "sublabel": "尖 → 梯度∝a → 梯度消失,绕开它"
+    },
+    {
+      "id": "laser_p",
+      "label": "exp/log 包裹 V",
+      "parent": "laser",
+      "sublabel": "Jacobian ~1−a₁ 不饱和"
+    },
+    {
+      "id": "spatten",
+      "label": "SpAtten(推理硬件侧)",
+      "parent": "root",
+      "sublabel": "尖 → 剪枝安全、MSB 够用,利用它"
+    },
+    {
+      "id": "spatten_p",
+      "label": "级联剪枝 + 渐进量化",
+      "parent": "spatten",
+      "sublabel": "DRAM 访问 10× 削减"
+    },
+    {
+      "id": "streaming",
+      "label": "StreamingLLM(KV cache 侧)",
+      "parent": "root",
+      "sublabel": "和为 1 约束制造 sink"
+    },
+    {
+      "id": "streaming_p",
+      "label": "sink + 滚动窗口",
+      "parent": "streaming",
+      "sublabel": "有限窗口稳定 4M+ token"
+    }
+  ]
+}

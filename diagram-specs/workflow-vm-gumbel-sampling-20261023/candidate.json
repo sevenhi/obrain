@@ -1,0 +1,215 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Gumbel-max 采样:一个 kernel 顶替 softmax + multinomial",
+    "subtitle": "argmax(logits + Gumbel(0,1)) 与按 softmax(logits) 采样同分布 —— 于是不需要物化 softmax、不需要 multinomial、也不需要 CPU-GPU 同步",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-gumbel-sampling.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_in",
+      "label": "输入"
+    },
+    {
+      "id": "ln_k",
+      "label": "kernel 内三步"
+    },
+    {
+      "id": "ln_why",
+      "label": "三个可抄的细节"
+    },
+    {
+      "id": "ln_arg",
+      "label": "选出 token"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "① 判温度",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "② 造噪声并取 argmax",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ph3",
+      "label": "③ 确定性保证",
+      "fromCol": 4,
+      "toCol": 4
+    }
+  ],
+  "nodes": [
+    {
+      "id": "logits",
+      "lane": "ln_in",
+      "col": 0,
+      "type": "database",
+      "label": "logits + mask",
+      "sublabel": "整词表,GPU 上",
+      "icon": "database"
+    },
+    {
+      "id": "temp",
+      "lane": "ln_in",
+      "col": 1,
+      "type": "security",
+      "label": "temp == 0 ?",
+      "sublabel": "等于 0 直接跳过噪声",
+      "icon": "decision"
+    },
+    {
+      "id": "seed",
+      "lane": "ln_k",
+      "col": 2,
+      "type": "security",
+      "label": "tl.randint(seed, pos) 定位流",
+      "sublabel": "同一 token 同一步拿同一份噪声",
+      "icon": "decision"
+    },
+    {
+      "id": "noise",
+      "lane": "ln_k",
+      "col": 3,
+      "type": "backend",
+      "label": "-log(-log1p(-u))",
+      "sublabel": "log1p 保住 u→0 的尾部精度",
+      "icon": "active"
+    },
+    {
+      "id": "argmax",
+      "lane": "ln_arg",
+      "col": 3,
+      "type": "backend",
+      "label": "argmax(logits + noise)",
+      "sublabel": "mask 位置置 −inf",
+      "icon": "success"
+    },
+    {
+      "id": "pure",
+      "lane": "ln_why",
+      "col": 2,
+      "type": "external",
+      "label": "温度 0 就是纯 argmax",
+      "sublabel": "别用极小温度代替 0",
+      "icon": "success"
+    },
+    {
+      "id": "repro",
+      "lane": "ln_why",
+      "col": 3,
+      "type": "external",
+      "label": "(seed,pos) 决定噪声",
+      "sublabel": "draft 与验证能对同一随机流",
+      "icon": "neutral"
+    },
+    {
+      "id": "fp64",
+      "lane": "ln_why",
+      "col": 4,
+      "type": "external",
+      "label": "fp64 只在必要时开",
+      "sublabel": "H100 上吞吐 1/32–1/64",
+      "icon": "failure"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "logits",
+      "to": "temp",
+      "label": "先看温度",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "temp",
+      "to": "seed",
+      "label": "非 0 才加噪",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "seed",
+      "to": "noise",
+      "label": "确定性地造噪声",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "noise",
+      "to": "argmax",
+      "label": "加到 logits 上",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "temp",
+      "to": "pure",
+      "label": "是:直接取最大",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e6",
+      "from": "seed",
+      "to": "repro",
+      "label": "这条让投机校验可行",
+      "role": "async"
+    },
+    {
+      "id": "e7",
+      "from": "noise",
+      "to": "fp64",
+      "label": "fp32 够用则不开 fp64",
+      "role": "async",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "logits",
+    "temp",
+    "seed",
+    "noise",
+    "argmax"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么数学等价就够用",
+      "items": [
+        "argmax(logits + Gumbel(0,1)) 与按 softmax(logits) 采样同分布",
+        "于是不需要物化 softmax(V 个概率)",
+        "不需要 multinomial 的迭代/排序",
+        "也不需要 CPU-GPU 同步:整个决策在 kernel 内完成"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "log1p 而非 log(1-u)",
+      "items": [
+        "u→0 时 Gumbel 尾部是决定胜负的地方",
+        "log(1-u) 在 fp32 下会退化成 0 → 噪声 = inf",
+        "log1p(-u) 保住这个区间的精度",
+        "这是「看似等价的小改动实际决定正确性」的典型"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "top-k logprob 的省显存",
+      "items": [
+        "V1:先算全词表 logprob 再取 top-k",
+        "MRV2:先 torch.topk 拿 id,再只对选中的 id 算 log-softmax",
+        "峰值显存从 V 降到 k",
+        "投机解码不再把采样状态展开成 per-logit 形状,改用 idx_mapping 间接寻址"
+      ]
+    }
+  ]
+}

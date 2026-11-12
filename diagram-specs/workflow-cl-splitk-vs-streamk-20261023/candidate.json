@@ -1,0 +1,72 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "split-K 与 Stream-K:一个 tile-centric,一个 work-centric",
+    "subtitle": "两者都为了消除尾部空闲,但切法不同。split-K 先切输出 tile、再拆每个 tile 的 K;Stream-K 把所有 K 迭代打平成一维工作量再均分。差别在于「tile 边缘是否仍然不齐」",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-splitk-vs-streamk.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_sk2", "label": "split-K(tile-centric)" },
+    { "id": "ln_stk", "label": "Stream-K(work-centric)" },
+    { "id": "ln_fix", "label": "归约怎么收" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "切什么", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "怎么合", "fromCol": 2, "toCol": 2, "variant": "emphasis" }
+  ],
+  "mainPath": ["t1", "t2", "t3"],
+  "nodes": [
+    { "id": "t1", "lane": "ln_sk2", "col": 0, "type": "frontend", "label": "先切输出 tile", "sublabel": "按 M/N 分成网格", "icon": "start", "width": 165 },
+    { "id": "t2", "lane": "ln_sk2", "col": 1, "type": "backend", "label": "再拆每 tile 的 K", "sublabel": "一个 tile 的 K 分给几个 CTA", "width": 180 },
+    { "id": "t3", "lane": "ln_sk2", "col": 2, "type": "security", "label": "tile 边缘仍不齐", "sublabel": "工作量按 tile 对齐", "icon": "failure", "width": 180 },
+
+    { "id": "w1", "lane": "ln_stk", "col": 0, "type": "frontend", "label": "K 迭代打平成一维", "sublabel": "总迭代数当工作量", "icon": "start", "width": 180 },
+    { "id": "w2", "lane": "ln_stk", "col": 1, "type": "backend", "label": "均分给固定数 CTA", "sublabel": "可跨 tile 边界", "width": 175 },
+    { "id": "w3", "lane": "ln_stk", "col": 2, "type": "security", "label": "任意几何都均匀", "sublabel": "几乎同时下班", "icon": "success", "width": 180 },
+
+    { "id": "det", "lane": "ln_fix", "col": 1, "type": "database", "label": "默认 Deterministic", "sublabel": "位级可复现,不是「天然不可复现」", "width": 215 },
+    { "id": "bar", "lane": "ln_fix", "col": 2, "type": "backend", "label": "持最后 K-split 者合并", "sublabel": "barrier 轮询 workspace 里的 partial", "width": 215 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "t1", "to": "t2", "label": "两级切分", "role": "main" },
+    { "id": "e2", "from": "t2", "to": "t3", "label": "所以仍有尾批", "role": "error" },
+    { "id": "e3", "from": "t3", "to": "w1", "label": "换个切法", "role": "branch" },
+    { "id": "e4", "from": "w1", "to": "w2", "label": "不按 tile 边界", "role": "main" },
+    { "id": "e5", "from": "w2", "to": "w3", "label": "份额严格均等", "role": "main" },
+    { "id": "e6", "from": "w2", "to": "det", "label": "但 K 被切开了", "role": "branch" },
+    { "id": "e7", "from": "det", "to": "bar", "label": "同 kernel 内收口", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两者的本质差别(§3.2 原文)",
+      "items": [
+        "split-K 是 tile-centric:先切输出 tile、再拆每个 tile 的 K",
+        "Stream-K 是 work-centric:把所有 K 迭代打平成一维工作量,再均分给 CTA",
+        "后者在任何几何下都能均匀分配,前者在 tile 边缘仍会不齐"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "fixup 在 SM90 上怎么发生",
+      "items": [
+        "一个输出 tile 的 K 被拆给多个 CTA → 需要跨 CTA 归约",
+        "SM90 默认在同一 kernel 内:持有该 tile 最后一个 K-split 的 CTA 用 barrier(BarrierManager::wait_eq/wait_lt)轮询合并 workspace 里的 partial",
+        "合并后直接做 epilogue —— 不是独立归约 kernel",
+        "separate reduction unit 只是可选模式"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "确定性是默认值",
+      "items": [
+        "ReductionMode::Deterministic 是默认值(源码 sm90_tile_scheduler_stream_k.hpp Arguments 默认)",
+        "需要更高吞吐才选 Nondeterministic(放弃位级可复现)",
+        "所以「Stream-K 一定不可复现」是误读",
+        "论文数据:峰值最高 14×(vs CUTLASS)/ 6.7×(vs cuBLAS),来自 arXiv:2301.03598 的多几何评测"
+      ]
+    }
+  ]
+}

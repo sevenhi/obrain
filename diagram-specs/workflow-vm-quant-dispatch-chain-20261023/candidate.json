@@ -1,0 +1,209 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "vLLM 量化分派链:从 config.json 到 kernel 的六步",
+    "subtitle": "整条链有三个决策点——注册表映射、按层分派、kernel 选型。定位量化问题就是定位到这三个点之一",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-quant-dispatch-chain.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_in", "label": "① 声明" },
+    { "id": "ln_cfg", "label": "② Config 层(语义)" },
+    { "id": "ln_layer", "label": "③ 按层分派" },
+    { "id": "ln_kern", "label": "④ kernel 层(机制)" }
+  ],
+  "phases": [
+    { "id": "ph_in", "label": "用户侧输入", "fromCol": 0, "toCol": 0 },
+    { "id": "ph_cfg", "label": "注册表映射", "fromCol": 1, "toCol": 2, "variant": "emphasis" },
+    { "id": "ph_disp", "label": "按层分派", "fromCol": 3, "toCol": 3 },
+    { "id": "ph_kern", "label": "选内核执行", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["userjson", "resolve", "verify", "registry", "getmethod", "choose", "apply"],
+  "nodes": [
+    {
+      "id": "userjson",
+      "lane": "ln_in",
+      "col": 0,
+      "type": "frontend",
+      "label": "用户侧量化声明",
+      "sublabel": "config.json / CLI 参数",
+      "icon": "start",
+      "width": 150
+    },
+    {
+      "id": "resolve",
+      "lane": "ln_cfg",
+      "col": 1,
+      "type": "backend",
+      "label": "解析量化配置",
+      "sublabel": "config/quantization.py",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "verify",
+      "lane": "ln_cfg",
+      "col": 2,
+      "type": "security",
+      "label": "校验方法家族",
+      "sublabel": "config/model.py:1245",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "registry",
+      "lane": "ln_cfg",
+      "col": 2,
+      "type": "database",
+      "label": "查注册表",
+      "sublabel": "quant/__init__.py:108",
+      "icon": "database",
+      "width": 150,
+      "yOffset": 118
+    },
+    {
+      "id": "getmethod",
+      "lane": "ln_layer",
+      "col": 3,
+      "type": "backend",
+      "label": "按层类型分派",
+      "sublabel": "get_quant_method()",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "choose",
+      "lane": "ln_kern",
+      "col": 4,
+      "type": "cloud",
+      "label": "选内核后端",
+      "sublabel": "MPLinearLayerConfig",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "apply",
+      "lane": "ln_kern",
+      "col": 5,
+      "type": "cloud",
+      "label": "执行 matmul",
+      "sublabel": "反量化或 FP8 直通",
+      "icon": "success",
+      "width": 150
+    },
+    {
+      "id": "ignored",
+      "lane": "ln_layer",
+      "col": 3,
+      "type": "external",
+      "label": "忽略层直通",
+      "sublabel": "UnquantizedLinear",
+      "icon": "stop",
+      "width": 150,
+      "yOffset": 118
+    },
+    {
+      "id": "mismatch",
+      "lane": "ln_cfg",
+      "col": 2,
+      "type": "security",
+      "label": "方法名冲突报错",
+      "sublabel": "verify_quantization",
+      "icon": "failure",
+      "width": 150,
+      "yOffset": 236
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "userjson",
+      "to": "resolve",
+      "label": "读 quant_method",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "resolve",
+      "to": "verify",
+      "label": "带完整参数去校验",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "verify",
+      "to": "registry",
+      "label": "定家族后查表",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e4",
+      "from": "registry",
+      "to": "getmethod",
+      "label": "得到 Config 实例",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "getmethod",
+      "to": "choose",
+      "label": "Linear 层交给选择器",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "choose",
+      "to": "apply",
+      "label": "用选中内核执行",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "getmethod",
+      "to": "ignored",
+      "label": "该层被忽略",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e8",
+      "from": "verify",
+      "to": "mismatch",
+      "label": "名字不一致",
+      "role": "error",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "先记住一个反转直觉",
+      "items": [
+        "Config 从不写死内核,只管「这层用什么量化」(语义)",
+        "kernel 选择器只管「用什么内核实现」(机制)",
+        "两层靠 QuantKey / MPLinearLayerConfig 对接:改内核不进 Config"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "三个决策点(排查入口)",
+      "items": [
+        "注册表:方法名映射错了,整条链从第一步就歪",
+        "按层分派:gptq 排在 override 探测列表最前,越靠前越先判定",
+        "kernel 选型:硬件能力决定落 CUTLASS 还是 Marlin"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "本版(v0.28)三大结构变化",
+      "items": [
+        "gptq/awq/gptq_marlin/awq_marlin 合并为 auto_gptq.py / auto_awq.py",
+        "LinearMethod 不再各自 repack,统一委托 choose_mp_linear_kernel()",
+        "在线量化与离线 checkpoint 在同一个 get_quant_method 里分派"
+      ]
+    }
+  ]
+}

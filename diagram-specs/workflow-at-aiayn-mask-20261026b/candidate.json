@@ -1,0 +1,121 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "三种 attention 用法与因果掩码",
+    "locale": "zh-CN",
+    "subtitle": "encoder 全双向、decoder 因果掩码、cross-attention 查源端;掩码把非法连接置 −∞ 再 softmax",
+    "output": "diagrams/at-aiayn-mask.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_enc",
+      "label": "encoder self-attention"
+    },
+    {
+      "id": "ln_dec",
+      "label": "decoder masked self-attention"
+    },
+    {
+      "id": "ln_cross",
+      "label": "cross-attention"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "enc0",
+      "lane": "ln_enc",
+      "col": 0,
+      "type": "backend",
+      "label": "全双向 attend",
+      "sublabel": "每个位置看所有位置",
+      "icon": "start"
+    },
+    {
+      "id": "enc1",
+      "lane": "ln_enc",
+      "col": 1,
+      "type": "backend",
+      "label": "编码源序列表示",
+      "sublabel": "无 mask",
+      "icon": "active"
+    },
+    {
+      "id": "dec0",
+      "lane": "ln_dec",
+      "col": 0,
+      "type": "backend",
+      "label": "因果掩码",
+      "sublabel": "非法连接置 −∞ 再 softmax",
+      "icon": "decision"
+    },
+    {
+      "id": "dec1",
+      "lane": "ln_dec",
+      "col": 1,
+      "type": "backend",
+      "label": "位置 i 只看 <i",
+      "sublabel": "输出右移一位,autoregressive",
+      "icon": "active"
+    },
+    {
+      "id": "cr0",
+      "lane": "ln_cross",
+      "col": 0,
+      "type": "backend",
+      "label": "Q 来自 decoder 前一层",
+      "sublabel": "K/V 来自 encoder",
+      "icon": "active"
+    },
+    {
+      "id": "cr1",
+      "lane": "ln_cross",
+      "col": 1,
+      "type": "backend",
+      "label": "解码端查源端全序列",
+      "sublabel": "第三种用法(§3.2.3)",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "enc0",
+      "to": "enc1",
+      "label": "生成 encoder 输出",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "dec0",
+      "to": "dec1",
+      "label": "掩码 + 右移",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "cr0",
+      "to": "cr1",
+      "label": "查询源端",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "enc1",
+      "to": "cr0",
+      "label": "encoder 输出作为 K/V",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三种用法(§3.2.3)",
+      "items": [
+        "encoder self-attention:全双向",
+        "decoder masked self-attention:因果",
+        "encoder-decoder cross-attention:查源端全序列"
+      ]
+    }
+  ]
+}

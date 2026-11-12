@@ -1,0 +1,249 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "MLA 的两种实现:naive 展开 vs absorb 吸收",
+    "subtitle": "数学上完全等价(同一组权重,只是乘法结合顺序不同),差别只在「中间张量是否显式展开成 n_h·d_h」。上排是教学实现,下排是生产实现:把 W^UK 乘进 q_nope、W^UV 乘进输出,注意力分数直接在 d_c=512 的 latent 空间算",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-v3-mla-absorb.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_src",
+      "label": "共用:压缩与缓存"
+    },
+    {
+      "id": "ln_naive",
+      "label": "A. naive:先升维再算"
+    },
+    {
+      "id": "ln_abs",
+      "label": "B. absorb:先吸收再算"
+    },
+    {
+      "id": "ln_cmp",
+      "label": "差别在哪"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "同一份 cache",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "两条实现分叉",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ph3",
+      "label": "结果与会话",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "lat",
+    "cache",
+    "up",
+    "std",
+    "o1"
+  ],
+  "nodes": [
+    {
+      "id": "lat",
+      "lane": "ln_src",
+      "col": 0,
+      "type": "frontend",
+      "label": "kv_a_proj → 576",
+      "sublabel": "512 latent + 64 pe",
+      "icon": "start",
+      "width": 132
+    },
+    {
+      "id": "cache",
+      "lane": "ln_src",
+      "col": 1,
+      "type": "database",
+      "label": "缓存 c^KV + k_pe",
+      "sublabel": "kv_norm(c^KV) 与 k_pe",
+      "icon": "database",
+      "width": 132
+    },
+    {
+      "id": "up",
+      "lane": "ln_naive",
+      "col": 2,
+      "type": "backend",
+      "label": "kv_b_proj 升维",
+      "sublabel": "512 → 128×256 满 K/V",
+      "icon": "active",
+      "width": 132
+    },
+    {
+      "id": "std",
+      "lane": "ln_naive",
+      "col": 3,
+      "type": "backend",
+      "label": "标准 QK^T → AV",
+      "sublabel": "在 192 维/头上算",
+      "icon": "neutral",
+      "width": 132
+    },
+    {
+      "id": "o1",
+      "lane": "ln_naive",
+      "col": 4,
+      "type": "backend",
+      "label": "o_proj 回 7168",
+      "sublabel": "教学实现,对照论文公式",
+      "icon": "neutral",
+      "width": 132
+    },
+    {
+      "id": "abs",
+      "lane": "ln_abs",
+      "col": 3,
+      "type": "security",
+      "label": "W^UK 乘进 q",
+      "sublabel": "d_h 维 → d_c 维",
+      "icon": "decision",
+      "width": 132
+    },
+    {
+      "id": "fast",
+      "lane": "ln_abs",
+      "col": 4,
+      "type": "security",
+      "label": "latent 上算分数",
+      "sublabel": "两路 einsum 相加 + mask",
+      "icon": "decision",
+      "width": 132
+    },
+    {
+      "id": "absv",
+      "lane": "ln_abs",
+      "col": 5,
+      "type": "backend",
+      "label": "W^UV 吸进输出",
+      "sublabel": "算完再升回 v_dim",
+      "icon": "neutral",
+      "width": 132
+    },
+    {
+      "id": "cost",
+      "lane": "ln_cmp",
+      "col": 3,
+      "type": "backend",
+      "label": "中间张量大小",
+      "sublabel": "naive n_h·d_h / absorb d_c",
+      "icon": "clock",
+      "width": 132,
+      "yOffset": 118
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "lat",
+      "to": "cache",
+      "label": "只留 576 维",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "cache",
+      "to": "up",
+      "label": "A:展开成满 K/V",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e3",
+      "from": "up",
+      "to": "std",
+      "label": "用它算分数",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "std",
+      "to": "o1",
+      "label": "输出投影",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "cache",
+      "to": "abs",
+      "label": "B:把权重乘进 q",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e6",
+      "from": "abs",
+      "to": "fast",
+      "label": "降维后的 q",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e7",
+      "from": "fast",
+      "to": "absv",
+      "label": "在 latent 上做 AV",
+      "role": "main"
+    },
+    {
+      "id": "e8",
+      "from": "cost",
+      "to": "fast",
+      "label": "所以更省",
+      "role": "branch",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "absorb 省的不是精度",
+      "items": [
+        "数学上两路完全等价:同一组 W^UK / W^UV,只是乘的结合顺序不同",
+        "差别在「中间张量是否显式展开成 n_h·d_h」",
+        "所以省的是显存与带宽,数字结果一致(浮点上仅有 ulp 级差异)"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "代码里的三行关键",
+      "items": [
+        "wkv_b = self.wkv_b.weight.view(n_heads, -1, kv_lora_rank)",
+        "q_nope = einsum(\"bshd,hdc->bshc\", q_nope, wkv_b[:, :qk_nope_head_dim])",
+        "x = einsum(\"bshc,hdc->bshd\", x, wkv_b[:, -v_head_dim:])   # W^UV 吸收"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "q_pe 为什么不能吸收",
+      "items": [
+        "位置分量必须在原始 64 维空间与 k_pe 直接内积",
+        "所以 scores = einsum(q_nope, kv_cache) + einsum(q_pe, pe_cache) 是两路相加",
+        "这也是「解耦」在实现层的代价:多一次 einsum"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两套代码都要读",
+      "items": [
+        "inference/model.py 有 naive 与 absorb 两种,后者才是生产路径",
+        "HF modeling_deepseek.py 走展开式,便于对照论文公式",
+        "分清「公式」与「工程」的差别,才不会把 absorb 当成近似"
+      ]
+    }
+  ]
+}

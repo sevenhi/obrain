@@ -2,10 +2,12 @@
 title: deepseek-vision — DeepSeek 多模态/视觉家族(VL/VL2/OCR/OCR2/Janus/DreamCraft3D)
 type: domain
 tags: [deepseek, vision, multimodal, vl, vl2, ocr, janus, dreamcraft3d, siglip, sam, moe, vq, sds, 3d]
-date: 2026-10
+date: 2026-11
 ---
 
 # deepseek-vision — DeepSeek 多模态/视觉家族
+
+**快速入口**:[VL/VL2 图文理解](concepts/deepseek-vl-vl2.md) · [OCR/OCR-2 视觉压缩](concepts/deepseek-ocr-ocr2.md) · [Janus 理解/生成](concepts/janus.md) · [DreamCraft3D](concepts/dreamcraft3d.md) · [来源](references.md)。
 
 > 本页是 deepseek-vision 领域的**导航起始页**。定位与关键事实、条目索引、更新维护。
 > **真正的可读正文在 `concepts/` 子目录**,每篇一个专题、可独立打开读懂。本页只做导航,不重复正文。
@@ -24,7 +26,8 @@ date: 2026-10
 
 - **六个仓库、四条谱系**:VL→VL2(图文理解)、OCR→OCR-2(视觉压缩/文档)、Janus/Janus-Pro/JanusFlow(统一理解+生成)、DreamCraft3D/++(图生 3D)。
 - **融合方式演进(用户关注的核心)**:Hybrid encoder + 投影(VL)→ MoE + 多图联合编码(VL2)→ 纯视觉光学压缩(OCR)/ 视觉因果流(OCR-2)→ 统一理解+生成可解耦(Janus)→ 扩散先验(3D)。
-- **视觉编码器谱系**:VL 用 **SigLIP-L@384 + SAM-B@1024 双塔(都冻结)**;VL2 换 **SigLIP SO400M@384 单塔(27 层,可训)**;OCR/OCR-2 用 **CLIP-L + SAM-B 混合 "DeepEncoder"**;Janus 理解侧用 **SigLIP-L**,生成侧用 **VQ-16 tokenizer(码本 16384)**。
+- **视觉编码器谱系**:VL 用 **SigLIP-L@384 + SAM-B@1024 双塔(都冻结)**;VL2 换 **SigLIP SO400M@384 单塔(27 层,可训)**;OCR 一代是 **SAM 特征送入 CLIP 并拼接两级特征**,不是原图分别进两个独立塔;OCR-2 改为 **SAM-B + Qwen2-0.5B 的 DeepEncoder V2**,不能沿用一代 CLIP 摘要;Janus 理解侧用 SigLIP-L,生成侧用 VQ tokenizer。
+- **分块不是二代独有**:OCR 一代官方 README 已有 Native 多档及 Gundam 动态分块(n×640² + 1×1024²)。两代比较要核对具体模式、尺寸与 token 预算,不能简化为“一代单图、二代分块”。
 - **语言骨干**:VL 用 dense LLM(1.3B/7B);VL2 换 **DeepSeekMoE**(Tiny/Small/full = 1.0B/2.8B/4.5B 激活);OCR 用 **DeepSeek3B-MoE-A570M**(64 专家 + 2 共享,top-6,570M 激活);Janus 用 dense LLM(1.3B/7B)。
 - **OCR 压缩口径**:DeepSeek-OCR 是「把文本装进图像再让 LLM 解压」的光学压缩——压缩比 <10× 时 97% 精度,20× 时 ~60%;OmniDocBench 上 100 vision token 就超 GOT-OCR2.0(256 token)。
 - **归档日期**:2026-10;全部 arXiv 号与 GitHub 仓库 URL 均已 curl 实测存活(HTTP 200)。
@@ -35,7 +38,7 @@ date: 2026-10
 |---|---|---|---|---|---|
 | DeepSeek-VL | 2403.05525 | 图文理解 | SigLIP-L + SAM-B(冻结双塔) | dense LLM 1.3B/7B | Hybrid encoder + 投影,高分辨率 1024² 固定 token 预算 |
 | DeepSeek-VL2 | 2412.10302 | 图文理解(升级) | SigLIP SO400M(单塔) | DeepSeekMoE 1.0/2.8/4.5B 激活 | MoE 骨干 + 动态分块多图联合编码 |
-| DeepSeek-OCR | 2510.18234 | 文档 OCR/视觉压缩 | DeepEncoder(CLIP-L + SAM-B) | DeepSeek3B-MoE-A570M | Contextual Optical Compression,100 token 超 GOT-OCR2.0 |
+| DeepSeek-OCR | 2510.18234 | 文档 OCR/视觉压缩 | SAM→CLIP 串接与两级特征拼接 | DeepSeek3B-MoE-A570M | Contextual Optical Compression;Native / Gundam 动态分块模式 |
 | DeepSeek-OCR-2 | 2601.20552 | 文档 OCR(升级) | DeepEncoder V2(Qwen2-0.5B + SAM-B) | 同上 3B-MoE | Visual Causal Flow,编码器因果重排 token |
 | Janus(+Pro/Flow) | 2410.13848 / 2501.17811 / 2411.07975 | 统一理解+生成 | 理解 SigLIP-L / 生成 VQ-16 | dense LLM 1.3B/7B | 双编码解耦,单 transformer 通吃理解与生成 |
 | DreamCraft3D(++) | 2310.16818 / 2410.12928(++) | 图生 3D | (扩散先验,非 VL 编码器) | — | 分层 3D 生成 + 引导式分数蒸馏(BSD);++ 版独立 arXiv 2410.12928 |

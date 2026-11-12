@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "MLA 的两种实现:naive 展开 vs absorb 吸收",
+    "subtitle": "左路是教学实现:先把 latent 升维成 128 头 K/V,再算标准 attention。右路是推理实现:把 W^UK 乘进 q_nope、W^UV 乘进输出,注意力分数直接在 d_c=512 的 latent 空间算——免掉了 n_h·d_h 的显式展开,这是 FlashMLA 的着力点",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-v3-mla-absorb.dataflow.html",
+    "viewBox": [1080, 440]
+  },
+  "stages": [
+    { "label": "① latent 与 pe" },
+    { "label": "② naive:先升维" },
+    { "label": "③ naive:标准 attention" },
+    { "label": "④ absorb:吸收权重" },
+    { "label": "⑤ absorb:latent 上算" }
+  ],
+  "nodes": [
+    { "id": "lat", "type": "database", "label": "kv_norm(c^KV)", "sublabel": "512 维,进 cache", "stage": 0, "row": 0 },
+    { "id": "kn", "type": "security", "label": "缓存 latent + pe", "sublabel": "只有这两样驻留显存", "stage": 0, "row": 1 },
+
+    { "id": "up", "type": "backend", "label": "kv_b_proj 升维", "sublabel": "512 → 128×256", "stage": 1, "row": 0 },
+    { "id": "kvfull", "type": "database", "label": "128 头 K_nope 与 V", "sublabel": "临时张量,不缓存", "stage": 1, "row": 1 },
+
+    { "id": "std", "type": "backend", "label": "QK^T → softmax → AV", "sublabel": "在 192 维/头上算", "stage": 2, "row": 0 },
+    { "id": "stdout", "type": "backend", "label": "o_proj 回 7168", "sublabel": "标准 attention 输出", "stage": 2, "row": 1 },
+
+    { "id": "absq", "type": "cloud", "label": "W^UK 乘进 q_nope", "sublabel": "einsum(bshd,hdc→bshc)", "stage": 3, "row": 0 },
+    { "id": "absv", "type": "cloud", "label": "W^UV 乘进输出", "sublabel": "算完再 einsum 升回 v_dim", "stage": 3, "row": 1 },
+
+    { "id": "fast", "type": "security", "label": "分数直接在 512 维算", "sublabel": "两路 einsum 相加 + mask", "stage": 4, "row": 0 },
+    { "id": "gain", "type": "backend", "label": "省显存与带宽", "sublabel": "FlashMLA 优化的空间", "stage": 4, "row": 1 }
+  ],
+  "flows": [
+    { "id": "f1", "from": "lat", "to": "up", "label": "naive 路径", "route": "straight", "labelDy": -18 },
+    { "id": "f2", "from": "up", "to": "kvfull", "label": "展开成满 K/V", "route": "straight", "labelDx": 44 },
+    { "id": "f3", "from": "kvfull", "to": "std", "label": "用它算分数", "route": "straight", "variant": "dashed" },
+    { "id": "f4", "from": "std", "to": "stdout", "label": "输出", "route": "straight", "labelDx": 40 },
+    { "id": "f5", "from": "lat", "to": "absq", "label": "absorb 路径", "route": "straight", "variant": "emphasis", "labelDy": -18 },
+    { "id": "f6", "from": "kn", "to": "absv", "label": "同一份 cache", "route": "straight", "variant": "dashed" },
+    { "id": "f7", "from": "absq", "to": "fast", "label": "降维后的 q", "route": "straight", "variant": "emphasis", "labelDx": 44 },
+    { "id": "f8", "from": "absv", "to": "fast", "label": "输出侧再升回", "route": "straight", "variant": "emphasis", "labelDx": 44 },
+    { "id": "f9", "from": "fast", "to": "gain", "label": "因此更省", "route": "straight" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "absorb 为什么不等价于「少算」",
+      "items": [
+        "数学上两种实现完全等价(同一组权重,只是乘的结合顺序不同)",
+        "差别在于:中间张量是否显式展开成 n_h·d_h",
+        "所以 absorb 省的是显存与带宽,不是精度"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "两路各自算的是什么",
+      "items": [
+        "q_nope 侧:einsum(bshd,hdc→bshc),把 d_h 维压到 d_c",
+        "q_pe 侧:不做吸收,直接用 64 维算(位置分量必须原样保留)",
+        "两个分数相加后统一 softmax,再与 latent 做 AV"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "代码里的三个关键行",
+      "items": [
+        "wkv_b = self.wkv_b.weight.view(n_heads, -1, kv_lora_rank)",
+        "kv_cache[...] = self.kv_norm(kv);pe_cache[...] = k_pe.squeeze(2)",
+        "scores = einsum(q_nope, kv_cache) + einsum(q_pe, pe_cache)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "读这两套代码的提醒",
+      "items": [
+        "inference/model.py 有 naive 与 absorb 两种实现,后者才是生产路径",
+        "HF modeling_deepseek.py 走的是展开式(教学友好,便于对照论文公式)",
+        "两套都读一遍,才能分清「公式」与「工程」的差别"
+      ]
+    }
+  ]
+}

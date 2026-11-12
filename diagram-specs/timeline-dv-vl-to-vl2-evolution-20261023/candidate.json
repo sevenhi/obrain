@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "diagram_type": "timeline",
+  "meta": {
+    "title": "DeepSeek-VL → VL2:九个月里视觉侧三处结构性替换",
+    "subtitle": "2024-03 的 VL 用「两个冻结塔 + 固定分辨率」换低成本;2024-12 的 VL2 用「一个可训塔 + 分块 + MoE」同时拿性能和效率",
+    "locale": "zh-CN",
+    "evidence": "observed",
+    "output": "diagrams/dv-vl-to-vl2-evolution.timeline.html"
+  },
+  "layout": { "width": 1000, "breaks": "none" },
+  "lanes": [
+    { "id": "ln_vision", "label": "视觉侧" },
+    { "id": "ln_lang", "label": "语言侧与规模" }
+  ],
+  "events": [
+    {
+      "id": "vl_arch",
+      "at": "2024-03-08T00:00:00Z",
+      "lane": "ln_vision",
+      "title": "VL:Hybrid 双塔,SigLIP-L@384 + SAM-B@1024,双冻结",
+      "detail": "低塔出语义、高塔出细节;两塔输出都对齐到 1024 维,投影器 low_high_hybrid_split_mlp_gelu 分路投影再融合",
+      "kind": "default"
+    },
+    {
+      "id": "vl_scale",
+      "at": "2024-03-08T00:01:00Z",
+      "lane": "ln_lang",
+      "title": "dense LLM 1.3B / 7B,seq len 4096",
+      "detail": "预训练从 LLM 阶段开始,视觉模态逐步加入、比例渐增 —— 先保语言底座再混模态",
+      "kind": "default"
+    },
+    {
+      "id": "vl2_arch",
+      "at": "2024-12-13T00:00:00Z",
+      "lane": "ln_vision",
+      "title": "VL2:SigLIP SO400M 单塔(27 层 / width 1152),改为可训",
+      "detail": "塔从「两个冻结」收敛成「一个可训」;SAM 高塔不再需要,细节靠动态分块而非第二座塔",
+      "kind": "change"
+    },
+    {
+      "id": "vl2_tile",
+      "at": "2024-12-13T00:02:00Z",
+      "lane": "ln_vision",
+      "title": "动态分块:23 种候选分辨率 + 全局视图放在序列头部",
+      "detail": "覆盖 384² 到 384×3456 的极端宽高比;tile_tag=2D 带行列位置,global_view_pos=head",
+      "kind": "change"
+    },
+    {
+      "id": "vl2_moe",
+      "at": "2024-12-13T00:03:00Z",
+      "lane": "ln_lang",
+      "title": "语言侧换 DeepSeekMoE:激活 1.0/2.8/4.5B,hidden 1280/2048/2560",
+      "detail": "64/64/72 专家,top-6 + 2 共享;full 版用 sigmoid + noaux_tc 路由(Tiny/Small 是 greedy)",
+      "kind": "change"
+    },
+    {
+      "id": "vl2_note",
+      "at": "2024-12-13T00:04:00Z",
+      "lane": "ln_lang",
+      "title": "口径分歧:论文写 MLA,开源 config 实测 use_mla=false(MHA)",
+      "detail": "按 config 部署才准 —— 套 MLA 假设估 KV cache 会失真;激活参数也有「含视觉塔」与「仅 LLM」两套口径",
+      "kind": "alert"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三句话的演进逻辑",
+      "items": [
+        "双塔冻结 → 单塔可训:复杂度下降,表达力反而更强",
+        "固定分辨率 → 动态分块:一张图切多块联合编码,适应任意版式",
+        "dense → MoE:承接 DeepSeek 主线稀疏化,把性能/激活参比拉进第一梯队"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两代对照速查",
+      "items": [
+        "视觉塔:双塔冻结 → 单塔可训",
+        "高分辨率:固定双塔出低/高特征 → 23 种网格分块 + 全局视图",
+        "投影:split MLP(分投再融)→ 单 MLP(n_embed 2560)",
+        "骨干:dense 1.3B/7B → DeepSeekMoE 1.0/2.8/4.5B 激活"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "部署前必须核的两件事",
+      "items": [
+        "注意力形式:按 config 的 use_mla / num_key_value_heads 判断,别信论文措辞",
+        "显存:VL2-small 约 80GB,full 更大(README 明示),先评估卡再选变体"
+      ]
+    }
+  ]
+}

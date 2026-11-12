@@ -1,0 +1,199 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "wgmma 的同步三件套:mainloop 里的正确顺序",
+    "subtitle": "wgmma 在 async proxy 里执行,与普通 ld/st 的 generic proxy 不在同一可见性域。缺 fence 不报错,只会产生隐蔽 race 或让编译器把指令串行化",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-wgmma-sync.workflow.html",
+    "viewBox": [
+      1131,
+      700
+    ]
+  },
+  "lanes": [
+    {
+      "id": "ln_main",
+      "label": "mainloop 正确顺序"
+    },
+    {
+      "id": "ln_fence",
+      "label": "fence.proxy.async 什么时候要"
+    },
+    {
+      "id": "ln_bad",
+      "label": "缺一步会怎样"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "n_start",
+      "lane": "ln_main",
+      "col": 0,
+      "type": "backend",
+      "label": "SMEM 就绪",
+      "sublabel": "TMA 或 ld/st",
+      "width": 106,
+      "icon": "start"
+    },
+    {
+      "id": "n_arrive",
+      "lane": "ln_main",
+      "col": 1,
+      "type": "security",
+      "label": "arrive(fence)",
+      "sublabel": "wgmma.fence",
+      "width": 106
+    },
+    {
+      "id": "n_gemm",
+      "lane": "ln_main",
+      "col": 2,
+      "type": "backend",
+      "label": "cute::gemm",
+      "sublabel": "发一批 wgmma",
+      "width": 106
+    },
+    {
+      "id": "n_commit",
+      "lane": "ln_main",
+      "col": 3,
+      "type": "security",
+      "label": "commit_batch",
+      "sublabel": "打包成 group",
+      "width": 106
+    },
+    {
+      "id": "n_wait",
+      "lane": "ln_main",
+      "col": 4,
+      "type": "security",
+      "label": "wait<N>",
+      "sublabel": "N=0 全等完",
+      "width": 106,
+      "icon": "success"
+    },
+    {
+      "id": "n_tma",
+      "lane": "ln_fence",
+      "col": 1,
+      "type": "external",
+      "label": "TMA 写入免 fence",
+      "sublabel": "已在 async proxy",
+      "width": 106,
+      "icon": "external"
+    },
+    {
+      "id": "n_ldst",
+      "lane": "ln_fence",
+      "col": 2,
+      "type": "external",
+      "label": "ld/st 写入需补",
+      "sublabel": "fence_view_async",
+      "width": 106,
+      "icon": "external"
+    },
+    {
+      "id": "n_bad1",
+      "lane": "ln_bad",
+      "col": 1,
+      "type": "external",
+      "label": "缺 arrive",
+      "sublabel": "未定义行为",
+      "width": 106,
+      "icon": "failure"
+    },
+    {
+      "id": "n_bad3",
+      "lane": "ln_bad",
+      "col": 3,
+      "type": "external",
+      "label": "wait 用死",
+      "sublabel": "没 overlap",
+      "width": 106,
+      "icon": "failure"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "n_start",
+      "to": "n_arrive",
+      "label": "保证先前 RMEM 访问已完成",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "n_arrive",
+      "to": "n_gemm",
+      "label": "可以安全发指令了",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "n_gemm",
+      "to": "n_commit",
+      "label": "一批 wgmma 打包",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "n_commit",
+      "to": "n_wait",
+      "label": "等这一组落地",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "n_tma",
+      "to": "n_ldst",
+      "label": "两条不同路径",
+      "role": "branch"
+    },
+    {
+      "id": "e6",
+      "from": "n_bad1",
+      "to": "n_bad3",
+      "label": "从正确性掉到性能",
+      "role": "branch",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "n_start",
+    "n_arrive",
+    "n_gemm",
+    "n_commit",
+    "n_wait"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "四个原语各管什么",
+      "items": [
+        "arrive(wgmma.fence):wgmma 只在之前对 RMEM 的访问完成后才访问",
+        "commit_group:把此前未提交的 wgmma 打成一个 group",
+        "wait<N>:等最多剩 N 个 group,更早的必须完成",
+        "fence.proxy.async:让 generic proxy 写入对 async proxy 可见"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "MMA_K 循环里不用逐条 fence",
+      "items": [
+        "Hopper 允许多条 wgmma 同时在飞",
+        "只要累加器 shape 相同、写同一批寄存器地址,中间不需再插 wgmma.fence",
+        "所以 cute::gemm 只在外层 fence 一次"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "wait<N> 的 N>0 才是性能点",
+      "items": [
+        "N=0 是最保守的全等待",
+        "FA3 的 GEMM-softmax 重叠靠「只等到剩 N 组」实现",
+        "性能不对时,先查是不是 fence 缺失让编译器串行化了"
+      ]
+    }
+  ]
+}

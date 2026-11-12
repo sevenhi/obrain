@@ -1,0 +1,63 @@
+{
+ "schema_version": 1,
+ "diagram_type": "tree",
+ "meta": {
+  "title": "报告指标:TTFT / ITL / SLO / Goodput",
+  "subtitle": "LLM 服务的性能是分布,不是均值",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-guidellm-metrics.tree.html"
+ },
+ "nodes": [
+  {
+   "id": "root",
+   "label": "评测指标",
+   "sublabel": "回答「什么并发下还守得住 SLO」"
+  },
+  {
+   "id": "ttft",
+   "label": "TTFT",
+   "parent": "root",
+   "sublabel": "请求→首 token,「点了没反应」"
+  },
+  {
+   "id": "itl",
+   "label": "ITL(≈TPOT)",
+   "parent": "root",
+   "sublabel": "相邻 token 间隔,「字蹦多快」"
+  },
+  {
+   "id": "e2e",
+   "label": "E2E Latency",
+   "parent": "root",
+   "sublabel": "请求全程"
+  },
+  {
+   "id": "slo",
+   "label": "SLO Attainment",
+   "parent": "root",
+   "sublabel": "同时满足所有延迟目标的占比,容量红线"
+  },
+  {
+   "id": "good",
+   "label": "Request Goodput",
+   "parent": "root",
+   "sublabel": "满足 SLO 的有效吞吐"
+  },
+  {
+   "id": "tk",
+   "label": "Token Metrics",
+   "parent": "root",
+   "sublabel": "校准负载是否像生产"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "rose",
+   "title": "SLO 参考量级",
+   "items": [
+    "实时聊天:TTFT≤200ms@P99,ITL≤50ms@P99",
+    "SLO Attainment 是比率,适合做发布门禁"
+   ]
+  }
+ ]
+}

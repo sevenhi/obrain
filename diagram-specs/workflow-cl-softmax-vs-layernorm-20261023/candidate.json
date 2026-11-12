@@ -1,0 +1,72 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "softmax 融合是三次 kernel launch,不是一次写出",
+    "subtitle": "整行归约天生跨 tile,所以 GEMM epilogue 只能做部分归约。设计心智模型:1 个 GEMM + 2 个后处理 kernel。LN 不一样:它要求 hidden dim 落在单个 epilogue tile 内,不跨 tile 交换统计量",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-softmax-vs-layernorm.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_sm", "label": "softmax 路线(跨 tile)" },
+    { "id": "ln_ln", "label": "layer-norm 路线(单 tile 内)" },
+    { "id": "ln_note", "label": "关键差别" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "GEMM 阶段", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "归约在哪做", "fromCol": 1, "toCol": 1, "variant": "emphasis" },
+    { "id": "p3", "label": "最终写出", "fromCol": 2, "toCol": 2 }
+  ],
+  "nodes": [
+    { "id": "s1", "lane": "ln_sm", "col": 0, "type": "backend", "label": "GEMM + epilogue visitor", "sublabel": "写 D 和每 tile 行最大/部分和", "icon": "start" },
+    { "id": "s2", "lane": "ln_sm", "col": 1, "type": "security", "label": "最终归约 kernel", "sublabel": "ApplySoftmaxFinalReduction", "icon": "decision" },
+    { "id": "s3", "lane": "ln_sm", "col": 2, "type": "backend", "label": "exp 归一化 kernel", "sublabel": "exp(x-norm)/sum 写出", "icon": "success" },
+
+    { "id": "l1", "lane": "ln_ln", "col": 0, "type": "backend", "label": "GEMM 走到 epilogue", "sublabel": "hidden dim 须在单个 epilogue tile 内", "icon": "start" },
+    { "id": "l2", "lane": "ln_ln", "col": 1, "type": "security", "label": "epilogue 内一次算完", "sublabel": "不跨 tile 交换统计量", "icon": "decision" },
+    { "id": "l3", "lane": "ln_ln", "col": 2, "type": "backend", "label": "直接写归一化结果", "sublabel": "单 kernel,但要满足尺寸前提", "icon": "success" },
+
+    { "id": "n1", "lane": "ln_note", "col": 0, "type": "cloud", "label": "融合省的是部分归约", "sublabel": "不是省掉后处理", "icon": "none" },
+    { "id": "n2", "lane": "ln_note", "col": 1, "type": "cloud", "label": "D 仍要读回两次", "sublabel": "没有免费午餐", "icon": "none" },
+    { "id": "n3", "lane": "ln_note", "col": 2, "type": "cloud", "label": "LN 有精度坑", "sublabel": "single-pass 平方和方差不稳", "icon": "none" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "s1", "to": "s2", "label": "跨 tile 汇总统计量", "role": "main" },
+    { "id": "e2", "from": "s2", "to": "s3", "label": "拿到每行系数后才归一化", "role": "main" },
+    { "id": "e3", "from": "l1", "to": "l2", "label": "尺寸允许才能这样融合", "role": "main" },
+    { "id": "e4", "from": "l2", "to": "l3", "label": "算完即写", "role": "main" },
+    { "id": "e5", "from": "s1", "to": "n1", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e6", "from": "s3", "to": "n2", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e7", "from": "l2", "to": "n3", "label": "", "variant": "dashed", "role": "async" }
+  ],
+  "mainPath": ["s1", "s2", "s3"],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "为什么 softmax 一定要多级",
+      "items": [
+        "softmax 需要知道整行的 max 与 sum 才能算归一化因子",
+        "而一行往往横跨多个 output tile,单个 CTA 看不到完整行",
+        "所以 epilogue 只能写「部分和」,再由独立 kernel 汇总"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "LN 的精度坑(最容易踩)",
+      "items": [
+        "37_gemm_layernorm 用 single-pass 平方和方差算法",
+        "源码注释明确警告数值稳定性问题(引用 Wikipedia Algorithms for calculating variance)",
+        "官方替代方案在 tools/util/include/cutlass/util/device_layernorm.h"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "别把两者按同一个模型猜",
+      "items": [
+        "softmax:跨 tile,两级归约,3 个 kernel",
+        "LN:要求 hidden dim 落在单个 epilogue tile 内,可一次算完",
+        "先确认尺寸前提,再决定能不能「一次融合」"
+      ]
+    }
+  ]
+}

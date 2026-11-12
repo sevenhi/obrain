@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Minimal GEMM:五层 CuTe 抽象怎么展开成 6 条 PTX",
+    "subtitle": "一个 block、32 线程、无 SMEM 的单指令 16×8×8 mma。逐层展开后,整个 kernel 的核心只是 3 条 load + 1 条 mma + 2 条 store",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-minimal-gemm-path.dataflow.html",
+    "viewBox": [
+      1000,
+      620
+    ]
+  },
+  "stages": [
+    {
+      "label": "① 建 Tensor"
+    },
+    {
+      "label": "② 切块并分给线程"
+    },
+    {
+      "label": "③ 拷进寄存器"
+    },
+    {
+      "label": "④ 发 mma"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "tensor",
+      "type": "backend",
+      "label": "make_tensor",
+      "sublabel": "三个 GMEM 矩阵",
+      "stage": 0,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "stride",
+      "type": "security",
+      "label": "stride 方向",
+      "sublabel": "CuTe 左主/Torch 右主",
+      "stage": 0,
+      "row": 1,
+      "width": 150
+    },
+    {
+      "id": "tile",
+      "type": "backend",
+      "label": "local_tile 切块",
+      "sublabel": "Step 指定切哪两维",
+      "stage": 1,
+      "row": 0,
+      "width": 160
+    },
+    {
+      "id": "frag",
+      "type": "backend",
+      "label": "partition_fragment",
+      "sublabel": "线程级寄存器视图",
+      "stage": 1,
+      "row": 1,
+      "width": 170
+    },
+    {
+      "id": "copy",
+      "type": "database",
+      "label": "AutoVectorizingCopy",
+      "sublabel": "自动选最宽向量化",
+      "stage": 2,
+      "row": 0,
+      "width": 180
+    },
+    {
+      "id": "gemm",
+      "type": "backend",
+      "label": "gemm(tiled_mma,…)",
+      "sublabel": "执行",
+      "stage": 3,
+      "row": 0,
+      "width": 160
+    },
+    {
+      "id": "ptx",
+      "type": "external",
+      "label": "6 条 PTX",
+      "sublabel": "3 ld + 1 mma + 2 st",
+      "stage": 3,
+      "row": 1,
+      "width": 160
+    }
+  ],
+  "flows": [
+    {
+      "from": "tensor",
+      "to": "tile",
+      "label": "拿到整题规模 Tensor",
+      "labelDy": 58
+    },
+    {
+      "from": "stride",
+      "to": "tensor",
+      "label": "写反就读错位",
+      "variant": "dashed",
+      "labelDy": -52,
+      "labelAt": [
+        95,
+        205
+      ]
+    },
+    {
+      "from": "tile",
+      "to": "frag",
+      "label": "再分到每线程",
+      "labelDy": 58
+    },
+    {
+      "from": "frag",
+      "to": "copy",
+      "label": "按 MMA 布局取数",
+      "labelDy": 58,
+      "labelAt": [
+        430,
+        318
+      ]
+    },
+    {
+      "from": "copy",
+      "to": "gemm",
+      "label": "操作数就位",
+      "labelDy": 56
+    },
+    {
+      "from": "gemm",
+      "to": "ptx",
+      "label": "层层展开只剩这几条",
+      "labelDy": -54
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么这一个 kernel 值得手写一遍",
+      "items": [
+        "不用 CollectiveBuilder,裸用 CuTe 的最小完整闭环",
+        "把「抽象 → PTX」的对应关系看穿一次",
+        "SASS 全程序 34 条,核心仍是这 6 条"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "命名规范:t / C / g / r",
+      "items": [
+        "t = tiled(属于 TiledMMA 的切分)",
+        "C = 为算 C 而切;g / r = GMEM / register",
+        "tCgA 就是「为算 C 切的、在 GMEM 的 A 分片」"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "计时别信 CUDA event",
+      "items": [
+        "event 把 launch 延迟也算进去:测出 ~8us,ncu 报 ~3us",
+        "微小 kernel 一律以 ncu Duration 为准",
+        "重点看 Compute/Memory Throughput 判瓶颈类型"
+      ]
+    }
+  ]
+}

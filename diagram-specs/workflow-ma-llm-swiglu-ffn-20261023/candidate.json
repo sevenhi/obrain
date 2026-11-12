@@ -1,0 +1,90 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "SwiGLU 到底改了什么:一个 FFN 从「线性+激活」变成「两条线性+一道门」",
+    "subtitle": "上:标准 FFN 两个权重矩阵,内维 4d。中:门控分支 Swish 后当「门」。下:值分支不加激活,两条相乘再压回 d —— 参数量靠内维压到 (2/3)·4d 对齐",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-llm-swiglu-ffn.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_std", "label": "标准 FFN(原 Transformer)" },
+    { "id": "ln_gate", "label": "SwiGLU 门控分支(当门用)" },
+    { "id": "ln_val", "label": "SwiGLU 值分支(当内容用)" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "两条线性投影", "fromCol": 0, "toCol": 2 },
+    { "id": "ph2", "label": "乘性门控后压回 d", "fromCol": 3, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["std_x", "std_w1", "std_ac", "std_w2", "std_p"],
+  "nodes": [
+    { "id": "std_x", "lane": "ln_std", "col": 0, "type": "frontend", "label": "输入 x", "sublabel": "逐位置,d 维", "icon": "start" },
+    { "id": "std_w1", "lane": "ln_std", "col": 1, "type": "backend", "label": "线性层 W₁", "sublabel": "升到 4d" },
+    { "id": "std_ac", "lane": "ln_std", "col": 2, "type": "security", "label": "ReLU", "sublabel": "max(0,·) 硬截断" },
+    { "id": "std_w2", "lane": "ln_std", "col": 3, "type": "backend", "label": "线性层 W₂", "sublabel": "压回 d" },
+    { "id": "std_p", "lane": "ln_std", "col": 4, "type": "database", "label": "参数量 8d²", "sublabel": "两个 d×4d 矩阵", "icon": "neutral" },
+
+    { "id": "gate_in", "lane": "ln_gate", "col": 0, "type": "frontend", "label": "同一份 x", "sublabel": "分两路走", "icon": "start" },
+    { "id": "gate_w", "lane": "ln_gate", "col": 1, "type": "backend", "label": "门控分支 W₁", "sublabel": "d → (2/3)·4d" },
+    { "id": "gate_sw", "lane": "ln_gate", "col": 2, "type": "security", "label": "Swish_β", "sublabel": "x·sigmoid(βx) 平滑" },
+    { "id": "gate_mul", "lane": "ln_gate", "col": 3, "type": "cloud", "label": "⊙ 逐元素乘", "sublabel": "门控就发生在这" },
+    { "id": "gate_out", "lane": "ln_gate", "col": 4, "type": "backend", "label": "线性层 W₂", "sublabel": "(2/3)·4d → d" },
+    { "id": "gate_p", "lane": "ln_gate", "col": 5, "type": "database", "label": "参数量 ≈8d²", "sublabel": "三个矩阵但每个更窄", "icon": "success" },
+
+    { "id": "val_v", "lane": "ln_val", "col": 2, "type": "backend", "label": "值分支 V", "sublabel": "不做激活,原样待乘", "icon": "neutral" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "std_x", "to": "std_w1", "label": "矩阵乘", "role": "main" },
+    { "id": "e2", "from": "std_w1", "to": "std_ac", "label": "逐元素", "role": "main" },
+    { "id": "e3", "from": "std_ac", "to": "std_w2", "label": "再投影", "role": "main" },
+    { "id": "e4", "from": "std_w2", "to": "std_p", "label": "数一下", "role": "main" },
+    { "id": "e5", "from": "std_p", "to": "gate_in", "label": "换成门控:多一个矩阵", "role": "branch" },
+    { "id": "e6", "from": "gate_in", "to": "gate_w", "label": "门那一路", "role": "main" },
+    { "id": "e7", "from": "gate_w", "to": "gate_sw", "label": "只激活这里", "role": "main" },
+    { "id": "e8", "from": "gate_sw", "to": "gate_mul", "label": "当门", "role": "main" },
+    { "id": "e9", "from": "val_v", "to": "gate_mul", "label": "当内容", "role": "main" },
+    { "id": "e10", "from": "gate_mul", "to": "gate_out", "label": "门控后的值", "role": "main" },
+    { "id": "e11", "from": "gate_out", "to": "gate_p", "label": "内维已压过", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "GLU 族的核心思想",
+      "items": [
+        "FFN 不再是「一个线性层 + 激活」,而是两条线性投影、一条当门控",
+        "GLU(x,W,V) = (xW ⊙ xV):信息流经乘法门控,表达力更强",
+        "SwiGLU = Swish 激活 + GLU 门控:FFN_SwiGLU(x,W₁,V,W₂) = (Swish_β(xW₁) ⊙ xV)W₂",
+        "LLaMA 的路线:照抄 PaLM,把 max(0,xW₁+b₁)W₂ 换成上面这条"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "为什么内维必须压到 (2/3)·4d",
+      "items": [
+        "SwiGLU 有三个权重矩阵(W₁、V、W₂),标准 FFN 只有两个",
+        "把内维从 4d 降到 (2/3)·4d,总参数量才拉回 ≈8d² 可比",
+        "LLaMA-7B 实际 11008 ≈ (2/3)·4·4096,再圆整到 256 的倍数",
+        "别背错:是内维变窄,不是矩阵变少"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "收益是经验性的,不是定理",
+      "items": [
+        "Shazeer(2020, arXiv:2002.05202)在 T5 规模系统评测 GLU 变体,SwiGLU 一致更优",
+        "论文自己写 no pretense of being exhaustive… they work",
+        "机制直觉:乘性门控提供 ReLU 类硬截断没有的平滑选择性"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "激活谱系(§2 表)",
+      "items": [
+        "ReLU:max(0,x),原 Transformer FFN",
+        "GeLU:x·Φ(x)(标准正态 CDF,常用 tanh 近似),GPT-2/3、BERT",
+        "Swish/SiLU:x·sigmoid(βx),PaLM 的 SwiGLU 内件",
+        "SwiGLU:PaLM、LLaMA、Qwen、Mistral 的默认"
+      ]
+    }
+  ]
+}

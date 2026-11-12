@@ -1,0 +1,134 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Gateway 路由算法选型:按请求特征挑算法",
+    "subtitle": "十余种 LLM-aware 算法各有适用场景;选错(如对随机 prompt 用 prefix-cache)反而增加簿记开销",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-aibrix-routing-algo.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_req",
+      "label": "① 请求特征"
+    },
+    {
+      "id": "ln_pick",
+      "label": "② 算法选择"
+    },
+    {
+      "id": "ln_do",
+      "label": "③ 结果"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "req",
+      "lane": "ln_req",
+      "col": 0,
+      "type": "frontend",
+      "label": "请求进来",
+      "sublabel": "Gateway 入口"
+    },
+    {
+      "id": "q1",
+      "lane": "ln_pick",
+      "col": 1,
+      "type": "backend",
+      "icon": "decision",
+      "label": "共享前缀/多轮?",
+      "sublabel": "看 system prompt"
+    },
+    {
+      "id": "prefix",
+      "lane": "ln_do",
+      "col": 2,
+      "type": "backend",
+      "label": "prefix-cache / vtc",
+      "sublabel": "前缀命中/会话粘滞"
+    },
+    {
+      "id": "q2",
+      "lane": "ln_pick",
+      "col": 1,
+      "type": "backend",
+      "icon": "decision",
+      "label": "异构混部/负载不均?",
+      "sublabel": "KV/GPU 占用",
+      "yOffset": 110
+    },
+    {
+      "id": "least",
+      "lane": "ln_do",
+      "col": 2,
+      "type": "backend",
+      "label": "least-kv / power-of-two",
+      "sublabel": "选更空/更闲的副本",
+      "yOffset": 110
+    },
+    {
+      "id": "rand",
+      "lane": "ln_do",
+      "col": 2,
+      "type": "external",
+      "label": "random / least-request",
+      "sublabel": "无状态默认",
+      "yOffset": 220
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "req",
+      "to": "q1",
+      "label": "评估请求",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "q1",
+      "to": "prefix",
+      "label": "是(共享前缀/多轮)",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "q1",
+      "to": "q2",
+      "label": "否→看负载结构",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "q2",
+      "to": "least",
+      "label": "异构/热点",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "q2",
+      "to": "rand",
+      "label": "无状态压测",
+      "role": "branch",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "req",
+    "q1",
+    "prefix"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "与 Router 的对照",
+      "items": [
+        "AIBrix Gateway 是 Envoy L7 插件,能力更宽(限流/鉴权/PD)",
+        "Router 是独立转发进程,策略更聚焦(consistent_hash/cache_aware/power_of_two)"
+      ]
+    }
+  ]
+}

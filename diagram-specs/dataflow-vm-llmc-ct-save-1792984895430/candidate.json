@@ -1,0 +1,95 @@
+{
+ "schema_version": 1,
+ "diagram_type": "dataflow",
+ "meta": {
+  "title": "压完怎么存:compressed-tensors",
+  "subtitle": "llmcompressor 是「怎么压」,compressed-tensors 是「压完怎么存」",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-llmc-ct-save.dataflow.html"
+ },
+ "stages": [
+  {
+   "label": "① 压缩/转换"
+  },
+  {
+   "label": "② 统一格式"
+  },
+  {
+   "label": "③ 引擎加载"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "llmc",
+   "type": "backend",
+   "label": "llmcompressor",
+   "sublabel": "算法与校准",
+   "stage": 0,
+   "row": 0
+  },
+  {
+   "id": "other",
+   "type": "external",
+   "label": "AutoAWQ/ModelOpt",
+   "sublabel": "NVFP4/FP8 block",
+   "stage": 0,
+   "row": 1
+  },
+  {
+   "id": "ct",
+   "type": "database",
+   "label": "compressed-tensors",
+   "sublabel": "quantization_config+权重",
+   "stage": 1,
+   "row": 0
+  },
+  {
+   "id": "vllm",
+   "type": "frontend",
+   "label": "vLLM",
+   "sublabel": "按 config 分派 kernel",
+   "stage": 2,
+   "row": 0
+  },
+  {
+   "id": "sgl",
+   "type": "frontend",
+   "label": "SGLang",
+   "sublabel": "同格式加载",
+   "stage": 2,
+   "row": 1
+  }
+ ],
+ "flows": [
+  {
+   "from": "llmc",
+   "to": "ct",
+   "label": "save_compressed=True 折叠 scale"
+  },
+  {
+   "from": "other",
+   "to": "ct",
+   "label": "convert 转入"
+  },
+  {
+   "from": "ct",
+   "to": "vllm",
+   "label": "quantization_config 分派"
+  },
+  {
+   "from": "ct",
+   "to": "sgl",
+   "label": "加载"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "识别标志",
+   "items": [
+    "config.json 出现 quantization_config = compressed-tensors 语义",
+    "vLLM 按字段分派 kernel,而非按文件名猜"
+   ]
+  }
+ ]
+}

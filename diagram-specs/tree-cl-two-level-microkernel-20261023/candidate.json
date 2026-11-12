@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "五层 API 与两级 microkernel:哪一层管「空间」,哪一层管「时间」",
+    "subtitle": "自底向上:Atom 固化一条指令 → TiledMMA/TiledCopy 是空间微内核(数据怎么切给线程)→ Collective 是时间微内核(节拍怎么流水)→ Kernel 只做组合与调度 → Device 是 host 侧装配",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-two-level-microkernel.tree.html"
+  },
+  "layout": { "direction": "down", "nodeW": 230, "gapX": 24, "gapY": 52 },
+  "nodes": [
+    { "id": "dev", "label": "Device 层", "sublabel": "host 侧装配,无状态包装;2.x/3.x kernel 通用" },
+    { "id": "kernel", "label": "Kernel 层", "parent": "dev", "sublabel": "一个 grid 的全部 CTA/cluster:launch、grid planning、负载均衡" },
+    { "id": "collective", "label": "Collective(时间微内核)", "parent": "kernel", "sublabel": "把多个空间微内核的节拍编排成软件流水线,一个 collective 算一个输出 tile" },
+    { "id": "tiled", "label": "TiledMMA / TiledCopy(空间微内核)", "parent": "collective", "sublabel": "一次操作的完整空间 tiling:原子按线程和数据平铺交织" },
+    { "id": "atom", "label": "Atom", "parent": "tiled", "sublabel": "架构指令 + 元信息:一次 math/copy 所需的最少线程数与值数" },
+    { "id": "ptx", "label": "MMA_Op(裸 PTX)", "parent": "atom", "sublabel": "SM70/80/90 各自的 mma 指令" },
+    { "id": "traits", "label": "MMA_Traits(元信息)", "parent": "atom", "sublabel": "值类型、ThrID、[thr,val]→(M,N,K) 布局映射" },
+    { "id": "dispatch", "label": "DispatchPolicy", "parent": "collective", "sublabel": "policy 名字直接编码流水结构:Sm70TwoStage / Sm80CpAsync / Sm90TmaGmmaWarpSpecialized" },
+    { "id": "sched", "label": "TileScheduler", "parent": "kernel", "sublabel": "外层 schedule:persistent / stream-K / grouped、L2 swizzle" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "一组词记住整篇文章",
+      "items": [
+        "TiledMMA 管「数据怎么切给线程」= 空间",
+        "Collective 管「节拍怎么流水」= 时间",
+        "读 3.x 源码先问「这段在哪一级」,混着读是劝退主因"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "每层的「组合点」(可定制什么)",
+      "items": [
+        "Atom:复数 MMA、semiring GEMM 等自定义算子",
+        "TiledMMA/Copy:架构无关外循环 ↔ 架构特定指令之间的稳定接口",
+        "Collective:mainloop 融合(如 3xTF32);由 DispatchPolicy 定 pipeline 结构",
+        "Kernel:kernel 级融合(如 B2B GEMM);mainloop × epilogue × schedule 组合",
+        "Device:无状态包装,不提供定制点"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "看前缀定位的实操口诀",
+      "items": [
+        "cute:: 前缀 = 空间级(Atom / TiledMMA / TiledCopy / Layout)",
+        "collective:: 前缀 = 时间级(pipeline / 同步模式)",
+        "kernel::GemmUniversal 只做组合与调度,别在这里找算法",
+        "两层解耦 = 「自定义 mainloop 复用官方 schedule、自定义 schedule 复用官方 mainloop」的可组合性来源"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "不变量 vs 变化量(§1.3)",
+      "items": [
+        "跨代不变:global memory 的 layout 语义、嵌套并行 agent + 分层内存、嵌套 tiling 是最优策略、异步流水隐藏搬运延迟",
+        "每代都变:原生 MMA 的线程与数据布局、异步流水的结构、agent-locale 层级的深度(Volta 是 warp 级,Hopper 出了 warpgroup + TMA + cluster)",
+        "3.x 的做法:对不变量建接口(Atom/TiledMMA/Collective),对变化量建 traits(MMA_Traits、dispatch policy)"
+      ]
+    }
+  ]
+}

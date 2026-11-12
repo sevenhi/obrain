@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "十三类异构信号的分层",
+    "subtitle": "从亚毫秒启发式到语义学习型,再到安全合规、会话记忆、模型侧信号,各司其职",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-sr-signal-types.tree.html"
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "信号层(SignalMatches)"
+    },
+    {
+      "id": "heur",
+      "label": "启发式(亚毫秒)",
+      "parent": "root"
+    },
+    {
+      "id": "kw",
+      "label": "keywords(BM25/ngram/fuzzy)",
+      "parent": "heur",
+      "sublabel": "code_keywords/urgent"
+    },
+    {
+      "id": "lang",
+      "label": "language/structure/metadata",
+      "parent": "heur"
+    },
+    {
+      "id": "sem",
+      "label": "语义学习型",
+      "parent": "root"
+    },
+    {
+      "id": "emb",
+      "label": "embeddings/domain/complexity",
+      "parent": "sem",
+      "sublabel": "原型打分"
+    },
+    {
+      "id": "modal",
+      "label": "modality/preference",
+      "parent": "sem"
+    },
+    {
+      "id": "sec",
+      "label": "安全合规",
+      "parent": "root"
+    },
+    {
+      "id": "saf",
+      "label": "safety/pii/jailbreak",
+      "parent": "sec",
+      "sublabel": "信用卡号/越狱"
+    },
+    {
+      "id": "auth",
+      "label": "authz/fact-check",
+      "parent": "sec"
+    },
+    {
+      "id": "conv",
+      "label": "会话/记忆",
+      "parent": "root"
+    },
+    {
+      "id": "reask",
+      "label": "conversation/reask/KB",
+      "parent": "conv",
+      "sublabel": "多轮不满信号"
+    },
+    {
+      "id": "model",
+      "label": "模型侧",
+      "parent": "root"
+    },
+    {
+      "id": "cls",
+      "label": "classifier/decision-model",
+      "parent": "model",
+      "sublabel": "rule:choice 答案"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "五大家族",
+      "items": [
+        "启发式亚毫秒、语义学习型、安全合规、会话记忆、模型侧",
+        "每类信号输出(匹配位, 置信度∈[0,1])",
+        "置信度阈值按信号类型调,不要抄默认值"
+      ]
+    }
+  ]
+}

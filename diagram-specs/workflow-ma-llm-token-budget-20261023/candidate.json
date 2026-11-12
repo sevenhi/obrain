@@ -1,0 +1,87 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "「小模型多数据」:把推理预算写进 scaling law",
+    "subtitle": "Kaplan 只看训练算力 → 大家堆参数;Chinchilla 发现参数与数据应同速翻倍(~20 tokens/参数);LLaMA 再把推理成本塞进目标函数,于是 7B 训 1T tokens(≈143 tokens/参数,7× Chinchilla 配比)",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-llm-token-budget.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_kaplan", "label": "① Kaplan 时代:堆参数" },
+    { "id": "ln_chin", "label": "② Chinchilla:参数与数据同速" },
+    { "id": "ln_llama", "label": "③ LLaMA:再算推理账" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "目标函数里有什么", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "结论与代价", "fromCol": 2, "toCol": 4, "variant": "emphasis" }
+  ],
+  "mainPath": ["k1", "k2", "k3"],
+  "nodes": [
+    { "id": "k1", "lane": "ln_kaplan", "col": 0, "type": "external", "label": "性能≈随参数涨", "sublabel": "Kaplan 2020 的读法", "icon": "start", "width": 130 },
+    { "id": "k2", "lane": "ln_kaplan", "col": 1, "type": "backend", "label": "模型越做越大", "sublabel": "GPT-3 直接 175B", "width": 130 },
+    { "id": "k3", "lane": "ln_kaplan", "col": 2, "type": "security", "label": "只优化训练算力", "sublabel": "推理成本不在目标里", "icon": "failure", "width": 150 },
+
+    { "id": "c1", "lane": "ln_chin", "col": 0, "type": "external", "label": "固定训练算力", "sublabel": "400+ 模型拟合", "icon": "start", "width": 130 },
+    { "id": "c2", "lane": "ln_chin", "col": 1, "type": "backend", "label": "参数数据同速翻倍", "sublabel": "≈20 tokens/参数", "width": 150 },
+    { "id": "c3", "lane": "ln_chin", "col": 2, "type": "database", "label": "Chinchilla-70B", "sublabel": "MMLU 67.5%", "width": 140 },
+    { "id": "c4", "lane": "ln_chin", "col": 3, "type": "security", "label": "但账目仍缺一项", "sublabel": "每个 token 的推理费", "icon": "decision", "width": 150 },
+
+    { "id": "l1", "lane": "ln_llama", "col": 2, "type": "cloud", "label": "把推理预算加进去", "sublabel": "推理最快的胜出", "icon": "decision", "width": 160 },
+    { "id": "l2", "lane": "ln_llama", "col": 3, "type": "backend", "label": "7B 训 1T tokens", "sublabel": "7× Chinchilla 配比", "width": 150 },
+    { "id": "l3", "lane": "ln_llama", "col": 4, "type": "security", "label": "一次性换永久", "sublabel": "多训贵一次,推理省一辈子", "icon": "success", "width": 170 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "k1", "to": "k2", "label": "于是不断加宽加深", "role": "main" },
+    { "id": "e2", "from": "k2", "to": "k3", "label": "训练完就算完", "role": "main" },
+    { "id": "e3", "from": "k3", "to": "c1", "label": "换成固定算力视角", "role": "branch" },
+    { "id": "e4", "from": "c1", "to": "c2", "label": "拟合出的最优解", "role": "main" },
+    { "id": "e5", "from": "c2", "to": "c3", "label": "10B 配 200B", "role": "main" },
+    { "id": "e6", "from": "c3", "to": "c4", "label": "推理还便宜得多", "role": "main" },
+    { "id": "e7", "from": "c4", "to": "l1", "label": "补上缺的那项", "role": "branch" },
+    { "id": "e8", "from": "l1", "to": "l2", "label": "选小的 + 喂更多", "role": "main" },
+    { "id": "e9", "from": "l2", "to": "l3", "label": "为什么划算", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Chinchilla 的原话与数字",
+      "items": [
+        "for every doubling of model size the number of training tokens should also be doubled",
+        "训练 400+ 个 70M~16B 模型、5~500B tokens 拟合出 ≈20 tokens/参数",
+        "Chinchilla-70B(4× Gopher 数据)MMLU 67.5%,超 GPT-3 / Gopher-280B / MT-NLG-530B",
+        "它优化的是「给定训练算力」,推理成本不在目标函数里"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "LLaMA 的推理账怎么算",
+      "items": [
+        "服务规模下,给定目标性能,首选不是训练最快的,而是推理最快的",
+        "大模型训练便宜,但每个 token 的推理永远贵",
+        "小模型多训数据 = 一次性成本换永久推理便宜",
+        "7B×1T tokens = 143 tokens/参数,约 7× Chinchilla 建议配比"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "可照抄的配方(§3.4)",
+      "items": [
+        "7B:dim 4096 / 32 头 / 32 层 / LR 3.0e−4 / batch 4M / 1.0T tokens",
+        "13B:5120 / 40 / 40 / 3.0e−4 / 4M / 1.0T",
+        "33B 与 65B:6656/8192 维、1.5e−4、1.4T",
+        "优化器:AdamW β₁=0.9、β₂=0.95;cosine 终值 = 10% max LR;weight decay 0.1;grad clip 1.0;warmup 2000 步"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "这条路线当时的短板",
+      "items": [
+        "5-shot MMLU:LLaMA-65B 63.4,低于 PaLM-540B(69.3)/Chinchilla(67.5)",
+        "论文归因:训练数据不含足够学术文本,ArXiv 只占 2.5%",
+        "纯公开数据路线的代价,Llama 2/3 靠扩数据补上",
+        "但它也是「公开数据也能训出第一梯队」的证明:13B 单卡 V100 可推理"
+      ]
+    }
+  ]
+}

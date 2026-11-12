@@ -1,0 +1,82 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Uptraining:5% 算力把存量 MHA checkpoint 改成 GQA",
+    "subtitle": "不是从头训:GQA 论文的配方是「均值池化组内 K/V 投影 → 按原预训练配方续训 α=5% 步数」;实测 mean pooling 优于只留一头或随机初始化",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-gqa-uptraining.workflow.html"
+  },
+  "lanes": [
+    { "id": "src", "label": "存量 checkpoint" },
+    { "id": "convert", "label": "结构转换" },
+    { "id": "train", "label": "少量续训" },
+    { "id": "result", "label": "结果与代价" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "改结构", "fromCol": 0, "toCol": 1 },
+    { "id": "p2", "label": "续训适应", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "p3", "label": "验收", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["mha_ckpt", "group", "pool", "uptrain", "eval", "deploy"],
+  "nodes": [
+    { "id": "mha_ckpt", "lane": "src", "col": 0, "type": "frontend", "label": "MHA checkpoint", "sublabel": "每头独立的 K/V 投影矩阵", "width": 150 },
+    { "id": "group", "lane": "convert", "col": 1, "type": "backend", "label": "按组划分 Q 头", "sublabel": "g(h)=⌈h·g/H⌉,同组共用一份", "width": 150 },
+    { "id": "pool", "lane": "convert", "col": 2, "type": "security", "label": "组内 K/V 均值池化", "sublabel": "实测优于只留一头 / 随机重初始化", "width": 150 },
+    { "id": "uptrain", "lane": "train", "col": 3, "type": "backend", "label": "续训 α=5% 原步数", "sublabel": "沿用原预训练配方", "width": 150 },
+    { "id": "eval", "lane": "result", "col": 4, "type": "database", "label": "8 个 dev 集平均质量", "sublabel": "T5-XXL:GQA-8 = 47.1", "width": 150 },
+    { "id": "deploy", "lane": "result", "col": 5, "type": "external", "label": "部署侧推理提速", "sublabel": "0.28 s/样本 vs MHA 1.51", "width": 150 },
+    { "id": "hard", "lane": "convert", "col": 2, "type": "cloud", "label": "硬转不续训", "sublabel": "质量损失大,不可取", "width": 150, "yOffset": 104 },
+    { "id": "mha_ref", "lane": "result", "col": 4, "type": "database", "label": "MHA 上限 47.2", "sublabel": "只差 0.1,在测量噪声级", "width": 150, "yOffset": 104 },
+    { "id": "mqa_ref", "lane": "result", "col": 5, "type": "database", "label": "MQA 46.5 / 0.24s", "sublabel": "最快但掉 0.7 分", "width": 150, "yOffset": 104 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "mha_ckpt", "to": "group", "variant": "emphasis", "label": "先决定 g 分几组" },
+    { "id": "e2", "from": "group", "to": "pool", "variant": "emphasis", "label": "同组 K/V 求平均" },
+    { "id": "e3", "from": "pool", "to": "uptrain", "variant": "emphasis", "label": "结构改完再训一小段" },
+    { "id": "e4", "from": "uptrain", "to": "eval", "variant": "default", "label": "8 个 dev 集平均" },
+    { "id": "e5", "from": "eval", "to": "deploy", "variant": "emphasis", "label": "质量可接受就上线" },
+    { "id": "e6", "from": "pool", "to": "hard", "variant": "security", "label": "跳过续训会怎样" },
+    { "id": "e7", "from": "mha_ref", "to": "eval", "variant": "dashed", "label": "对比基线" },
+    { "id": "e8", "from": "mqa_ref", "to": "deploy", "variant": "dashed", "label": "速度参照系" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么均值池化",
+      "items": [
+        "组内各头的 K/V 投影本来就服务相似的 Q 视角",
+        "取平均 = 保留这些视角的公共成分",
+        "论文实测:mean pooling 优于「只留一头」和「随机重初始化」"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "T5-XXL 实测(GQA 论文 Table 1)",
+      "items": [
+        "MHA-XXL:1.51 s/样本,47.2(质量上限)",
+        "GQA-8-XXL:0.28 s,47.1 —— 质量差 0.1,速度快 5.4×",
+        "MQA-XXL:0.24 s,46.5 —— 最快但掉 0.7",
+        "MHA-Large(小模型基线):0.37 s,46.0"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "组数 g 的甜点",
+      "items": [
+        "消融(§3.3):g 从 1→8 质量快速回升,8→16 之后收益趋平",
+        "uptrain 步数 5% 是质量/成本的甜点",
+        "所以工业界普遍选 8 个 KV 头"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "这条配方的迁移价值",
+      "items": [
+        "想把存量 MHA 改 GQA:mean-pool → 原配方续训 ~5% 步数",
+        "直接硬转不续训,质量损失大",
+        "Llama 3 的长上下文继续预训练同属「checkpoint 改造 + 续训」范式"
+      ]
+    }
+  ]
+}

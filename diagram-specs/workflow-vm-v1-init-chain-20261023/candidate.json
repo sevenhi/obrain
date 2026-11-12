@@ -1,0 +1,218 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "EngineCore 启动五步:KV cache 大小是 profiling 出来的,不是写死的",
+    "subtitle": "core.py:108-205。关键在第 2 步:跑一个 dummy batch 量出「模型 + 激活」的峰值显存,再从 total × gpu_memory_utilization 里减掉它,剩下的全部给 KV cache",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-v1-init-chain.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_cfg",
+      "label": "① 收集模型需求"
+    },
+    {
+      "id": "ln_probe",
+      "label": "② 探显存"
+    },
+    {
+      "id": "ln_calc",
+      "label": "③ 折算块数"
+    },
+    {
+      "id": "ln_build",
+      "label": "④ Worker 侧落地"
+    },
+    {
+      "id": "ln_ready",
+      "label": "⑤ 调度器就位"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "先问模型要什么",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "再量设备能给什么",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ph3",
+      "label": "最后才建调度器",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "specs",
+    "profile",
+    "budget",
+    "blocks",
+    "alloc",
+    "sched"
+  ],
+  "nodes": [
+    {
+      "id": "specs",
+      "lane": "ln_cfg",
+      "col": 0,
+      "type": "frontend",
+      "label": "get_kv_cache_specs",
+      "sublabel": "每层的 block_size / head 数 / dtype",
+      "icon": "start",
+      "width": 170
+    },
+    {
+      "id": "profile",
+      "lane": "ln_probe",
+      "col": 1,
+      "type": "security",
+      "label": "量可用显存",
+      "sublabel": "determine_available_memory",
+      "icon": "decision",
+      "width": 170
+    },
+    {
+      "id": "budget",
+      "lane": "ln_calc",
+      "col": 2,
+      "type": "backend",
+      "label": "算 KV 预算",
+      "sublabel": "总额 × 0.92 − weights/激活峰值",
+      "icon": "active",
+      "width": 170
+    },
+    {
+      "id": "blocks",
+      "lane": "ln_calc",
+      "col": 3,
+      "type": "backend",
+      "label": "get_kv_cache_configs",
+      "sublabel": "预算 ÷ 单块字节 → 块数与布局",
+      "icon": "neutral",
+      "width": 170
+    },
+    {
+      "id": "alloc",
+      "lane": "ln_build",
+      "col": 4,
+      "type": "database",
+      "label": "initialize_from_config",
+      "sublabel": "Worker 上真分配 KV 张量",
+      "icon": "database",
+      "width": 170
+    },
+    {
+      "id": "warmup",
+      "lane": "ln_build",
+      "col": 5,
+      "type": "backend",
+      "label": "compile_or_warm_up",
+      "sublabel": "编译 / 捕获 CUDA graph",
+      "icon": "clock",
+      "width": 170,
+      "yOffset": 108
+    },
+    {
+      "id": "sched",
+      "lane": "ln_ready",
+      "col": 5,
+      "type": "cloud",
+      "label": "构造 Scheduler",
+      "sublabel": "注入 KVCacheConfig + block_size",
+      "icon": "success",
+      "width": 170
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "specs",
+      "to": "profile",
+      "label": "先知道要多少才能量",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "profile",
+      "to": "budget",
+      "label": "峰值显存是唯一未知量",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "budget",
+      "to": "blocks",
+      "label": "余量换算成块数",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e4",
+      "from": "blocks",
+      "to": "alloc",
+      "label": "块数下发到每张卡",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "alloc",
+      "to": "sched",
+      "label": "张量就绪后才建调度器",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "alloc",
+      "to": "warmup",
+      "label": "同一阶段顺手预热",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e7",
+      "from": "warmup",
+      "to": "sched",
+      "label": "图捕获完再进服务",
+      "role": "branch",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两个公式(可直接抄)",
+      "items": [
+        "kv_cache_bytes = total_memory × gpu_memory_utilization − (weights + activations 峰值)",
+        "num_blocks = kv_cache_bytes ÷ (num_layers × num_kv_heads × block_size × head_dim × 2 × dtype_bytes)",
+        "单块大小里的 ×2 是 K 和 V 各一份"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "为什么必须 profiling",
+      "items": [
+        "权重大小可算,但激活峰值取决于 kernel 实现与 batch 形状,算不准",
+        "写死会让显存要么浪费、要么 OOM",
+        "所以先跑一遍 dummy batch,用 max_memory_allocated 差值实测"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "调参入口就一个",
+      "items": [
+        "想给 KV 更多空间 → 调高 gpu_memory_utilization",
+        "它同时影响「能装多少并发」与「会不会 OOM」",
+        "启动日志里的 KV cache 块数就是这条链的输出"
+      ]
+    }
+  ]
+}

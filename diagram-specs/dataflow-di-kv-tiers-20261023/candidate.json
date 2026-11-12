@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "KV cache 三级存储与三段开销重叠",
+    "subtitle": "分页 block KV 落 3FS、SWA KV 只在本机 host 内存、in-flight 在显存;命中后取 KV 的三段(匹配 / 取 KV / swap-in)刻意设计成可重叠——swap-in 用 GDR 而不走 copy engine",
+    "locale": "zh-CN",
+    "output": "diagrams/di-kv-tiers.dataflow.html",
+    "viewBox": [
+      1080,
+      380
+    ]
+  },
+  "stages": [
+    {
+      "label": "① 算命中长度"
+    },
+    {
+      "label": "② 3FS 分页块"
+    },
+    {
+      "label": "③ 异步取回"
+    },
+    {
+      "label": "④ GDR 叠进 forward"
+    },
+    {
+      "label": "⑤ 显存 in-flight"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "match",
+      "type": "security",
+      "label": "hash-chain 匹配",
+      "sublabel": "只比 metadata",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "fs3",
+      "type": "database",
+      "label": "3FS 分页块",
+      "sublabel": "10+2 EC",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "fetch",
+      "type": "backend",
+      "label": "独立进程拉取",
+      "sublabel": "3FS→host",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "swapin",
+      "type": "backend",
+      "label": "GDR 逐层 H2D",
+      "sublabel": "不占 SM",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "gpu",
+      "type": "database",
+      "label": "显存 in-flight",
+      "sublabel": "block+state",
+      "stage": 4,
+      "row": 0
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "match",
+      "to": "fs3",
+      "label": "按 block table 定位",
+      "route": "straight"
+    },
+    {
+      "id": "f2",
+      "from": "fs3",
+      "to": "fetch",
+      "label": "并发请求 11 节点",
+      "route": "straight"
+    },
+    {
+      "id": "f3",
+      "from": "fetch",
+      "to": "swapin",
+      "label": "落 host 共享内存",
+      "route": "straight"
+    },
+    {
+      "id": "f4",
+      "from": "swapin",
+      "to": "gpu",
+      "label": "与 forward 重叠",
+      "route": "straight"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "为什么用专用集群而非本地分层",
+      "items": [
+        "任何 prefill 机器都能命中任何前缀 → prefix affinity 不必与负载路由打架",
+        "存储扩缩容与计算解耦",
+        "计算节点故障率比存储高一个数量级,KV 不受影响",
+        "代价:匹配延迟藏不掉(命中长度必须在路由前算出)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "3FS 读与 GC 细节",
+      "items": [
+        "10+2 EC:每组容忍 2 节点同时故障",
+        "一次读并发请求组内 11 个节点,任 10 个响应即可解码(拿延迟换尾)",
+        "GC Worker 每存储节点一个,LRU 回收、压磁盘水位",
+        "TTL:agent 3 天 / chatbot 7 天;3 天对 chatbot 命中率代价 0.5%–1%"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "swap-in 为什么用 GDR",
+      "items": [
+        "copy engine 对 KV block 的细粒度拷贝性能差",
+        "GDR 让 RDMA 网卡直接打满 PCIe 带宽,不占 SM",
+        "三种来源统一成 BlockLoadPlan(分页/环缓冲/补零)一次交 kernel",
+        "decode 期间不做 offload,但产出的 KV 仍写盘提命中率"
+      ]
+    }
+  ]
+}

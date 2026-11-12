@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "滞后一步的 seqlens 如何在 GPU 上修正(_correct_seqlens_qk)",
+    "subtitle": "ZOS 下 schedule(N+1) 时步 N 的采样结果还在 GPU 上没回 CPU,算出的 seqlens 是滞后值;修正链路把它变成「按真实接受数回退过的长度」,再交给采样用",
+    "locale": "zh-CN",
+    "output": "diagrams/di-zos-seqlens-fix.dataflow.html",
+    "viewBox": [
+      940,
+      420
+    ]
+  },
+  "stages": [
+    {
+      "label": "① C++ 生成 remap 与初值"
+    },
+    {
+      "label": "② H2D 搬到 GPU"
+    },
+    {
+      "label": "③ GPU kernel 就地修正"
+    },
+    {
+      "label": "④ 回读并交给采样"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "cmp",
+      "type": "backend",
+      "label": "比两批 batch",
+      "sublabel": "remap[i]=j,新请求 −1",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "seed",
+      "type": "backend",
+      "label": "滞后 q/k 长度",
+      "sublabel": "假设上步零产出",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "kq",
+      "type": "security",
+      "label": "重分 q 预算",
+      "sublabel": "按 confidence 排序",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "kk",
+      "type": "security",
+      "label": "回退 k 长度",
+      "sublabel": "减未接受 draft",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "d2h",
+      "type": "database",
+      "label": "q 回写 pinned",
+      "sublabel": "记一个 event",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "meta",
+      "type": "backend",
+      "label": "更新采样元数据",
+      "sublabel": "用真实长度",
+      "stage": 3,
+      "row": 1
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "cmp",
+      "to": "kq",
+      "label": "remap + 初值上卡"
+    },
+    {
+      "id": "f2",
+      "from": "seed",
+      "to": "kk",
+      "label": "滞后长度上卡",
+      "variant": "dashed"
+    },
+    {
+      "id": "f3",
+      "from": "kq",
+      "to": "kk",
+      "label": "q 定了才算 k",
+      "labelAt": [
+        540,
+        210
+      ]
+    },
+    {
+      "id": "f4",
+      "from": "kk",
+      "to": "d2h",
+      "label": "真实 q 长度 D2H"
+    },
+    {
+      "id": "f5",
+      "from": "d2h",
+      "to": "meta",
+      "label": "同步 event 后读",
+      "labelAt": [
+        770,
+        210
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "为什么必须上 GPU 修",
+      "items": [
+        "步 N 的 sampled_token_ids / num_accepted_tokens 还是 GPU tensor",
+        "CPU 要读就得同步,一同步 ZOS 的重叠全废",
+        "所以 seqlens 只能在 GPU 上就地改,D2H 只回读采样元数据要用的 q 长度",
+        "回退量:seqlens_k += seqlens_q −(nextn − 已接受数)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "placeholder 从哪来(与 CUDA graph 分桶咬合)",
+      "items": [
+        "先按 confidence 排序定 total_q → cuda_graph_runner.select(total_q) 选最近的桶",
+        "n_seq_with_padding = n_seq + 桶大小 − total_q,差额补 placeholder 行",
+        "prepare_zos_inputs 给 padding 段 remap=−1、seqlens_q=1,天然免修正",
+        "所以 CUDAGRAPH_BATCH_SIZE_INTERVAL(默认 8)越粗,陪跑行越多,decode 越慢"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "位置余量:runtime_max_model_len",
+      "items": [
+        "异步下在途请求 position 会超前 CPU 已确认位置",
+        "nextn=5 且 ZOS 开:额外 5+6+5 = 16 个位置(3×nextn+1)",
+        "KV block 表按 runtime_max_model_len 分配,否则最后几个位置越界",
+        "按「2×nextn+1」估会少算位置、块数偏小"
+      ]
+    }
+  ]
+}

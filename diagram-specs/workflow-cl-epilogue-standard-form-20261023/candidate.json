@@ -1,0 +1,68 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "epilogue 的标准形式:线性组合 + 逐元素变换 + 写回适配",
+    "subtitle": "CUTLASS 里 epilogue 的经典语义是 D = alpha*acc + beta*C,然后可选接 bias / ReLU / GELU,最后还要做类型转换与排布适配才能写回",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-epilogue-standard-form.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_in", "label": "① 输入从哪来" },
+    { "id": "ln_calc", "label": "② 线性组合" },
+    { "id": "ln_fuse", "label": "③ 可选融合" },
+    { "id": "ln_out", "label": "④ 写回前必做" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "取数", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "缩放相加", "fromCol": 1, "toCol": 1, "variant": "emphasis" },
+    { "id": "p3", "label": "变换与写回", "fromCol": 2, "toCol": 3 }
+  ],
+  "nodes": [
+    { "id": "acc", "lane": "ln_in", "col": 0, "type": "database", "label": "accumulator", "sublabel": "mainloop 的寄存器累加", "icon": "start" },
+    { "id": "cmat", "lane": "ln_in", "col": 1, "type": "database", "label": "第二个输入 C", "sublabel": "残差源 / bias 张量", "icon": "neutral" },
+    { "id": "lin", "lane": "ln_calc", "col": 2, "type": "backend", "label": "alpha·acc + beta·C", "sublabel": "beta=0 退化为纯 GEMM", "icon": "active" },
+    { "id": "act", "lane": "ln_fuse", "col": 3, "type": "backend", "label": "bias / ReLU / GELU", "sublabel": "趁数据还在片上", "icon": "neutral" },
+    { "id": "cast", "lane": "ln_out", "col": 3, "type": "security", "label": "类型转换", "sublabel": "FP32 累加 → FP16/BF16 写", "icon": "decision" },
+    { "id": "layout", "lane": "ln_out", "col": 4, "type": "security", "label": "排布适配", "sublabel": "按目标 layout / swizzle 写", "icon": "decision" },
+    { "id": "d", "lane": "ln_out", "col": 5, "type": "database", "label": "输出 D", "sublabel": "一次写出 HBM", "icon": "success" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "acc", "to": "lin", "label": "主贡献项", "role": "main" },
+    { "id": "e2", "from": "cmat", "to": "lin", "label": "beta 缩放后相加", "role": "main" },
+    { "id": "e3", "from": "lin", "to": "act", "label": "线性结果再做逐元素变换", "role": "main" },
+    { "id": "e4", "from": "act", "to": "cast", "label": "精度收窄", "role": "main" },
+    { "id": "e5", "from": "cast", "to": "layout", "label": "换排布", "role": "main" },
+    { "id": "e6", "from": "layout", "to": "d", "label": "连续写,可合并访存", "role": "main" }
+  ],
+  "mainPath": ["acc", "lin", "act", "cast", "layout", "d"],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "per-row vs per-column 的 layout 陷阱",
+      "items": [
+        "输出 column-major → bias 每行一个(M×1 向量)",
+        "输出 row-major → bias 每列一个",
+        "原理:bias 应沿输出最连续的那一维展开才能向量化;搞反了就算错"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "示例 12 的公式别套错",
+      "items": [
+        "12_gemm_bias_relu 用 ScaleType::NoBetaScaling,把 C 通道当 bias 向量用",
+        "这和通用公式里「C 是残差源矩阵」的语义不同",
+        "读示例时先看清它把 C 当什么,再谈 alpha/beta"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "写回排布为什么值得单独一步",
+      "items": [
+        "registers 里的 tile 顺序与 HBM 目标 layout 通常不一致",
+        "直接按 tile 边界写会造成非连续访存",
+        "50_hopper_gemm_with_epilogue_swizzle 就是为配合 TMA store layout 而存在的示例"
+      ]
+    }
+  ]
+}

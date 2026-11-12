@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "SM100_MMA_* atom 命名空间",
+    "locale": "zh-CN",
+    "subtitle": "TF32/F16BF16 × SS/TS × SCALED/SPARSE × 2x1SM,查 mma_sm100_umma.hpp 真实类名再写",
+    "output": "diagrams/cl-tcgen05-atom-naming.tree.html"
+  },
+  "layout": {
+    "direction": "right",
+    "nodeW": 210,
+    "gapX": 28,
+    "gapY": 36
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "SM100_MMA_*(tcgen05 atom)",
+      "sublabel": "mma_sm100_umma.hpp,2041 行"
+    },
+    {
+      "id": "tf32",
+      "label": "TF32",
+      "parent": "root"
+    },
+    {
+      "id": "tf32_ss",
+      "label": "TF32_SS",
+      "parent": "tf32",
+      "sublabel": "A/B 都来自 SMEM"
+    },
+    {
+      "id": "tf32_ts",
+      "label": "TF32_TS",
+      "parent": "tf32",
+      "sublabel": "A 来自 TMEM"
+    },
+    {
+      "id": "f16",
+      "label": "F16BF16",
+      "parent": "root"
+    },
+    {
+      "id": "f16_ss",
+      "label": "F16BF16_SS",
+      "parent": "f16",
+      "sublabel": "M ∈ {64,128} 单 CTA"
+    },
+    {
+      "id": "f16_ts",
+      "label": "F16BF16_TS",
+      "parent": "f16",
+      "sublabel": "A 从 TMEM,K-major 不可转置"
+    },
+    {
+      "id": "cta2",
+      "label": "2x1SM(2-CTA cluster)",
+      "parent": "root"
+    },
+    {
+      "id": "cta2_n",
+      "label": "TF32/F16BF16_2x1SM_SS/TS",
+      "parent": "cta2",
+      "sublabel": "M ∈ {128,256}"
+    },
+    {
+      "id": "ext",
+      "label": "扩展后缀",
+      "parent": "root"
+    },
+    {
+      "id": "ext_n",
+      "label": "SCALED / SPARSE",
+      "parent": "ext",
+      "sublabel": "叠加在 SS/TS 之后"
+    }
+  ]
+}

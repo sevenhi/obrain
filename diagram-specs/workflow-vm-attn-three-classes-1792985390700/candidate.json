@@ -1,0 +1,107 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "V1 注意力三件套抽象",
+  "subtitle": "AttentionBackend 元信息 + 共享 Metadata + Builder 构造器",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-attn-three-classes.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "back",
+   "label": "AttentionBackend(ABC)"
+  },
+  {
+   "id": "meta",
+   "label": "CommonAttentionMetadata"
+  },
+  {
+   "id": "builder",
+   "label": "AttentionMetadataBuilder"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "dtype",
+   "lane": "back",
+   "col": 0,
+   "type": "backend",
+   "label": "能力声明",
+   "sublabel": "supported_dtypes/kv_cache_dtypes"
+  },
+  {
+   "id": "impl",
+   "lane": "back",
+   "col": 1,
+   "type": "backend",
+   "label": "get_impl_cls",
+   "sublabel": "前向实现"
+  },
+  {
+   "id": "bld",
+   "lane": "back",
+   "col": 2,
+   "type": "backend",
+   "label": "get_builder_cls",
+   "sublabel": "metadata 构造器"
+  },
+  {
+   "id": "cm",
+   "lane": "meta",
+   "col": 0,
+   "type": "database",
+   "label": "共享注意力元数据",
+   "sublabel": "序列长/block table/slot"
+  },
+  {
+   "id": "sched",
+   "lane": "builder",
+   "col": 0,
+   "type": "backend",
+   "label": "从调度输出构造",
+   "sublabel": "backend 各自所需 metadata"
+  },
+  {
+   "id": "fwd",
+   "lane": "builder",
+   "col": 1,
+   "type": "backend",
+   "label": "交给前向",
+   "sublabel": "可插拔内核"
+  }
+ ],
+ "edges": [
+  {
+   "from": "dtype",
+   "to": "impl",
+   "label": "声明→实现",
+   "variant": "emphasis"
+  },
+  {
+   "from": "impl",
+   "to": "bld",
+   "label": "配构造器"
+  },
+  {
+   "from": "cm",
+   "to": "sched",
+   "label": "共享元数据"
+  },
+  {
+   "from": "sched",
+   "to": "fwd",
+   "label": "构造后前向"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "这是 V1 新机制",
+   "items": [
+    "不是 V0 的 registerAttentionBackend/BackendMetadata(V0 已弃用)",
+    "枚举本身没有 .register() 方法"
+   ]
+  }
+ ]
+}

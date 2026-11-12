@@ -1,0 +1,75 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "两代 C++ API + 一代 Python API:epilogue 怎么写",
+    "subtitle": "2.x 是 thread-level fusion functor(LinearCombination 系列),3.x 起才是 Epilogue Visitor Tree(逐元素计算图),4.x 的 Operator API 直接收一个 Python 函数。搞混这三代是最常见的误读来源",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-epilogue-api-generations.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_v2", "label": "2.x:thread functor" },
+    { "id": "ln_v3", "label": "3.x:EVT" },
+    { "id": "ln_v4", "label": "4.x:Operator API" },
+    { "id": "ln_who", "label": "谁在用 / 代表示例" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "老式写法", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "组合子表达 DAG", "fromCol": 1, "toCol": 1, "variant": "emphasis" },
+    { "id": "p3", "label": "函数式", "fromCol": 2, "toCol": 2 }
+  ],
+  "nodes": [
+    { "id": "v2a", "lane": "ln_v2", "col": 0, "type": "external", "label": "LinearCombination*", "sublabel": "如 LinearCombinationReLU", "icon": "start" },
+    { "id": "v2b", "lane": "ln_v2", "col": 1, "type": "external", "label": "手写固定几种组合", "sublabel": "想加新变换得改 functor", "icon": "neutral" },
+
+    { "id": "v3a", "lane": "ln_v3", "col": 1, "type": "backend", "label": "Load / Compute / Store 节点", "sublabel": "组成逐元素计算图", "icon": "active" },
+    { "id": "v3b", "lane": "ln_v3", "col": 2, "type": "security", "label": "传给 CollectiveBuilder", "sublabel": "不是 gemm builder 的参数", "icon": "decision" },
+
+    { "id": "v4a", "lane": "ln_v4", "col": 2, "type": "backend", "label": "EpilogueArguments(fn)", "sublabel": "把 epilogue 当函数传", "icon": "active" },
+    { "id": "v4b", "lane": "ln_v4", "col": 3, "type": "backend", "label": "get_operators 自动融合", "sublabel": "支持多输出与 partial reduction", "icon": "success" },
+
+    { "id": "w1", "lane": "ln_who", "col": 0, "type": "cloud", "label": "示例 12 / 35 / 37", "sublabel": "都走老式 thread epilogue", "icon": "none" },
+    { "id": "w2", "lane": "ln_who", "col": 1, "type": "cloud", "label": "示例 113(Hopper)", "sublabel": "AccCastLinCombEltActScale", "icon": "none" },
+    { "id": "w3", "lane": "ln_who", "col": 2, "type": "cloud", "label": "TorchInductor CuteDSL", "sublabel": "要求 Blackwell sm_100f", "icon": "none" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "v2a", "to": "v2b", "label": "模板参数选现成组合", "role": "main" },
+    { "id": "e2", "from": "v2b", "to": "v3a", "label": "从固定组合进化到任意 DAG", "role": "main" },
+    { "id": "e3", "from": "v3a", "to": "v3b", "label": "显式模板参数注入", "role": "main" },
+    { "id": "e4", "from": "v3b", "to": "v4a", "label": "再抽象一层:交给 Python", "role": "main" },
+    { "id": "e5", "from": "v4a", "to": "v4b", "label": "框架自己挑 kernel", "role": "main" },
+    { "id": "e6", "from": "v2b", "to": "w1", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e7", "from": "v3b", "to": "w2", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e8", "from": "v4b", "to": "w3", "label": "", "variant": "dashed", "role": "async" }
+  ],
+  "mainPath": ["v2a", "v2b", "v3a", "v3b", "v4a", "v4b"],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "最常见的误读:以为示例都用 EVT",
+      "items": [
+        "12_gemm_bias_relu / 35_gemm_softmax / 37_gemm_layernorm 都是 2.x 路线",
+        "已对照源码确认它们用老式 thread epilogue(如 ScaleType::NoBetaScaling)",
+        "EVT 的现代用例看 113_hopper_gemm_activation_fusion"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "EVT fusion op 的注入位置",
+      "items": [
+        "要作为 cutlass::epilogue::collective::CollectiveBuilder 的显式模板参数传入",
+        "不是「gemm builder 有个 epilogue 参数」",
+        "参照 113 示例:AccCastLinCombEltActScale 直接写在 CollectiveBuilder 的模板实参里"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "Hopper 上 epilogue 的真实数据通路",
+      "items": [
+        "registers 累加结果 → 经 SMEM 分块暂存(方便跨 warp 处理 EPILOGUE tile)→ TMA store 写回",
+        "不是「registers 写完就出去」,中间可能过 SMEM",
+        "Blackwell(SM100)的 EVT 还要叠 TMEM 累加器路径"
+      ]
+    }
+  ]
+}

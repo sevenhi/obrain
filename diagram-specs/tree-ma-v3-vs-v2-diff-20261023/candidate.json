@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "V2 → V3 的代际 diff:注意力一行没改,力气全在训练侧",
+    "subtitle": "五个维度里只有一个(注意力)是「沿用」,其余四个都是「增强」。这说明 V3 的定位不是结构创新,而是把 V2 验证过的结构做大 + 把训练工程做扎实",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-v3-vs-v2-diff.tree.html",
+    "viewBox": [1080, 620]
+  },
+  "layout": { "direction": "right", "gapX": 44, "gapY": 28, "nodeW": 196, "nodeMaxW": 250 },
+  "nodes": [
+    { "id": "root", "label": "V2 → V3 的五处差异", "sublabel": "236B/21B → 671B/37B" },
+
+    { "id": "attn", "parent": "root", "label": "注意力:同", "sublabel": "MLA d_c=512 / d_h^R=64,一行没改" },
+    { "id": "ffn", "parent": "root", "label": "FFN:更大更细", "sublabel": "2 共享+160 路由 top-6 → 1 共享+256 路由 top-8" },
+    { "id": "route", "parent": "root", "label": "路由:换打分函数", "sublabel": "softmax 不归一化 ×16 → sigmoid 归一化 ×2.5" },
+    { "id": "balance", "parent": "root", "label": "均衡:换机制", "sublabel": "纯 aux loss → aux-loss-free bias + 极小兜底" },
+    { "id": "train", "parent": "root", "label": "训练:加目标与精度", "sublabel": "+ MTP 预测额外 1 token;BF16 → FP8" },
+
+    { "id": "expert", "parent": "ffn", "label": "每专家 inter=2048", "sublabel": "更细的粒度 → 更强专门化" },
+    { "id": "act", "parent": "ffn", "label": "激活 21B → 37B", "sublabel": "总参 236B → 671B" },
+    { "id": "bias", "parent": "balance", "label": "b_i 只进选择", "sublabel": "不参与 gating 值,不扰动梯度" },
+    { "id": "mtp", "parent": "train", "label": "顺序预测,非并行头", "sublabel": "共享 embedding 与 output head" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "一句话记住这次代际升级",
+      "items": [
+        "结构省资源的活 V2 已经干完(MLA 省显存 + MoE 省算力)",
+        "V3 转向「训练质量与效率」:aux-loss-free 卸掉均衡的负作用、MTP 强化信号、FP8 压成本",
+        "所以 V3 是「规模化 + 训练工程成熟化」一代,不是结构革命"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "最容易被忽略的一处:FFN 变小了",
+      "items": [
+        "V2 每专家 1536,V3 每专家 2048 —— 单看是变大",
+        "但专家数 160 → 256,dense FFN 是 12288(V2)/ 18432(V3)",
+        "相对比例从 0.125 降到约 0.111,「更细」指的是比例更小、数量更多"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "沿用的部分为什么值得强调",
+      "items": [
+        "MLA 的 576 维 KV cache 已在 V2 验证过 57× 压缩",
+        "V3 没有动机改它 —— 长上下文瓶颈仍由它承担",
+        "V3.2 才在它上面加 DSA 稀疏注意力破 O(n²)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "数字账",
+      "items": [
+        "训练 tokens 8.1T → 14.8T;上下文 128K → 128K(YaRN 同配置)",
+        "词表 102400 → 129280(Byte-level BPE)",
+        "2.788M H800 GPU 小时 ≈ $5.576M(@ $2/GPU·h)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "OCR 两代对照:换掉的是「语义塔」,不是解码器",
+    "subtitle": "解码器两代完全相同(DeepSeek3B-MoE-A570M,64 专家 top-6 + 2 共享);差异全在 encoder:CLIP-L + SAM-B → Qwen2-0.5B + SAM-B",
+    "locale": "zh-CN",
+    "output": "diagrams/dv-ocr-two-gen.tree.html"
+  },
+  "layout": {
+    "direction": "right",
+    "nodeW": 215,
+    "gapX": 28,
+    "gapY": 40
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "视觉压缩两代",
+      "sublabel": "同一范式:大编码器 → 小 MoE 解码器"
+    },
+    {
+      "id": "v1",
+      "label": "DeepSeek-OCR(2025-10)",
+      "parent": "root",
+      "sublabel": "命题:图 = 文本的高压缩载体"
+    },
+    {
+      "id": "v1_enc",
+      "label": "DeepEncoder = CLIP-L + SAM-B",
+      "parent": "v1",
+      "sublabel": "input_dim 2048,linear 投影"
+    },
+    {
+      "id": "v1_order",
+      "label": "token 顺序:光栅",
+      "parent": "v1",
+      "sublabel": "左上→右下,配固定位置编码"
+    },
+    {
+      "id": "v1_res",
+      "label": "分辨率:1024² 单档",
+      "parent": "v1",
+      "sublabel": "不分块"
+    },
+    {
+      "id": "v1_val",
+      "label": "价值:100 token 超 256 token 方案",
+      "parent": "v1",
+      "sublabel": "压缩比 <10× 仍 97% 精度"
+    },
+    {
+      "id": "v2",
+      "label": "DeepSeek-OCR-2(2026-01)",
+      "parent": "root",
+      "sublabel": "命题:按语义重排 token"
+    },
+    {
+      "id": "v2_enc",
+      "label": "DeepEncoder V2 = Qwen2-0.5B + SAM-B",
+      "parent": "v2",
+      "sublabel": "dim 896,input_dim 从 2048 降下来"
+    },
+    {
+      "id": "v2_order",
+      "label": "token 顺序:因果重排",
+      "parent": "v2",
+      "sublabel": "先标题、再正文块、再图表"
+    },
+    {
+      "id": "v2_res",
+      "label": "分辨率:(0-6)×768² + 1×1024²",
+      "parent": "v2",
+      "sublabel": "(0-6)×144 + 256 个 token"
+    },
+    {
+      "id": "v2_val",
+      "label": "野心:两级 1D 因果≈2D 理解",
+      "parent": "v2",
+      "sublabel": "成立则不必设计 2D 注意力"
+    },
+    {
+      "id": "same",
+      "label": "两代共用",
+      "parent": "root",
+      "sublabel": "这层不变,说明范式已稳定"
+    },
+    {
+      "id": "same_dec",
+      "label": "解码器 3B-MoE-A570M",
+      "parent": "same",
+      "sublabel": "64 专家 top-6 + 2 共享,use_mla=false"
+    },
+    {
+      "id": "same_proj",
+      "label": "linear 投影到 1280",
+      "parent": "same",
+      "sublabel": "n_embed 都是 1280"
+    },
+    {
+      "id": "same_speed",
+      "label": "PDF 并发速度持平(on-par)",
+      "parent": "same",
+      "sublabel": "README 明示,二代的改动不加开销"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三句话讲清演进",
+      "items": [
+        "「压缩多少」→「按什么顺序解压」:一代解决压多狠,二代解决顺序对不对",
+        "「CLIP 语义」→「Qwen2 因果」:从图文对齐升级到顺序推理",
+        "「固定 1024²」→「动态分块」:同 VL2 的分块思路,但服务于重排而非语义"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么换语义塔就够",
+      "items": [
+        "细节塔 SAM-B 两代都没动 —— 它负责「看清字」,与顺序无关",
+        "CLIP 是图文对齐模型,没有因果结构,无法决定「先读哪」",
+        "Qwen2-0.5B 是因果 LM,天然能给出「下一个该看哪」的顺序"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "二代真正想验证的事",
+      "items": [
+        "「2D 图像理解能否用两级级联的 1D 因果推理达成」",
+        "若成立,影响面远大于 OCR —— 所有 VLM 都可省掉 2D 注意力设计",
+        "所以读这篇要分清:工程收益(顺序对了)与范式命题(2D 可分解)"
+      ]
+    }
+  ]
+}

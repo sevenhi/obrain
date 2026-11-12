@@ -1,0 +1,250 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "mHC 的成本账:未融合 21C 读,融合后 5C",
+    "subtitle": "HC 的 FLOPs 几乎为零(n=4 ≪ C=2560),成本全在访存:每个残差层要读写 n 条流 + 三组系数;把 H_post / H_res 的应用融进残差合并,读从 (3n+1)C 降到 (n+1)C",
+    "locale": "zh-CN",
+    "output": "diagrams/di-mhc-io-traffic.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "unfused",
+      "label": "未融合:每一步各自一趟 HBM"
+    },
+    {
+      "id": "cost",
+      "label": "代价外溢"
+    },
+    {
+      "id": "fused",
+      "label": "融合后:F_post,res 一个 kernel"
+    }
+  ],
+  "phases": [
+    {
+      "id": "p1",
+      "label": "读入",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "p2",
+      "label": "系数与混合",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "p3",
+      "label": "融合回收",
+      "fromCol": 4,
+      "toCol": 4,
+      "variant": "emphasis"
+    },
+    {
+      "id": "p4",
+      "label": "新残差流",
+      "fromCol": 5,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "x",
+    "pre",
+    "post",
+    "res",
+    "coef",
+    "fused",
+    "out"
+  ],
+  "nodes": [
+    {
+      "id": "x",
+      "lane": "unfused",
+      "col": 0,
+      "type": "frontend",
+      "label": "层输入 + n 条残差流",
+      "sublabel": "标准残差只读 2C、写 1C",
+      "width": 132
+    },
+    {
+      "id": "pre",
+      "lane": "unfused",
+      "col": 1,
+      "type": "backend",
+      "label": "H_pre 应用",
+      "sublabel": "聚成 C 维层输入",
+      "width": 132
+    },
+    {
+      "id": "post",
+      "lane": "unfused",
+      "col": 2,
+      "type": "backend",
+      "label": "H_post 应用",
+      "sublabel": "写回 n 条流",
+      "width": 132
+    },
+    {
+      "id": "res",
+      "lane": "unfused",
+      "col": 3,
+      "type": "security",
+      "label": "H_res 流间混合",
+      "sublabel": "n×n 乘 n 条流",
+      "width": 132
+    },
+    {
+      "id": "coef",
+      "lane": "unfused",
+      "col": 4,
+      "type": "database",
+      "label": "系数生成 + Sinkhorn",
+      "sublabel": "出 n²+2n 个系数",
+      "width": 132
+    },
+    {
+      "id": "fused",
+      "lane": "fused",
+      "col": 5,
+      "type": "backend",
+      "label": "F_post,res 融合",
+      "sublabel": "应用+合并一次做完",
+      "width": 132
+    },
+    {
+      "id": "out",
+      "lane": "fused",
+      "col": 5,
+      "type": "external",
+      "label": "新 n 条残差流",
+      "sublabel": "读 5C / 写 4C(n=4)",
+      "width": 132,
+      "yOffset": 104
+    },
+    {
+      "id": "ckpt",
+      "lane": "cost",
+      "col": 3,
+      "type": "security",
+      "label": "中间激活涨 n 倍",
+      "sublabel": "要 checkpoint",
+      "width": 132,
+      "yOffset": 104
+    },
+    {
+      "id": "pp",
+      "lane": "cost",
+      "col": 4,
+      "type": "cloud",
+      "label": "PP 通信量 ~n 倍",
+      "sublabel": "残差流宽 n 倍",
+      "width": 132,
+      "yOffset": 104
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "x",
+      "to": "pre",
+      "variant": "emphasis",
+      "label": "读 n 条流,首次放大"
+    },
+    {
+      "id": "e2",
+      "from": "pre",
+      "to": "post",
+      "variant": "emphasis",
+      "label": "过完 F 再写回"
+    },
+    {
+      "id": "e3",
+      "from": "post",
+      "to": "res",
+      "variant": "emphasis",
+      "label": "写回后立刻要混合"
+    },
+    {
+      "id": "e4",
+      "from": "res",
+      "to": "coef",
+      "variant": "emphasis",
+      "label": "展平求新一轮系数"
+    },
+    {
+      "id": "e5",
+      "from": "coef",
+      "to": "fused",
+      "variant": "emphasis",
+      "label": "把三步并成一次"
+    },
+    {
+      "id": "e6",
+      "from": "fused",
+      "to": "out",
+      "variant": "emphasis",
+      "label": "只搬一遍"
+    },
+    {
+      "id": "e7",
+      "from": "res",
+      "to": "ckpt",
+      "variant": "dashed",
+      "label": "反向要留中间量"
+    },
+    {
+      "id": "e8",
+      "from": "coef",
+      "to": "pp",
+      "variant": "dashed",
+      "label": "跨 stage 多传 n 倍"
+    },
+    {
+      "id": "e9",
+      "from": "post",
+      "to": "fused",
+      "variant": "security",
+      "label": "融合点:应用与合并同址"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "账单公式(论文 Tab.2,每 token 每残差层)",
+      "items": [
+        "标准残差(残差合并):读 2C、写 C",
+        "HC 未融合:读 (5n+1)C+n²+2n、写 (3n+1)C+n²+2n",
+        "代入 n=4:读 21C+24、写 13C+24 → 约 10.5× 读、13× 写"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "融合回收多少",
+      "items": [
+        "H_post + H_res 的应用与残差合并融成一个 kernel(F_post,res)",
+        "读 (3n+1)C → (n+1)C;写 3nC → nC",
+        "n=4:读 13C→5C、写 12C→4C——就是 §4 那个 kernel 的 WG1–WG3"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "另外两笔账",
+      "items": [
+        "显存:pre/post/res 参数要留中间激活给反向 → 必须上 checkpoint",
+        "通信:流水并行下残差流宽 n 倍,PP 通信量 ~n 倍,气泡变大",
+        "净账:n=4 大规模训练仍只增加 6.7% 时间"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "所以它是带宽题",
+      "items": [
+        "昇腾 prenorm GEMM:M=8192 时只有 82 TFLOPS,带宽却到 3.4 TB/s(接近 HBM 上限)",
+        "优化全部围绕「少搬一遍」,不是「少算一次」",
+        "⚠ 昇腾口径含 padding/读写合计,别按裸 M 反推带宽"
+      ]
+    }
+  ]
+}

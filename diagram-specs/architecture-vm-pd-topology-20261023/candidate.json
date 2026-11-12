@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "PD 分离的基本拓扑:两条资源画像完全不同的路,中间过 KV",
+    "subtitle": "一条请求先在 prefill 实例跑完 prompt 前向,产出的不是 logits 也不是权重,而是 KV cache;它经传输层送到 decode 实例,decode 从这里接手逐 token 生成并直接对客户端流式返回",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-pd-topology.architecture.html",
+    "viewBox": [
+      1080,
+      560
+    ]
+  },
+  "components": [
+    {
+      "id": "client",
+      "type": "external",
+      "label": "客户端",
+      "sublabel": "流式接收 token",
+      "pos": [
+        40,
+        60
+      ],
+      "size": [
+        200,
+        62
+      ]
+    },
+    {
+      "id": "router",
+      "type": "frontend",
+      "label": "路由 / 网关",
+      "sublabel": "选池 + 保证 prefill/decode 配对",
+      "pos": [
+        330,
+        60
+      ],
+      "size": [
+        300,
+        62
+      ]
+    },
+    {
+      "id": "pf",
+      "type": "backend",
+      "label": "Prefill 实例(compute-bound)",
+      "sublabel": "大矩阵乘,算术强度高;瓶颈 GPU FLOPS",
+      "pos": [
+        40,
+        190
+      ],
+      "size": [
+        300,
+        76
+      ]
+    },
+    {
+      "id": "pf_out",
+      "type": "database",
+      "label": "产出:KV block + 首 token",
+      "sublabel": "不是 logits、不是权重",
+      "pos": [
+        40,
+        320
+      ],
+      "size": [
+        300,
+        68
+      ]
+    },
+    {
+      "id": "xfer",
+      "type": "messagebus",
+      "label": "KV 传输层",
+      "sublabel": "NVLink / RDMA / NIXL · LMCache · Mooncake",
+      "pos": [
+        390,
+        320
+      ],
+      "size": [
+        300,
+        68
+      ]
+    },
+    {
+      "id": "dc_in",
+      "type": "database",
+      "label": "接收端注册 slot 映射",
+      "sublabel": "写进本地 block table",
+      "pos": [
+        740,
+        320
+      ],
+      "size": [
+        300,
+        68
+      ]
+    },
+    {
+      "id": "dc",
+      "type": "backend",
+      "label": "Decode 实例(memory-bound)",
+      "sublabel": "每步 1 token,权重与 KV 反复读;瓶颈 HBM 带宽",
+      "pos": [
+        740,
+        190
+      ],
+      "size": [
+        300,
+        76
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "算力池:高 FLOPS 卡,prompt 长就加实例",
+      "wraps": [
+        "pf",
+        "pf_out"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "带宽池:高 HBM 带宽 / 大显存,输出长就加实例",
+      "wraps": [
+        "dc",
+        "dc_in"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "client",
+      "to": "router",
+      "label": "请求进来",
+      "labelAt": [
+        285,
+        92
+      ]
+    },
+    {
+      "id": "c2",
+      "from": "router",
+      "to": "pf",
+      "label": "长 prompt 送回 prefill 池",
+      "variant": "emphasis",
+      "labelAt": [
+        190,
+        168
+      ],
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "c3",
+      "from": "pf",
+      "to": "pf_out",
+      "label": "跑完 prompt 前向",
+      "labelAt": [
+        190,
+        300
+      ]
+    },
+    {
+      "id": "c4",
+      "from": "pf_out",
+      "to": "xfer",
+      "label": "按 block/slot 打包",
+      "variant": "emphasis",
+      "labelAt": [
+        365,
+        404
+      ]
+    },
+    {
+      "id": "c5",
+      "from": "xfer",
+      "to": "dc_in",
+      "label": "走最短互联送达",
+      "variant": "emphasis",
+      "labelAt": [
+        715,
+        404
+      ]
+    },
+    {
+      "id": "c6",
+      "from": "dc_in",
+      "to": "dc",
+      "label": "注册进本地 block table",
+      "labelAt": [
+        950,
+        300
+      ],
+      "fromSide": "right",
+      "toSide": "right"
+    },
+    {
+      "id": "c7",
+      "from": "router",
+      "to": "dc",
+      "label": "同时向 decode 池预留位置",
+      "variant": "dashed",
+      "labelAt": [
+        700,
+        148
+      ],
+      "fromSide": "right",
+      "toSide": "left"
+    },
+    {
+      "id": "c8",
+      "from": "dc",
+      "to": "client",
+      "label": "首 token 起不断流地流式返回",
+      "variant": "dashed",
+      "labelAt": [
+        500,
+        26
+      ],
+      "fromSide": "top",
+      "toSide": "top",
+      "via": [
+        [
+          890,
+          26
+        ],
+        [
+          140,
+          26
+        ]
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两条路的指标完全对不上",
+      "items": [
+        "TTFT(Time To First Token):几乎完全由 prefill 决定",
+        "TPOT / ITL(Time Per Output Token):几乎完全由 decode 决定",
+        "同实例混跑时互相干扰:长 prompt 的 prefill 拖慢同批 decode,TTFT 尖刺反污染 TPOT"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "软融合 vs 硬分离(可叠加,不是替代)",
+      "items": [
+        "Chunked prefill(软融合):长 prefill 切块混进同一 batch;解耦弱,vLLM V1 默认策略",
+        "PD 分离(硬分离):两池物理拆开,KV 过传输层;算力/带宽/调度各自独立",
+        "PD 的 prefill 实例内部仍可 chunked,decode 实例内部仍是 continuous batching"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "三个方案的侧重不同",
+      "items": [
+        "DistServe:按 SLO 做资源放配,主推 goodput(双 SLO 同时达标的请求比例)",
+        "Splitwise:phase splitting 落到共享集群,甚至同 GPU 按时间片切",
+        "Mooncake:把 KVCache 当一等公民,围绕 KV 池做全局调度 + 分层存储(HBM/CPU/SSD)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "五个失败点按五步看",
+      "items": [
+        "路由没预留 → prefill 超时 → 传输慢/断 → 接收缓冲满 → slot 映射不一致",
+        "任一步出问题都要能降级回单体实例(不是全局失败)",
+        "监控要加「配对成功率」与「路由降级率」,而不是只看 HTTP 200"
+      ]
+    }
+  ]
+}

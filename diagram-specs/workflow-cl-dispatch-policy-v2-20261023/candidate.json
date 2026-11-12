@@ -1,0 +1,83 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Collective:时间微内核的「节拍」怎么写进 policy 名字里",
+    "subtitle": "CollectiveMma 模板参数第一项就是 DispatchPolicy,policy 名字直接编码流水结构。看到 Sm90TmaGmmaWarpSpecialized 就知道是 TMA n-buffer + warp-specialized;自定义 mainloop 的标准姿势就是写一个新 policy struct",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-collective-dispatch-policy.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_sm70", "label": "Volta:MainloopSm70TwoStage" },
+    { "id": "ln_sm80", "label": "Ampere:MainloopSm80CpAsyncUnpredicated" },
+    { "id": "ln_sm90", "label": "Hopper:MainloopSm90TmaGmmaWarpSpecialized" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "搬运用什么同步", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "谁来编排节拍", "fromCol": 2, "toCol": 2, "variant": "emphasis" }
+  ],
+  "mainPath": ["s70", "s70b", "s70c"],
+  "nodes": [
+    { "id": "s70", "lane": "ln_sm70", "col": 0, "type": "external", "label": "两级流水", "sublabel": "1 级 smem + 1 级 rmem", "icon": "start", "width": 145 },
+    { "id": "s70b", "lane": "ln_sm70", "col": 1, "type": "security", "label": "谓词化 load", "sublabel": "靠 if 遮住未就绪数据", "width": 150 },
+    { "id": "s70c", "lane": "ln_sm70", "col": 2, "type": "backend", "label": "单线程编排", "sublabel": "所有 warp 同一节拍", "width": 150 },
+
+    { "id": "s80", "lane": "ln_sm80", "col": 0, "type": "external", "label": "cp.async 进 smem", "sublabel": "异步拷贝指令", "icon": "start", "width": 155 },
+    { "id": "s80b", "lane": "ln_sm80", "col": 1, "type": "backend", "label": "smem n-buffer", "sublabel": "多缓冲 + 寄存器流水", "width": 150 },
+    { "id": "s80c", "lane": "ln_sm80", "col": 2, "type": "security", "label": "名字里的 Unpredicated", "sublabel": "谓词退出历史", "width": 170 },
+
+    { "id": "s90", "lane": "ln_sm90", "col": 0, "type": "external", "label": "TMA n-buffer", "sublabel": "批量搬运,不占线程", "icon": "start", "width": 150 },
+    { "id": "s90b", "lane": "ln_sm90", "col": 1, "type": "backend", "label": "GMMA + mbarrier", "sublabel": "wgmma 本身异步", "width": 155 },
+    { "id": "s90c", "lane": "ln_sm90", "col": 2, "type": "cloud", "label": "warp-specialized", "sublabel": "producer / consumer 分工", "width": 165 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "s70", "to": "s70b", "label": "同步靠条件判断", "role": "main" },
+    { "id": "e2", "from": "s70b", "to": "s70c", "label": "所以只能同步", "role": "main" },
+    { "id": "e3", "from": "s70c", "to": "s80", "label": "换异步拷贝指令", "role": "branch" },
+    { "id": "e4", "from": "s80", "to": "s80b", "label": "多缓冲掩延迟", "role": "main" },
+    { "id": "e5", "from": "s80b", "to": "s80c", "label": "谓词不再需要", "role": "main" },
+    { "id": "e6", "from": "s80c", "to": "s90", "label": "再把搬运交给 TMA", "role": "branch" },
+    { "id": "e7", "from": "s90", "to": "s90b", "label": "计算侧也异步化", "role": "main" },
+    { "id": "e8", "from": "s90b", "to": "s90c", "label": "于是可以分工", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三个 policy 名字逐字拆(§2.4)",
+      "items": [
+        "MainloopSm70TwoStage:2 级流水,1 级 smem + 1 级 rmem,谓词化 gmem load",
+        "MainloopSm80CpAsyncUnpredicated:smem n-buffer(cp.async)+ 寄存器流水,不再需要谓词",
+        "MainloopSm90TmaGmmaWarpSpecialized:TMA n-buffer + Hopper GMMA,warp-specialized 动态调度"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Collective 的约束与自由度",
+      "items": [
+        "每个 collective 只算一个(可部分的)输出 tile —— 这是它和 kernel 的分界线",
+        "warp-specialized、producer/consumer 异步全部封在 policy 里",
+        "外层 schedule(split-K/stream-K、tile swizzling for L2、persistent)通过 dispatch policy 组合"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "自定义 kernel 的标准姿势(实践要点 2)",
+      "items": [
+        "写一个新 policy struct(Stages / ClusterShape / ArchTag / Schedule 四件套)",
+        "再特化 CollectiveMma —— 原文说法 plug and play with dispatch policies",
+        "好处:自定义 mainloop 复用官方 tile scheduler / stream-K;自定义 schedule 复用官方 mainloop",
+        "别绕过它直接改 GemmUniversal"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Hopper persistent 形态(原文伪码)",
+      "items": [
+        "producer warpgroup 跑 collective_mainloop.dma()(TMA 进)",
+        "consumer warpgroup 跑 collective_mainloop.mma()(主循环 + epilogue)",
+        "各自 scheduler.advance_to_next_work() 领 tile",
+        "TMA / TensorCore / Epilogue 三种异步机器在同一条时间轴上流水 —— 这正是 BLIS 内层 microkernel 无法泛化的场景"
+      ]
+    }
+  ]
+}

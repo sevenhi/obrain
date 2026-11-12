@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "四代方法的统一视角:所有方法都在改两个函数",
+    "subtitle": "旋转角 = g(m) · h(θ_d)。PI 改 g 不动 h;NTK 改 h 不动 g;YaRN 按波长分段改 h;LongRoPE 干脆把 h 逐维搜出来",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-ctx-unified-map.architecture.html"
+  },
+  "layout": { "mode": "grid", "cols": 5, "gapX": 54, "gapY": 62, "cellW": 176, "cellH": 104 },
+  "components": [
+    {
+      "id": "formula",
+      "type": "cloud",
+      "label": "g(m) · h(θ_d)",
+      "sublabel": "位置映射 × 频率缩放",
+      "icon": "cloud",
+      "size": [176, 104],
+      "row": 1,
+      "col": 2
+    },
+    {
+      "id": "g_only",
+      "type": "frontend",
+      "label": "只改 g:PI",
+      "sublabel": "m′ = m·L/L′",
+      "size": [176, 104],
+      "row": 0,
+      "col": 3
+    },
+    {
+      "id": "h_only",
+      "type": "backend",
+      "label": "只改 h:NTK-aware",
+      "sublabel": "调大 base,免微调",
+      "size": [176, 104],
+      "row": 0,
+      "col": 4
+    },
+    {
+      "id": "h_part",
+      "type": "backend",
+      "label": "h 分段:YaRN",
+      "sublabel": "按波长 r_d 分三档",
+      "size": [176, 104],
+      "row": 1,
+      "col": 3
+    },
+    {
+      "id": "h_search",
+      "type": "backend",
+      "label": "h 逐维搜:LongRoPE",
+      "sublabel": "进化搜索取代解析式",
+      "size": [176, 104],
+      "row": 1,
+      "col": 4
+    },
+    {
+      "id": "pre",
+      "type": "security",
+      "label": "改预训练:Llama 3",
+      "sublabel": "θ 10k→500k",
+      "icon": "security",
+      "size": [176, 104],
+      "row": 2,
+      "col": 4
+    },
+    {
+      "id": "pi_cost",
+      "type": "external",
+      "label": "代价:高频被压",
+      "sublabel": "局部分辨率受损",
+      "icon": "failure",
+      "size": [176, 104],
+      "row": 0,
+      "col": 2
+    },
+    {
+      "id": "yarn_temp",
+      "type": "cloud",
+      "label": "YaRN 附加:温度 √t",
+      "sublabel": "t ≈ 0.1·ln(s)+1",
+      "icon": "clock",
+      "size": [176, 104],
+      "row": 0,
+      "col": 1
+    },
+    {
+      "id": "long_pre",
+      "type": "external",
+      "label": "LongRoPE 前置不插值",
+      "sublabel": "前 n̂ 个 token 保原样",
+      "icon": "neutral",
+      "size": [176, 104],
+      "row": 2,
+      "col": 3
+    },
+    {
+      "id": "axis",
+      "type": "frontend",
+      "label": "改动越往右越细",
+      "sublabel": "一刀切 → 分段 → 搜索 → 重训",
+      "icon": "start",
+      "size": [176, 104],
+      "row": 1,
+      "col": 0
+    }
+  ],
+  "connections": [
+    { "from": "axis", "to": "formula", "label": "先看统一记号" },
+    { "from": "formula", "to": "g_only", "label": "分支一:动位置" },
+    { "from": "formula", "to": "h_only", "label": "分支二:动频率" },
+    { "from": "h_only", "to": "h_part", "label": "细分:按波长区别对待" },
+    { "from": "h_part", "to": "h_search", "label": "再细:不信解析式" },
+    { "from": "g_only", "to": "pi_cost", "label": "代价就在这" },
+    { "from": "h_part", "to": "yarn_temp", "label": "补熵:放大 logit", "variant": "dashed" },
+    { "from": "h_search", "to": "long_pre", "label": "加两个非均匀性", "variant": "dashed" },
+    { "from": "h_search", "to": "pre", "label": "有算力就改预训练", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "一句话记住四代差异",
+      "items": [
+        "PI:一刀切,所有维均匀压缩,高频维被过度压缩",
+        "NTK/YaRN:高频维管近距离、低频维管远距离,应区别对待",
+        "LongRoPE:不信任何解析公式,逐维搜出来"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "「改 base」其实是训练时版的 NTK",
+      "items": [
+        "Llama 3 把 θ 从 10000 提到 500000,最长波长 62.8k → ~3.1M",
+        "与其事后插值,不如预训练就让低频维见过足够相位",
+        "代价是要真烧算力:~800B tokens 长上下文档(15T 的 ~5%)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "YaRN 的温度补偿为什么必要",
+      "items": [
+        "插值拉长上下文后 softmax 分布熵下降,输出过度尖锐",
+        "做法是把 q/k 的 RoPE 输出乘 √t 放大 logit",
+        "s=16 时 √t ≈ 1.13,即 logit 放大约 13%,且不用改 attention 代码"
+      ]
+    }
+  ]
+}

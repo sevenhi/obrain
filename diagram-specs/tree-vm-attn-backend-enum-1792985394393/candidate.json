@@ -1,0 +1,93 @@
+{
+ "schema_version": 1,
+ "diagram_type": "tree",
+ "meta": {
+  "title": "backend 枚举分族:通用 / MLA / 平台专用",
+  "subtitle": "没有 TRT-LLM backend(它只在 FlashInfer 内作为内核路径)",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-attn-backend-enum.tree.html"
+ },
+ "nodes": [
+  {
+   "id": "root",
+   "label": "AttentionBackendEnum",
+   "sublabel": "registry.py 全枚举"
+  },
+  {
+   "id": "gen",
+   "label": "通用 dense",
+   "parent": "root",
+   "sublabel": "FLASH_ATTN/TRITON_ATTN/FLASHINFER/FLEX_ATTENTION"
+  },
+  {
+   "id": "mla",
+   "label": "MLA 族",
+   "parent": "root",
+   "sublabel": "DeepSeek MLA/sparse MLA"
+  },
+  {
+   "id": "rocm",
+   "label": "ROCM 系列",
+   "parent": "root",
+   "sublabel": "AMD aiter"
+  },
+  {
+   "id": "other",
+   "label": "平台/量化专用",
+   "parent": "root",
+   "sublabel": "XPU/CPU/TURBOQUANT/HPC_ATTN"
+  },
+  {
+   "id": "fa",
+   "label": "FLASH_ATTN",
+   "parent": "gen",
+   "sublabel": "FA2/3/4,通用 dense 主力"
+  },
+  {
+   "id": "fi",
+   "label": "FLASHINFER",
+   "parent": "gen",
+   "sublabel": "SM100 非 MLA 时优先"
+  },
+  {
+   "id": "fm",
+   "label": "FLASHMLA",
+   "parent": "mla",
+   "sublabel": "NVIDIA+昇腾双平台"
+  },
+  {
+   "id": "fmc",
+   "label": "FLASHINFER_MLA",
+   "parent": "mla",
+   "sublabel": "FP8 KV 优先"
+  },
+  {
+   "id": "cm",
+   "label": "CUTLASS_MLA",
+   "parent": "mla",
+   "sublabel": "CUTLASS 实现"
+  },
+  {
+   "id": "dsv4",
+   "label": "*_DSV4 稀疏",
+   "parent": "mla",
+   "sublabel": "V4 模型驱动 backend"
+  },
+  {
+   "id": "cus",
+   "label": "CUSTOM",
+   "parent": "root",
+   "sublabel": "占位,须 register_backend()"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "rose",
+   "title": "别写错",
+   "items": [
+    "没有 TRT-LLM backend",
+    "TRT-LLM 是独立推理引擎,只在 FlashInfer 内作为内核路径 use_trtllm_attention"
+   ]
+  }
+ ]
+}

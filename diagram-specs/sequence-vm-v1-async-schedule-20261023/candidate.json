@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "异步调度:GPU 跑 batch N 时,CPU 已经在排 batch N+1",
+    "subtitle": "左边是不启用异步的 step()(core.py:597):下发后立刻 future.result() 等本批;右边是 step_with_batch_queue()(core.py:638):batch queue 里先攒着,等的是更早一批的结果,调度延迟被藏进 GPU 计算",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-v1-async-schedule.sequence.html",
+    "column_fit": "spread",
+    "viewBox": [
+      1080,
+      690
+    ]
+  },
+  "participants": [
+    {
+      "id": "sched",
+      "type": "backend",
+      "label": "Scheduler",
+      "sublabel": "每步全量重排"
+    },
+    {
+      "id": "core",
+      "type": "frontend",
+      "label": "EngineCore",
+      "sublabel": "step() / step_with_batch_queue()"
+    },
+    {
+      "id": "exec",
+      "type": "backend",
+      "label": "Executor",
+      "sublabel": "execute_model(non_block)"
+    },
+    {
+      "id": "gpu",
+      "type": "database",
+      "label": "GPU batch queue",
+      "sublabel": "max_concurrent_batches 个批"
+    },
+    {
+      "id": "cpu",
+      "type": "security",
+      "label": "CPU 空档",
+      "sublabel": "grammar / 后处理"
+    }
+  ],
+  "segments": [
+    {
+      "from": 156,
+      "to": 296,
+      "label": "① 同步路径:一步一等地走"
+    },
+    {
+      "from": 312,
+      "to": 484,
+      "label": "② 异步路径:排下一批不等上一批"
+    },
+    {
+      "from": 500,
+      "to": 636,
+      "label": "③ CPU 空档用来干别的活"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "core",
+      "to": "sched",
+      "y": 163,
+      "label": "schedule():排本步 batch N"
+    },
+    {
+      "id": "m2",
+      "from": "sched",
+      "to": "core",
+      "y": 208,
+      "label": "SchedulerOutput(本步 token 与块)",
+      "variant": "return"
+    },
+    {
+      "id": "m3",
+      "from": "core",
+      "to": "exec",
+      "y": 253,
+      "label": "execute_model(non_block):立即返回 future",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m4",
+      "from": "exec",
+      "to": "core",
+      "y": 298,
+      "label": "future.result():立刻阻塞等 batch N 自己",
+      "variant": "security",
+      "note": "同步路径没有重叠:CPU 白等 GPU"
+    },
+    {
+      "id": "m5",
+      "from": "core",
+      "to": "sched",
+      "y": 344,
+      "label": "再 schedule():这次排 batch N+1",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m6",
+      "from": "sched",
+      "to": "exec",
+      "y": 389,
+      "label": "batch N+1 下发进队列"
+    },
+    {
+      "id": "m7",
+      "from": "exec",
+      "to": "gpu",
+      "y": 434,
+      "label": "GPU 正在跑 batch N",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m8",
+      "from": "core",
+      "to": "cpu",
+      "y": 479,
+      "label": "CPU 空档:处理 grammar / 流式后处理",
+      "variant": "dashed",
+      "note": "重叠的来源就在这条 CPU 边上"
+    },
+    {
+      "id": "m9",
+      "from": "gpu",
+      "to": "core",
+      "y": 525,
+      "label": "batch N 跑完,future 才就绪",
+      "variant": "return"
+    },
+    {
+      "id": "m10",
+      "from": "core",
+      "to": "sched",
+      "y": 570,
+      "label": "update_from_output:推进计数,完成的移出",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "异步调度不是默认开的",
+      "items": [
+        "async_scheduling 由 VllmConfig 自动裁决,多种特性组合下被强制关",
+        "可 --async-scheduling 显式打开;调试时别默认它生效",
+        "batch queue 只有 max_concurrent_batches > 1(PP>1,或显式异步时为 2)才存在"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "两条路径的行号口径",
+      "items": [
+        "core.py:597 step():排本步 batch N,等的就是这个批",
+        "core.py:638 step_with_batch_queue():用队列缓存多个已调度批",
+        "core.py:210-216:max_concurrent_batches 的裁决逻辑"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "为什么能重叠",
+      "items": [
+        "GPU 跑 batch N 期间,EngineCore 不持有 GPU,可以自由调度",
+        "调度搬进独立进程,不被 API 进程事件循环阻塞(本篇 §2 的动机)",
+        "代价:batch queue 占显存 / 状态更复杂,PP=1 且同步时并无收益"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "看吞吐的调试顺序",
+      "items": [
+        "先确认 step() 的节奏正确(schedule → 异步下发 → update)",
+        "再看 batch queue 在 GPU 忙时是否真在排队",
+        "最后才看单个 kernel 的耗时(属于 Worker 层)"
+      ]
+    }
+  ]
+}

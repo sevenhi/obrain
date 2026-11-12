@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "训练信号的选型:为什么 R1 只用规则 reward,放弃 PRM 和 MCTS",
+    "subtitle": "RL 的效果上限由 reward 决定。三条候选路线里,只有「规则判对错」能扛住 671B 规模;PRM 与 MCTS 各有硬伤,都只在限定场景有用",
+    "locale": "zh-CN",
+    "output": "diagrams/dm-r1-reward-choices.tree.html"
+  },
+  "layout": { "direction": "down", "nodeW": 210, "gapX": 22, "gapY": 48 },
+  "nodes": [
+    { "id": "root", "label": "推理 RL 的 reward 从哪来", "sublabel": "信号越便宜,规模越能上去" },
+
+    { "id": "rule", "label": "① 规则 reward(R1 选的)", "parent": "root", "sublabel": "答案对错 + 格式,零模型成本" },
+    { "id": "acc", "label": "accuracy reward", "parent": "rule", "sublabel": "数学题要求答案放进 boxed{};LeetCode 类用编译器 + 预定义测试用例" },
+    { "id": "fmt", "label": "format reward", "parent": "rule", "sublabel": "强制思考过程写在 think 标签之间" },
+    { "id": "lang", "label": "语言一致性 reward", "parent": "rule", "sublabel": "R1 阶段②新增:CoT 中目标语言词占比,直接加到 accuracy 上" },
+
+    { "id": "neurm", "label": "② 神经 reward model(明确不用)", "parent": "root", "sublabel": "结果 / 过程 RM 都在这一支" },
+    { "id": "hack", "label": "必被 reward hacking", "parent": "neurm", "sublabel": "大规模 RL 下这件事一定发生(论文 §2.2.2)" },
+    { "id": "cost", "label": "重训 RM 加流水线复杂度", "parent": "neurm", "sublabel": "RM 自己也要跟着策略分布漂移重训" },
+
+    { "id": "prm", "label": "③ PRM 过程奖励模型(被放弃)", "parent": "root", "sublabel": "论文 §7 给了三个理由" },
+    { "id": "prm1", "label": "细粒度步骤难定义", "parent": "prm", "sublabel": "通用推理的「哪一步是对的」说不清" },
+    { "id": "prm2", "label": "中间步判定不可靠", "parent": "prm", "sublabel": "模型标注不可信、人工标注不可扩展" },
+    { "id": "prm3", "label": "进不了 RL 主循环", "parent": "prm", "sublabel": "只适合 top-N 重排 / 引导搜索" },
+
+    { "id": "mcts", "label": "MCTS(没跑通)", "parent": "root", "sublabel": "蒙特卡洛树搜索,AlphaZero 路线" },
+    { "id": "mcts1", "label": "搜索空间指数级爆炸", "parent": "mcts", "sublabel": "token 生成远大于棋类走子" },
+    { "id": "mcts2", "label": "细粒度 value model 难训", "parent": "mcts", "sublabel": "没有可靠估值就无法迭代自举" },
+
+    { "id": "prov", "label": "但 Prover 的 RMaxTS 成功了", "parent": "root", "sublabel": "场景不同:形式化定理证明有编译器反馈,不是通用推理自举" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "R1 的赌注(§1)",
+      "items": [
+        "只给「最终答案对/错」这种便宜的规则信号,让模型自己在海量试错中发明推理策略",
+        "类比:不给学生看例题、只批改最终答案,学生自己摸索出解题套路 —— 前提是试错次数(RL 步数)足够多",
+        "R1 论文最有影响力的观察:这套做法真的能自发涌现反思与长 CoT"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "为什么 SFT 路线不行(§1 三条痛点)",
+      "items": [
+        "标注贵:高质量推理示范要人写,规模上不去",
+        "模仿有天花板:只能学到示范者会的套路,学不出示范里没有的策略",
+        "过程难定义:「哪一步推理是对的」很难细粒度标注",
+        "第三条正是 PRM 被放弃的同源原因"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "R1-Zero 涌现出来的三件事(§2.2.4)",
+      "items": [
+        "思考时间自发变长:平均响应长度持续增长,自己学会「多想一会儿」",
+        "反思:自发回头重估之前的步骤、换解法",
+        "aha moment:中间版本在 CoT 里写出 Wait, wait. Wait. That's an aha moment I can flag here.(论文 Table 3)",
+        "没人教它这么做 —— 是 RL 激励出的元认知行为"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "纯规则 reward 的代价",
+      "items": [
+        "只管「对」不管「好看」:无穷重复、可读性差、语言混杂(中英夹杂)",
+        "这正是必须加冷启动 SFT 与语言一致性 reward 的原因",
+        "语言一致性 reward 有代价:消融显示略降性能但更可读 —— 是一次显式取舍"
+      ]
+    }
+  ]
+}

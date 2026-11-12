@@ -1,0 +1,196 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Grouped 调度:一个 launch 服务多个 problem",
+    "subtitle": "batch 里挤着很多小 GEMM 时,每个 problem 单独 launch 的固定开销会吃掉大部分时间。Grouped 把它们的 tile 排成一条队列,threadblock 驻留循环领活 —— 关键优化是先把 problem 按大小排序",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-grouped-scheduler.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_problem",
+      "label": "多个 problem 的 tile"
+    },
+    {
+      "id": "ln_loop",
+      "label": "persistent 领活循环"
+    },
+    {
+      "id": "ln_sort",
+      "label": "排序优化"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "合成一条队列",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "怎么减少尾部空闲",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "queue",
+    "few",
+    "loop"
+  ],
+  "nodes": [
+    {
+      "id": "queue",
+      "lane": "ln_problem",
+      "col": 0,
+      "type": "frontend",
+      "label": "多个 GEMM 的 tile 排队",
+      "sublabel": "多个 GEMM / SYR2K 一起",
+      "icon": "start",
+      "width": 195
+    },
+    {
+      "id": "few",
+      "lane": "ln_problem",
+      "col": 1,
+      "type": "backend",
+      "label": "block 数 < tile 总数",
+      "sublabel": "一个 launch 就够",
+      "width": 175
+    },
+    {
+      "id": "loop",
+      "lane": "ln_loop",
+      "col": 1,
+      "type": "backend",
+      "label": "next_tile 领下一个",
+      "sublabel": "ProblemVisitor 查 scheduler",
+      "width": 190
+    },
+    {
+      "id": "adv",
+      "lane": "ln_loop",
+      "col": 2,
+      "type": "backend",
+      "label": "advance(gridDim.x)",
+      "sublabel": "通知当前 tile 已算完",
+      "width": 190
+    },
+    {
+      "id": "save",
+      "lane": "ln_sort",
+      "col": 0,
+      "type": "security",
+      "label": "省掉多次 launch",
+      "sublabel": "小 problem 场景利用率大涨",
+      "icon": "success",
+      "width": 195
+    },
+    {
+      "id": "rr",
+      "lane": "ln_sort",
+      "col": 1,
+      "type": "database",
+      "label": "round-robin 分派",
+      "sublabel": "group 内各 problem 轮流",
+      "width": 185
+    },
+    {
+      "id": "sorting",
+      "lane": "ln_sort",
+      "col": 2,
+      "type": "database",
+      "label": "按 size 排序",
+      "sublabel": "大 problem 先领,小的收尾",
+      "icon": "decision",
+      "width": 190
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "queue",
+      "to": "few",
+      "label": "汇成一个 launch",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "few",
+      "to": "loop",
+      "label": "驻留循环",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "loop",
+      "to": "adv",
+      "label": "算完再要下一个",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "adv",
+      "to": "save",
+      "label": "整体收益",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "loop",
+      "to": "rr",
+      "label": "分派方式",
+      "role": "branch"
+    },
+    {
+      "id": "e6",
+      "from": "rr",
+      "to": "sorting",
+      "label": "再加一层排序",
+      "role": "main"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Grouped kernel 的定义(§3.3)",
+      "items": [
+        "单个 CUDA launch 里跑多个 problem(多个 GEMM / SYR2K)",
+        "通常 launch 的 threadblock 数小于 group 内所有 problem 的 tile 总数",
+        "每个 threadblock persistent 循环:查 scheduler 领下一个 tile → next_tile() / advance(gridDim.x)",
+        "目的:省掉多次 kernel launch 的开销、提高小 problem 场景的利用率"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "排序是这里最值钱的一步",
+      "items": [
+        "grouped GEMM 用 round-robin 把 group 内各 problem 的 tile 轮流分给 threadblock",
+        "Grouped Rank2K/SYR2K 用不同调度方案",
+        "先把 problem 按大小排序:大 problem 先领、小 problem 收尾,减少尾部空闲",
+        "problem 大小差异越大,排序的收益越明显"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "红线:与 Stream-K 互斥",
+      "items": [
+        "Hopper 3.x 上 grouped GEMM 和 stream-K 不能同时用(NVIDIA/cutlass issue #1941)",
+        "cooperative grouped kernel 还有 static_assert 限定只用默认调度器",
+        "别把两者组合,会编译/运行报错"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "伪代码(actual API 见 sm90_tile_scheduler_group.hpp)",
+      "items": [
+        "ProblemVisitor pv; // grouped kernel scheduler,code 里也叫 problem visitor",
+        "while (pv.next_tile()) { 算这个 tile 的 MMA + epilogue; pv.advance(gridDim.x); }",
+        "注意:方法名以头文件为准,别照伪码猜 API"
+      ]
+    }
+  ]
+}

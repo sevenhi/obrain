@@ -1,0 +1,126 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "负载形态:七种 Profile",
+  "subtitle": "一次评测 = Backend + Data + Profile + Constraint + Metrics",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-guidellm-profiles.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "verify",
+   "label": "功能验证"
+  },
+  {
+   "id": "load",
+   "label": "稳态加压"
+  },
+  {
+   "id": "cap",
+   "label": "容量规划"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "sync",
+   "lane": "verify",
+   "col": 0,
+   "type": "backend",
+   "label": "synchronous",
+   "sublabel": "一次一个,单请求延迟底线"
+  },
+  {
+   "id": "conc",
+   "lane": "load",
+   "col": 0,
+   "type": "backend",
+   "label": "concurrent",
+   "sublabel": "固定 N 条流,模拟在线人数"
+  },
+  {
+   "id": "thr",
+   "lane": "load",
+   "col": 1,
+   "type": "backend",
+   "label": "throughput",
+   "sublabel": "压满 GPU 找峰值"
+  },
+  {
+   "id": "const",
+   "lane": "load",
+   "col": 2,
+   "type": "backend",
+   "label": "constant",
+   "sublabel": "恒定请求速率 rate"
+  },
+  {
+   "id": "pois",
+   "lane": "load",
+   "col": 3,
+   "type": "backend",
+   "label": "poisson",
+   "sublabel": "泊松到达,接近真实"
+  },
+  {
+   "id": "sweep",
+   "lane": "cap",
+   "col": 0,
+   "type": "frontend",
+   "label": "sweep",
+   "sublabel": "逐步加压找最优工作点"
+  },
+  {
+   "id": "knee",
+   "lane": "cap",
+   "col": 1,
+   "type": "frontend",
+   "label": "knee",
+   "sublabel": "拐点检测专司"
+  }
+ ],
+ "edges": [
+  {
+   "from": "sync",
+   "to": "conc",
+   "label": "验证完加压",
+   "variant": "emphasis"
+  },
+  {
+   "from": "conc",
+   "to": "thr",
+   "label": "加压"
+  },
+  {
+   "from": "thr",
+   "to": "const",
+   "label": "定速率"
+  },
+  {
+   "from": "const",
+   "to": "pois",
+   "label": "更真实"
+  },
+  {
+   "from": "pois",
+   "to": "sweep",
+   "label": "容量主力",
+   "variant": "emphasis"
+  },
+  {
+   "from": "sweep",
+   "to": "knee",
+   "label": "吞吐不再涨、延迟飞"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "sweep 是默认",
+   "items": [
+    "sweep 内部由 synchronous+throughput 子策略组合",
+    "knee 专做拐点检测"
+   ]
+  }
+ ]
+}

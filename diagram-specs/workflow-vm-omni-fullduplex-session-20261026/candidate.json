@@ -1,0 +1,151 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "engine-owned session:会话归引擎,不归模型",
+    "subtitle": "同一份会话暴露给三类消费者;身份/账本/租约/绑定由 DuplexSessionRunner 统一持有,可打断可续传",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-omni-fullduplex-session.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_cons",
+      "label": "① 三类消费者"
+    },
+    {
+      "id": "ln_mgr",
+      "label": "② 会话管理"
+    },
+    {
+      "id": "ln_state",
+      "label": "③ 状态"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "ws",
+      "lane": "ln_cons",
+      "col": 0,
+      "type": "frontend",
+      "label": "Realtime WebSocket",
+      "sublabel": "/v1/realtime?duplex=1"
+    },
+    {
+      "id": "py",
+      "lane": "ln_cons",
+      "col": 0,
+      "type": "frontend",
+      "label": "Python API",
+      "sublabel": "InlineDuplexClient",
+      "yOffset": 110
+    },
+    {
+      "id": "plug",
+      "lane": "ln_cons",
+      "col": 0,
+      "type": "frontend",
+      "label": "模型 duplex 插件",
+      "sublabel": "MiniCPM-o/Qwen3-Omni",
+      "yOffset": 220
+    },
+    {
+      "id": "mgr",
+      "lane": "ln_mgr",
+      "col": 1,
+      "type": "security",
+      "label": "DuplexSessionManager",
+      "sublabel": "准入/背压/租约回收"
+    },
+    {
+      "id": "runner",
+      "lane": "ln_mgr",
+      "col": 1,
+      "type": "backend",
+      "label": "DuplexSessionRunner",
+      "sublabel": "持有 DuplexEngineSession",
+      "yOffset": 120
+    },
+    {
+      "id": "ledger",
+      "lane": "ln_state",
+      "col": 2,
+      "type": "database",
+      "label": "会话账本",
+      "sublabel": "身份/账本/租约/绑定"
+    },
+    {
+      "id": "statemgr",
+      "lane": "ln_state",
+      "col": 2,
+      "type": "database",
+      "label": "SessionStateManager",
+      "sublabel": "世界模型 KV 之外状态",
+      "yOffset": 110
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "ws",
+      "to": "mgr",
+      "label": "open/resume/close",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "py",
+      "to": "mgr",
+      "label": "",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e3",
+      "from": "plug",
+      "to": "mgr",
+      "label": "",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e4",
+      "from": "mgr",
+      "to": "runner",
+      "label": "分配会话",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "runner",
+      "to": "ledger",
+      "label": "读写真账本",
+      "role": "async"
+    },
+    {
+      "id": "e6",
+      "from": "runner",
+      "to": "statemgr",
+      "label": "跨 forward 状态",
+      "role": "async",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "ws",
+    "mgr",
+    "runner",
+    "ledger"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "账本要分清两块",
+      "items": [
+        "世界模型 SessionStateManager 只管非 KV 状态(allocate/commit/view/reset/evict)",
+        "AR KV 归引擎 paged KV pool,不在这里",
+        "显存预算两块都要算"
+      ]
+    }
+  ]
+}

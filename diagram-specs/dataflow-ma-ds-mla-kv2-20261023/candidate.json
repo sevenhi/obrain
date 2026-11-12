@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "MLA 的 KV cache:只缓存 576 维,而不是 32768 维",
+    "subtitle": "上排是计算路径(一次联合投影 → 拆两路 → 升维 → attention),下排是驻留显存的三个东西。升维出的 128 头 K/V 是临时算的,不进 cache;真正缓存的只有 latent c^KV(512)+ 解耦 RoPE 分量 k_pe(64)",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-ds-mla-kv.dataflow.html",
+    "viewBox": [
+      1080,
+      380
+    ]
+  },
+  "stages": [
+    {
+      "label": "① 输入 h_t"
+    },
+    {
+      "label": "② 一次联合投影"
+    },
+    {
+      "label": "③ 拆 512 + 64"
+    },
+    {
+      "label": "④ 升维与旋转"
+    },
+    {
+      "label": "⑤ attention"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "h",
+      "type": "frontend",
+      "label": "hidden h_t",
+      "sublabel": "5120 维",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "proj",
+      "type": "backend",
+      "label": "kv_a_proj",
+      "sublabel": "5120 → 576",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "split",
+      "type": "backend",
+      "label": "split 两路",
+      "sublabel": "512 latent + 64 RoPE",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "up",
+      "type": "backend",
+      "label": "kv_b_proj 升维",
+      "sublabel": "→ 128×(128+128)",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "attn",
+      "type": "cloud",
+      "label": "QK^T → softmax → AV",
+      "sublabel": "再 o_proj 回 5120",
+      "stage": 4,
+      "row": 0
+    },
+    {
+      "id": "rn",
+      "type": "backend",
+      "label": "kv_a_layernorm",
+      "sublabel": "压缩后归一化",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "latent",
+      "type": "security",
+      "label": "缓存 c^KV 512 维",
+      "sublabel": "全头共享一份",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "pe",
+      "type": "security",
+      "label": "缓存 k_pe 64 维",
+      "sublabel": "1 头 MQA 式",
+      "stage": 3,
+      "row": 1
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "h",
+      "to": "proj",
+      "label": "一次投影",
+      "route": "straight",
+      "labelDy": -20
+    },
+    {
+      "id": "f2",
+      "from": "proj",
+      "to": "split",
+      "label": "576 维",
+      "route": "straight",
+      "labelDy": -20
+    },
+    {
+      "id": "f3",
+      "from": "split",
+      "to": "up",
+      "label": "512 去升维",
+      "route": "straight",
+      "variant": "emphasis",
+      "labelDy": -20
+    },
+    {
+      "id": "f4",
+      "from": "up",
+      "to": "attn",
+      "label": "128 头 K/V",
+      "route": "straight",
+      "labelDy": -20
+    },
+    {
+      "id": "f5",
+      "from": "proj",
+      "to": "rn",
+      "label": "先归一",
+      "route": "straight",
+      "labelAt": [
+        313,
+        212
+      ]
+    },
+    {
+      "id": "f6",
+      "from": "rn",
+      "to": "latent",
+      "label": "存这一份",
+      "route": "straight",
+      "variant": "emphasis",
+      "labelAt": [
+        424,
+        270
+      ]
+    },
+    {
+      "id": "f7",
+      "from": "split",
+      "to": "pe",
+      "label": "位置分量单独存",
+      "route": "straight",
+      "variant": "emphasis",
+      "labelAt": [
+        628,
+        212
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "为什么必须解耦 RoPE",
+      "items": [
+        "把 RoPE 直接作用在低秩压缩后的 K 上,位置信息会与「被所有头共享的压缩表示」纠缠",
+        "解压回多头时位置信息就失效了(论文的核心动机)",
+        "所以拆成 q_nope/k_nope(不旋转)与 q_pe/k_pe(旋转),位置分量独立存储、独立缓存"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "三档 KV cache 对比(每层每 token)",
+      "items": [
+        "MHA(128 头 × 128 维):2 × 128 × 128 = 32768 维",
+        "GQA(8 KV 头 × 128 维):2 × 8 × 128 = 2048 维",
+        "MLA:512 + 64 = 576 维 → 相对 MHA 约 1/57,相对 GQA 再压 ~3.6×"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Q 也低秩,但省的是另一种显存",
+      "items": [
+        "q_a_proj 5120→1536,再 q_b_proj 1536→128×192",
+        "省的是训练时激活显存与参数,不影响 KV cache",
+        "所以「MLA 省显存」要分清省的是 KV cache 还是激活"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "源码读法提醒",
+      "items": [
+        "HF 版 forward 里 past_key_value.update 存的是展开后的 K/V(教学实现)",
+        "论文与推理实现都指出:真正只需缓存 c^KV + k_pe",
+        "这正是 FlashMLA / absorb 实现优化的着力点"
+      ]
+    }
+  ]
+}

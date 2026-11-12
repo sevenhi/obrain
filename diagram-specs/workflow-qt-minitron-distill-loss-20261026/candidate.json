@@ -1,0 +1,104 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "蒸馏损失构成与实测取舍",
+  "subtitle": "L = L_CLM + L_logits + α·L_is;每条实测取舍都能省一半实现工作量",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-minitron-distill-loss.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "def",
+   "label": "定义"
+  },
+  {
+   "id": "pick",
+   "label": "实测取舍"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "clm",
+   "lane": "def",
+   "col": 0,
+   "type": "backend",
+   "label": "L_CLM",
+   "sublabel": "真标签交叉熵"
+  },
+  {
+   "id": "logits",
+   "lane": "def",
+   "col": 1,
+   "type": "backend",
+   "label": "L_logits",
+   "sublabel": "KLD(p_teacher,p_student)"
+  },
+  {
+   "id": "is_",
+   "lane": "def",
+   "col": 2,
+   "type": "backend",
+   "label": "α·L_is",
+   "sublabel": "中间隐状态匹配"
+  },
+  {
+   "id": "k1",
+   "lane": "pick",
+   "col": 1,
+   "type": "backend",
+   "label": "只用 L_logits 最好",
+   "sublabel": "再加 L_CLM 反而降分"
+  },
+  {
+   "id": "k2",
+   "lane": "pick",
+   "col": 2,
+   "type": "backend",
+   "label": "L_is 深度没大剪时无收益",
+   "sublabel": "省掉;α 动态取 L_logits/L_is"
+  }
+ ],
+ "edges": [
+  {
+   "from": "clm",
+   "to": "logits",
+   "label": "KLD 最好,MSE/cosine/R-KLD 都差",
+   "variant": "emphasis"
+  },
+  {
+   "from": "logits",
+   "to": "is_",
+   "label": "深度大剪才加",
+   "variant": "dashed"
+  },
+  {
+   "from": "logits",
+   "to": "k1",
+   "label": "别再加真标签",
+   "variant": "emphasis"
+  },
+  {
+   "from": "is_",
+   "to": "k2",
+   "label": "动态 α 优于常数",
+   "variant": "dashed"
+  }
+ ],
+ "mainPath": [
+  "clm",
+  "logits",
+  "is_"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "teacher correction",
+   "items": [
+    "原数据不可得时:先用 ~100B token 轻量微调 teacher",
+    "LR 取原训练峰值 1/5,120 步 warmup",
+    "分布漂移会让 teacher 给次优指导"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,170 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "AIBrix 控制面架构:流量路径与控制路径分离",
+    "subtitle": "流量走 客户端→Gateway→vLLM Pod;控制面 Operator 读指标/分发 LoRA/编排角色,不碰数据面引擎",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-aibrix-controlplane.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_cli",
+      "label": "① 客户端"
+    },
+    {
+      "id": "ln_gw",
+      "label": "② LLM Gateway"
+    },
+    {
+      "id": "ln_ctrl",
+      "label": "③ 控制面(Operator)"
+    },
+    {
+      "id": "ln_data",
+      "label": "④ 数据面(vLLM)"
+    }
+  ],
+  "mainPath": [
+    "req",
+    "gw",
+    "vpod"
+  ],
+  "nodes": [
+    {
+      "id": "req",
+      "lane": "ln_cli",
+      "col": 0,
+      "type": "frontend",
+      "label": "OpenAI 兼容请求",
+      "sublabel": "客户端/业务方"
+    },
+    {
+      "id": "gw",
+      "lane": "ln_gw",
+      "col": 1,
+      "type": "backend",
+      "label": "LLM Gateway 路由插件",
+      "sublabel": "prefix/least-kv/pd"
+    },
+    {
+      "id": "rl",
+      "lane": "ln_gw",
+      "col": 1,
+      "type": "security",
+      "label": "限流/鉴权/优先级",
+      "sublabel": "Envoy ext_proc",
+      "yOffset": 120
+    },
+    {
+      "id": "pa",
+      "lane": "ln_ctrl",
+      "col": 2,
+      "type": "backend",
+      "label": "PodAutoscaler",
+      "sublabel": "KPA/APA 读 vLLM 指标"
+    },
+    {
+      "id": "ma",
+      "lane": "ln_ctrl",
+      "col": 2,
+      "type": "backend",
+      "label": "ModelAdapter",
+      "sublabel": "LoRA 分发/热加载",
+      "yOffset": 110
+    },
+    {
+      "id": "ss",
+      "lane": "ln_ctrl",
+      "col": 2,
+      "type": "backend",
+      "label": "StormService",
+      "sublabel": "多角色编排",
+      "yOffset": 220
+    },
+    {
+      "id": "vpod",
+      "lane": "ln_data",
+      "col": 3,
+      "type": "cloud",
+      "label": "vLLM Pod × N",
+      "sublabel": "数据面仍是 vLLM"
+    },
+    {
+      "id": "kv",
+      "lane": "ln_data",
+      "col": 3,
+      "type": "database",
+      "label": "Distributed KV",
+      "sublabel": "跨引擎 KV 事件",
+      "yOffset": 110
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "req",
+      "to": "gw",
+      "label": "POST /v1/chat/completions",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "gw",
+      "to": "vpod",
+      "label": "按路由算法选副本",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "pa",
+      "to": "vpod",
+      "label": "读 metrics / 伸缩",
+      "role": "async",
+      "variant": "dashed"
+    },
+    {
+      "id": "e4",
+      "from": "ma",
+      "to": "vpod",
+      "label": "挂载 LoRA",
+      "role": "async",
+      "variant": "dashed"
+    },
+    {
+      "id": "e5",
+      "from": "ss",
+      "to": "vpod",
+      "label": "管理 prefill/decode 角色",
+      "role": "async",
+      "variant": "dashed"
+    },
+    {
+      "id": "e6",
+      "from": "vpod",
+      "to": "kv",
+      "label": "读写 KV",
+      "role": "async"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "两条路径别混",
+      "items": [
+        "流量路径:客户端→Gateway→Pod,决定请求给谁",
+        "控制路径:Operator→Pod,决定副本怎么放/扩/编",
+        "KV 事件:Pod↔Distributed KV,跨引擎共享缓存"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "数据面仍是 vLLM",
+      "items": [
+        "AIBrix 不改引擎,观测走 /metrics",
+        "扩缩容与路由都基于引擎真实负载"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {"title": "DeepSeek-OCR：SAM→CLIP，再拼接与投影", "subtitle": "2026-11-04 按固定源码纠正连线；全图与非空局部分块分别走此路径，不是两塔独立编码原图。", "locale": "zh-CN", "quality_profile": "showcase", "output": "diagrams/dv-ocr-optical-compression.dataflow.html", "repository": {"url": "https://github.com/deepseek-ai/DeepSeek-OCR.git", "revision": "09eaf526153e7a01ed16c9dea8c96282aaea29c0"}},
+  "stages": [{"label": "图像输入"}, {"label": "SAM 特征"}, {"label": "CLIP 编码"}, {"label": "通道拼接"}, {"label": "投影与排列"}],
+  "nodes": [
+    {"id": "image", "type": "database", "label": "全图 / 局部分块", "sublabel": "局部路径仅在有 crop 时", "stage": 0, "row": 0, "sources": [{"path": "DeepSeek-OCR-master/DeepSeek-OCR-vllm/deepseek_ocr.py", "line": 384, "end_line": 394}]},
+    {"id": "sam", "type": "backend", "label": "SAM 编码", "sublabel": "产生视觉特征", "stage": 1, "row": 0, "sources": [{"path": "DeepSeek-OCR-master/DeepSeek-OCR-vllm/deepseek_ocr.py", "line": 394, "end_line": 400}]},
+    {"id": "clip", "type": "backend", "label": "CLIP 编码", "sublabel": "消费 SAM patch embeddings", "stage": 2, "row": 0, "sources": [{"path": "DeepSeek-OCR-master/DeepSeek-OCR-vllm/deepencoder/clip_sdpa.py", "line": 131, "end_line": 147}]},
+    {"id": "concat", "type": "backend", "label": "特征 concat", "sublabel": "CLIP 去 CLS + SAM 展平", "stage": 3, "row": 0, "sources": [{"path": "DeepSeek-OCR-master/DeepSeek-OCR-vllm/deepseek_ocr.py", "line": 400, "end_line": 407}]},
+    {"id": "projector", "type": "backend", "label": "projector", "sublabel": "逐 token 通道投影", "stage": 4, "row": 0, "sources": [{"path": "DeepSeek-OCR-master/DeepSeek-OCR-vllm/deepseek_ocr.py", "line": 400, "end_line": 407}]},
+    {"id": "embeddings", "type": "database", "label": "视觉 embedding 序列", "sublabel": "排列并加入分隔符", "stage": 4, "row": 2, "sources": [{"path": "DeepSeek-OCR-master/DeepSeek-OCR-vllm/deepseek_ocr.py", "line": 423, "end_line": 438}]}
+  ],
+  "flows": [
+    {"from": "image", "to": "sam", "label": "图像"},
+    {"from": "sam", "to": "clip", "label": "patch 特征"},
+    {"from": "clip", "to": "concat", "label": "去 CLS"},
+    {"from": "sam", "to": "concat", "label": "SAM 特征旁路", "variant": "dashed", "route": "bottom-channel", "fromSide": "bottom", "toSide": "bottom"},
+    {"from": "concat", "to": "projector", "label": "拼接特征"},
+    {"from": "projector", "to": "embeddings", "label": "投影后特征"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "源码范围", "items": ["固定快照 09eaf526153e7a01ed16c9dea8c96282aaea29c0；节点附源码行号。此图止于视觉 embedding，后续语言模型解码未展开。", "local 路径见 deepseek_ocr.py:394–401；global 路径见 404–407；无 crop 路径见 440–444。"]},
+    {"dot": "amber", "title": "压缩不等于通道投影", "items": ["token 预算来自分辨率、编码与下采样；逐 token 线性投影改变通道维度，不直接减少 token 数。", "Native 为 512/640/1024/1280 四档；Gundam 为 n×640² + 1×1024²。加入行分隔符后的实际序列长度须按实现另算。", "固定模式来源：https://github.com/deepseek-ai/DeepSeek-OCR/blob/09eaf526153e7a01ed16c9dea8c96282aaea29c0/README.md#support-modes"]},
+    {"dot": "rose", "title": "评估边界", "items": ["本图未复现精度或吞吐，不将论文压缩比指标视为任意文档的保证。", "不根据历史 nightly 接入记录推断当前 vLLM 的最低支持版本。"]}
+  ]
+}

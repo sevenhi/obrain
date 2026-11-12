@@ -1,0 +1,180 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "FA2:把「每步除 ℓ」推迟到最终一次",
+    "subtitle": "FA1 每次加载新 K/V 块都对输出做 rescale+除 ℓ;FA2 只按 max rescale,除 ℓ 推迟到最后——省掉每行随块数线性累积的 non-matmul 运算",
+    "locale": "zh-CN",
+    "output": "diagrams/fa-fa2-defer-divide.workflow.html",
+    "viewBox": [
+      1100,
+      700
+    ]
+  },
+  "lanes": [
+    {
+      "id": "ln_fa1",
+      "label": "FA1:每步都除 ℓ(慢)",
+      "variant": "exception"
+    },
+    {
+      "id": "ln_fa2",
+      "label": "FA2:推迟除 ℓ(快)"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "a_new",
+      "lane": "ln_fa1",
+      "col": 0,
+      "type": "backend",
+      "label": "新 K/V 块到来",
+      "sublabel": "每次迭代",
+      "icon": "start"
+    },
+    {
+      "id": "a_rescale",
+      "lane": "ln_fa1",
+      "col": 1,
+      "type": "backend",
+      "label": "rescale 旧 Õ",
+      "sublabel": "乘 e^(m_old-m_new)",
+      "icon": "active"
+    },
+    {
+      "id": "a_div",
+      "lane": "ln_fa1",
+      "col": 2,
+      "type": "backend",
+      "label": "Õ = Õ/ℓ 每步",
+      "sublabel": "每步都除行和 ℓ",
+      "icon": "active",
+      "width": 124
+    },
+    {
+      "id": "a_loop",
+      "lane": "ln_fa1",
+      "col": 3,
+      "type": "security",
+      "label": "每块重复 ①②",
+      "sublabel": "标量运算线性累积",
+      "icon": "failure"
+    },
+    {
+      "id": "f_new",
+      "lane": "ln_fa2",
+      "col": 0,
+      "type": "backend",
+      "label": "新 K/V 块到来",
+      "sublabel": "每次迭代",
+      "icon": "start"
+    },
+    {
+      "id": "f_rescale",
+      "lane": "ln_fa2",
+      "col": 1,
+      "type": "backend",
+      "label": "rescale 旧 Õ",
+      "sublabel": "乘 e^(m_old-m_new)",
+      "icon": "active"
+    },
+    {
+      "id": "f_acc",
+      "lane": "ln_fa2",
+      "col": 2,
+      "type": "backend",
+      "label": "Õ 保持未归一化",
+      "sublabel": "只累加,不除 ℓ",
+      "icon": "active"
+    },
+    {
+      "id": "f_final",
+      "lane": "ln_fa2",
+      "col": 3,
+      "type": "backend",
+      "label": "最后除一次 ℓ",
+      "sublabel": "O=Õ/ℓ,整行一次",
+      "icon": "success",
+      "width": 124
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "a_new",
+      "to": "a_rescale",
+      "label": "① 按 max rescale",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "a_rescale",
+      "to": "a_div",
+      "label": "②",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "a_div",
+      "to": "a_loop",
+      "label": "每块 2 次矩阵级标量运算",
+      "role": "error"
+    },
+    {
+      "id": "e4",
+      "from": "f_new",
+      "to": "f_rescale",
+      "label": "只按 max rescale",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "f_rescale",
+      "to": "f_acc",
+      "label": "分子累加",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "f_acc",
+      "to": "f_final",
+      "label": "所有块处理完",
+      "role": "main"
+    }
+  ],
+  "mainPath": [
+    "f_new",
+    "f_rescale",
+    "f_acc",
+    "f_final"
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "FA1 的浪费在哪",
+      "items": [
+        "每步除 ℓ:每 KV 块 O(Br·d) 标量运算",
+        "总计 Θ(N²d/Bc):随块数线性累积",
+        "rescale 本身两边都在做——FA2 省的是除 ℓ 那步"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么省它最划算(A100)",
+      "items": [
+        "matmul(Tensor Core):312 TFLOPs/s",
+        "non-matmul(FP32 标量):仅 ~19.5 TFLOPs/s",
+        "每个 non-matmul FLOP 比 matmul 贵约 16×"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "收益口径",
+      "items": [
+        "与 warp 划分改进合计:FA2 约 2× 加速",
+        "MFU 25-40% → 50-73%",
+        "A100 attention kernel 单独基准最高 ~230 TFLOP/s"
+      ]
+    }
+  ]
+}

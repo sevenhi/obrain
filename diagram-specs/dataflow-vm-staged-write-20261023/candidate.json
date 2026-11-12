@@ -1,0 +1,161 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "StagedWriteTensor:五步代替「整张量重拷」",
+    "subtitle": "block table 这类张量每步只有几行变化,整份 H2D 是纯浪费;MRV2 在 CPU 侧累积 diff,apply_write 一次 kernel 落盘,cu_lens 用前缀和让一个下标切出任意段",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-staged-write.dataflow.html",
+    "viewBox": [
+      1080,
+      380
+    ]
+  },
+  "stages": [
+    {
+      "label": "① 基张量常驻 GPU"
+    },
+    {
+      "label": "② CPU 攒 diff"
+    },
+    {
+      "label": "③ 装进 UVA 环"
+    },
+    {
+      "label": "④ 一个 kernel 落盘"
+    },
+    {
+      "label": "⑤ 清空清单"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "base",
+      "type": "database",
+      "label": "GPU 基张量",
+      "sublabel": "例如 (1024,1000) int32",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "stage",
+      "type": "backend",
+      "label": "stage_write 累积",
+      "sublabel": "只记 4 个 list",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "lists",
+      "type": "database",
+      "label": "四个 list",
+      "sublabel": "cu_lens 是前缀和",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "uva",
+      "type": "database",
+      "label": "UVA 环形缓冲",
+      "sublabel": "元数据小拷贝",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "h2d",
+      "type": "backend",
+      "label": "contents 一次 H2D",
+      "sublabel": "async_tensor_h2d",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "kernel",
+      "type": "security",
+      "label": "_apply_write_kernel",
+      "sublabel": "BLOCK_SIZE=1024",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "clear",
+      "type": "backend",
+      "label": "清空 staged 列表",
+      "sublabel": "下一轮重新攒",
+      "stage": 4,
+      "row": 0
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "base",
+      "to": "stage",
+      "label": "只改几行几列",
+      "route": "straight"
+    },
+    {
+      "id": "f2",
+      "from": "stage",
+      "to": "lists",
+      "label": "记 (row,start,内容)",
+      "route": "straight",
+      "labelAt": [
+        330,
+        210
+      ]
+    },
+    {
+      "id": "f3",
+      "from": "lists",
+      "to": "uva",
+      "label": "元数据走小拷贝",
+      "route": "straight"
+    },
+    {
+      "id": "f4",
+      "from": "uva",
+      "to": "kernel",
+      "label": "给 kernel 定位每段",
+      "route": "straight"
+    },
+    {
+      "id": "f5",
+      "from": "kernel",
+      "to": "clear",
+      "label": "写完即清",
+      "route": "straight"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "cu_lens 为什么是前缀和",
+      "items": [
+        "存累积长度而不是每段长度",
+        "kernel 用一个下标就能切出「第 i 段写哪些元素」",
+        "避免每段一个 kernel 的启动开销",
+        "启动开销在 decode 只有几百 token 时是真实成本"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "FusedStagedWriter 更进一步",
+      "items": [
+        "把多个 StagedWriteTensor 的 staged 写合并成一次 kernel",
+        "用 group_id 区分目标张量",
+        "进一步减少 launch 数",
+        "适用:一步里要同时更新 block table、num_computed_tokens、token_ids"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两种 UVA 结构的语义分工",
+      "items": [
+        "UvaBackedTensor:CPU 是真相,GPU 有视图;适合小、每步可能整排刷新(prompt_len / prefill_len)",
+        "StagedWriteTensor:真相在 GPU(UVA 可选);适合大、每步只改几行几列",
+        "典型 StagedWriteTensor 用户:all_token_ids(UVA)、total_len、num_computed_tokens、logit_bias.allowed_token_ids"
+      ]
+    }
+  ]
+}

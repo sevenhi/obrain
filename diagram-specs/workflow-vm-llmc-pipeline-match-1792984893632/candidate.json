@@ -1,0 +1,176 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "Pipeline 与 Modifier 的匹配",
+  "subtitle": "算法 → 正确 Pipeline → 选错的后果",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-llmc-pipeline-match.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "gptq",
+   "label": "GPTQ/SparseGPT"
+  },
+  {
+   "id": "smq",
+   "label": "SmoothQuant"
+  },
+  {
+   "id": "fp8",
+   "label": "FP8 RTN"
+  },
+  {
+   "id": "wt",
+   "label": "纯权重量化"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "g0",
+   "lane": "gptq",
+   "col": 0,
+   "type": "backend",
+   "label": "GPTQ/SparseGPT",
+   "sublabel": "需逐层 Hessian"
+  },
+  {
+   "id": "g1",
+   "lane": "gptq",
+   "col": 1,
+   "type": "backend",
+   "label": "sequential",
+   "sublabel": "逐段校准降峰值"
+  },
+  {
+   "id": "g2",
+   "lane": "gptq",
+   "col": 2,
+   "type": "backend",
+   "label": "塞 basic → OOM",
+   "sublabel": "整模型 Hessian 放不下"
+  },
+  {
+   "id": "s0",
+   "lane": "smq",
+   "col": 0,
+   "type": "backend",
+   "label": "SmoothQuant",
+   "sublabel": "通道 max 统计"
+  },
+  {
+   "id": "s1",
+   "lane": "smq",
+   "col": 1,
+   "type": "backend",
+   "label": "basic",
+   "sublabel": "整模型一次前向"
+  },
+  {
+   "id": "s2",
+   "lane": "smq",
+   "col": 2,
+   "type": "backend",
+   "label": "缺校准→标定错",
+   "sublabel": "离群通道没压平"
+  },
+  {
+   "id": "f0",
+   "lane": "fp8",
+   "col": 0,
+   "type": "backend",
+   "label": "FP8 RTN",
+   "sublabel": "权重 scale 直接算"
+  },
+  {
+   "id": "f1",
+   "lane": "fp8",
+   "col": 1,
+   "type": "backend",
+   "label": "basic/data_free",
+   "sublabel": "可无校准集"
+  },
+  {
+   "id": "f2",
+   "lane": "fp8",
+   "col": 2,
+   "type": "backend",
+   "label": "静态激活需校准",
+   "sublabel": "KV 量化也要"
+  },
+  {
+   "id": "w0",
+   "lane": "wt",
+   "col": 0,
+   "type": "backend",
+   "label": "纯权重量化",
+   "sublabel": "不喂真实样本"
+  },
+  {
+   "id": "w1",
+   "lane": "wt",
+   "col": 1,
+   "type": "backend",
+   "label": "data_free",
+   "sublabel": "显存最低"
+  },
+  {
+   "id": "w2",
+   "lane": "wt",
+   "col": 2,
+   "type": "backend",
+   "label": "需统计时缺失",
+   "sublabel": "结果不可用"
+  }
+ ],
+ "edges": [
+  {
+   "from": "g0",
+   "to": "g1",
+   "label": "匹配",
+   "variant": "emphasis"
+  },
+  {
+   "from": "g1",
+   "to": "g2",
+   "label": "若换错",
+   "variant": "dashed"
+  },
+  {
+   "from": "s0",
+   "to": "s1",
+   "label": "匹配",
+   "variant": "emphasis"
+  },
+  {
+   "from": "s1",
+   "to": "s2",
+   "label": "若换错",
+   "variant": "dashed"
+  },
+  {
+   "from": "f0",
+   "to": "f1",
+   "label": "匹配",
+   "variant": "emphasis"
+  },
+  {
+   "from": "f1",
+   "to": "f2",
+   "label": "若换错",
+   "variant": "dashed"
+  },
+  {
+   "from": "w0",
+   "to": "w1",
+   "label": "匹配",
+   "variant": "emphasis"
+  },
+  {
+   "from": "w1",
+   "to": "w2",
+   "label": "若换错",
+   "variant": "dashed"
+  }
+ ]
+}

@@ -2,10 +2,16 @@
 title: deepseek-models — DeepSeek 领域模型谱系(数学/定理证明/编码)
 type: domain
 tags: [deepseek, math, theorem-proving, coding, grpo, rl, moe, lean4, fim, code-model, r1, reasoning, esft, domain-model]
-date: 2026-10
+date: 2026-11
 ---
 
 # deepseek-models — DeepSeek 领域模型谱系(数学/定理证明/编码)
+
+**按目的进入**:
+- 领域模型/评测:[Math](concepts/deepseek-math.md)、[Prover](concepts/deepseek-prover.md)、[Coder](concepts/deepseek-coder.md)、[MoE](concepts/deepseek-moe.md)。
+- 训练机制:[R1/GRPO](concepts/deepseek-r1-reasoning.md)、[ESFT 机制](concepts/deepseek-esft.md);执行脚本另见 [infra 操作篇](../deepseek-infra/concepts/esft.md)。
+- 配套工具:[Harness](frameworks/deepseek-harness.md)、[DeepSpec](frameworks/deepspec.md)、[dsh Node 插件](frameworks/dsh-node-addon-require-builtin.md)。工具按产品关联收纳,不是领域模型本身。
+- [公开来源](references.md)。
 
 > 本页是 deepseek-models 领域的**导航起始页**。真正的可读正文在 `concepts/`(领域模型谱系)与 `frameworks/`(工具)子目录,每篇一个专题、可独立打开读懂。本页只做定位与导航。
 
@@ -50,7 +56,7 @@ date: 2026-10
 ## 相关条目(跨域互链)
 
 - **[`model-architecture/`](../model-architecture/index.md)**:本域各模型复用的**网络结构**在这——DeepSeek 演进主篇 [deepseek-model-evolution](../model-architecture/concepts/deepseek-model-evolution.md)、奠基段 [deepseek-arch-v1-moe-v2](../model-architecture/concepts/deepseek-arch-v1-moe-v2.md)(DeepSeekMoE 细粒度+共享专家结构)、V3 [deepseek-arch-v3](../model-architecture/concepts/deepseek-arch-v3.md)、V3.2+R1 [deepseek-arch-v32-r1](../model-architecture/concepts/deepseek-arch-v32-r1.md)(DSA 稀疏注意力;**R1 结构侧解读**——与本域 [deepseek-r1-reasoning](concepts/deepseek-r1-reasoning.md) 的训练策略视角明确分工)。本域 [deepseek-moe](concepts/deepseek-moe.md) 只补数据/评测,结构不重复。
-- **[`deepseek-infra/`](../deepseek-infra/index.md)**:本域 deepseek-harness 是 DeepSeek 的 agent 工具,与 infra 域(算子/昇腾栈)同属「非模型」工具侧,但按简报归入本域工具节。**ESFT 双视角**:操作流程/脚本/实践坑在 [deepseek-infra/concepts/esft.md](../deepseek-infra/concepts/esft.md),机制/源码/谱系定位在本域 [deepseek-esft](concepts/deepseek-esft.md),两篇互链不重复;EPLB/LPLB(部署侧动专家)对照见 infra 域。
+- **[`deepseek-infra/`](../deepseek-infra/index.md)**:Harness 及 dsh 插件按产品关联归入本域配套工具,不属于模型本体。**ESFT 双视角**:操作流程/脚本/实践坑在 [infra 操作篇](../deepseek-infra/concepts/esft.md),机制/源码/谱系定位在 [机制主篇](concepts/deepseek-esft.md);操作篇保留必要摘要,完整机制由主篇维护。EPLB/LPLB(部署侧动专家)对照见 infra 域。
 - **[`vllm/`](../vllm/index.md)**:Coder/Coder-V2 官方推荐 vLLM/SGLang 高吞吐推理;MoE 代码模型的专家并行/MLA 在引擎侧兑现;R1-Distill 系列的本地服务(vllm serve)同样走 vLLM。
 
 ## 已知缺口

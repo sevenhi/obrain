@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "diagram_type": "waterfall",
+  "meta": {
+    "title": "零开销调度 ZOS:把 CPU 的工作藏进 GPU 计算窗口",
+    "subtitle": "同步调度下 GPU 在 post-process(N) 与 schedule(N+1) 期间空转;ZOS 把 post-process 整体推迟一步,让 CPU 的调度/启动/后处理全程与 GPU 的 forward/sample 重叠",
+    "locale": "zh-CN",
+    "evidence": "illustrative",
+    "unit": "ms",
+    "output": "diagrams/di-zos-overlap.waterfall.html"
+  },
+  "spans": [
+    { "id": "cpu_sched1", "name": "CPU 同步调度:schedule(N+1)", "start": 0, "end": 3, "service": "CPU(同步调度基线)", "detail": "基线:必须等 sample(N) 回来才能调度,GPU 全程空转", "status": "ok" },
+    { "id": "cpu_sync_gap", "name": "CPU post-process(N) + 同步点", "start": 3, "end": 6, "service": "CPU(同步调度基线)", "detail": "GPU-CPU 同步拿采样结果,再跑 CPU 侧 token 处理——这段 GPU 无事可做", "status": "incomplete" },
+
+    { "id": "gpu_fwdN", "name": "GPU forward(N)", "start": 0, "end": 10, "service": "GPU(driver worker)", "detail": "ZOS 时间轴上,forward(N) 前已用上一步采样结果在 GPU 上修正 seqlens_qk,不需要 D2H 同步", "status": "ok" },
+    { "id": "gpu_sampN", "name": "GPU sample(N)", "start": 10, "end": 14, "service": "GPU(sampler kernel)", "detail": "sample 结果留在 GPU tensor 里(MetadataZOS),新 token 全程不过 CPU", "status": "ok" },
+
+    { "id": "cpu_sched2", "name": "CPU schedule(N+1)", "start": 3, "end": 6, "service": "CPU(ZOS 重叠段)", "detail": "与 forward(N) 并行:CPU 只知道「上一步好像什么都没产出」的滞后 seqlens,先按滞后值调度", "status": "ok" },
+    { "id": "cpu_launch_fwd", "name": "CPU launch forward(N+1)", "start": 6, "end": 8, "service": "CPU(ZOS 重叠段)", "detail": "把 kernel 发射进 stream,不等结果", "status": "ok" },
+    { "id": "cpu_postN1", "name": "CPU post-process(N−1)", "start": 8, "end": 12, "service": "CPU(ZOS 推迟一步的后处理)", "detail": "整个 post-process 推迟一步:此刻处理的是 N−1 步的输出,sample_end_evt 早已完成", "status": "ok" },
+    { "id": "cpu_launch_samp", "name": "CPU launch sample(N+1)", "start": 12, "end": 14, "service": "CPU(ZOS 重叠段)", "detail": "先 D2H 等 seqlens_q 修正 event,再更新采样元数据后发射", "status": "ok" },
+
+    { "id": "gpu_idle", "name": "GPU 空转(基线)", "start": 0, "end": 6, "service": "GPU(同步调度的气泡)", "detail": "这就是 ZOS 要消掉的气泡:schedule + post-process 期间 GPU 没有活", "status": "incomplete" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "四阶段固定顺序(worker.py:89–189)",
+      "items": [
+        "① forward 当前步(先做 seqlens 修正)",
+        "② post-process 上一步 —— 与已 launch 的 GPU forward 重叠",
+        "③ sample 当前步(D2H 等修正后的 seqlens_q)",
+        "④ prompt 步或非 ZOS 当场 post-process;ZOS decode 步留给下一步"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "默认开启的真实条件(以源码为准)",
+      "items": [
+        "README 只写 Enabled by default;真值在 arg_utils.py:48–55 的 setdefault",
+        "default_zero_overhead_scheduling = engine_type in (NORMAL, COMPLETION)",
+        "即 NORMAL 与 decode 引擎默认开,PROMPT(prefill 专用)默认关",
+        "setdefault 语义:显式设过环境变量则以环境变量为准"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "代价:prompt 步永远当场处理",
+      "items": [
+        "prefill 没有可重叠的连续 decode 流,推迟没有收益",
+        "收尾必须 flush_inflight_reqs(),否则挂在 prev_step_state 的最后一步输出会丢",
+        "offline 入口正是「还有 unfinished 就 step(),否则 flush」"
+      ]
+    }
+  ]
+}

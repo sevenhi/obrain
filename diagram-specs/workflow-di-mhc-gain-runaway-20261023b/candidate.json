@@ -1,0 +1,246 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "恒等映射是怎么被 HC 弄丢的:mHC 一条约束的因果链",
+    "subtitle": "标准残差是「守恒机制」;HC 把 1 条流扩成 n=4 条并让它们任意互相混合,复合映射从「平均」变成「放大/衰减器」",
+    "locale": "zh-CN",
+    "output": "diagrams/di-mhc-gain-runaway.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "struct",
+      "label": "残差流结构"
+    },
+    {
+      "id": "coef",
+      "label": "混合矩阵 H_res"
+    },
+    {
+      "id": "math",
+      "label": "复合增益 Amax"
+    },
+    {
+      "id": "train",
+      "label": "训练现象"
+    }
+  ],
+  "phases": [
+    {
+      "id": "p1",
+      "label": "HC 增宽残差流",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "p2",
+      "label": "无约束流间混合",
+      "fromCol": 2,
+      "toCol": 3
+    },
+    {
+      "id": "p3",
+      "label": "增益失控",
+      "fromCol": 4,
+      "toCol": 4,
+      "variant": "emphasis"
+    },
+    {
+      "id": "p4",
+      "label": "mHC 约束修复",
+      "fromCol": 5,
+      "toCol": 5,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "std",
+    "hc",
+    "mix",
+    "prod",
+    "runaway",
+    "birkhoff"
+  ],
+  "nodes": [
+    {
+      "id": "std",
+      "lane": "struct",
+      "col": 0,
+      "type": "frontend",
+      "label": "标准残差",
+      "sublabel": "x+F(x),只有 1 条流",
+      "width": 170
+    },
+    {
+      "id": "hc",
+      "lane": "struct",
+      "col": 1,
+      "type": "frontend",
+      "label": "HC:复制成 n 条流",
+      "sublabel": "n=4 ≪ C=2560,FLOPs 几乎不变",
+      "width": 170
+    },
+    {
+      "id": "mix",
+      "lane": "coef",
+      "col": 2,
+      "type": "backend",
+      "label": "H_res 流间混合",
+      "sublabel": "学出来是任意实矩阵:可负、行和≠1",
+      "width": 170
+    },
+    {
+      "id": "prod",
+      "lane": "math",
+      "col": 3,
+      "type": "backend",
+      "label": "复合映射 = ∏ H_res",
+      "sublabel": "几十层矩阵连乘,误差逐层累积",
+      "width": 170
+    },
+    {
+      "id": "runaway",
+      "lane": "train",
+      "col": 4,
+      "type": "security",
+      "label": "增益峰值 ~3000",
+      "sublabel": "12k step loss 突增,梯度范数同步异常",
+      "width": 170
+    },
+    {
+      "id": "birkhoff",
+      "lane": "coef",
+      "col": 5,
+      "type": "security",
+      "label": "投影到 Birkhoff 多面体",
+      "sublabel": "双随机:H·1=1、1ᵀH=1ᵀ、H≥0",
+      "width": 170
+    },
+    {
+      "id": "abl",
+      "lane": "coef",
+      "col": 1,
+      "type": "database",
+      "label": "消融:H_res 贡献最大",
+      "sublabel": "只开它 −0.022,三个全开 −0.027",
+      "width": 170,
+      "yOffset": 96
+    },
+    {
+      "id": "ideal",
+      "lane": "math",
+      "col": 2,
+      "type": "external",
+      "label": "理想增益 = 1",
+      "sublabel": "前向看行和、反向看列和",
+      "width": 170,
+      "yOffset": 96
+    },
+    {
+      "id": "fixed",
+      "lane": "math",
+      "col": 5,
+      "type": "database",
+      "label": "mHC 增益 ~1.6",
+      "sublabel": "降三个数量级,Sinkhorn 20 轮近似",
+      "width": 170,
+      "yOffset": 96
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "std",
+      "to": "hc",
+      "variant": "emphasis",
+      "label": "宽度复制 ×n"
+    },
+    {
+      "id": "e2",
+      "from": "hc",
+      "to": "mix",
+      "variant": "emphasis",
+      "label": "读出 H_res 系数"
+    },
+    {
+      "id": "e3",
+      "from": "mix",
+      "to": "prod",
+      "variant": "emphasis",
+      "label": "逐层应用再连乘"
+    },
+    {
+      "id": "e4",
+      "from": "prod",
+      "to": "runaway",
+      "variant": "security",
+      "label": "行和/列和偏离 1"
+    },
+    {
+      "id": "e5",
+      "from": "runaway",
+      "to": "birkhoff",
+      "variant": "emphasis",
+      "label": "只加一条约束"
+    },
+    {
+      "id": "e6",
+      "from": "abl",
+      "to": "hc",
+      "variant": "dashed",
+      "label": "收益来源:流间交换"
+    },
+    {
+      "id": "e7",
+      "from": "ideal",
+      "to": "prod",
+      "variant": "dashed",
+      "label": "守恒时应当如此"
+    },
+    {
+      "id": "e8",
+      "from": "birkhoff",
+      "to": "fixed",
+      "variant": "emphasis",
+      "label": "谱范数 ≤1 + 乘法封闭"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "代价一:增益失控",
+      "items": [
+        "单个 H_res 行和 ≠ 1,连乘几十层 ∏ H_res 会放大",
+        "27B 实测复合增益峰值 ~3000,不是个别路径而是整条链路一起抖",
+        "HC 在 ~12k step 出现 loss 突增(论文 Fig.2)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "双随机矩阵的三条性质",
+      "items": [
+        "非扩张:谱范数 ‖H‖₂ ≤ 1,单层增益有界",
+        "乘法封闭:双随机 × 双随机 = 双随机 → 任意深度都守恒",
+        "凸组合:H·x 是 n 条流的凸组合,均值守恒"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "边界情形与统一",
+      "items": [
+        "n=1 时双随机退化成标量 1,即原始恒等映射",
+        "「残差」与「HC」变成同一族的两端",
+        "H_pre / H_post 只做非负约束(sigmoid / 2·sigmoid),防正负抵消"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "别搞错收益来源",
+      "items": [
+        "收益来自 n 条流的拓扑 + 流间混合,H_res 才是主力",
+        "稳定性来自双随机的乘法封闭性,单层归一化替代不了",
+        "代价:n=4 大规模训练增加 6.7% 时间(净值,已含重算与通信重叠)"
+      ]
+    }
+  ]
+}

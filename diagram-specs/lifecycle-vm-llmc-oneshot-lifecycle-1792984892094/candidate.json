@@ -1,0 +1,75 @@
+{
+ "schema_version": 3,
+ "diagram_type": "lifecycle",
+ "meta": {
+  "title": "oneshot 三阶段生命周期",
+  "subtitle": "Preprocessing → Model optimization → Postprocessing",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-llmc-oneshot-lifecycle.lifecycle.html"
+ },
+ "mainPath": [
+  "pre",
+  "opt",
+  "post"
+ ],
+ "states": [
+  {
+   "id": "pre",
+   "type": "start",
+   "label": "Preprocessing",
+   "sublabel": "加载模型/tokenizer,untie embeddings"
+  },
+  {
+   "id": "opt",
+   "type": "active",
+   "label": "Model optimization",
+   "sublabel": "Recipe 驱动校准与压缩"
+  },
+  {
+   "id": "post",
+   "type": "success",
+   "label": "Postprocessing",
+   "sublabel": "save_compressed 保存"
+  },
+  {
+   "id": "oom",
+   "type": "failure",
+   "label": "OOM/统计错误",
+   "sublabel": "Pipeline 与算法不匹配"
+  }
+ ],
+ "transitions": [
+  {
+   "from": "pre",
+   "to": "opt",
+   "label": "初始化完成"
+  },
+  {
+   "from": "opt",
+   "to": "post",
+   "label": "压缩完成"
+  },
+  {
+   "from": "opt",
+   "to": "oom",
+   "label": "选错 Pipeline",
+   "variant": "dashed"
+  },
+  {
+   "from": "oom",
+   "to": "opt",
+   "label": "换 sequential 重试",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "rose",
+   "title": "最隐蔽的坑",
+   "items": [
+    "选错 Pipeline 常表现为 OOM 或统计错误,而非报错",
+    "GPTQ/SparseGPT 必须 sequential 才能压大模型"
+   ]
+  }
+ ]
+}

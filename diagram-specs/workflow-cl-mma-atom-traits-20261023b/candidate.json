@@ -1,0 +1,275 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "从 PTX 指令到可组合组件:Atom 与 TV layout 的分工",
+    "subtitle": "Atom = Operation(PTX 指令本体)+ MMA_Traits(逻辑类型/形状_MNK/TV layout);TV layout 说清「32 个线程各取哪些值」,由 CuTe 按硬件访问模式预先设计好",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-mma-atom-traits.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "hw",
+      "label": "硬件指令层"
+    },
+    {
+      "id": "atom",
+      "label": "Atom 的组成"
+    },
+    {
+      "id": "meta",
+      "label": "Traits 里的元信息"
+    },
+    {
+      "id": "scale",
+      "label": "可落在的硬件粒度"
+    }
+  ],
+  "phases": [
+    {
+      "id": "p1",
+      "label": "包装指令",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "p2",
+      "label": "补元信息",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "p3",
+      "label": "落到具体粒度",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "ptx",
+    "op",
+    "traits",
+    "thrid",
+    "shape",
+    "tv",
+    "warp"
+  ],
+  "nodes": [
+    {
+      "id": "ptx",
+      "lane": "hw",
+      "col": 0,
+      "type": "external",
+      "label": "PTX mma 指令",
+      "sublabel": "m16n8k16 / wgmma",
+      "width": 150
+    },
+    {
+      "id": "op",
+      "lane": "atom",
+      "col": 1,
+      "type": "frontend",
+      "label": "Operation struct",
+      "sublabel": "封装入参出参",
+      "width": 150
+    },
+    {
+      "id": "traits",
+      "lane": "atom",
+      "col": 2,
+      "type": "frontend",
+      "label": "MMA_Traits struct",
+      "sublabel": "类型 / MNK / TV",
+      "width": 150
+    },
+    {
+      "id": "thrid",
+      "lane": "meta",
+      "col": 3,
+      "type": "database",
+      "label": "ThrID _32:_1",
+      "sublabel": "32 线程,步长 1",
+      "width": 150
+    },
+    {
+      "id": "shape",
+      "lane": "meta",
+      "col": 4,
+      "type": "database",
+      "label": "Shape_MNK (_16,_8,_16)",
+      "sublabel": "整条指令的逻辑形状",
+      "width": 150
+    },
+    {
+      "id": "tv",
+      "lane": "meta",
+      "col": 5,
+      "type": "security",
+      "label": "LayoutA/B/C_TV",
+      "sublabel": "各操作数分给线程",
+      "width": 150
+    },
+    {
+      "id": "warp",
+      "lane": "scale",
+      "col": 5,
+      "type": "backend",
+      "label": "单 warp(Ampere)",
+      "sublabel": "Ampere 主战场",
+      "width": 150,
+      "yOffset": 104
+    },
+    {
+      "id": "fma",
+      "lane": "scale",
+      "col": 3,
+      "type": "backend",
+      "label": "单线程 FMA",
+      "sublabel": "最细粒度",
+      "width": 150,
+      "yOffset": 104
+    },
+    {
+      "id": "quad",
+      "lane": "scale",
+      "col": 4,
+      "type": "backend",
+      "label": "quadpair",
+      "sublabel": "Volta 时代",
+      "width": 150,
+      "yOffset": 208
+    },
+    {
+      "id": "wg",
+      "lane": "scale",
+      "col": 5,
+      "type": "backend",
+      "label": "warpgroup",
+      "sublabel": "Hopper wgmma",
+      "width": 150,
+      "yOffset": 312
+    },
+    {
+      "id": "hopper",
+      "lane": "hw",
+      "col": 2,
+      "type": "cloud",
+      "label": "Hopper 不同构",
+      "sublabel": "ThrID 换成 Layout<_128>",
+      "width": 150,
+      "yOffset": 0
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "ptx",
+      "to": "op",
+      "variant": "emphasis",
+      "label": "包装成 C++ struct"
+    },
+    {
+      "id": "e2",
+      "from": "op",
+      "to": "traits",
+      "variant": "emphasis",
+      "label": "两者合体才叫 Atom"
+    },
+    {
+      "id": "e3",
+      "from": "traits",
+      "to": "thrid",
+      "variant": "emphasis",
+      "label": "先定线程组大小"
+    },
+    {
+      "id": "e4",
+      "from": "thrid",
+      "to": "shape",
+      "variant": "default",
+      "label": "再定指令逻辑形状"
+    },
+    {
+      "id": "e5",
+      "from": "shape",
+      "to": "tv",
+      "variant": "emphasis",
+      "label": "据形状切给各操作数"
+    },
+    {
+      "id": "e6",
+      "from": "tv",
+      "to": "warp",
+      "variant": "emphasis",
+      "label": "Ampere 就落在这里"
+    },
+    {
+      "id": "e7",
+      "from": "tv",
+      "to": "fma",
+      "variant": "dashed",
+      "label": "同一抽象的更细粒度"
+    },
+    {
+      "id": "e8",
+      "from": "tv",
+      "to": "quad",
+      "variant": "dashed",
+      "label": "Volta 形态"
+    },
+    {
+      "id": "e9",
+      "from": "tv",
+      "to": "wg",
+      "variant": "dashed",
+      "label": "Hopper 形态"
+    },
+    {
+      "id": "e10",
+      "from": "wg",
+      "to": "hopper",
+      "variant": "security",
+      "label": "读法完全不同,别照套"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "TV layout 到底是什么",
+      "items": [
+        "2D TV layout:第一 mode = 线程组里的线程,第二 mode = 每个线程访问的值",
+        "Ampere:LayoutA_TV = ((_4,_8),(_2,_2,_2)):((_32,_1),(_16,_8,_128))",
+        "Shape_MNK 是整条指令的 (M,N,K),不是 A 一个操作数的形状"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "TN 别讲反",
+      "items": [
+        "T = A 是 transposed,N = B 是 non-transposed(相对各自自然形态)",
+        "Ampere 约定里 transposed 指 K-major",
+        "所以 TN atom 要求 A、B 都 K-major —— 正是 mma 指令的原生布局"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "累加精度不看 K",
+      "items": [
+        "m16n8k16 与 m16n8k8 都可配 FP32 累加(SM80_16x8x16_F16F16F16F32_TN)",
+        "FP16 累加只出现在 k8 变体(SM80_16x8x8_F16F16F16F16_TN)",
+        "判断精度看 atom 名尾部 F32/F16,不能由 K 反推"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "为什么这套抽象值钱",
+      "items": [
+        "TV layout 由 CuTe 架构师按 PTX 访问模式预先设计好,使用者不必研究 PTX",
+        "换硬件只换 Atom/Traits,上层 Layout 组合几乎不动",
+        "Hopper 侧:ThrID 变 Layout<_128>,配 GmmaDescriptor(Major::K/MN)+ swizzle atom"
+      ]
+    }
+  ]
+}

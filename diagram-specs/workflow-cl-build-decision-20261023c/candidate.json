@@ -1,0 +1,227 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "构建路径怎么选:header-only 用 vs 构建示例,以及缩短编译的三个开关",
+    "subtitle": "CUTLASS 是 header-only——自己写 kernel 根本不需要 cmake。只有要跑示例/测试/profiler 才构建,而构建慢的根因是「默认给所有架构编」",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-build-decision.workflow.html",
+    "viewBox": [
+      1160,
+      660
+    ]
+  },
+  "lanes": [
+    {
+      "id": "ln_ask",
+      "label": "先问:你要做什么"
+    },
+    {
+      "id": "ln_ho",
+      "label": "① header-only:只写自己的 kernel"
+    },
+    {
+      "id": "ln_cmake",
+      "label": "② cmake:要示例/测试/profiler"
+    },
+    {
+      "id": "ln_slow",
+      "label": "③ 编译太慢时的三个开关"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "n_start",
+      "lane": "ln_ask",
+      "col": 0,
+      "type": "backend",
+      "label": "想跑一个 GEMM",
+      "sublabel": "先分清用途",
+      "width": 150,
+      "icon": "start"
+    },
+    {
+      "id": "n_dec",
+      "lane": "ln_ask",
+      "col": 1,
+      "type": "security",
+      "label": "只需自己的 kernel?",
+      "sublabel": "不需要示例/profiler",
+      "width": 152,
+      "icon": "decision"
+    },
+    {
+      "id": "n_inc",
+      "lane": "ln_ho",
+      "col": 2,
+      "type": "database",
+      "label": "加两个 -I 路径",
+      "sublabel": "include + tools/util/include",
+      "width": 152
+    },
+    {
+      "id": "n_flag",
+      "lane": "ln_ho",
+      "col": 3,
+      "type": "security",
+      "label": "开 relaxed-constexpr",
+      "sublabel": "CUTLASS 模板必需",
+      "width": 150
+    },
+    {
+      "id": "n_arch",
+      "lane": "ln_ho",
+      "col": 4,
+      "type": "security",
+      "label": "-arch=sm_90a",
+      "sublabel": "必须带 a",
+      "width": 150
+    },
+    {
+      "id": "n_cmake",
+      "lane": "ln_cmake",
+      "col": 2,
+      "type": "backend",
+      "label": "cmake + make",
+      "sublabel": "CUTLASS_NVCC_ARCHS=90a",
+      "width": 152
+    },
+    {
+      "id": "n_prof",
+      "lane": "ln_cmake",
+      "col": 3,
+      "type": "database",
+      "label": "make cutlass_profiler",
+      "sublabel": "最快的一条构建目标",
+      "width": 160
+    },
+    {
+      "id": "n_units",
+      "lane": "ln_slow",
+      "col": 2,
+      "type": "security",
+      "label": "关测试 + unity build",
+      "sublabel": "ENABLE_TESTS=OFF",
+      "width": 160
+    },
+    {
+      "id": "n_kern",
+      "lane": "ln_slow",
+      "col": 3,
+      "type": "security",
+      "label": "用通配符只编需要的",
+      "sublabel": "LIBRARY_KERNELS=通配符",
+      "width": 170
+    },
+    {
+      "id": "n_blas",
+      "lane": "ln_slow",
+      "col": 4,
+      "type": "security",
+      "label": "排除 cuBLAS/cuDNN",
+      "sublabel": "不需要对比就不用",
+      "width": 160
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "n_start",
+      "to": "n_dec",
+      "label": "先判用途",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "n_dec",
+      "to": "n_inc",
+      "label": "是:走 header-only",
+      "role": "branch"
+    },
+    {
+      "id": "e3",
+      "from": "n_inc",
+      "to": "n_flag",
+      "label": "头文件找得到",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "n_flag",
+      "to": "n_arch",
+      "label": "模板能编过",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "n_dec",
+      "to": "n_cmake",
+      "label": "否:走 cmake",
+      "role": "branch"
+    },
+    {
+      "id": "e6",
+      "from": "n_cmake",
+      "to": "n_prof",
+      "label": "先只编 profiler",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "n_prof",
+      "to": "n_units",
+      "label": "还是慢?",
+      "role": "branch"
+    },
+    {
+      "id": "e8",
+      "from": "n_units",
+      "to": "n_kern",
+      "label": "再收窄 kernel 集",
+      "role": "main"
+    },
+    {
+      "id": "e9",
+      "from": "n_kern",
+      "to": "n_blas",
+      "label": "再砍外部依赖",
+      "role": "main"
+    }
+  ],
+  "mainPath": [
+    "n_start",
+    "n_dec",
+    "n_inc",
+    "n_flag",
+    "n_arch"
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "最容易踩的坑:少了 a 后缀",
+      "items": [
+        "Hopper/Blackwell 的 Tensor Core 指令是 architecture-accelerated",
+        "必须 sm_90a / sm_100a;写 sm_90 会运行时报错(不是编译报错)",
+        "CUDA 12.0 起这类 PTX 无前向兼容保证"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "编译慢的真实原因",
+      "items": [
+        "不指定 CUTLASS_NVCC_ARCHS 时,CMake 会为该 CUDA 版本支持的全部架构编",
+        "可高达十几个架构,编译时间成倍放大",
+        "务必用 NVCC_ARCHS 收窄到你要的那一个"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "别用 LIBRARY_KERNELS=all",
+      "items": [
+        "全量编慢、链接还容易失败",
+        "用通配符只编子集,如 cutlass_tensorop_s*gemm_f16_*_nt_align8",
+        "或用 LIBRARY_OPERATIONS=conv2d 按算子类收窄"
+      ]
+    }
+  ]
+}

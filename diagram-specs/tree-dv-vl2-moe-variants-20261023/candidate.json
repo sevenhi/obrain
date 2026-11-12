@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "DeepSeek-VL2 三个变体:专家数、hidden、路由方式各不相同",
+    "subtitle": "Tiny/Small 用 greedy 路由,full 版换成 sigmoid + noaux_tc(与 DeepSeek-V3 的 aux-loss-free 同源);激活参数有两套口径,别混用",
+    "locale": "zh-CN",
+    "output": "diagrams/dv-vl2-moe-variants.tree.html"
+  },
+  "layout": {
+    "direction": "right",
+    "nodeW": 220,
+    "gapX": 30,
+    "gapY": 40
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "DeepSeek-VL2 三变体",
+      "sublabel": "除视觉塔外,差别只在 MoE 规模与路由"
+    },
+    {
+      "id": "tiny",
+      "label": "VL2-Tiny:激活 1.0B",
+      "parent": "root",
+      "sublabel": "hidden 1280 / 64 专家"
+    },
+    {
+      "id": "tiny_r",
+      "label": "路由:topk_method=greedy",
+      "parent": "tiny",
+      "sublabel": "每 token 6 路由 + 2 共享"
+    },
+    {
+      "id": "small",
+      "label": "VL2-Small:激活 2.8B",
+      "parent": "root",
+      "sublabel": "hidden 2048 / 64 专家"
+    },
+    {
+      "id": "small_r",
+      "label": "路由:greedy",
+      "parent": "small",
+      "sublabel": "推理约需 80GB 显存(README)"
+    },
+    {
+      "id": "full",
+      "label": "VL2(full):激活 4.5B",
+      "parent": "root",
+      "sublabel": "hidden 2560 / 72 专家"
+    },
+    {
+      "id": "full_r",
+      "label": "路由:sigmoid + noaux_tc",
+      "parent": "full",
+      "sublabel": "与 V3 aux-loss-free 同源"
+    },
+    {
+      "id": "full_q",
+      "label": "口径矛盾:4.5B vs 4.2B",
+      "parent": "full",
+      "sublabel": "README intro 与 web_demo 段不一"
+    },
+    {
+      "id": "caliber",
+      "label": "两套激活口径",
+      "parent": "root",
+      "sublabel": "都成立,指的是不同范围"
+    },
+    {
+      "id": "cal_a",
+      "label": "整模型激活:1.0/2.8/4.5B",
+      "parent": "caliber",
+      "sublabel": "README intro,含视觉塔"
+    },
+    {
+      "id": "cal_b",
+      "label": "仅 LLM 激活:0.57/2.4/4.1B",
+      "parent": "caliber",
+      "sublabel": "论文 Table,总参 3/16/27B"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "两套口径为什么不冲突",
+      "items": [
+        "「整模型激活」= 语言骨干激活 + 视觉塔激活",
+        "「仅 LLM 激活」= 论文 Table 口径,只算 MoE 骨干",
+        "选型看显存时用总参(3.37/16.1/27.5B),看速度时用激活"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "full 版的路由来自 V3",
+      "items": [
+        "scoring_func = sigmoid,topk_method = noaux_tc",
+        "即无辅助损失的负载均衡:给专家加可学习 bias,只影响选谁",
+        "Tiny/Small 仍是传统 greedy top-k"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "别按 MLA 估算 KV cache",
+      "items": [
+        "论文写 MLA,开源 config 实测 use_mla = false",
+        "num_key_value_heads = num_attention_heads,是 MHA",
+        "按 MLA 算 cache 会严重低估,显存规划直接翻车"
+      ]
+    }
+  ]
+}

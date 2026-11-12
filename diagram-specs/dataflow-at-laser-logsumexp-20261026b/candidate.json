@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "LASER 的 Log-Weighted-Sum-Exp trick:不改 kernel",
+    "locale": "zh-CN",
+    "subtitle": "exp(V) 直接算会溢出;只改输入输出两端,kernel(含 FlashAttention)零修改",
+    "output": "diagrams/at-laser-logsumexp.dataflow.html"
+  },
+  "stages": [
+    {
+      "label": "① 平移"
+    },
+    {
+      "label": "② 现成 kernel"
+    },
+    {
+      "label": "③ 加回"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "shift",
+      "type": "backend",
+      "label": "V̂ = V − m",
+      "sublabel": "m = colmax,stop_gradient",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "exp",
+      "type": "backend",
+      "label": "exp(V̂)",
+      "sublabel": "平移后不溢出",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "attn",
+      "type": "backend",
+      "label": "任意 attention kernel",
+      "sublabel": "f(key,query,exp_value),FlashAttention 可用",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "log",
+      "type": "backend",
+      "label": "log(·) + m",
+      "sublabel": "加回列最大值",
+      "stage": 2,
+      "row": 0
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "shift",
+      "to": "exp",
+      "label": "减 colmax"
+    },
+    {
+      "id": "f2",
+      "from": "exp",
+      "to": "attn",
+      "label": "对 exp(V) 做标准 attention"
+    },
+    {
+      "id": "f3",
+      "from": "attn",
+      "to": "log",
+      "label": "取 log 加回 m"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "三行改动(官方伪代码)",
+      "items": [
+        "m = max(value) 并 stop_gradient",
+        "attention_out = f(key, query, exp(value−m))",
+        "out = log(attention_out) + m"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "代价",
+      "items": [
+        "不用 trick 时 2.2B 训练直接数值溢出失败",
+        "colmax 必须 stop_gradient 阻断梯度"
+      ]
+    }
+  ]
+}

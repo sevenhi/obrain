@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "TensorRT 发布包里到底该装什么",
+    "subtitle": "serialized engine 对版本与硬件有兼容限制:不能默认一个 plan 文件跨 GPU / CUDA / TensorRT 版本复用,所以「产物」和「能重建它的一切」必须同时留",
+    "locale": "zh-CN",
+    "output": "diagrams/cv-engine-manifest.tree.html"
+  },
+  "layout": { "direction": "down", "gapX": 22, "gapY": 62, "nodeW": 150, "nodeMaxW": 180 },
+  "nodes": [
+    { "id": "pkg", "label": "Engine 发布包", "sublabel": "七类必备内容" },
+    { "id": "artifact", "parent": "pkg", "label": "产物本身", "sublabel": "engine 或构建配置" },
+    { "id": "engine", "parent": "artifact", "label": "serialized plan", "sublabel": "绑定 TRT/CUDA/SM" },
+    { "id": "buildcfg", "parent": "artifact", "label": "build 命令", "sublabel": "坏了能一键重建" },
+    { "id": "trace", "parent": "pkg", "label": "可追溯性", "sublabel": "回得到哪次训练" },
+    { "id": "rev", "parent": "trace", "label": "ONNX/ckpt revision", "sublabel": "模型来源" },
+    { "id": "manifest", "parent": "trace", "label": "版本 manifest", "sublabel": "TRT/CUDA/driver/GPU" },
+    { "id": "shape", "parent": "pkg", "label": "形状与精度", "sublabel": "决定能跑什么输入" },
+    { "id": "profiles", "parent": "shape", "label": "dynamic profiles", "sublabel": "min / opt / max" },
+    { "id": "tactics", "parent": "shape", "label": "precision + workspace", "sublabel": "含 plugin 与 tactic cache" },
+    { "id": "verify", "parent": "pkg", "label": "验证与回退", "sublabel": "上线前的安全网" },
+    { "id": "regress", "parent": "verify", "label": "数值回归样本", "sublabel": "发布后能对比" },
+    { "id": "rollback", "parent": "verify", "label": "旧 engine", "sublabel": "版本一变就得换" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "plan 文件不是可移植产物",
+      "items": [
+        "engine 绑定 TensorRT 版本、CUDA 版本、GPU 架构(SM 号)",
+        "也不能默认跨 driver 版本复用",
+        "所以「engine」与「可重建的构建配置」至少要留一个"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "升级 TensorRT 时重新检查三样",
+      "items": [
+        "API 变化(尤其 plugin 接口)",
+        "engine 序列化格式是否兼容",
+        "calibration cache 是否还能用"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "benchmark 时不能混进的两件事",
+      "items": [
+        "engine build 时间:构建期成本,不能算进在线请求延迟",
+        "首次请求延迟:预热后的 kernel latency 不能代表它",
+        "两者都要单独记录,否则延迟数字没意义"
+      ]
+    }
+  ]
+}

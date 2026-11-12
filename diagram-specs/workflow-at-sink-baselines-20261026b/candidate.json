@@ -1,0 +1,143 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "三种基线 vs StreamingLLM(20K token 长文 PPL)",
+    "locale": "zh-CN",
+    "subtitle": "Dense/Window/滑窗重算各死一头,StreamingLLM 达到 oracle 水平却保持线性复杂度",
+    "output": "diagrams/at-sink-baselines.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_d",
+      "label": "Dense attention"
+    },
+    {
+      "id": "ln_w",
+      "label": "Window attention"
+    },
+    {
+      "id": "ln_r",
+      "label": "滑窗+重计算"
+    },
+    {
+      "id": "ln_s",
+      "label": "StreamingLLM"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "d0",
+      "lane": "ln_d",
+      "col": 0,
+      "type": "backend",
+      "label": "全历史 attend",
+      "sublabel": "O(T²) + 无限 cache",
+      "icon": "start"
+    },
+    {
+      "id": "d1",
+      "lane": "ln_d",
+      "col": 1,
+      "type": "security",
+      "label": "超窗即崩",
+      "sublabel": "PPL 5641",
+      "icon": "failure"
+    },
+    {
+      "id": "w0",
+      "lane": "ln_w",
+      "col": 0,
+      "type": "backend",
+      "label": "只留最近 L",
+      "sublabel": "O(TL)",
+      "icon": "start"
+    },
+    {
+      "id": "w1",
+      "lane": "ln_w",
+      "col": 1,
+      "type": "security",
+      "label": "sink 被逐出崩",
+      "sublabel": "PPL 5158",
+      "icon": "failure"
+    },
+    {
+      "id": "r0",
+      "lane": "ln_r",
+      "col": 0,
+      "type": "backend",
+      "label": "每 token 重算 KV",
+      "sublabel": "O(TL²)",
+      "icon": "start"
+    },
+    {
+      "id": "r1",
+      "lane": "ln_r",
+      "col": 1,
+      "type": "backend",
+      "label": "质量好但慢",
+      "sublabel": "PPL 5.43",
+      "icon": "active"
+    },
+    {
+      "id": "s0",
+      "lane": "ln_s",
+      "col": 0,
+      "type": "backend",
+      "label": "sink + 滚动窗口",
+      "sublabel": "O(TL)",
+      "icon": "start"
+    },
+    {
+      "id": "s1",
+      "lane": "ln_s",
+      "col": 1,
+      "type": "backend",
+      "label": "稳定且线性",
+      "sublabel": "PPL 5.40,最快 22.2×",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "d0",
+      "to": "d1",
+      "label": "超训练窗",
+      "role": "error"
+    },
+    {
+      "id": "e2",
+      "from": "w0",
+      "to": "w1",
+      "label": "sink 消失",
+      "role": "error"
+    },
+    {
+      "id": "e3",
+      "from": "r0",
+      "to": "r1",
+      "label": "质量上限",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "s0",
+      "to": "s1",
+      "label": "零微调",
+      "role": "main"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "22.2× 加速的来源(Figure 10)",
+      "items": [
+        "Llama-2-13B cache=4096:重计算 2355ms vs StreamingLLM 106ms",
+        "7B 重计算 63→1411ms,StreamingLLM 31→65ms",
+        "省的是时间;省显存是相对 dense 无限 cache"
+      ]
+    }
+  ]
+}

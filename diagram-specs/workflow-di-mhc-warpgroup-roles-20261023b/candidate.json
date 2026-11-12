@@ -1,0 +1,298 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "mega_mhc:6 个 warpgroup 静态分工,一个 kernel 干完整层",
+    "subtitle": "persistent kernel,grid = num_sms(一 SM 一 CTA);每个 WG 静态认领一个角色,寄存器按角色 setmaxnreg 重分配、干完就交还",
+    "locale": "zh-CN",
+    "output": "diagrams/di-mhc-warpgroup-roles.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "prod",
+      "label": "生产侧(搬 + 算)"
+    },
+    {
+      "id": "post",
+      "label": "流更新(双 WG 并行)"
+    },
+    {
+      "id": "epi",
+      "label": "落 partial 与归约"
+    },
+    {
+      "id": "norm",
+      "label": "归一化与输出"
+    },
+    {
+      "id": "sync",
+      "label": "跨 CTA 屏障"
+    }
+  ],
+  "phases": [
+    {
+      "id": "p1",
+      "label": "载入并算 GEMM",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "p2",
+      "label": "流更新",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "p3",
+      "label": "split 收敛成系数",
+      "fromCol": 3,
+      "toCol": 4,
+      "variant": "emphasis"
+    },
+    {
+      "id": "p4",
+      "label": "归一化输出",
+      "fromCol": 5,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "wg0",
+    "wg1",
+    "wg2",
+    "wg3",
+    "barmix",
+    "wg4",
+    "wg5"
+  ],
+  "nodes": [
+    {
+      "id": "wg0",
+      "lane": "prod",
+      "col": 0,
+      "type": "frontend",
+      "label": "WG0 TMA/MMA producer",
+      "sublabel": "载 residual/x/fn/系数,发 UMMA(TF32)",
+      "width": 168
+    },
+    {
+      "id": "wg1",
+      "lane": "post",
+      "col": 1,
+      "type": "backend",
+      "label": "WG1 Post worker",
+      "sublabel": "流更新 + 残差合并,每 lane 2 行",
+      "width": 168
+    },
+    {
+      "id": "wg2",
+      "lane": "post",
+      "col": 2,
+      "type": "backend",
+      "label": "WG2 Post worker",
+      "sublabel": "同上,双 WG 合盖 BLOCK_M=64 行",
+      "width": 168
+    },
+    {
+      "id": "wg3",
+      "lane": "epi",
+      "col": 3,
+      "type": "database",
+      "label": "WG3 workspace epilogue",
+      "sublabel": "split partial 落 gmem,轻量寄存器",
+      "width": 168
+    },
+    {
+      "id": "wg4",
+      "lane": "epi",
+      "col": 4,
+      "type": "database",
+      "label": "WG4 Mix worker",
+      "sublabel": "warp 内归约 split → 系数 → Sinkhorn",
+      "width": 168
+    },
+    {
+      "id": "wg5",
+      "lane": "norm",
+      "col": 5,
+      "type": "security",
+      "label": "WG5 Norm worker",
+      "sublabel": "融合 RMSNorm,可选 FP8 cast + SF 打包",
+      "width": 168
+    },
+    {
+      "id": "ws",
+      "lane": "epi",
+      "col": 3,
+      "type": "database",
+      "label": "split-K 工作区",
+      "sublabel": "每 task 64×24 + 2×64 = 1664 float",
+      "width": 168,
+      "yOffset": 104
+    },
+    {
+      "id": "barmix",
+      "lane": "sync",
+      "col": 4,
+      "type": "messagebus",
+      "label": "Mix 屏障(barrier 1)",
+      "sublabel": "WG3 等齐所有 split,G3 才放 WG4 归约",
+      "width": 168
+    },
+    {
+      "id": "barnorm",
+      "lane": "sync",
+      "col": 2,
+      "type": "messagebus",
+      "label": "Norm 屏障(barrier 0)",
+      "sublabel": "WG1/WG2 落盘 X1 与统计量后才 arrive",
+      "width": 168,
+      "yOffset": 104
+    },
+    {
+      "id": "regs",
+      "lane": "prod",
+      "col": 1,
+      "type": "security",
+      "label": "寄存器分区 setmaxnreg",
+      "sublabel": "control 32 / Post 136 / 轻量 40",
+      "width": 168,
+      "yOffset": 104
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "wg0",
+      "to": "wg1",
+      "variant": "emphasis",
+      "label": "TMA 到位即消费,4 级流水"
+    },
+    {
+      "id": "e2",
+      "from": "wg1",
+      "to": "wg2",
+      "variant": "emphasis",
+      "label": "各管 32 行,合盖 64 行"
+    },
+    {
+      "id": "e3",
+      "from": "wg2",
+      "to": "wg3",
+      "variant": "emphasis",
+      "label": "流更新结果进 epilogue"
+    },
+    {
+      "id": "e4",
+      "from": "wg3",
+      "to": "ws",
+      "variant": "default",
+      "label": "按 (m_block, split) 落盘"
+    },
+    {
+      "id": "e5",
+      "from": "ws",
+      "to": "wg4",
+      "variant": "emphasis",
+      "label": "warp 内沿 split 累加"
+    },
+    {
+      "id": "e6",
+      "from": "wg4",
+      "to": "wg5",
+      "variant": "emphasis",
+      "label": "系数就绪才归一化"
+    },
+    {
+      "id": "e7",
+      "from": "wg3",
+      "to": "barmix",
+      "variant": "dashed",
+      "label": "arrive:partial 已齐"
+    },
+    {
+      "id": "e8",
+      "from": "barmix",
+      "to": "wg4",
+      "variant": "dashed",
+      "label": "放行归约"
+    },
+    {
+      "id": "e9",
+      "from": "wg1",
+      "to": "barnorm",
+      "variant": "dashed",
+      "label": "arrive:X1 与统计量已落"
+    },
+    {
+      "id": "e10",
+      "from": "barnorm",
+      "to": "wg5",
+      "variant": "dashed",
+      "label": "等齐才做 Norm"
+    },
+    {
+      "id": "e11",
+      "from": "regs",
+      "to": "wg1",
+      "variant": "security",
+      "label": "Post 拿最高额度 136"
+    },
+    {
+      "id": "e12",
+      "from": "wg5",
+      "to": "regs",
+      "variant": "dashed",
+      "label": "干完 dealloc 交还 32"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "24 这个数是几何决定的",
+      "items": [
+        "kNumHCOutputs = n(n+2) = n + n + n² = 24(n=4)",
+        "正好是 pre(n) + post(n) + res(n²) 的系数总数",
+        "一个 warp 用 24 条 lane 就能同时持有全部输出系数 → Mix 单 warp 完成"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "寄存器池的关键技巧",
+      "items": [
+        "dealloc 是 per-role 而非 per-task:降额后不会再加回去",
+        "所以任务循环的热路径必须用低额度那套寄存器",
+        "WG3/WG4 一开始就降到 40,因为它们是轻量归约",
+        "静态断言 kMaxRegisterBudget×128 ≤ 64512 守着单 SM 总量"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "编译期常量(源码 layout/mega_mhc.cuh)",
+      "items": [
+        "kNumRoutes=4(硬编,要 n=2/8 得改常量重编 JIT)",
+        "BLOCK_M=64、BLOCK_N=24、BLOCK_K=64",
+        "kNumIOStages=4、kNumAStages=4、kNumThreads = 6×4×32 = 768"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "一个 loop 干完的事",
+      "items": [
+        "new_residual = x⊗post_mix + comb_res_mix@residual(流更新)",
+        "TF32 GEMM mixes = new_residual@fnᵀ(系数 logit)",
+        "→ 重排后的 RMSNorm → sigmoid / Sinkhorn → 融合 Norm(可选 FP8)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "屏障缓冲",
+      "items": [
+        "2 条 × 16384 行 × 128 B = 4 MiB",
+        "按 CUDA stream 缓存(split_barriers_by_stream)",
+        "不同 stream 的并发调用互不干扰(单测明确验证)"
+      ]
+    }
+  ]
+}

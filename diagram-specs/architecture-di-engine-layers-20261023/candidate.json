@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "引擎实现分层:C++ Scheduler + Python Engine + 多进程 Worker",
+    "subtitle": "调度决策放 C++(pybind11)是为了 DP 投票与 FLOPs 记账的性能;Python 侧只管编排与对象池;每 GPU 一个 worker 进程,父进程死则内核直接 SIGKILL",
+    "locale": "zh-CN",
+    "output": "diagrams/di-engine-layers.architecture.html",
+    "viewBox": [
+      1160,
+      700
+    ]
+  },
+  "components": [
+    {
+      "id": "entry",
+      "type": "external",
+      "label": "Entrypoint(生产侧未开源)",
+      "sublabel": "留虚函数 process_output / pe_do_save_kvcache",
+      "pos": [
+        300,
+        40
+      ],
+      "size": [
+        420,
+        66
+      ]
+    },
+    {
+      "id": "llm",
+      "type": "backend",
+      "label": "LLMEngine.step() 主编排",
+      "sublabel": "llm_engine.py:130 / :860",
+      "pos": [
+        300,
+        170
+      ],
+      "size": [
+        420,
+        66
+      ]
+    },
+    {
+      "id": "defer",
+      "type": "security",
+      "label": "DeferredRelease",
+      "sublabel": "延后到 pre_sampler_sync",
+      "pos": [
+        880,
+        160
+      ],
+      "size": [
+        230,
+        86
+      ]
+    },
+    {
+      "id": "sched",
+      "type": "backend",
+      "label": "C++ Scheduler(pybind11)",
+      "sublabel": "csrc/engine/scheduler.hpp:295–343",
+      "pos": [
+        300,
+        300
+      ],
+      "size": [
+        420,
+        76
+      ]
+    },
+    {
+      "id": "pool",
+      "type": "database",
+      "label": "Sequence 对象池",
+      "sublabel": "ObjectPoolPyObject 包装",
+      "pos": [
+        880,
+        292
+      ],
+      "size": [
+        230,
+        92
+      ]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Worker(每 GPU 一进程)",
+      "sublabel": "worker.py:51;set_pdeathsig(SIGKILL)",
+      "pos": [
+        300,
+        434
+      ],
+      "size": [
+        420,
+        76
+      ]
+    },
+    {
+      "id": "mr",
+      "type": "backend",
+      "label": "ModelRunner",
+      "sublabel": "execute_main_model / execute_sample",
+      "pos": [
+        300,
+        568
+      ],
+      "size": [
+        420,
+        76
+      ]
+    },
+    {
+      "id": "kernel",
+      "type": "database",
+      "label": "内核族 + CUDA Graph",
+      "sublabel": "TileLang/DeepGEMM/FlashMLA/DeepEP",
+      "pos": [
+        880,
+        552
+      ],
+      "size": [
+        230,
+        108
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Python 侧:编排、对象池、异步重叠",
+      "wraps": [
+        "entry",
+        "llm",
+        "defer"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "C++ 侧:投票 / FLOPs 记账 / 组批",
+      "wraps": [
+        "sched",
+        "pool"
+      ]
+    },
+    {
+      "kind": "region",
+      "label": "进程与设备侧:每 GPU 一 worker,内核在设备上跑",
+      "wraps": [
+        "worker",
+        "mr",
+        "kernel"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "e1",
+      "from": "entry",
+      "to": "llm",
+      "label": "反复调 step()",
+      "labelAt": [
+        510,
+        140
+      ]
+    },
+    {
+      "id": "e2",
+      "from": "llm",
+      "to": "sched",
+      "label": "schedule() 出 SchedulerOutputs",
+      "variant": "emphasis",
+      "labelAt": [
+        510,
+        272
+      ]
+    },
+    {
+      "id": "e3",
+      "from": "llm",
+      "to": "defer",
+      "label": "产出不立即释放",
+      "labelAt": [
+        800,
+        190
+      ]
+    },
+    {
+      "id": "e8",
+      "from": "defer",
+      "to": "llm",
+      "label": "下一步统一 release",
+      "variant": "dashed",
+      "labelAt": [
+        800,
+        262
+      ],
+      "fromSide": "right",
+      "toSide": "right"
+    },
+    {
+      "id": "e4",
+      "from": "sched",
+      "to": "pool",
+      "label": "池化包装",
+      "labelAt": [
+        800,
+        330
+      ]
+    },
+    {
+      "id": "e5",
+      "from": "llm",
+      "to": "worker",
+      "label": "_execute_model_async_step 广播",
+      "variant": "emphasis",
+      "labelAt": [
+        510,
+        404
+      ]
+    },
+    {
+      "id": "e6",
+      "from": "worker",
+      "to": "mr",
+      "label": "execute_model_step 四阶段",
+      "labelAt": [
+        510,
+        538
+      ]
+    },
+    {
+      "id": "e7",
+      "from": "mr",
+      "to": "kernel",
+      "label": "launch 内核",
+      "labelAt": [
+        800,
+        606
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "三种 EngineType",
+      "items": [
+        "NORMAL:prompt + decode 混跑,单机/未分离部署",
+        "PROMPT:只做 prefill(PE);COMPLETION:只做 decode(CE)",
+        "COMPLETION 无 prefill 通道,启动即硬拦截 TORCH_CHECK(engine_type != COMPLETION || stop_preempted_request)",
+        "两处枚举必须一致:engine_type.py 与 scheduler.hpp:39–43"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "跨 C++/Python 边界的纪律",
+      "items": [
+        "C++ 持对象池,Python 拿 ObjectPoolPyObject<SequenceMetadata> 包装",
+        "clone_states/clone_blocks/zero_states 是内部 vector 的 const 引用,下一次 schedule 前必须消费完",
+        "请求输出走 uint64 指针数组(np.ndarray),由 RequestOutputPool 池化"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "进程模型与释放时机",
+      "items": [
+        "slave worker set_pdeathsig(SIGKILL) 后阻塞在 cp_broadcast_object:父进程死则子进程被内核 SIGKILL,不留僵尸",
+        "DeferredRelease 让释放动作与 GPU 计算 overlap,且调用方下一 step 前还能读",
+        "所以「step() 返回的 RequestOutput 下一步自动失效」,要留存必须 pool.clone"
+      ]
+    }
+  ]
+}

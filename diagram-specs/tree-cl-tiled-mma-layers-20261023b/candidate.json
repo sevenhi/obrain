@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "CuTe 抽象层级:从一条 PTX 指令到完整 GEMM",
+    "subtitle": "每上一层只做一件事:把下一层的东西「平铺 / 交织 / 编排」成更大的单位;换硬件时只有 Atom 这一层动",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-tiled-mma-layers.tree.html"
+  },
+  "layout": { "direction": "down", "nodeW": 200, "gapX": 26, "gapY": 56 },
+  "nodes": [
+    { "id": "root", "label": "完整 GEMM", "sublabel": "Kernel 层 + TileScheduler" },
+    { "id": "collective", "label": "Collective 层", "parent": "root", "sublabel": "用 Tiled 微内核 + 架构同步,组织一个 stage 的搬算(时间微内核)" },
+    { "id": "tiled", "label": "TiledMMA / TiledCopy", "parent": "collective", "sublabel": "多 Atom 平铺 + 交织 → 空间微内核" },
+    { "id": "atom", "label": "Atom", "parent": "tiled", "sublabel": "Operation + MMA_Traits,一条指令的语义被固化" },
+    { "id": "op", "label": "Operation struct", "parent": "atom", "sublabel": "封装 PTX 指令入参出参" },
+    { "id": "traits", "label": "MMA_Traits struct", "parent": "atom", "sublabel": "逻辑类型 / Shape_MNK / TV layout" },
+    { "id": "ptx", "label": "PTX mma 指令", "parent": "op", "sublabel": "m16n8k16、wgmma …(硬件相关)" },
+    { "id": "thr", "label": "ThrID + TV layout", "parent": "traits", "sublabel": "哪 32/128 个线程、各取哪些值" },
+    { "id": "layout", "label": "Layout(Shape + Stride)", "parent": "tiled", "sublabel": "坐标 → 线性索引;一切抽象的地基", "collapsed": true }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "读 CUTLASS 3.x 的正确顺序",
+      "items": [
+        "先定位 Layout(数据怎么排),再找 TiledMMA(数据怎么分给线程)",
+        "看模板参数是最后一步,不是第一步",
+        "Layout 与 TV layout 是两层抽象,别混:前者管存储形态,后者管数据分发"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "可移植性来自哪一层",
+      "items": [
+        "架构升级只换 Atom 与它的 Traits",
+        "上层 Layout 组合代码通常一行不动",
+        "这就是「换硬件换 Atom,上层组合不变」"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "源码去哪找",
+      "items": [
+        "核心类型:include/cute/(shape/stride/layout/tensor)",
+        "Operation:include/cute/arch/mma_sm*.hpp",
+        "Traits 特化:include/cute/atom/mma_traits*.hpp(如 mma_traits_sm80.hpp)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "最易踩的坑",
+      "items": [
+        "partition_A/B/C 不是 TiledMMA 的成员,是 ThrMMA 的",
+        "必须先 tiled_mma.get_slice(tid) 拿 ThrMMA 再 partition",
+        "单线程视角的实际 partition 方法都在 ThrMMA 上"
+      ]
+    }
+  ]
+}

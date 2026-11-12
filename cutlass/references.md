@@ -2,7 +2,7 @@
 title: cutlass 外部链接索引
 type: reference
 tags: [cutlass, cute, gemm, references]
-date: 2026-09
+date: 2026-11
 ---
 
 # References — cutlass
@@ -10,6 +10,8 @@ date: 2026-09
 > 只放链接索引,不复制全文(库规约)。聚合自各篇 frontmatter 的 source;条目级溯源见各篇文末『溯源』。
 
 ## 官方文档
+
+- CUDA 12.6.3 Best Practices:shared-memory banks 与同地址 broadcast — https://docs.nvidia.com/cuda/archive/12.6.3/cuda-c-best-practices-guide/index.html#shared-memory-and-memory-banks
 
 - CUTLASS 官方文档站 — https://docs.nvidia.com/cutlass/latest/
 - CUTLASS Python / CuTe DSL 概览 — https://docs.nvidia.com/cutlass/latest/media/docs/pythonDSL/overview.html

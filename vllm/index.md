@@ -7,10 +7,12 @@ source:
   - "code: vLLM flash-attention fork | commit 506341a143fc (2026-09-04 起)"
   - "web: vLLM 官方文档 | https://docs.vllm.ai/en/latest/ | 阅读日期 2026-10-23(最新发布版本 v0.32.0)"
   - "web: vLLM Model Runner V2 Design Document | https://docs.vllm.ai/en/latest/design/model_runner_v2/ | 阅读日期 2026-10-23(与仓库 docs/design/model_runner_v2.md 逐字一致)"
-date: 2026-10
+date: 2026-11
 ---
 
 # vLLM 推理引擎
+
+**按任务进入**:[分页 KV](concepts/paged-attention.md) · [调度](concepts/continuous-batching.md) · [V1 引擎](concepts/v1-architecture.md) · [MRV2 执行层](concepts/model-runner-v2.md) · [部署](practices/production-serving.md) · [后端选型](practices/attention-backend-selection.md) · [生态评测](ecosystem/guidellm-bench.md) · [来源](references.md)。
 
 > 领域索引。**知识本体在 `concepts/` 深度概念篇**(10 篇,由源码一手实读 + 官方文档多源综合而成);生产部署清单在 `practices/`(4 篇,含选型对比);生态构件在 `ecosystem/`(10 篇,含 vllm-project 组织 47 仓源码实读)。原 `notes/` 源码笔记已全部提炼入概念篇并删除,内容自足,不依赖库外文件。本页放定位、关键事实与导航。
 
@@ -29,16 +31,16 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 
 下面这张交互图概括了 V1 引擎的分层架构:从 API shim 到 EngineCore/Worker 的调度执行解耦,再到可插拔注意力后端:
 
-<iframe src="../../diagrams/vllm-index.architecture.html"
+<iframe src="../diagrams/vllm-index.architecture.html"
         style="width:100%;height:640px;border:1px solid #ddd;border-radius:8px"
         loading="eager" title="vLLM 推理引擎架构交互图"></iframe>
 
 ## 关键事实速记
 
-- 当前文档快照:官方文档已进入 **v0.32** 时代(PyPI 最新发布 `v0.32.0`,2026-10-18;main 为 `v0.32.1rc0-353`),本地多数概念篇的源码分析基线仍是 `v0.28.1rc0-40`(commit `b74ac0bc6`),**不能把基线当作当前实现版本**;唯一按 v0.32 main 一手实读的是 [Model Runner V2 篇](concepts/model-runner-v2.md)。
+- **版本快照,不是今日最新版认证**:2026-10-23 记录 PyPI `v0.32.0`、main `v0.32.1rc0-353`。多数概念篇分析基线为 `b74ac0bc6`(v0.28.1rc0-40),MRV2 篇另读 `2d40c0609`。笔记基线不等于当前部署版本,也不能据旧篇名推断 runner。
 - **V1 架构(`vllm/v1/`)仍是本库的主线组织方式**；旧 `vllm/engine/` 仅作兼容背景，网上多数资料讲的是 V0，不能直接套用。
 - 分析基准 commit `b74ac0bc6`; FA fork `506341a143fc`
-- ⚠️ **Model Runner 时效警示(2026-10-23 复核,已从警示升级为落地篇)**:官方 Model Runner V2 设计文档仍写"尚未 feature-complete、未严格测试",但**当前 main(`v0.32.1rc0-353`)的 `VllmConfig.use_v2_model_runner` 默认返回 True**——只有命中不支持特性、无 Triton 或特定 ROCm 架构才回退 V1。因此:**默认部署跑的是 MRV2(`vllm/v1/worker/gpu/model_runner.py`)**,旧 `gpu_model_runner.py` 只是回退路径;凡引用后者的 path:line 需先确认日志里是 `Using V2 Model Runner` 还是 `... does not yet support ...`。机制、回退特性清单与实践检查见 [Model Runner V2 篇](concepts/model-runner-v2.md)。
+- **MRV2 历史口径(2026-11-04 核对指定快照)**:`b74ac0bc6` 已有 `VLLM_USE_V2_MODEL_RUNNER` 与 `use_v2_model_runner`,满足依赖/特性条件时可返回 True,不是“旧基线无开关、必为 V1 runner”。引擎 V1 与 runner V1/V2 是不同维度。`2d40c0609` 的既有观察也只代表该快照;实际部署检查配置、支持特性与 `Using V2 Model Runner`/回退日志。机制与快照对照见 [MRV2 篇](concepts/model-runner-v2.md)。
 - 主线 `vllm/v1/` 目录(本库概念篇的源码一手实读来自这里)
 - **关键版本差异(区别于网上旧资料)**:API 层 `api_server.py` 已退化为 59 行 shim,协议端点拆独立子包;模型注册从 `Models` 枚举演进为 `registry.py` 分类字典 + `_ModelRegistry`;量化合并为 `auto_gptq.py`/`auto_awq.py` + 统一 kernel 选型;executor 迁至 `vllm/v1/executor/`;采样惩罚在 `vllm/v1/sample/ops/` + argmax 不变性分组框架(详见各概念篇)
 
@@ -57,7 +59,7 @@ vLLM 是**高吞吐、低显存占用**的开源 LLM 推理与服务引擎(Apach
 | [采样参数与惩罚机制](concepts/sampling-penalties.md) | concept | Sampler 管线顺序即机制;惩罚两类数学(repetition 乘性、presence/frequency 加性)、指数竞赛免同步、to_sampling_params 三级回退 |
 | [投机解码](concepts/speculative-decoding.md) | concept | 草稿模型串行猜 γ 个 + 目标模型一次并行验证;期望每步 token = (1−α^(γ+1))/(1−α),EAGLE/MTP/Medusa/n-gram/DSpark 各后端支持状态 |
 | [API Server 与 OpenAI 兼容层](concepts/api-server-openai-compat.md) | concept | 59 行 shim + 四件套子包重构;薄路由 + app.state 注入、条件化路由注册、SO_REUSEPORT 多进程、SSE keep-alive |
-| [Model Runner V2(MRV2)](concepts/model-runner-v2.md) | concept | 执行层重设计:持久 batch 与输入解耦(永久行 + preemption 当结束)、async-first 用快照缓冲替代 barrier、StagedWriteTensor/UVA 只搬 diff、Triton Gumbel 采样、显式 CUDAGraphManager(多步 draft 融一张图);**当前 main 默认启用**,含回退 V1 的特性清单 |
+| [Model Runner V2(MRV2)](concepts/model-runner-v2.md) | concept | 持久 batch、异步快照、UVA 差量写入、Triton 采样与 CUDAGraph;区分引擎 V1 与 runner 版本,按固定 commit 解释启用条件与回退,不由旧笔记日期推断历史切换点 |
 
 ## 生产实践篇(practices)
 

@@ -1,0 +1,122 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "AWQ 的性能分水岭:numel() ≥ 256 就换内核",
+    "subtitle": "auto_awq.py:913-927。不是「AWQ 永远走 Triton」——大批量时反量化 + cuBLAS 反而更快,启发式自动切",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-awq-batch-heuristic.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_in", "label": "① 输入" },
+    { "id": "ln_judge", "label": "② 数 token 定规模" },
+    { "id": "ln_big", "label": "③ 大批量路径" },
+    { "id": "ln_small", "label": "④ 小批量路径" }
+  ],
+  "phases": [
+    { "id": "ph_in", "label": "量规模", "fromCol": 0, "toCol": 1 },
+    { "id": "ph_split", "label": "分水岭", "fromCol": 2, "toCol": 2, "variant": "emphasis" },
+    { "id": "ph_out", "label": "两条实现", "fromCol": 3, "toCol": 4 }
+  ],
+  "mainPath": ["xin", "numel", "cond", "dequant", "matmul"],
+  "nodes": [
+    {
+      "id": "xin",
+      "lane": "ln_in",
+      "col": 0,
+      "type": "frontend",
+      "label": "输入激活 x",
+      "sublabel": "形状 [..., in_features]",
+      "icon": "start",
+      "width": 150
+    },
+    {
+      "id": "numel",
+      "lane": "ln_judge",
+      "col": 1,
+      "type": "backend",
+      "label": "算有效元素数",
+      "sublabel": "x.shape[:-1].numel()",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "cond",
+      "lane": "ln_judge",
+      "col": 2,
+      "type": "security",
+      "label": "numel ≥ 256 ?",
+      "sublabel": "写死的常量阈值",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "dequant",
+      "lane": "ln_big",
+      "col": 3,
+      "type": "backend",
+      "label": "先反量化权重",
+      "sublabel": "int4 → FP16,一次性",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "matmul",
+      "lane": "ln_big",
+      "col": 4,
+      "type": "cloud",
+      "label": "torch.matmul",
+      "sublabel": "走 cuBLAS 大矩阵",
+      "icon": "success",
+      "width": 150
+    },
+    {
+      "id": "triton",
+      "lane": "ln_small",
+      "col": 3,
+      "type": "cloud",
+      "label": "ops.awq_gemm",
+      "sublabel": "专用 Triton kernel",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "fused",
+      "lane": "ln_small",
+      "col": 4,
+      "type": "cloud",
+      "label": "融合反量化 + GEMV",
+      "sublabel": "省掉整块反量化开销",
+      "icon": "success",
+      "width": 150
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "xin", "to": "numel", "label": "只数前几维", "role": "main" },
+    { "id": "e2", "from": "numel", "to": "cond", "label": "拿它比阈值", "role": "main" },
+    { "id": "e3", "from": "cond", "to": "dequant", "label": "够大:分摊划算", "role": "branch", "variant": "emphasis" },
+    { "id": "e4", "from": "dequant", "to": "matmul", "label": "FP16 直接乘", "role": "main" },
+    { "id": "e5", "from": "cond", "to": "triton", "label": "太小:别浪费带宽", "role": "branch", "variant": "emphasis" },
+    { "id": "e6", "from": "triton", "to": "fused", "label": "kernel 内部解包", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "为什么大批量反而别用专用 kernel",
+      "items": [
+        "反量化是 O(权重大小),与 batch 无关:一次做完,大 batch 摊薄",
+        "小 batch 时反量化成了纯开销,不如在 kernel 里边解包边乘",
+        "阈值 256 写死在 auto_awq.py:927,不是可调参数"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "这条折线的实际用途",
+      "items": [
+        "看到 AWQ 有时快有时慢,先看 batch 是否跨过 256",
+        "prefill(大 batch)与 decode(小 batch)天然落不同分支",
+        "调吞吐发现 AWQ 瓶颈,先怀疑这条启发式而不是玄学"
+      ]
+    }
+  ]
+}

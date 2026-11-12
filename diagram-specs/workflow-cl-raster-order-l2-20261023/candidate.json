@@ -1,0 +1,71 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "rasterization order:为什么调这一根旋钮就能提升 L2 命中",
+    "subtitle": "rasterization 决定 threadblock 沿哪个方向、按什么顺序领 tile。相邻 CTA 若处理内存相邻的 tile,它们读的 A/B 数据带会在 L2 里互相命中 —— 这比换调度器更基础,也是日常最常动的参数",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-raster-order-l2.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_bad", "label": "不调:行顺序直接领" },
+    { "id": "ln_good", "label": "调 swizzle:分组错开" },
+    { "id": "ln_knob", "label": "两根旋钮" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "领 tile 的顺序", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "对 L2 的后果", "fromCol": 2, "toCol": 2, "variant": "emphasis" }
+  ],
+  "mainPath": ["row", "adj", "miss"],
+  "nodes": [
+    { "id": "row", "lane": "ln_bad", "col": 0, "type": "frontend", "label": "沿行顺序领", "sublabel": "CTA 0、1、2… 排成一行", "icon": "start", "width": 165 },
+    { "id": "adj", "lane": "ln_bad", "col": 1, "type": "backend", "label": "相邻 CTA 跨列", "sublabel": "各自读不同的 A 行带", "width": 170 },
+    { "id": "miss", "lane": "ln_bad", "col": 2, "type": "security", "label": "L2 命中率低", "sublabel": "同一份 B 被反复从 DRAM 拉", "icon": "failure", "width": 185 },
+
+    { "id": "swz", "lane": "ln_good", "col": 1, "type": "backend", "label": "按组切块错开", "sublabel": "max_swizzle_size = 1/2/4/8", "width": 180 },
+    { "id": "band", "lane": "ln_good", "col": 2, "type": "security", "label": "同组复用同一条带", "sublabel": "A 或 B 的数据带落进 L2", "icon": "success", "width": 185 },
+
+    { "id": "dir", "lane": "ln_knob", "col": 0, "type": "database", "label": "RasterOrder", "sublabel": "AlongM / AlongN 选主方向", "width": 165 },
+    { "id": "size", "lane": "ln_knob", "col": 1, "type": "database", "label": "max_swizzle_size", "sublabel": "组大小,取值 1/2/4/8", "width": 175 },
+    { "id": "where", "lane": "ln_knob", "col": 2, "type": "external", "label": "Arguments 里配", "sublabel": "scheduler.raster_order / max_swizzle_size", "width": 210 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "row", "to": "adj", "label": "线性推进", "role": "main" },
+    { "id": "e2", "from": "adj", "to": "miss", "label": "数据带互不相邻", "role": "error" },
+    { "id": "e3", "from": "miss", "to": "swz", "label": "把索引分组", "role": "branch" },
+    { "id": "e4", "from": "swz", "to": "band", "label": "组内 CTA 挤在同带", "role": "main" },
+    { "id": "e5", "from": "swz", "to": "dir", "label": "先定主方向", "role": "branch" },
+    { "id": "e6", "from": "dir", "to": "size", "label": "再定组大小", "role": "main" },
+    { "id": "e7", "from": "size", "to": "where", "label": "落成 config", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "几何直觉(§3.4 原文)",
+      "items": [
+        "相邻 threadblock 若处理内存相邻的 tile,它们读 A/B 的 tile 片会在 L2 里互相命中 → 提高命中率、减少 DRAM 读",
+        "反之若各读各的远隔片,则 L2 复用差",
+        "所以光栅方向不是细节,是访存效率的核心"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "方向要和 operand 复用形状配合调",
+      "items": [
+        "沿哪个维度的数据带被复用,取决于 A/B 的 tile 如何被多个 CTA 共享",
+        "这是「日常最常动」的调度参数,比换 Stream-K 更基础",
+        "默认 persistent 调度先调 RasterOrder + max_swizzle,再考虑换调度器"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "swizzle 的直观理解",
+      "items": [
+        "若 tile 按行顺序领,相邻 CTA 同时碰同一行相邻段 → L2 抖动",
+        "swizzle 让每个 CTA 领到的 tile 在地址上均匀错开,提高复用",
+        "配置位置:scheduler 的 Arguments(如 PersistentTileSchedulerSm90StreamK::Arguments 的 raster_order / max_swizzle_size)",
+        "example 48 用 arguments.scheduler.raster_order / arguments.scheduler.max_swizzle_size 访问"
+      ]
+    }
+  ]
+}

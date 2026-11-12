@@ -3,12 +3,14 @@ title: 精确注意力的省显存谱系 — Rabe & Staats 的 O(1) 存注意力
 type: concept
 tags: [attention, memory-efficient-attention, online-softmax, rabe-staats, jax, tpu, gradient-checkpointing, flashattention-lineage]
 source:
+  - "pdf: Rabe & Staats v3 §5.3（accuracy 与 BLEU 分开） | https://arxiv.org/html/2112.05682v3#S5.SS3 | reviewed 2026-11-04"
   - "pdf: Self-Attention does not Need O(n²) Memory(Rabe & Staats, Google Research, ↑primary) | arXiv:2112.05682v3 (2022-10-10)"
   - "pdf: FlashAttention FA1 论文 §3.1 / 附录 B.1、B.5(引用并设专节比较本文) | arXiv:2205.14135"
   - "web: 官方 JAX 实现 + colab 复现 | https://github.com/google-research/google-research/tree/master/memory_efficient_attention (2026-09 实测 200)"
   - "web: PyTorch 复现(lucidrains) | https://github.com/lucidrains/memory-efficient-attention-pytorch (2026-09 实测 200)"
   - "web: 上游方法脉络 — Online normalizer calculation for softmax(Milakov & Gimelshein, FA1 附录标注为[60]) | https://arxiv.org/abs/1805.02867 (2026-09 实测 200);lazy softmax 首见 MNNFast, Jang et al. ISCA 2019"
 date: 2026-09
+reviewed: 2026-11-04
 ---
 
 # 精确注意力的省显存谱系:Rabe & Staats 的 O(1) 存注意力
@@ -17,7 +19,7 @@ date: 2026-09
 
 ## TL;DR
 
-Rabe & Staats(Google Research, arXiv:2112.05682)指出社区长期误传"self-attention 需要 O(n²) 显存"其实不成立。做法极简:**把 softmax 的除法推到最后一刻**(lazy softmax,`attention = Σ_i v_i e^{s_i} / Σ_j e^{s_j}`),于是单个 query 只需维护两个累加量(向量 `v*`、标量 `s*`)→ **单 query attention O(1) 额外显存,self-attention O(log n)**(多一个 query 索引)。数值稳定靠**在线 max 重归一**(和 online softmax 同一招:遇新 max 就把已累加量乘 `e^{m*-m_i}` 收缩)。工程实现上为利用 TPU/GPU 并行,分块处理 → 实际 **O(√n) 显存**;反向传播用 **gradient checkpointing** 重算而非存中间量。效果:n=16384 时 self-attention 显存开销**推理降 59×、反传降 32×**,运行时与标准实现差几个百分点(WMT en-de 训到 100K step:62.69 vs 62.59 BLEU,几乎重合)。
+Rabe & Staats(Google Research, arXiv:2112.05682)指出“self-attention 必须 O(n²) 额外显存”不是数学约束。**延迟 softmax 除法**并在线重归一后,固定头维下单 query 只维护向量与标量累加量,为 O(1) 额外空间;逐 query 处理时索引需 O(log n) 位,输入/输出空间另计。工程实现为利用并行采用分块,论文给出 O(√n) 额外空间方案;反向用 checkpointing。论文报告 n=16384 时推理/反传显存开销下降 59×/32×;孤立算子推理慢约 8–13%、反传慢约 30–35%,不是一概“只差几个百分点”。WMT en-de 100K step 的 **evaluation accuracy 为 62.69 vs 62.59**;BLEU 相近是 Figure 4 的另一个观察,不能把这两个数字当 BLEU。
 
 一句话心法:**显存爆炸来自"先物化 N×N 矩阵再归一化"这个实现习惯,不是 attention 的数学本质——把归一化延迟到末尾,N×N 就永远不必存在**。
 
@@ -75,7 +77,7 @@ R&S 的时间复杂度仍是 **self-attention O(n²)、单 query O(n)**。作者
 ```
 
 - **`jax.checkpoint(prevent_cse=False)` 包在 `summarize_chunk` 上**是反向省显存的关键:前向丢弃块内中间量,反传时重算;
-- **`stop_gradient(max_score)`**:max 只当归一化常数,不参与梯度(否则梯度路径会走 max 的分支);
+- **`stop_gradient(max_score)`**:实现将 max 当归一化辅助量,避免额外 max 分支求导;不能据此推断不 detach 就一定改变数学梯度。对完整的 `exp(s-m)/Σexp(s-m)` 表达式,公共平移 m 的梯度解析上抵消,浮点与具体自动微分实现仍需测试;
 - **块大小是内存/速度的调节旋钮**:严格省内存该取 query_chunk=常数、key_chunk=√n,但实际运行时受硬件影响,论文把两个参数暴露给程序员;
 - 作者注:**多阶段摘要可做到 O(log n)**,但会让实现复杂化,故未采用;
 - 官方实现:github.com/google-research/google-research/tree/master/memory_efficient_attention(含 colab)。
@@ -100,7 +102,7 @@ R&S 的时间复杂度仍是 **self-attention O(n²)、单 query O(n)**。作者
 其他关键数字:
 - **n=16384 时显存开销推理降 59×、反传降 32×**(摘要口径);
 - **正确性**:与 Flax 标准实现在不 OOM 的档位上,最大绝对差 < 1.8×10⁻⁷(σ=1 正态输入,n=2¹⁴)——**精确同函数,不是近似**;
-- **训练等价**:WMT en-de,Flax Transformer 换成本实现,100K step 后 62.69 vs 62.59 BLEU,曲线几乎重合;训练中还观察到 steps/sec **+4%** 的小幅提升(算子孤立测是变慢的,嵌进大架构后反而略快——作者提醒孤立基准不等于端到端);
+- **训练对照**:WMT en-de,Flax Transformer 换成本实现,100K step 后 evaluation accuracy 为 62.69 vs 62.59;Figure 4 的 BLEU 曲线相近,未将其读成上述数值。论文还报告 steps/sec **+4%**(孤立算子慢不代表端到端必然慢);这些是原文实验,未在本库重新训练认证;
 - **vs 只切 query(Reformer 式 query chunking)**:query chunk ≤64 时显著变慢;固定同样显存预算下,序列越长 query-chunking 越吃亏(被迫把 chunk 压到 ≤64),而 R&S 因为**同时切 K/V**不受此限——这是"必须两个维度都分块"的实证理由;
 - 与 FA1 的三点差异(FA1 附录 B.5):① 优化目标(footprint vs 访存次数)→ FA 2-4× 加速、R&S 同速;② 块间传递(R&S 存**每块临时输出**+统计量、末尾合并 K 份;FA **增量更新单份输出**)→ FA 总显存更小;③ 反向(R&S 用 gradient checkpointing 重算矩阵与临时输出;FA **解析推导反向**,只重算 attention matrix)→ FA 反向更省更快。
 
@@ -109,7 +111,7 @@ R&S 的时间复杂度仍是 **self-attention O(n²)、单 query O(n)**。作者
 1. **想省显存又要快 → 用 FlashAttention;只想要一个"数学上等价、可 drop-in 替换"的省显存实现(JAX/TPU 栈)→ memory_efficient_attention**。R&S 的价值一半是工程、一半是**认知纠偏**:"attention 天生吃 O(n²) 显存"是实现习惯,不是数学约束——做架构/硬件设计时别把它当前提。
 2. **chunk size 要自己调**:默认值(query 1024 / key 4096)是 TPU 上"运行时影响最小"的折中,不是内存最优;GPU 上要按 SRAM/HBM 重新扫(参照 [flash-attention-implementation](../implementation/flash-attention-implementation.md) 篇 §1.4 的 `Bc≈M/(4d)` 思路)。
 3. **反向必须 checkpointing**:否则前向省的显存被反传的中间量全吃回去;注意 checkpoint 要包在 `summarize_chunk` 这一层,`prevent_cse=False` 避免公共子表达式消除干扰重算语义。
-4. **max 的 `stop_gradient` 不能省**:否则梯度会流进 max 选择分支,与标准 softmax 梯度不一致。
+4. **max 的 detach 是实现选择,不是普遍正确性定理**:公共平移 m 在精确归一化表达式中的导数为零;保留原实现的 stop_gradient 可避免多余求导路径。改写时用小形状高精度参考对照前向及 Q/K/V 梯度,覆盖极值、重复最大值与 mask 边界,而不是只检查是否调用 detach。
 5. **rescale 是正确性要求,不是精度优化**:去掉 `e^{m*-m_i}` 收缩,各块分母基准不同 → 结果数学上错(与 flash-attention-implementation 篇 §6 checklist 数值稳定性条目同一条坑)。
 6. **孤立算子基准会误导**:本实现单测算子慢 8-13%,放进 Transformer 训练反而快 4%——评估省显存 kernel 要看端到端 steps/sec。
 7. **谱系记法**(便于串库):Milakov & Gimelshein 2018(online softmax 归一化,arXiv:1805.02867)→ Jang et al. 2019(lazy softmax,带宽视角)→ **Rabe & Staats 2021(显存视角 + 稳定化 + 反传 + 实现)** → FlashAttention 2022(访存次数视角 + CUDA + 解析反向)→ FA2/FA3/FA4(并行度与硬件特性)。

@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "一次请求的决策流:从信号到最终响应",
+    "subtitle": "信号层只陈述事实,决策层按 priority 求值布尔树,选择层打分,插件链做前后处理",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-sr-decision-flow.sequence.html"
+  },
+  "participants": [
+    {
+      "id": "c",
+      "type": "frontend",
+      "label": "Client"
+    },
+    {
+      "id": "s",
+      "type": "backend",
+      "label": "Signal Engine"
+    },
+    {
+      "id": "d",
+      "type": "security",
+      "label": "DecisionEngine"
+    },
+    {
+      "id": "l",
+      "type": "database",
+      "label": "Selector"
+    },
+    {
+      "id": "p",
+      "type": "backend",
+      "label": "Plugins"
+    },
+    {
+      "id": "m",
+      "type": "cloud",
+      "label": "模型后端"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "c",
+      "to": "s",
+      "y": 180,
+      "label": "请求 r(消息/元数据/身份)"
+    },
+    {
+      "id": "m2",
+      "from": "s",
+      "to": "d",
+      "y": 250,
+      "label": "SignalMatches",
+      "note": "13 类信号并行评估(匹配位+置信度)"
+    },
+    {
+      "id": "m3",
+      "from": "d",
+      "to": "l",
+      "y": 330,
+      "label": "命中的 Decision(候选模型集)",
+      "note": "按 priority 求值布尔规则树"
+    },
+    {
+      "id": "m4",
+      "from": "l",
+      "to": "p",
+      "y": 410,
+      "label": "选定 m* + 插件链",
+      "note": "static/elo/decision-model 打分"
+    },
+    {
+      "id": "m5",
+      "from": "p",
+      "to": "m",
+      "y": 490,
+      "label": "转发(provider 绑定/鉴权)",
+      "note": "前置:PII 脱敏/压缩/系统提示"
+    },
+    {
+      "id": "m6",
+      "from": "m",
+      "to": "p",
+      "y": 570,
+      "label": "响应",
+      "variant": "return"
+    },
+    {
+      "id": "m7",
+      "from": "p",
+      "to": "c",
+      "y": 650,
+      "label": "最终响应 + 诊断头",
+      "variant": "return",
+      "note": "后置:HaluGate 幻觉检测/缓存写入"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "信号 ≠ 决策",
+      "items": [
+        "信号层只回答「命中了哪些事实」,不做选择",
+        "把事实与策略分开,是可组合性的关键"
+      ]
+    }
+  ]
+}

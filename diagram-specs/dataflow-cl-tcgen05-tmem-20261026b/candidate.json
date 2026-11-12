@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "TMEM 分配生命周期:tensor memory 专属累加器",
+    "locale": "zh-CN",
+    "subtitle": "128 rows × 512 cols(SM100)/ 576(SM107),每 cell 32-bit;分配列数 power-of-2 ∈ [32,512]",
+    "output": "diagrams/cl-tcgen05-tmem.dataflow.html"
+  },
+  "stages": [
+    {
+      "label": "① 分配"
+    },
+    {
+      "label": "② 累加"
+    },
+    {
+      "label": "③ 释放"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "alloc",
+      "type": "backend",
+      "label": "tcgen05.alloc",
+      "sublabel": "列数 power-of-2 ∈ [32,512],切片 32 列",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "acc",
+      "type": "backend",
+      "label": "累加器 D 落 TMEM",
+      "sublabel": "128×512(SM100)/576(SM107),每 cell 32-bit",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "use",
+      "type": "backend",
+      "label": "tensor core 读写",
+      "sublabel": "寄存器压力大减,单 CTA 塞更大 tile",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "dealloc",
+      "type": "backend",
+      "label": "tcgen05.dealloc",
+      "sublabel": "relinquish_alloc_permit 让出许可",
+      "stage": 2,
+      "row": 0
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "alloc",
+      "to": "acc",
+      "label": "切片粒度 32 列"
+    },
+    {
+      "id": "f2",
+      "from": "acc",
+      "to": "use",
+      "label": "累加器专属,非通用存储"
+    },
+    {
+      "id": "f3",
+      "from": "use",
+      "to": "dealloc",
+      "label": "释放许可"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么搬进 TMEM",
+      "items": [
+        "Hopper wgmma 累加器占大量寄存器,限制 tile 尺寸",
+        "放 TMEM 后寄存器压力大减",
+        "2-CTA 拼接把可驻留 tile 翻倍(FA4 首要手段)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "规格(一手文件)",
+      "items": [
+        "Sm100TmemCapacityRows=128,Columns=512",
+        "SM107=576 列,每 cell 32-bit",
+        "不要理解成通用 shared memory 或寄存器堆"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "归一化位置的三次挪动:post-norm → pre-norm → RMSNorm",
+    "subtitle": "原 Transformer 把归一化放在残差相加之后;GPT-2 起挪到子层输入;LLaMA 再砍掉减均值。三处改动只为两件事:深层能稳训、每层少算一次",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-llm-norm-lineage.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_post", "label": "① post-norm(原 Transformer)" },
+    { "id": "ln_pre", "label": "② pre-norm(GPT-2 起成为主流)" },
+    { "id": "ln_rms", "label": "③ pre-RMSNorm(LLaMA 定型)" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "归一化放在哪", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "对深层训练的后果", "fromCol": 2, "toCol": 3, "variant": "emphasis" }
+  ],
+  "nodes": [
+    { "id": "a1", "lane": "ln_post", "col": 0, "type": "backend", "label": "残差相加", "sublabel": "x + Sublayer(x)", "icon": "start" },
+    { "id": "a2", "lane": "ln_post", "col": 1, "type": "security", "label": "LayerNorm", "sublabel": "归一化在相加之后" },
+    { "id": "a3", "lane": "ln_post", "col": 2, "type": "security", "label": "梯度穿层层 LN", "sublabel": "残差主干不再恒等" },
+    { "id": "a4", "lane": "ln_post", "col": 3, "type": "external", "label": "深层不稳", "sublabel": "必须 LR warmup", "icon": "failure" },
+    { "id": "b1", "lane": "ln_pre", "col": 0, "type": "backend", "label": "归一化前移", "sublabel": "Sublayer(Norm(x))", "icon": "start" },
+    { "id": "b2", "lane": "ln_pre", "col": 1, "type": "backend", "label": "残差恒等直通", "sublabel": "主干不被归一化打断" },
+    { "id": "b3", "lane": "ln_pre", "col": 2, "type": "backend", "label": "梯度直达底层", "sublabel": "量级与层数无关", "icon": "success" },
+    { "id": "b4", "lane": "ln_pre", "col": 3, "type": "security", "label": "须补 final norm", "sublabel": "pre-norm 的代价" },
+    { "id": "c1", "lane": "ln_rms", "col": 2, "type": "backend", "label": "去掉减均值", "sublabel": "re-centering 不关键" },
+    { "id": "c2", "lane": "ln_rms", "col": 3, "type": "backend", "label": "只除均方根", "sublabel": "x/RMS(x)·g,无 bias", "icon": "success" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "a1", "to": "a2", "label": "先相加再归一化", "role": "main" },
+    { "id": "e2", "from": "a2", "to": "a3", "label": "每过一层多穿一次", "role": "main" },
+    { "id": "e3", "from": "a3", "to": "a4", "label": "梯度被层数放大", "role": "error" },
+    { "id": "e4", "from": "a4", "to": "b1", "label": "改法:归一化前移", "role": "branch" },
+    { "id": "e5", "from": "b1", "to": "b2", "label": "主干不参与归一化", "role": "main" },
+    { "id": "e6", "from": "b2", "to": "b3", "label": "无衰减回传", "role": "main" },
+    { "id": "e7", "from": "b3", "to": "b4", "label": "但输出前要收口", "role": "main" },
+    { "id": "e8", "from": "b4", "to": "c1", "label": "再省一步统计量", "role": "branch" },
+    { "id": "e9", "from": "c1", "to": "c2", "label": "只留缩放", "role": "main" }
+  ],
+  "mainPath": ["a1", "a2", "a3", "a4"],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "post-norm 的病灶",
+      "items": [
+        "x = LayerNorm(x + Sublayer(x)):归一化在相加之后",
+        "梯度必须反复穿过每层的 LayerNorm,残差主干不再恒等直通",
+        "Xiong et al.(ICML 2020, arXiv:2002.04745):post-LN 的梯度在最底层附近被层数放大",
+        "工程后果:通常要 learning-rate warmup 才能收敛"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "pre-norm 为什么赢",
+      "items": [
+        "x = x + Sublayer(Norm(x)):残差主干是干净恒等通路",
+        "pre-LN 的梯度量级与层数无关(同篇论文的理论结论)",
+        "代价一:输出前要补一个 final norm",
+        "代价二:各层贡献更均匀,理论「有效深度」略低",
+        "但工程上稳定压倒一切:GPT-2/3、LLaMA 全是 pre-norm"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "RMSNorm 改了什么(Zhang & Sennrich, NeurIPS 2019)",
+      "items": [
+        "LayerNorm 做两件事:减均值(re-centering)+ 除标准差(re-scaling)",
+        "结论:re-centering 不是关键,re-scaling 才是",
+        "RMSNorm(x) = x / sqrt(mean(x²)+ε) · g —— 不减均值、无 bias b",
+        "省的是每层一次均值统计与减法,以及一个 bias 向量",
+        "质量:翻译/语言建模上与 LayerNorm 持平或更好,PaLM/LLaMA 大规模验证"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "LLaMA 的实际用法",
+      "items": [
+        "x + Attention(RMSNorm(x))",
+        "x + FFN(RMSNorm(x))",
+        "输出前再 final RMSNorm —— 即 pre-RMSNorm",
+        "读任何新架构先看这一处:归一化放在残差前还是后"
+      ]
+    }
+  ]
+}

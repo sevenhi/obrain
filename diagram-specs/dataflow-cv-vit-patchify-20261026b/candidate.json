@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "ViT 输入流水线:patchify + [CLS] + 位置编码",
+    "locale": "zh-CN",
+    "subtitle": "把 224×224 图像切成 16×16 的 196 个 patch,投影成「视觉词」,拼 [CLS] 后交给标准 transformer",
+    "output": "diagrams/cv-vit-patchify.dataflow.html"
+  },
+  "stages": [
+    {
+      "label": "① 切块"
+    },
+    {
+      "label": "② 投影"
+    },
+    {
+      "label": "③ 加 token"
+    },
+    {
+      "label": "④ 编码"
+    },
+    {
+      "label": "⑤ 分类"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "img",
+      "type": "backend",
+      "label": "224×224×3 图像",
+      "sublabel": "RGB",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "patch",
+      "type": "backend",
+      "label": "切格 → 196 patch",
+      "sublabel": "每块 16×16×3=768 维",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "proj",
+      "type": "backend",
+      "label": "线性投影 E",
+      "sublabel": "Conv2d(16,stride16) 一步完成切块+投影",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "cls",
+      "type": "backend",
+      "label": "[CLS] + 1D 位置编码",
+      "sublabel": "197 个 token",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "enc",
+      "type": "backend",
+      "label": "encoder ×L",
+      "sublabel": "LN→MHSA→LN→MLP",
+      "stage": 4,
+      "row": 0
+    },
+    {
+      "id": "head",
+      "type": "external",
+      "label": "取 [CLS] 输出分类",
+      "sublabel": "MLP → 类别 logits",
+      "stage": 4,
+      "row": 1
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "img",
+      "to": "patch",
+      "label": "切 16×16"
+    },
+    {
+      "id": "f2",
+      "from": "patch",
+      "to": "proj",
+      "label": "乘 E 投影到 D 维"
+    },
+    {
+      "id": "f3",
+      "from": "proj",
+      "to": "cls",
+      "label": "拼 [CLS] + 位置编码"
+    },
+    {
+      "id": "f4",
+      "from": "cls",
+      "to": "enc",
+      "label": "标准 encoder"
+    },
+    {
+      "id": "f5",
+      "from": "enc",
+      "to": "head",
+      "label": "[CLS] 位置输出"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三个易错细节",
+      "items": [
+        "patch embedding = 卷积(kernel=stride=16)",
+        "位置编码是 1D 可学习的,不是 sin-cos 也不是 2D",
+        "[CLS] 无像素含义,靠注意力收集信息"
+      ]
+    }
+  ]
+}

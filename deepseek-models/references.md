@@ -2,10 +2,12 @@
 title: deepseek-models 外部链接索引
 type: reference
 tags: [deepseek, math, theorem-proving, coding, grpo, rl, moe, references]
-date: 2026-10
+date: 2026-11
 ---
 
 # References — deepseek-models
+
+- R1 官方论文固定快照 §2.2/§4.1(GRPO 与训练策略;教学伪代码另见条目,不当作官方实现) — https://github.com/deepseek-ai/DeepSeek-R1/blob/0cf78561f1d51c84a21b2190626b21116d5c68bb/DeepSeek_R1.pdf
 
 > 只放链接索引,不复制全文(库规约)。全部 URL 于 2026-10-09 curl 实测存活(仓库返回 200,arXiv 返回 200)。论文结论以 arXiv 摘要为准;README 与摘要数字冲突处已在各概念篇标注。
 

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "async barrier vs 换缓冲:同一块内存被 CPU 写、GPU 异步读",
+    "subtitle": "V1 用 pinned 持久状态 + 异步 barrier 包住临界区;MRV2 让状态不 pin、每次拷一份临时 pinned 快照——CPU 只写私有内存,GPU 只读快照,不需要任何显式同步",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-async-snapshot.architecture.html",
+    "viewBox": [1130, 660]
+  },
+  "components": [
+    { "id": "cpu_v1", "type": "frontend", "label": "CPU 写 self.states", "sublabel": "pinned=True,与 GPU 共享同一块", "pos": [50, 60], "size": [260, 80] },
+    { "id": "mem_v1", "type": "database", "label": "同一块 pinned 内存", "sublabel": "写与读撞在同一地址", "pos": [400, 60], "size": [280, 80] },
+    { "id": "gpu_v1", "type": "backend", "label": "GPU 非阻塞拷贝读", "sublabel": ".to(cuda, non_blocking=True)", "pos": [770, 60], "size": [300, 80] },
+    { "id": "bar", "type": "security", "label": "异步 barrier 包住临界区", "sublabel": "漏保护 = 竞态 bug", "pos": [400, 210], "size": [300, 96] },
+    { "id": "cost1", "type": "external", "label": "代价① 缓冲区容易漏", "sublabel": "漏了就偶发错行", "pos": [770, 210], "size": [300, 76] },
+    { "id": "cost2", "type": "external", "label": "代价② CPU 工作被塞进 barrier", "sublabel": "同步点本身吃掉 overlap", "pos": [770, 320], "size": [300, 76] },
+    { "id": "cpu_v2", "type": "frontend", "label": "CPU 写私有 states", "sublabel": "pin_memory=False", "pos": [50, 400], "size": [260, 80] },
+    { "id": "tmp", "type": "database", "label": "pin_memory() 拷一份快照", "sublabel": "tmp_states,每步一份", "pos": [400, 400], "size": [280, 80] },
+    { "id": "gpu_v2", "type": "backend", "label": "GPU 只读快照", "sublabel": "同一块地址永不被 CPU 改写", "pos": [770, 400], "size": [300, 80] },
+    { "id": "nogap", "type": "security", "label": "零显式同步", "sublabel": "永远不会漏掉某块缓冲", "pos": [400, 530], "size": [300, 76] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "V1:靠同步点消竞态(要记得保护每一块缓冲)", "wraps": ["cpu_v1", "mem_v1", "gpu_v1", "bar", "cost1", "cost2"] },
+    { "kind": "region", "label": "MRV2:靠换缓冲消竞态(结构上不可能漏)", "wraps": ["cpu_v2", "tmp", "gpu_v2", "nogap"] }
+  ],
+  "connections": [
+    { "id": "c1", "from": "cpu_v1", "to": "mem_v1", "label": "直接写" },
+    { "id": "c2", "from": "mem_v1", "to": "gpu_v1", "label": "异步读同一块" },
+    { "id": "c3", "from": "bar", "to": "mem_v1", "label": "必须包住", "variant": "emphasis" },
+    { "id": "c4", "from": "bar", "to": "cost1", "label": "漏一块就出事", "variant": "dashed" },
+    { "id": "c5", "from": "bar", "to": "cost2", "label": "所有 CPU 工作都在里面", "variant": "dashed" },
+    { "id": "c6", "from": "cpu_v2", "to": "tmp", "label": "每步拷一份" },
+    { "id": "c7", "from": "tmp", "to": "gpu_v2", "label": "GPU 只认快照" },
+    { "id": "c8", "from": "nogap", "to": "tmp", "label": "读取端与写入端物理分离", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "可复用的判断(原文明确给出)",
+      "items": [
+        "CPU↔GPU 竞态用「双缓冲 / 快照」消,不用「同步点」消",
+        "只要数据量小于一次同步的代价,双缓冲总是更优",
+        "且更难写错:正确性靠结构保证,不靠人的记性",
+        "代价是每步多一次 CPU 内拷贝(量小)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "这条设计直接改了 max_concurrent_batches",
+      "items": [
+        "async + MRV2:return pp_size + 1(每 PP 级一条 + 一条在飞)",
+        "V1:pp_size=1 时只能 2 条(V1 不完整支持 async + PP)",
+        "非 async:return pp_size",
+        "这个数同时决定 batch_queue 深度与 UVA 环形缓冲层数"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "同一份配置约束两个地方",
+      "items": [
+        "max_concurrent_batches 决定 engine 的 batch_queue 深度(deque maxlen)",
+        "也决定 UVA 环形缓冲至少要几层",
+        "��边必须对齐,否则出现「元数据串味」(block table 偶发错行)",
+        "MRV2 在 worker 初始化时按它反推 set_default_max_concurrency()"
+      ]
+    }
+  ]
+}

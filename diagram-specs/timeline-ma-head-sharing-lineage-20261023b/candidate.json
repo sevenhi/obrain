@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "diagram_type": "timeline",
+  "meta": {
+    "title": "从 MHA 到 MLA:五年里 KV 头是怎么被一路砍下去的",
+    "subtitle": "MHA(容量)→ MQA(极致省带宽,质量受损)→ GQA(工程折中,2023 后主流)→ MLA(低秩压缩,把「共享」推到「压缩」)",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-head-sharing-lineage.timeline.html",
+    "evidence": "observed",
+    "timezone": "UTC"
+  },
+  "layout": { "width": 1000 },
+  "lanes": [
+    { "id": "arch", "label": "结构演进" },
+    { "id": "adopt", "label": "工业采用" }
+  ],
+  "events": [
+    { "id": "e1", "at": "2019-11-06T00:00:00Z", "lane": "arch", "title": "MQA 提出(Shazeer 2019)", "detail": "「一个 write-head 就够了」:H_kv=1,PaLM 540B 大规模验证", "kind": "change" },
+    { "id": "e2", "at": "2020-05-28T00:00:00Z", "lane": "adopt", "title": "GPT-3 175B:96/96 MHA", "detail": "前 GQA 时代,残差/注意力都是 MHA", "kind": "default" },
+    { "id": "e3", "at": "2022-04-05T00:00:00Z", "lane": "adopt", "title": "PaLM 540B:48/1 等效 MQA", "detail": "MQA 的大规模首次验证", "kind": "default" },
+    { "id": "e4", "at": "2023-02-24T00:00:00Z", "lane": "adopt", "title": "LLaMA 7/13/33B:全 MHA", "detail": "65B 亦 MHA —— 转折点还没到", "kind": "default" },
+    { "id": "e5", "at": "2023-05-23T00:00:00Z", "lane": "arch", "title": "GQA 提出(Ainslie 2023)", "detail": "分组共享 + 5% uptrain 配方;GQA-1≡MQA、GQA-H≡MHA", "kind": "change" },
+    { "id": "e6", "at": "2023-07-18T00:00:00Z", "lane": "adopt", "title": "Llama 2 70B:64/8 GQA-8", "detail": "但 7/13B 仍是 MHA —— 大模型先转", "kind": "change" },
+    { "id": "e7", "at": "2023-10-10T00:00:00Z", "lane": "adopt", "title": "Mistral 7B:32/8 + SWA", "detail": "小模型也用 GQA 了,sliding_window=4096", "kind": "change" },
+    { "id": "e8", "at": "2024-01-08T00:00:00Z", "lane": "adopt", "title": "Mixtral 8x7B:32/8", "detail": "同 Mistral 7B attention,FFN 换 MoE", "kind": "default" },
+    { "id": "e9", "at": "2024-05-06T00:00:00Z", "lane": "arch", "title": "MLA(DeepSeek-V2)", "detail": "低秩压缩:latent 代替各头 K/V,KV cache 省 93.3%", "kind": "change" },
+    { "id": "e10", "at": "2024-07-31T00:00:00Z", "lane": "adopt", "title": "Llama 3 全系 H/8 GQA", "detail": "论文自述:improve inference speed and reduce the size of KV caches", "kind": "change" },
+    { "id": "e11", "at": "2024-12-27T00:00:00Z", "lane": "arch", "title": "DeepSeek-V3:61 层 / 128 头 / d_c=512", "detail": "每 token cache ≈ 512+64 维,而非 128×128×2", "kind": "change" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "演进逻辑一句话",
+      "items": [
+        "MHA(容量优先)→ MQA(极致省带宽,质量受损)",
+        "→ GQA(工程折中,2023 后主流)→ MLA(低秩压缩)",
+        "每一步都在回答同一个问题:解码期 KV 带宽怎么最小化"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "2023 后的事实标准",
+      "items": [
+        "Llama 2 70B、Llama 3 全系(8 KV 头)、Mistral 7B(32/8)、Mixtral、Qwen 全系",
+        "Qwen2 技术报告 §2.2.1 原话:GQA optimizes KV cache usage during inference",
+        "MQA 今天基本只用于存量(PaLM / Falcon)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "读 config 的判定规则",
+      "items": [
+        "num_key_value_heads == num_attention_heads → MHA",
+        "== 1 → MQA;介于两者 → GQA-g(g = num_key_value_heads)",
+        "head_dim = hidden_size / num_attention_heads(除以 Q 头数,不是 KV 头数)"
+      ]
+    }
+  ]
+}

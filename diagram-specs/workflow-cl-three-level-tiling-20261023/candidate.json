@@ -1,0 +1,76 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "三层 tiling 的嵌套循环:threadblock → warp → MMA 指令",
+    "subtitle": "CUTLASS 把「一次 GEMM」映射成三层嵌套循环,每层 tile 尺寸都是模板参数;mainloop 的 cta_k 循环是分段式的,每段一个 stage",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-three-level-tiling.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_cta", "label": "外层:threadblock 级并发" },
+    { "id": "ln_warp", "label": "中层:warp 级并发" },
+    { "id": "ln_mma", "label": "内层:MMA 指令级" },
+    { "id": "ln_notes", "label": "这一层在决定什么" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 切输出矩阵", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 分到 warp 与 stage", "fromCol": 2, "toCol": 3 },
+    { "id": "ph3", "label": "③ 指令级累加", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "nodes": [
+    { "id": "cta", "lane": "ln_cta", "col": 0, "type": "backend", "label": "遍历 cta_m / cta_n", "sublabel": "每个 CTA 负责输出一块", "icon": "start" },
+    { "id": "stage", "lane": "ln_cta", "col": 1, "type": "security", "label": "遍历 cta_k(每段=一 stage)", "sublabel": "mainloop,流水线划分单位", "icon": "decision" },
+    { "id": "warp", "lane": "ln_warp", "col": 2, "type": "backend", "label": "遍历 warp_m / warp_n", "sublabel": "WarpTileM/N,通常不切 K", "icon": "active" },
+    { "id": "kgroup", "lane": "ln_warp", "col": 3, "type": "backend", "label": "k Group 完全展开", "sublabel": "编译期展开,无循环开销", "icon": "neutral" },
+    { "id": "mma", "lane": "ln_mma", "col": 4, "type": "backend", "label": "mma_instruction(d,a,b,c)", "sublabel": "Tensor Core 一次乘加", "icon": "active" },
+    { "id": "acc", "lane": "ln_mma", "col": 5, "type": "backend", "label": "累加进寄存器 C 的部分和", "sublabel": "等 K 走完才写回", "icon": "success" },
+    { "id": "n_cta", "lane": "ln_notes", "col": 0, "type": "external", "label": "决定并行度 / 占用率", "sublabel": "CtaTileM/N 太大并行不足", "icon": "neutral" },
+    { "id": "n_smem", "lane": "ln_notes", "col": 2, "type": "external", "label": "决定 smem→reg 分布", "sublabel": "WarpTileK 决定 k Group", "icon": "neutral" },
+    { "id": "n_reg", "lane": "ln_notes", "col": 4, "type": "external", "label": "决定寄存器布局与吞吐", "sublabel": "Ampere 16×8×16 / Hopper 更大", "icon": "neutral" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "cta", "to": "stage", "label": "CTA 内沿 K 分段", "role": "main" },
+    { "id": "e2", "from": "stage", "to": "warp", "label": "每个 stage 内分给 warp", "role": "main" },
+    { "id": "e3", "from": "warp", "to": "kgroup", "label": "warp 内沿 K 展开", "role": "main" },
+    { "id": "e4", "from": "kgroup", "to": "mma", "label": "每步发一条 mma", "role": "main" },
+    { "id": "e5", "from": "mma", "to": "acc", "label": "结果累加", "role": "main" },
+    { "id": "e6", "from": "acc", "to": "stage", "label": "还有 cta_k?下一 stage", "role": "branch", "variant": "dashed" },
+    { "id": "e7", "from": "cta", "to": "n_cta", "label": "尺寸选型的后果", "variant": "dashed", "role": "async" },
+    { "id": "e8", "from": "warp", "to": "n_smem", "label": "尺寸选型的后果", "variant": "dashed", "role": "async" },
+    { "id": "e9", "from": "mma", "to": "n_reg", "label": "尺寸选型的后果", "variant": "dashed", "role": "async" }
+  ],
+  "mainPath": ["cta", "stage", "warp", "kgroup", "mma", "acc"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "典型尺寸量级(FP16,给个数感)",
+      "items": [
+        "CTA tile:128×128×32 主流;256×128 并行度紧,更小则 HBM 搬运多",
+        "Warp tile:64×64×32;实践中多数配置 WarpTileK = CtaTileK",
+        "MMA tile:Ampere 16×8×16(m16n8k16);Hopper wgmma 更大",
+        "mainloop 级数:常 3–6 级 stage"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么 WarpTileK 通常等于 CtaTileK",
+      "items": [
+        "warp 沿 M/N 切分、不切 K",
+        "于是 warp_k 循环退化为一次迭代",
+        "K 方向的并行交给 stage(pipelining),不交给 warp",
+        "这也是「三层对应三种并发粒度」在实践中的具体分工"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "读懂任意 CUTLASS kernel 的两个问题",
+      "items": [
+        "三层问题:哪个 CTA 负责哪块输出 / CTA 内几个 warp 怎么分 / 每个 warp 一次算多大 MMA tile",
+        "数据在哪:global→smem 与 smem→register 分别由谁搬",
+        "谁负责搬 = mainloop,谁负责写回 = epilogue",
+        "tile 尺寸全是模板参数,不是定死的数"
+      ]
+    }
+  ]
+}

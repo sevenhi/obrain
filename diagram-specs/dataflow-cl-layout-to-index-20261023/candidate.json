@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Layout 是什么:把逻辑坐标翻译成内存偏移",
+    "subtitle": "同一个 (i,j) 坐标,换一条 Stride 就换一种排布——CuTe 的 Layout = Shape + Stride,是「怎么排」的形式化",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-layout-to-index.dataflow.html"
+  },
+  "stages": [
+    { "label": "① 逻辑坐标" },
+    { "label": "② 取该维步长" },
+    { "label": "③ 乘加合成" },
+    { "label": "④ 落到线性内存" }
+  ],
+  "nodes": [
+    { "id": "coord", "type": "frontend", "label": "坐标 (i, j)", "sublabel": "张量里的逻辑二维位置", "stage": 0, "row": 0 },
+    { "id": "shape", "type": "backend", "label": "Shape<_4,_8>", "sublabel": "只有形状,还没说怎么排", "stage": 0, "row": 1 },
+    { "id": "stride_row", "type": "backend", "label": "Stride<_8,_1>", "sublabel": "行主序:行跨 8、列跨 1", "stage": 1, "row": 0 },
+    { "id": "stride_col", "type": "backend", "label": "Stride<_1,_4>", "sublabel": "列主序:行跨 1、列跨 4", "stage": 1, "row": 1 },
+    { "id": "mul_row", "type": "backend", "label": "i·8 + j·1", "sublabel": "行主序索引", "stage": 2, "row": 0 },
+    { "id": "mul_col", "type": "backend", "label": "i·1 + j·4", "sublabel": "列主序索引", "stage": 2, "row": 1 },
+    { "id": "mem_row", "type": "database", "label": "内存第 k 个元素", "sublabel": "(2,3) → 19,连续行", "stage": 3, "row": 0 },
+    { "id": "mem_col", "type": "database", "label": "内存第 k 个元素", "sublabel": "(2,3) → 14,连续列", "stage": 3, "row": 1 }
+  ],
+  "flows": [
+    { "id": "f1", "from": "shape", "to": "coord", "label": "Shape 给出各维大小", "variant": "dashed" },
+    { "id": "f2", "from": "coord", "to": "stride_row", "label": "按行主序查步长" },
+    { "id": "f3", "from": "coord", "to": "stride_col", "label": "按列主序查步长" },
+    { "id": "f4", "from": "stride_row", "to": "mul_row", "label": "步长 × 下标,逐维累加" },
+    { "id": "f5", "from": "stride_col", "to": "mul_col", "label": "同一套乘法,只换步长" },
+    { "id": "f6", "from": "mul_row", "to": "mem_row", "label": "得到一维偏移" },
+    { "id": "f7", "from": "mul_col", "to": "mem_col", "label": "得到另一处偏移" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Layout = Shape + Stride",
+      "items": [
+        "Shape 管「有几维、每维多长」,Stride 管「走一步跨多远」",
+        "Layout 是坐标空间 → 线性索引的映射,纯整数运算",
+        "CuTe 的 Tensor = 数据指针 + Layout,两者从不分离"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "为什么值得抽象",
+      "items": [
+        "换排布只换 Layout 参数,算法代码一行不改",
+        "Layout 自带代数(compose/product/divide),能拼能切",
+        "打印出来就是 (Shape):(Stride),可直接抄进代码验证"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "易混点",
+      "items": [
+        "运算名叫 logical_divide / zipped_divide / coalesce / complement",
+        "不存在 left_padding、partitioned_into_TV 这两个名字",
+        "tiled_divide / tiled_product 是合法名(divide/product 本体)"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {"title": "OCR 两代：编码器与分辨率模式对照", "subtitle": "2026-11-04 纠错：一代已支持 Native 多档和 Gundam 动态分块；组件共性不等于完整实现相同。", "locale": "zh-CN", "quality_profile": "showcase", "output": "diagrams/dv-ocr-two-gen.tree.html"},
+  "layout": {"direction": "right", "nodeW": 270, "gapX": 40, "gapY": 32},
+  "nodes": [
+    {"id": "root", "label": "两代视觉压缩", "sublabel": "比较组件和公开模式"},
+    {"id": "first", "label": "DeepSeek-OCR", "parent": "root", "sublabel": "固定一代快照"},
+    {"id": "first_encoder", "label": "SAM-B → CLIP-L", "parent": "first", "sublabel": "两级特征拼接再投影"},
+    {"id": "native", "label": "Native 四档", "parent": "first", "sublabel": "512 / 640 / 1024 / 1280"},
+    {"id": "gundam", "label": "Gundam 动态分块", "parent": "first", "sublabel": "n×640² + 1×1024²"},
+    {"id": "second", "label": "DeepSeek-OCR-2", "parent": "root", "sublabel": "固定二代快照"},
+    {"id": "second_encoder", "label": "SAM-B + Qwen2-0.5B", "parent": "second", "sublabel": "DeepEncoder V2"},
+    {"id": "dynamic", "label": "默认动态模式", "parent": "second", "sublabel": "(0–6)×768² + 1×1024²"},
+    {"id": "budget", "label": "公开视觉 token 预算", "parent": "second", "sublabel": "(0–6)×144 + 256"},
+    {"id": "scope", "label": "解释边界", "parent": "root", "sublabel": "不是完整配置差分"},
+    {"id": "shared", "label": "保留视觉压缩范式", "parent": "scope", "sublabel": "不能推出解码器逐项相同"},
+    {"id": "evaluation", "label": "性能需指定配置", "parent": "scope", "sublabel": "on-par 不等于零额外开销"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "一代固定来源", "items": ["README Support-Modes 明确 Native 四档及 Gundam；并非 1024² 单档或不分块。", "https://github.com/deepseek-ai/DeepSeek-OCR/blob/09eaf526153e7a01ed16c9dea8c96282aaea29c0/README.md"]},
+    {"dot": "violet", "title": "二代固定来源", "items": ["README 给出默认动态分辨率与 token 预算；这不是任意输入的实测序列长度。", "https://github.com/deepseek-ai/DeepSeek-OCR-2/blob/2f3699ebbb96fa8af32212e8c170f2cc28730fad/README.md"]},
+    {"dot": "amber", "title": "避免过强推论", "items": ["视觉因果流是二代的设计主张；本图不把语义顺序概括为固定的标题→正文→图表算法，也不将其解释为必然物理置换。", "不能由 OCR 实验推出所有 VLM 都无需二维结构设计；吞吐与精度均未在本轮复现。"]}
+  ]
+}

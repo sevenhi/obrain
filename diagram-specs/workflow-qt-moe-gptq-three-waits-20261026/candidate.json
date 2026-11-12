@@ -1,0 +1,118 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "逐层 GPTQ 慢在哪:三处白等",
+  "subtitle": "权重更新只占 9 s,整层却 ~25 min —— 时间全在前向,三个各自独立的原因",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-moe-gptq-three-waits.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "w1",
+   "label": "白等①没人用的前向"
+  },
+  {
+   "id": "w2",
+   "label": "白等②Hessian 去 CPU"
+  },
+  {
+   "id": "w3",
+   "label": "白等③batch=1"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "fwd",
+   "lane": "w1",
+   "col": 0,
+   "type": "backend",
+   "label": "一次没人用的前向",
+   "sublabel": "max_calibrate 只喂激活量化器"
+  },
+  {
+   "id": "cpu",
+   "lane": "w2",
+   "col": 0,
+   "type": "backend",
+   "label": "GPU 空着,Hessian 去 CPU",
+   "sublabel": "65% 阈值误判"
+  },
+  {
+   "id": "b1",
+   "lane": "w3",
+   "col": 0,
+   "type": "backend",
+   "label": "batch=1",
+   "sublabel": "每样本重跑专家循环"
+  },
+  {
+   "id": "f1",
+   "lane": "w1",
+   "col": 1,
+   "type": "backend",
+   "label": "skip_forward 参数",
+   "sublabel": "weight-only 两次前向变一次"
+  },
+  {
+   "id": "f2",
+   "lane": "w2",
+   "col": 1,
+   "type": "backend",
+   "label": "按实测 headroom 放置",
+   "sublabel": "预留 1.5×前向峰值,10% 下限"
+  },
+  {
+   "id": "f3",
+   "lane": "w3",
+   "col": 1,
+   "type": "backend",
+   "label": "token 预算 8192",
+   "sublabel": "max(1,min(8192//seq,n))"
+  }
+ ],
+ "edges": [
+  {
+   "from": "fwd",
+   "to": "f1",
+   "label": "weight-only 时权重 amax 来自权重本身",
+   "variant": "emphasis"
+  },
+  {
+   "from": "cpu",
+   "to": "f2",
+   "label": "65% 阈值=强制留 35%,283GB 卡留 ~100GB",
+   "variant": "emphasis"
+  },
+  {
+   "from": "b1",
+   "to": "f3",
+   "label": "batch 1 让每个样本重跑专家 Python 循环",
+   "variant": "emphasis"
+  }
+ ],
+ "mainPath": [
+  "fwd",
+  "f1"
+ ],
+ "cards": [
+  {
+   "dot": "amber",
+   "title": "可量化的效果",
+   "items": [
+    "Hessian 落 CPU 层 474 s vs 留 GPU 层 ~80 s",
+    "GLM 过 65% 后单层 142 s vs 43 s,42 层里 21 个中招",
+    "batch 1→8 墙钟砍半;batch 是最大性能杠杆"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "第四个坑:每专家一行日志",
+   "items": [
+    "每个专家 helper 打 Hessian 加权误差",
+    "= 两次 weight×Hessian matmul + 主机同步",
+    "GLM 一层 576 次→改 log_mse=False"
+   ]
+  }
+ ]
+}

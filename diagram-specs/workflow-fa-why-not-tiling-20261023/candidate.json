@@ -1,0 +1,180 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "为什么不能直接 tiling:softmax 的全局依赖",
+    "subtitle": "GEMM 可以分块是因为加法可结合;softmax 的分母 ∑exp 与 max 是全局量,直接切块各自 softmax 结果是错的",
+    "locale": "zh-CN",
+    "output": "diagrams/fa-why-not-tiling.workflow.html",
+    "viewBox": [
+      1240,
+      700
+    ]
+  },
+  "lanes": [
+    {
+      "id": "ln_ok",
+      "label": "参照:GEMM 可以分块"
+    },
+    {
+      "id": "ln_bad",
+      "label": "直接切块做 softmax(错误做法)"
+    },
+    {
+      "id": "ln_fix",
+      "label": "正解:online softmax"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "g_tile",
+      "lane": "ln_ok",
+      "col": 0,
+      "type": "backend",
+      "label": "GEMM 分块累加",
+      "sublabel": "C=Σ 部分和"
+    },
+    {
+      "id": "g_ok",
+      "lane": "ln_ok",
+      "col": 1,
+      "type": "backend",
+      "label": "合并 = 精确",
+      "sublabel": "加法可结合",
+      "icon": "success"
+    },
+    {
+      "id": "b_split",
+      "lane": "ln_bad",
+      "col": 2,
+      "type": "external",
+      "label": "S 行切成两块",
+      "sublabel": "各块单独 softmax",
+      "icon": "start"
+    },
+    {
+      "id": "b_exp",
+      "lane": "ln_bad",
+      "col": 3,
+      "type": "backend",
+      "label": "各块 exp 归一化",
+      "sublabel": "分母只算到本块",
+      "width": 124
+    },
+    {
+      "id": "b_merge",
+      "lane": "ln_bad",
+      "col": 4,
+      "type": "backend",
+      "label": "合并两块结果",
+      "sublabel": "拼接/平均",
+      "icon": "active"
+    },
+    {
+      "id": "b_wrong",
+      "lane": "ln_bad",
+      "col": 5,
+      "type": "security",
+      "label": "结果错误",
+      "sublabel": "max 和 ∑ 都对不上",
+      "icon": "failure"
+    },
+    {
+      "id": "f_cause",
+      "lane": "ln_fix",
+      "col": 3,
+      "type": "external",
+      "label": "全局依赖",
+      "sublabel": "概率取决于整行",
+      "icon": "decision"
+    },
+    {
+      "id": "f_online",
+      "lane": "ln_fix",
+      "col": 4,
+      "type": "backend",
+      "label": "online softmax",
+      "sublabel": "增量维护 m 和 l"
+    },
+    {
+      "id": "f_exact",
+      "lane": "ln_fix",
+      "col": 5,
+      "type": "backend",
+      "label": "分块且精确",
+      "sublabel": "增量下可结合",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "g_tile",
+      "to": "g_ok",
+      "label": "部分和相加",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "b_split",
+      "to": "b_exp",
+      "label": "块 1 / 块 2 各自算",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "b_exp",
+      "to": "b_merge",
+      "label": "局部 softmax",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "b_merge",
+      "to": "b_wrong",
+      "label": "≠ 整行 softmax",
+      "role": "error"
+    },
+    {
+      "id": "e5",
+      "from": "b_wrong",
+      "to": "f_cause",
+      "label": "错因:全局统计量缺失",
+      "role": "error"
+    },
+    {
+      "id": "e6",
+      "from": "f_cause",
+      "to": "f_online",
+      "label": "带着 m 和 l 逐块走",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "f_online",
+      "to": "f_exact",
+      "label": "running max + rescale",
+      "role": "main"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "错误做法的具体错因",
+      "items": [
+        "softmax(合并整行) ≠ 合并各块单独的 softmax",
+        "块的局部 max 不同 → 各块 exp 的缩放基准不一致",
+        "局部 ∑exp 缺了另一半 → 概率总和不为 1"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "解法(→ §1.3 详图)",
+      "items": [
+        "每块到来时更新 running max m、running sum l",
+        "max 变大时,旧统计量按 e^(m_old-m_new) 整体收缩",
+        "最终一次性除 l:结果与整行 softmax 数学上完全相同"
+      ]
+    }
+  ]
+}

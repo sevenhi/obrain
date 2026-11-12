@@ -1,0 +1,127 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "训练目标:对齐「会被接受」而非「像目标模型」",
+  "subtitle": "朴素目标降 perplexity;真正关心的是每位置是否被接受",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-spec-loss-target.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "naive",
+   "label": "朴素目标"
+  },
+  {
+   "id": "real",
+   "label": "真实目标"
+  },
+  {
+   "id": "metric",
+   "label": "评测"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "na",
+   "lane": "naive",
+   "col": 0,
+   "type": "backend",
+   "label": "token 级 cross-entropy",
+   "sublabel": "模仿 verifier 下一词分布"
+  },
+  {
+   "id": "pp",
+   "lane": "naive",
+   "col": 1,
+   "type": "backend",
+   "label": "perplexity 下降",
+   "sublabel": "loss 好看"
+  },
+  {
+   "id": "acc",
+   "lane": "real",
+   "col": 0,
+   "type": "backend",
+   "label": "接受概率对齐",
+   "sublabel": "预测是否被接受"
+  },
+  {
+   "id": "bw",
+   "lane": "real",
+   "col": 1,
+   "type": "backend",
+   "label": "step_weight_beta",
+   "sublabel": "第 k 步权重 ∝ β^k"
+  },
+  {
+   "id": "cf",
+   "lane": "real",
+   "col": 2,
+   "type": "backend",
+   "label": "confidence/Markov 头",
+   "sublabel": "显式预测接受概率"
+  },
+  {
+   "id": "ar",
+   "lane": "metric",
+   "col": 0,
+   "type": "frontend",
+   "label": "接受率 / 接受长度",
+   "sublabel": "唯一硬指标"
+  },
+  {
+   "id": "tk",
+   "lane": "metric",
+   "col": 1,
+   "type": "frontend",
+   "label": "输出吞吐 tok/s",
+   "sublabel": "墙钟收益"
+  }
+ ],
+ "edges": [
+  {
+   "from": "na",
+   "to": "pp",
+   "label": "只降 loss",
+   "variant": "emphasis"
+  },
+  {
+   "from": "acc",
+   "to": "bw",
+   "label": "靠前位置权重更高"
+  },
+  {
+   "from": "bw",
+   "to": "cf",
+   "label": "组合 loss"
+  },
+  {
+   "from": "pp",
+   "to": "ar",
+   "label": "α 不升=白训",
+   "variant": "dashed"
+  },
+  {
+   "from": "cf",
+   "to": "ar",
+   "label": "直接对齐",
+   "variant": "emphasis"
+  },
+  {
+   "from": "ar",
+   "to": "tk",
+   "label": "决定加速"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "amber",
+   "title": "公式",
+   "items": [
+    "E[每步 token]=(1−α^(γ+1))/(1−α)",
+    "评测看接受率,不是只看 loss"
+   ]
+  }
+ ]
+}

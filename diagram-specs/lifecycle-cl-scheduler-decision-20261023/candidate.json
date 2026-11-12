@@ -1,0 +1,220 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "选调度器:把「用哪种调度」变成可判断的问题",
+    "subtitle": "先量 tail effect 是否存在(输出 tile 数能否被 SM 数整除、K 是否均匀),再决定要不要付 fixup 的代价。Grouped 与 Stream-K 在 Hopper 3.x 上互斥",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-scheduler-decision.lifecycle.html"
+  },
+  "mainPath": [
+    "ask",
+    "regular",
+    "ship"
+  ],
+  "states": [
+    {
+      "id": "ask",
+      "type": "start",
+      "label": "几何规整吗",
+      "sublabel": "方形、K 均匀、tile 数整除 SM 数",
+      "step": "判据"
+    },
+    {
+      "id": "regular",
+      "type": "success",
+      "label": "是 → persistent",
+      "sublabel": "默认即可,无归约",
+      "step": "推荐"
+    },
+    {
+      "id": "irregular",
+      "type": "decision",
+      "label": "否 → 要更高利用率吗",
+      "sublabel": "不规整才值得上 Stream-K",
+      "step": "取舍"
+    },
+    {
+      "id": "sk",
+      "type": "active",
+      "label": "Stream-K",
+      "sublabel": "默认即确定性归约",
+      "step": "接受 fixup"
+    },
+    {
+      "id": "fixup",
+      "type": "waiting",
+      "label": "付 fixup 代价",
+      "sublabel": "barrier 轮询 + workspace + Memset",
+      "step": "代价"
+    },
+    {
+      "id": "cudagraph",
+      "type": "failure",
+      "label": "CUDA Graph 里会加 Memset 节点",
+      "sublabel": "产生 kernel gap,LLM 推理普遍用图",
+      "step": "高价值坑"
+    },
+    {
+      "id": "stay",
+      "type": "external",
+      "label": "仍用 persistent + 调优",
+      "sublabel": "先动 rasterization / tile 形状",
+      "step": "另一支"
+    },
+    {
+      "id": "multi",
+      "type": "decision",
+      "label": "多个小 problem 一起跑?",
+      "sublabel": "batch 里很多小 GEMM",
+      "step": "另一问"
+    },
+    {
+      "id": "grouped",
+      "type": "active",
+      "label": "Grouped 调度",
+      "sublabel": "round-robin + 按大小排序",
+      "step": "结论"
+    },
+    {
+      "id": "mutex",
+      "type": "failure",
+      "label": "Grouped 与 Stream-K 互斥",
+      "sublabel": "issue #1941 明确互斥",
+      "step": "红线"
+    },
+    {
+      "id": "ship",
+      "type": "success",
+      "label": "定档落地",
+      "sublabel": "换 scheduler tag 模板参数",
+      "step": "终点"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "t1",
+      "from": "ask",
+      "to": "regular",
+      "label": "是"
+    },
+    {
+      "id": "t2",
+      "from": "ask",
+      "to": "irregular",
+      "label": "否"
+    },
+    {
+      "id": "t3",
+      "from": "irregular",
+      "to": "sk",
+      "label": "能接受归约"
+    },
+    {
+      "id": "t4",
+      "from": "irregular",
+      "to": "stay",
+      "label": "不想有 fixup"
+    },
+    {
+      "id": "t5",
+      "from": "sk",
+      "to": "fixup",
+      "label": "必须付"
+    },
+    {
+      "id": "t6",
+      "from": "fixup",
+      "to": "cudagraph",
+      "label": "图场景要警惕",
+      "variant": "dashed"
+    },
+    {
+      "id": "t7",
+      "from": "irregular",
+      "to": "multi",
+      "label": "先分清是哪种不规整"
+    },
+    {
+      "id": "t8",
+      "from": "multi",
+      "to": "grouped",
+      "label": "是小 GEMM 多"
+    },
+    {
+      "id": "t9",
+      "from": "grouped",
+      "to": "mutex",
+      "label": "别叠加",
+      "variant": "dashed"
+    },
+    {
+      "id": "t10",
+      "from": "regular",
+      "to": "ship",
+      "label": "直接上"
+    },
+    {
+      "id": "t11",
+      "from": "stay",
+      "to": "ship",
+      "label": "调完再定"
+    },
+    {
+      "id": "t12",
+      "from": "mutex",
+      "to": "ship",
+      "label": "二选一"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "tail effect 的准确判据",
+      "items": [
+        "判据是「输出 tile 总数 ⌈M/TileM⌉×⌈N/TileN⌉ 不能被 SM 数整除」",
+        "以及「某些 tile 的 K 维度短」→ 最后一批 block 干很少就退",
+        "不规整才值得上 Stream-K;规整几何上 Stream-K 是纯加开销"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Stream-K 的真实代价(§3.2)",
+      "items": [
+        "一个输出 tile 的 K 被拆给多个 CTA → 必须跨 CTA 归约(fixup)",
+        "SM90 默认在同一 kernel 内:持最后 K-split 的 CTA 用 barrier(BarrierManager::wait_eq/wait_lt)轮询合并 workspace 里的 partial,再直接做 epilogue",
+        "不是独立归约 kernel;separate reduction unit 只是可选模式",
+        "默认 ReductionMode::Deterministic —— 「Stream-K 一定不可复现」是误读"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "CUDA Graph 场景的高价值坑(issue #2075)",
+      "items": [
+        "Stream-K 的 barrier workspace 每次 kernel launch 前必须清零",
+        "做法:gemm.initialize() 逐次重调 + 一次 Memset",
+        "CUDA Graph 下这会在图里加 Memset 节点、产生 kernel gap",
+        "LLM 推理普遍用 CUDA Graph —— 这是选型级影响,不是细节"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Stream-K vs 2.x split-K:别混",
+      "items": [
+        "split-K 是 tile-centric:先切输出 tile、再拆每个 tile 的 K",
+        "Stream-K 是 work-centric:把所有 K 迭代打平成一维工作量,再均分给 CTA",
+        "后者在任何几何下都能均匀分配,前者在 tile 边缘仍会不齐",
+        "论文数据(arXiv:2301.03598,研究实现):峰值最高 14× vs CUTLASS、6.7× vs cuBLAS"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "什么时候别用 Stream-K(§4)",
+      "items": [
+        "不愿承担 barrier 轮询 / 额外 workspace / Memset 开销时(尤其 CUDA Graph)",
+        "该 GEMM 本身已是瓶颈且几何规整(收益小、纯加 fixup 开销)",
+        "另注意 KernelHardwareInfo 要正确传 SM 数"
+      ]
+    }
+  ]
+}

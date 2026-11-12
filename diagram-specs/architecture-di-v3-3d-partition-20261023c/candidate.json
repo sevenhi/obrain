@@ -1,0 +1,290 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "V3 训练的三维切分:PP16 × EP64 × ZeRO-1 DP",
+    "subtitle": "同一批 2048×H800 被三个正交维度同时切开:层切给 PP、专家切给 EP、优化器状态切给 ZeRO-1;训练全程不用 TP",
+    "locale": "zh-CN",
+    "output": "diagrams/di-v3-3d-partition.architecture.html",
+    "viewBox": [
+      1130,
+      500
+    ]
+  },
+  "components": [
+    {
+      "id": "pp_stage0",
+      "type": "backend",
+      "label": "PP stage 0",
+      "sublabel": "Embedding + 最浅层",
+      "pos": [
+        40,
+        80
+      ],
+      "size": [
+        320,
+        74
+      ],
+      "icon": "start"
+    },
+    {
+      "id": "pp_mid",
+      "type": "backend",
+      "label": "PP stage 1–14",
+      "sublabel": "61 层不均分,约 3–4 层/段",
+      "pos": [
+        40,
+        214
+      ],
+      "size": [
+        320,
+        74
+      ]
+    },
+    {
+      "id": "pp_stage15",
+      "type": "backend",
+      "label": "PP stage 15",
+      "sublabel": "最深层 + LM Head",
+      "pos": [
+        40,
+        348
+      ],
+      "size": [
+        320,
+        74
+      ],
+      "icon": "success"
+    },
+    {
+      "id": "node8",
+      "type": "external",
+      "label": "节点内 8 卡",
+      "sublabel": "NVLink + NVSwitch,160 GB/s",
+      "pos": [
+        405,
+        80
+      ],
+      "size": [
+        320,
+        74
+      ],
+      "icon": "external"
+    },
+    {
+      "id": "ep_group",
+      "type": "database",
+      "label": "EP 组 = 8 节点 = 64 卡",
+      "sublabel": "256 专家切 64 rank,每卡 ≈4 个",
+      "pos": [
+        405,
+        214
+      ],
+      "size": [
+        320,
+        74
+      ],
+      "icon": "database"
+    },
+    {
+      "id": "ib_link",
+      "type": "messagebus",
+      "label": "跨节点 InfiniBand",
+      "sublabel": "50 GB/s,token 最多进 4 节点",
+      "pos": [
+        405,
+        348
+      ],
+      "size": [
+        320,
+        74
+      ],
+      "icon": "messagebus"
+    },
+    {
+      "id": "grad_allreduce",
+      "type": "backend",
+      "label": "每 step 一次梯度归约",
+      "sublabel": "梯度本体不切,全量 all-reduce",
+      "pos": [
+        770,
+        80
+      ],
+      "size": [
+        320,
+        74
+      ]
+    },
+    {
+      "id": "zero1",
+      "type": "security",
+      "label": "ZeRO-1 切优化器状态",
+      "sublabel": "Adam moments 按 DP 分片,BF16",
+      "pos": [
+        770,
+        214
+      ],
+      "size": [
+        320,
+        74
+      ],
+      "icon": "security"
+    },
+    {
+      "id": "master_w",
+      "type": "database",
+      "label": "master weights 保 FP32",
+      "sublabel": "梯度累加也 FP32,是数值底线",
+      "pos": [
+        770,
+        348
+      ],
+      "size": [
+        320,
+        74
+      ],
+      "icon": "database"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "PP = 16:切「层」(每卡 1/16 的层)",
+      "wraps": [
+        "pp_stage0",
+        "pp_mid",
+        "pp_stage15"
+      ],
+      "pad": 14
+    },
+    {
+      "kind": "region",
+      "label": "EP = 64:切「MoE 专家」",
+      "wraps": [
+        "node8",
+        "ep_group",
+        "ib_link"
+      ],
+      "pad": 14
+    },
+    {
+      "kind": "region",
+      "label": "DP + ZeRO-1:切「优化器状态」",
+      "wraps": [
+        "grad_allreduce",
+        "zero1",
+        "master_w"
+      ],
+      "pad": 14
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "pp_stage0",
+      "to": "pp_mid",
+      "label": "激活/梯度点对点传",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelAt": [
+        200,
+        168
+      ]
+    },
+    {
+      "id": "c2",
+      "from": "pp_mid",
+      "to": "pp_stage15",
+      "label": "逐段流到第 16 段",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelAt": [
+        200,
+        302
+      ]
+    },
+    {
+      "id": "c3",
+      "from": "node8",
+      "to": "ep_group",
+      "label": "8 卡组成一个 EP 组",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelAt": [
+        565,
+        168
+      ]
+    },
+    {
+      "id": "c4",
+      "from": "ep_group",
+      "to": "ib_link",
+      "label": "跨节点 all-to-all",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelAt": [
+        565,
+        302
+      ]
+    },
+    {
+      "id": "c5",
+      "from": "grad_allreduce",
+      "to": "zero1",
+      "label": "归约完再做优化器步",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelAt": [
+        930,
+        168
+      ]
+    },
+    {
+      "id": "c6",
+      "from": "zero1",
+      "to": "master_w",
+      "label": "更新回 FP32 主权重",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelAt": [
+        930,
+        302
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "一句话记法",
+      "items": [
+        "层切给 PP、专家切给 EP、batch 与优化器切给 ZeRO-1 DP",
+        "训练全程不用 TP:与 Megatron 3D 并行的最大差别",
+        "671B 总参 / 37B 激活,2048 × H800"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么能同时超切",
+      "items": [
+        "两维正交:PP 切「哪些层」,EP 切「哪些专家」",
+        "DualPipe 的 2× 参数靠 EP64 切碎专家吸收",
+        "论文口径:large EP size 使两份参数不显著增显存"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "ZeRO-1 是最轻的一档",
+      "items": [
+        "只切优化器状态,参数与梯度仍各 rank 全量",
+        "moments 降 BF16 能省一半,master 权重留 FP32",
+        "ZeRO-2 切梯度、ZeRO-3 切参数,通信都更重"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "PD 下一条请求的状态机:四个正常态,五条降级路径",
+    "subtitle": "新增的「KV 传输中」是唯一不在单体 vLLM 里存在的状态,也是唯一能「传了一半」的状态——所以它必须有超时与降级出口,而不能只有成功出口",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-pd-request-states.lifecycle.html"
+  },
+  "mainPath": [
+    "queued",
+    "prefilling",
+    "xfering",
+    "decoding",
+    "done"
+  ],
+  "states": [
+    {
+      "id": "queued",
+      "type": "start",
+      "label": "等待配对",
+      "sublabel": "网关选池 + 预留位"
+    },
+    {
+      "id": "prefilling",
+      "type": "active",
+      "label": "Prefill 计算",
+      "sublabel": "可 chunked 切块"
+    },
+    {
+      "id": "xfering",
+      "type": "waiting",
+      "label": "KV 传输中",
+      "sublabel": "block 在路上"
+    },
+    {
+      "id": "decoding",
+      "type": "active",
+      "label": "Decode 逐 token",
+      "sublabel": "流式返回"
+    },
+    {
+      "id": "done",
+      "type": "success",
+      "label": "序列结束",
+      "sublabel": "两边释放 block"
+    },
+    {
+      "id": "pf_timeout",
+      "type": "failure",
+      "label": "Prefill 超时",
+      "sublabel": "占位被白占"
+    },
+    {
+      "id": "xfer_break",
+      "type": "failure",
+      "label": "传输慢 / 断",
+      "sublabel": "拖累 TTFT"
+    },
+    {
+      "id": "buf_full",
+      "type": "failure",
+      "label": "接收缓冲满",
+      "sublabel": "反压 prefill"
+    },
+    {
+      "id": "slot_bad",
+      "type": "failure",
+      "label": "slot 映射不一致",
+      "sublabel": "KV 对不上"
+    },
+    {
+      "id": "fallback",
+      "type": "neutral",
+      "label": "降级回单体",
+      "sublabel": "一键切非 PD"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "t1",
+      "from": "queued",
+      "to": "prefilling",
+      "label": "两池位置到手"
+    },
+    {
+      "id": "t2",
+      "from": "prefilling",
+      "to": "xfering",
+      "label": "打包 KV",
+      "variant": "emphasis"
+    },
+    {
+      "id": "t3",
+      "from": "xfering",
+      "to": "decoding",
+      "label": "注册进表",
+      "variant": "emphasis"
+    },
+    {
+      "id": "t4",
+      "from": "decoding",
+      "to": "done",
+      "label": "到 EOS"
+    },
+    {
+      "id": "t5",
+      "from": "prefilling",
+      "to": "pf_timeout",
+      "label": "超租约",
+      "variant": "dashed"
+    },
+    {
+      "id": "t6",
+      "from": "xfering",
+      "to": "xfer_break",
+      "label": "重传失败",
+      "variant": "dashed"
+    },
+    {
+      "id": "t7",
+      "from": "xfering",
+      "to": "buf_full",
+      "label": "没收完",
+      "variant": "dashed"
+    },
+    {
+      "id": "t8",
+      "from": "xfering",
+      "to": "slot_bad",
+      "label": "配置不一",
+      "variant": "dashed"
+    },
+    {
+      "id": "t9",
+      "from": "pf_timeout",
+      "to": "fallback",
+      "label": "超时即降级",
+      "variant": "security"
+    },
+    {
+      "id": "t10",
+      "from": "xfer_break",
+      "to": "fallback",
+      "label": "断链即降级",
+      "variant": "security"
+    },
+    {
+      "id": "t11",
+      "from": "buf_full",
+      "to": "fallback",
+      "label": "缓冲不足先降级",
+      "variant": "security"
+    },
+    {
+      "id": "t12",
+      "from": "slot_bad",
+      "to": "fallback",
+      "label": "锁配置后才能回",
+      "variant": "security"
+    },
+    {
+      "id": "t13",
+      "from": "fallback",
+      "to": "prefilling",
+      "label": "重跑 prompt",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "t8 是最隐蔽的一条",
+      "items": [
+        "prefill 侧与 decode 侧的 block size、dtype、模型 revision 必须完全一致",
+        "否则 KV 无法互认,且往往不是启动报错而是输出乱码",
+        "上线前把这三个字段写进版本兼容矩阵,灰度时双跑 smoke test"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "降级不是可选项",
+      "items": [
+        "「单体回退缺失」是九大常见坑之一:传输层故障直接全局失败",
+        "配对应有租约(未在时限内交接就释放占位)",
+        "把「配对成功率」和「路由降级率」纳入告警,而不是只看 HTTP 200"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "为什么「KV 传输中」必须是独立状态",
+      "items": [
+        "它同时占着两边的资源(prefill 已算完但块未释放、decode 已占位但算不了)",
+        "它可变可断,是唯一需要重试语义的状态",
+        "混批方案里没有这个状态,所以 PD 的故障面确实多一层"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "与另两项优化的边界",
+      "items": [
+        "KV 量化:正交,降低传输量;但两端格式必须一致,否则触发 t8",
+        "Prefix caching:分离后更需要——不做跨实例共享,每次 prefill 都重算 system prompt",
+        "多 LoRA / 多模型:配对键从「序列」变成「序列 + adapter」,路由更难"
+      ]
+    }
+  ]
+}

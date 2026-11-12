@@ -1,0 +1,73 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "MoE 全量微调的三重浪费,与 ESFT 的三步解法",
+    "subtitle": "一个任务的数据通常只重度激活 10–20% 的专家,但全量微调要为 100% 的专家付算力、付存储、还承担能力干扰的风险。上排是「为什么能省」,中排是「ESFT 怎么做」,下排是「省掉了什么」",
+    "locale": "zh-CN",
+    "output": "diagrams/dm-esft-why-waste.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_why", "label": "① 为什么有可能省" },
+    { "id": "ln_fix", "label": "② ESFT 怎么做" },
+    { "id": "ln_cost", "label": "③ 于是省掉了什么" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "看稀疏性", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "挑专家", "fromCol": 1, "toCol": 1, "variant": "emphasis" },
+    { "id": "p3", "label": "冻结其余", "fromCol": 2, "toCol": 2 }
+  ],
+  "nodes": [
+    { "id": "b1", "lane": "ln_why", "col": 0, "type": "external", "label": "每 token 只走 top-K", "sublabel": "64 个专家里用 6 个", "icon": "neutral" },
+    { "id": "b2", "lane": "ln_why", "col": 1, "type": "external", "label": "任务只用一小撮", "sublabel": "经验值 10–20% 的专家", "icon": "neutral" },
+    { "id": "b3", "lane": "ln_why", "col": 2, "type": "external", "label": "其余专家也没必要动", "sublabel": "不参与任务就无梯度需求", "icon": "neutral" },
+
+    { "id": "c1", "lane": "ln_fix", "col": 0, "type": "backend", "label": "统计每层激活分", "sublabel": "在任务评估集上前向", "icon": "start" },
+    { "id": "c2", "lane": "ln_fix", "col": 1, "type": "backend", "label": "按名单解冻专家", "sublabel": "to_esft 升 parameter", "icon": "active" },
+    { "id": "c3", "lane": "ln_fix", "col": 2, "type": "backend", "label": "其余冻成 buffer", "sublabel": "checkpoint 自动即 adapter", "icon": "success" },
+
+    { "id": "a1", "lane": "ln_cost", "col": 0, "type": "security", "label": "省算力", "sublabel": "反向只算被训专家的梯度", "icon": "none" },
+    { "id": "a2", "lane": "ln_cost", "col": 1, "type": "security", "label": "省存储", "sublabel": "N 任务 = 1 基座 + N 份小差异", "icon": "none" },
+    { "id": "a3", "lane": "ln_cost", "col": 2, "type": "security", "label": "少了能力干扰", "sublabel": "无关专家不漂移,不遗忘", "icon": "none" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "c1", "to": "c2", "label": "分数排名决定谁上榜", "role": "main" },
+    { "id": "e2", "from": "c2", "to": "c3", "label": "剩下的全部压回 buffer", "role": "main" },
+    { "id": "e3", "from": "b1", "to": "c1", "label": "打分要统计的就是这个分布", "role": "main" },
+    { "id": "e4", "from": "b2", "to": "c2", "label": "集中度高 → 名单短", "role": "main" },
+    { "id": "e5", "from": "b3", "to": "c3", "label": "不动它 = 不产生梯度", "role": "main" },
+    { "id": "e6", "from": "c1", "to": "a1", "label": "只算一部分", "variant": "dashed", "role": "async" },
+    { "id": "e7", "from": "c2", "to": "a2", "label": "产物只含差异", "variant": "dashed", "role": "async" },
+    { "id": "e8", "from": "c3", "to": "a3", "label": "副产品", "variant": "dashed", "role": "async" }
+  ],
+  "mainPath": ["c1", "c2", "c3"],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "论文标题就是设计立场",
+      "items": [
+        "\"Let the Expert Stick to His Last\" 直译:让专家安守本行",
+        "DeepSeekMoE 已论证细粒度专家会自然专精",
+        "ESFT 只是把这个事实在微调端兑现:既然专精,就只训相关的几个"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "医院类比怎么用",
+      "items": [
+        "64 个科室 = 64 个专家,骨科手术提升 = 领域微调",
+        "全量微调 = 给全院所有科室重新培训",
+        "ESFT = 先看骨科病人实际经过哪些科室(挂号→影像→骨科→麻醉→康复),只培训这条链路"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "省的不是推理时间",
+      "items": [
+        "被训专家仍参与标准 MoE 前向,没有结构化稀疏可利用",
+        "省的是训练算力、checkpoint 存储、能力干扰风险",
+        "想要推理加速要看部署侧的专家负载均衡与量化"
+      ]
+    }
+  ]
+}

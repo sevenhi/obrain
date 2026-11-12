@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "三种省 KV 的手段:GQA 按头广播,MLA 按 latent 压缩",
+    "subtitle": "推理侧的 K/V 广播不物化拷贝(F A2/FA3 内核按组寻址);MLA 则连「每头一份 K/V」都不存,只存一个 512 维 latent,用时再投影还原",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-gqa-vs-mla-compression.dataflow.html"
+  },
+  "stages": [
+    {
+      "label": "① 存进 cache 的形态"
+    },
+    {
+      "label": "② 取用时怎么展开"
+    },
+    {
+      "label": "③ 送进 attention 内核"
+    },
+    {
+      "label": "④ 每 token 的账"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "gqa_cache",
+      "type": "database",
+      "label": "GQA:H_kv 组 K/V",
+      "sublabel": "每头仍是完整 128 维",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "mla_cache",
+      "type": "database",
+      "label": "MLA:只存 latent",
+      "sublabel": "d_c=512,V3 配置",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "gqa_expand",
+      "type": "backend",
+      "label": "按组寻址,不拷贝",
+      "sublabel": "repeat_interleave 只是教学版写法",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "mla_expand",
+      "type": "backend",
+      "label": "上投影还原各头 K/V",
+      "sublabel": "W^UK / W^UV 从 latent 还原",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "gqa_kernel",
+      "type": "backend",
+      "label": "FA2/FA3 原生支持",
+      "sublabel": "MQA 当 H_kv=1 特例",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "mla_kernel",
+      "type": "backend",
+      "label": "解压 + attention",
+      "sublabel": "投影可吸收进 Q 侧",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "gqa_cost",
+      "type": "security",
+      "label": "128 KB / token",
+      "sublabel": "32 层×8 KV×128 维×2B×2",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "mla_cost",
+      "type": "security",
+      "label": "≈576 维 / token",
+      "sublabel": "512 + 64(RoPE)",
+      "stage": 3,
+      "row": 1
+    },
+    {
+      "id": "roofline",
+      "type": "external",
+      "label": "两者目标同源",
+      "sublabel": "解码期 KV 带宽与显存最小化",
+      "stage": 3,
+      "row": 2
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "gqa_cache",
+      "to": "gqa_expand",
+      "label": "取 1 组服务 H/g 个 Q 头"
+    },
+    {
+      "id": "f2",
+      "from": "mla_cache",
+      "to": "mla_expand",
+      "label": "先解压"
+    },
+    {
+      "id": "f3",
+      "from": "gqa_expand",
+      "to": "gqa_kernel",
+      "label": "组内共享同一份 SMEM 数据"
+    },
+    {
+      "id": "f4",
+      "from": "mla_expand",
+      "to": "mla_kernel",
+      "label": "解压后进 attention"
+    },
+    {
+      "id": "f5",
+      "from": "gqa_kernel",
+      "to": "gqa_cost",
+      "label": "账算在 KV 头数上"
+    },
+    {
+      "id": "f6",
+      "from": "mla_kernel",
+      "to": "mla_cost",
+      "label": "账算在 latent 维度上"
+    },
+    {
+      "id": "f7",
+      "from": "gqa_cost",
+      "to": "roofline",
+      "label": "缩 H/H_kv 倍"
+    },
+    {
+      "id": "f8",
+      "from": "mla_cost",
+      "to": "roofline",
+      "label": "DeepSeek-V2 口径省 93.3%"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "GQA 的推理侧实现",
+      "items": [
+        "显式做法:K.repeat_interleave(H/H_kv, dim=1) —— 教学版,会物化拷贝",
+        "生产做法:FA2/FA3、xFormers、vLLM 内核按组直接寻址共享 K/V,不物化",
+        "推理引擎不需要为 GQA 写新调度,只是 KV cache block 变小"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "MLA 是怎么再省一截的",
+      "items": [
+        "把每 token 的 K/V 联合压缩成一个 latent:c^KV = W^DKV·h",
+        "解码时 cache 只存 latent,用时再上投影还原各头",
+        "V3:61 层、128 头、head_dim 128、d_c=512"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两种手段不互斥",
+      "items": [
+        "GQA 是「头级共享」,MLA 是「低秩压缩」",
+        "目标同源:解码期 KV 带宽/显存最小化",
+        "实践中还常叠 KV 量化(FP8/INT4)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "部署时的硬约束",
+      "items": [
+        "张量并行度 ≤ H_kv:TP>H_kv 时 KV 头必须复制,浪费显存与带宽",
+        "部署 Llama-3-8B(KV 头 8)时 TP=8 是上限的常见原因",
+        "长上下文/大 batch 服务优先选 GQA/MLA 模型,H/H_kv 直接决定并发数"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "一条请求的五段旅程:从 HTTP 入口到 SSE 流式吐出",
+    "subtitle": "全库唯一一张完整链路图。① 入口 → ② 模型加载 → ③ 量化层 → ④ 分布式执行 → ⑤ 采样输出;中间三段在启动期完成,只有 ①④⑤ 在每条请求上重跑",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-v1-request-journey.sequence.html",
+    "column_fit": "spread",
+    "viewBox": [
+      1080,
+      690
+    ]
+  },
+  "participants": [
+    {
+      "id": "cli",
+      "type": "external",
+      "label": "HTTP 客户端"
+    },
+    {
+      "id": "svc",
+      "type": "frontend",
+      "label": "OpenAIServingChat",
+      "sublabel": "to_sampling_params"
+    },
+    {
+      "id": "llm",
+      "type": "frontend",
+      "label": "AsyncLLM.generate",
+      "sublabel": "EngineClient 协议"
+    },
+    {
+      "id": "core",
+      "type": "backend",
+      "label": "EngineCore",
+      "sublabel": "独立进程"
+    },
+    {
+      "id": "wk",
+      "type": "backend",
+      "label": "Worker + Runner",
+      "sublabel": "模型前向"
+    },
+    {
+      "id": "smp",
+      "type": "security",
+      "label": "Sampler",
+      "sublabel": "选出 token"
+    }
+  ],
+  "segments": [
+    {
+      "from": 158,
+      "to": 256,
+      "label": "① 请求入口:参数归一到引擎契约"
+    },
+    {
+      "from": 272,
+      "to": 408,
+      "label": "② 引擎内核:调度 → 前向"
+    },
+    {
+      "from": 424,
+      "to": 488,
+      "label": "③ 采样与回流:逐 token 流式"
+    },
+    {
+      "from": 504,
+      "to": 600,
+      "label": "④ 循环:每步再来一轮"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "from": "cli",
+      "to": "svc",
+      "y": 168,
+      "label": "POST /v1/chat/completions",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m2",
+      "from": "svc",
+      "to": "llm",
+      "y": 204,
+      "label": "参数映射成 SamplingParams(三级回退 + 校验)"
+    },
+    {
+      "id": "m3",
+      "from": "llm",
+      "to": "core",
+      "y": 240,
+      "label": "ZMQ 派发:请求进 waiting 队列",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m4",
+      "from": "core",
+      "to": "wk",
+      "y": 284,
+      "label": "SchedulerOutput:本步选中谁、用哪些块"
+    },
+    {
+      "id": "m5",
+      "from": "wk",
+      "to": "core",
+      "y": 320,
+      "label": "ModelRunnerOutput(logits)",
+      "variant": "return"
+    },
+    {
+      "id": "m6",
+      "from": "core",
+      "to": "smp",
+      "y": 356,
+      "label": "logits 进采样管线"
+    },
+    {
+      "id": "m7",
+      "from": "smp",
+      "to": "core",
+      "y": 392,
+      "label": "token_id:白名单/惩罚/温度/top-p 后指数竞赛",
+      "variant": "return"
+    },
+    {
+      "id": "m8",
+      "from": "core",
+      "to": "llm",
+      "y": 436,
+      "label": "ZMQ 回前端:该 token 的输出",
+      "variant": "return"
+    },
+    {
+      "id": "m9",
+      "from": "llm",
+      "to": "cli",
+      "y": 472,
+      "label": "Detokenize 后 SSE 逐 token 推送",
+      "variant": "emphasis"
+    },
+    {
+      "id": "m10",
+      "from": "llm",
+      "to": "core",
+      "y": 516,
+      "label": "未 FINISHED → 下一步继续续 token",
+      "variant": "dashed"
+    },
+    {
+      "id": "m11",
+      "from": "core",
+      "to": "llm",
+      "y": 552,
+      "label": "FINISHED → 释放块,请求移出",
+      "variant": "return"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "哪几段是启动期做的",
+      "items": [
+        "② 模型加载:ModelConfig.registry 解析 architectures → 实现类(懒加载)",
+        "③ 量化层:get_quant_method() 换 *LinearMethod,create_weights 定义量化权重",
+        "④ 分布式:Executor 创建 actor、下发 rendezvous、建 TP/PP 通信组"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "为什么 EngineCore 不碰 detokenize",
+      "items": [
+        "EngineCore 只产 logits / 采样结果,经 ZMQ 回前端进程",
+        "OutputProcessor / Detokenizer 在 API 进程,流式发送也在这里",
+        "好处:引擎进程的循环里没有字符串处理,不为 IO 抖动买单"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "五段各自对应的篇",
+      "items": [
+        "① 入口 → api-server-openai-compat.md",
+        "② 加载 → model-registry.md;③ 量化 → quantization-gptq-awq-fp8.md",
+        "④ 分布式 → distributed-ray.md;⑤ 采样 → sampling-penalties.md"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "定位问题看落点",
+      "items": [
+        "请求进不来 → EngineCore / 调度器(预算、KV 块)",
+        "跑得慢 → Worker / GPUModelRunner(kernel、attention backend)",
+        "卡在 API、流断断续续 → AsyncLLM(流式缓冲)"
+      ]
+    }
+  ]
+}

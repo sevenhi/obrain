@@ -1,0 +1,179 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "NTK-by-parts 的分段:r_d 落在哪一档,决定插值还是保持原样",
+    "subtitle": "r_d = L/λ_d 是该维在训练窗口内转过几圈。r<α(低频、一圈没转够)γ=0 走纯插值;r>β(高频、早转过多圈)γ=1 保持原频率;中间线性过渡。Llama 系 α=1、β=32",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-yarn-by-parts.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_calc", "label": "① 算转了多圈" },
+    { "id": "ln_ramp", "label": "② 定 γ_d" },
+    { "id": "ln_apply", "label": "③ 混合频率" },
+    { "id": "ln_temp", "label": "④ 补温度" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "先量波长", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "分三档", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "落到 q/k", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["lam", "rd", "hi", "gamma1", "theta_new", "scale", "qk"],
+  "nodes": [
+    {
+      "id": "lam",
+      "lane": "ln_calc",
+      "col": 0,
+      "type": "frontend",
+      "label": "算该维波长 λ_d",
+      "sublabel": "2π·base^(2d/D)",
+      "icon": "start",
+      "width": 150
+    },
+    {
+      "id": "rd",
+      "lane": "ln_calc",
+      "col": 1,
+      "type": "backend",
+      "label": "r_d = L / λ_d",
+      "sublabel": "窗口内转了几圈",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "hi",
+      "lane": "ln_ramp",
+      "col": 2,
+      "type": "security",
+      "label": "r_d < α ?",
+      "sublabel": "低频,一圈都没转够",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "lo",
+      "lane": "ln_ramp",
+      "col": 2,
+      "type": "security",
+      "label": "r_d > β ?",
+      "sublabel": "高频,早转过多圈",
+      "icon": "decision",
+      "width": 150,
+      "yOffset": 128
+    },
+    {
+      "id": "gamma1",
+      "lane": "ln_ramp",
+      "col": 3,
+      "type": "backend",
+      "label": "γ_d = 0:纯插值",
+      "sublabel": "θ 变成 θ/s,同 PI",
+      "icon": "neutral",
+      "width": 150
+    },
+    {
+      "id": "gamma",
+      "lane": "ln_ramp",
+      "col": 3,
+      "type": "external",
+      "label": "γ_d = 1:不插值",
+      "sublabel": "θ 原样,保持外推",
+      "icon": "stop",
+      "width": 150,
+      "yOffset": 128
+    },
+    {
+      "id": "middle",
+      "lane": "ln_apply",
+      "col": 4,
+      "type": "backend",
+      "label": "中间:线性过渡",
+      "sublabel": "clip((r−α)/(β−α),0,1)",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "theta_new",
+      "lane": "ln_apply",
+      "col": 5,
+      "type": "backend",
+      "label": "θ′ = (1−γ)θ/s + γθ",
+      "sublabel": "按 γ 在插值与原频率间混合",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "scale",
+      "lane": "ln_temp",
+      "col": 5,
+      "type": "cloud",
+      "label": "cos/sin 表乘 sqrt(1/t)",
+      "sublabel": "sqrt(1/t)=0.1·ln(s)+1",
+      "icon": "cloud",
+      "width": 150,
+      "yOffset": 128
+    },
+    {
+      "id": "qk",
+      "lane": "ln_temp",
+      "col": 5,
+      "type": "cloud",
+      "label": "q/k 同时被缩放",
+      "sublabel": "零额外算力与显存",
+      "icon": "success",
+      "width": 150,
+      "yOffset": 256
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "lam", "to": "rd", "label": "拿波长比窗口", "role": "main" },
+    { "id": "e2", "from": "rd", "to": "hi", "label": "先看是不是低频", "role": "main" },
+    { "id": "e3", "from": "hi", "to": "gamma1", "label": "是:整段插值", "role": "branch", "variant": "emphasis" },
+    { "id": "e4", "from": "hi", "to": "lo", "label": "不是:再看高频", "role": "main" },
+    { "id": "e5", "from": "lo", "to": "gamma", "label": "是:一点不插值", "role": "branch", "variant": "emphasis" },
+    { "id": "e6", "from": "lo", "to": "middle", "label": "都不是:在过渡带", "role": "main" },
+    { "id": "e7", "from": "middle", "to": "theta_new", "label": "按 γ 混合两路", "role": "main" },
+    { "id": "e8", "from": "gamma1", "to": "theta_new", "label": "γ=0 那一路", "role": "branch", "variant": "dashed" },
+    { "id": "e9", "from": "gamma", "to": "theta_new", "label": "γ=1 那一路", "role": "branch", "variant": "dashed" },
+    { "id": "e10", "from": "theta_new", "to": "scale", "label": "频率定完补温度", "role": "main" },
+    { "id": "e11", "from": "scale", "to": "qk", "label": "改 cos/sin 表即可", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三个超参的默认值(Llama 系)",
+      "items": [
+        "α = 1(beta_slow)、β = 32(beta_fast):低于 1 圈算低频,高于 32 圈算高频",
+        "温度系数 sqrt(1/t) = 0.1·ln(s)+1,s=16 时 1.2773",
+        "论文明确说 α/β 是 case-by-case 调的,换模型族要重验"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "别把温度系数看错(常见误读)",
+      "items": [
+        "乘在 q/k 上的是 sqrt(1/t),不是 √t;logit ≈ q·k 所以放大 1/t",
+        "s=16:q/k ×1.2773,logit ×1.63(不是旧说的 13%)",
+        "s=8 → q/k ×1.21,logit ×1.46;s=32 → ×1.35 / ×1.81"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么必须分段而不是统一缩放",
+      "items": [
+        "低频维在窗口内连一圈都没转完,不插值就等于让它继续待在分布外",
+        "高频维早就转过很多圈,再压缩只会让近距离位置分辨不开",
+        "分段是唯一同时照顾两端的解析做法"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "实现入口",
+      "items": [
+        "HF:rope_scaling = {rope_type: yarn, factor: s, original_max_position_embeddings: L, beta_fast: 32, beta_slow: 1}",
+        "官方实现与 Llama-2 64k/128k checkpoint:github.com/jquesnelle/yarn",
+        "PI 对应 type=linear,dynamic 对应动态 NTK"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Router 请求路径:中间件 → 策略 → worker",
+    "subtitle": "请求经鉴权/WASM/请求 ID 中间件,再由策略(consistent_hash/cache_aware/…)结合服务发现选 worker,流式回传",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-router-request-path.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_cli",
+      "label": "① 客户端"
+    },
+    {
+      "id": "ln_rt",
+      "label": "② Router 内部"
+    },
+    {
+      "id": "ln_wk",
+      "label": "③ Worker"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "cli",
+      "lane": "ln_cli",
+      "col": 0,
+      "type": "frontend",
+      "label": "客户端",
+      "sublabel": "POST /v1/chat/completions"
+    },
+    {
+      "id": "mw",
+      "lane": "ln_rt",
+      "col": 1,
+      "type": "security",
+      "label": "中间件",
+      "sublabel": "鉴权/WASM/请求 ID"
+    },
+    {
+      "id": "pol",
+      "lane": "ln_rt",
+      "col": 1,
+      "type": "backend",
+      "label": "路由策略",
+      "sublabel": "consistent_hash/cache_aware",
+      "yOffset": 110
+    },
+    {
+      "id": "sc",
+      "lane": "ln_rt",
+      "col": 1,
+      "type": "database",
+      "label": "K8s 服务发现",
+      "sublabel": "worker 列表+健康",
+      "yOffset": 220
+    },
+    {
+      "id": "w",
+      "lane": "ln_wk",
+      "col": 2,
+      "type": "cloud",
+      "label": "vLLM Worker ×N",
+      "sublabel": "流式 token 回传"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "cli",
+      "to": "mw",
+      "label": "进入",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "mw",
+      "to": "pol",
+      "label": "交给策略",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "sc",
+      "to": "pol",
+      "label": "供 worker 列表",
+      "role": "async",
+      "variant": "dashed"
+    },
+    {
+      "id": "e4",
+      "from": "pol",
+      "to": "w",
+      "label": "选出副本",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "w",
+      "to": "cli",
+      "label": "流式 token",
+      "role": "return"
+    }
+  ],
+  "mainPath": [
+    "cli",
+    "mw",
+    "pol"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "比通用 LB 强在哪",
+      "items": [
+        "路由依据:会话 ID/前缀树/实时负载/KV 命中",
+        "会话亲和 11 级 hash key,不是 IP hash 粗粒度",
+        "熔断+重试+指标,企业级开关"
+      ]
+    }
+  ]
+}

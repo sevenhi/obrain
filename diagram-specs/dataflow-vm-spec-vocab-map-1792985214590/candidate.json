@@ -1,0 +1,95 @@
+{
+ "schema_version": 1,
+ "diagram_type": "dataflow",
+ "meta": {
+  "title": "draft 与 verifier 词表映射 t2d / d2t",
+  "subtitle": "词表不一致时训练标签对齐与验证前换回",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-spec-vocab-map.dataflow.html"
+ },
+ "stages": [
+  {
+   "label": "① 训练对齐"
+  },
+  {
+   "label": "② 草稿生成"
+  },
+  {
+   "label": "③ 验证换回"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "v",
+   "type": "backend",
+   "label": "verifier token",
+   "sublabel": "目标模型词表",
+   "stage": 0,
+   "row": 0
+  },
+  {
+   "id": "t2d",
+   "type": "backend",
+   "label": "t2d 映射",
+   "sublabel": "verifier→draft 标签对齐",
+   "stage": 1,
+   "row": 0
+  },
+  {
+   "id": "d",
+   "type": "backend",
+   "label": "draft token",
+   "sublabel": "草稿词表(可能裁剪)",
+   "stage": 1,
+   "row": 1
+  },
+  {
+   "id": "d2t",
+   "type": "backend",
+   "label": "d2t 映射",
+   "sublabel": "draft→verifier 换回 id",
+   "stage": 2,
+   "row": 0
+  },
+  {
+   "id": "val",
+   "type": "frontend",
+   "label": "verifier 验证",
+   "sublabel": "按 verifier id 前向",
+   "stage": 2,
+   "row": 1
+  }
+ ],
+ "flows": [
+  {
+   "from": "v",
+   "to": "t2d",
+   "label": "训练时标签对齐"
+  },
+  {
+   "from": "t2d",
+   "to": "d",
+   "label": "转成 draft id"
+  },
+  {
+   "from": "d",
+   "to": "d2t",
+   "label": "验证前换回"
+  },
+  {
+   "from": "d2t",
+   "to": "val",
+   "label": "verifier id"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "rose",
+   "title": "映射错误的症状",
+   "items": [
+    "loss 正常但接受率恒为 0",
+    "--on-missing raise 要求映射完备(生产推荐)"
+   ]
+  }
+ ]
+}

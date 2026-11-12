@@ -1,0 +1,101 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "worker_cls 不是写死字符串:硬件画像分派",
+  "subtitle": "vllm-ascend 的 worker 选择逻辑",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-hwp-worker-dispatch.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "cfg",
+   "label": "配置"
+  },
+  {
+   "id": "profile",
+   "label": "硬件画像"
+  },
+  {
+   "id": "sel",
+   "label": "选择"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "auto",
+   "lane": "cfg",
+   "col": 0,
+   "type": "backend",
+   "label": "worker_cls == auto",
+   "sublabel": "parallel_config",
+   "icon": "decision"
+  },
+  {
+   "id": "xlite",
+   "lane": "profile",
+   "col": 0,
+   "type": "backend",
+   "label": "xlite_enabled",
+   "sublabel": "XliteWorker",
+   "icon": "decision"
+  },
+  {
+   "id": "xlw",
+   "lane": "sel",
+   "col": 0,
+   "type": "backend",
+   "label": "vllm_ascend.xlite.XliteWorker",
+   "sublabel": "启用 xlite"
+  },
+  {
+   "id": "hw",
+   "lane": "profile",
+   "col": 1,
+   "type": "backend",
+   "label": "hardware_profile",
+   "sublabel": "310p/A3/A5 画像"
+  },
+  {
+   "id": "def",
+   "lane": "sel",
+   "col": 1,
+   "type": "backend",
+   "label": "default_worker_cls",
+   "sublabel": "按画像默认 Worker"
+  }
+ ],
+ "edges": [
+  {
+   "from": "auto",
+   "to": "xlite",
+   "label": "判断",
+   "variant": "emphasis"
+  },
+  {
+   "from": "xlite",
+   "to": "xlw",
+   "label": "是→XliteWorker"
+  },
+  {
+   "from": "xlite",
+   "to": "hw",
+   "label": "否→查画像"
+  },
+  {
+   "from": "hw",
+   "to": "def",
+   "label": "画像→默认 Worker"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "更细一层",
+   "items": [
+    "硬件画像(310p/A3/A5)→ 默认 Worker 的映射",
+    "比「一个 Platform 一个 Worker」更细"
+   ]
+  }
+ ]
+}

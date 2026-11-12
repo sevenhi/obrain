@@ -1,0 +1,74 @@
+{
+ "schema_version": 1,
+ "diagram_type": "tree",
+ "meta": {
+  "title": "FLASH 后端已知限制(截至 2026-10)",
+  "subtitle": "八条限制,来源 FA4 博客 Limitations + attention-gym 文档 + Inductor 源码",
+  "locale": "zh-CN",
+  "output": "diagrams/at-fa4-limits.tree.html"
+ },
+ "nodes": [
+  {
+   "id": "root",
+   "label": "FLASH 后端限制"
+  },
+  {
+   "id": "b1",
+   "parent": "root",
+   "label": "block size 必须匹配 tile",
+   "sublabel": "SM100=(256,128) / SM80/90=(128,128)"
+  },
+  {
+   "id": "b2",
+   "parent": "root",
+   "label": "捕获动态标量",
+   "sublabel": "烧进编译产物,每值重编译"
+  },
+  {
+   "id": "b3",
+   "parent": "root",
+   "label": "CPU 0-d tensor 捕获",
+   "sublabel": "需先标量化,不支持"
+  },
+  {
+   "id": "b4",
+   "parent": "root",
+   "label": "需梯度的捕获 buffer",
+   "sublabel": "不支持,用 Triton 后端"
+  },
+  {
+   "id": "b5",
+   "parent": "root",
+   "label": "块稀疏反向不确定性",
+   "sublabel": "修复中(dQ 写序已落地)"
+  },
+  {
+   "id": "b6",
+   "parent": "root",
+   "label": "性能坑",
+   "sublabel": "KV 加载 stall、寄存器 spill"
+  },
+  {
+   "id": "b7",
+   "parent": "root",
+   "label": "kv_idx 索引开销",
+   "sublabel": "bias[kv_idx] 慢,bias[h] 快"
+  },
+  {
+   "id": "b8",
+   "parent": "root",
+   "label": "return_aux 不支持",
+   "sublabel": "抛 NotImplementedError"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "已逐步解除的两条",
+   "items": [
+    "aux_scalars 运行时标量通道(flash-attn-4>=4.0.0b17)",
+    "块稀疏确定性 dQ 写序(compute_dq_write_order 默认开启)"
+   ]
+  }
+ ]
+}

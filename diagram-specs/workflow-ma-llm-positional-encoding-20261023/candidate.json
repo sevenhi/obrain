@@ -1,0 +1,99 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "位置编码四条路线:同一个「要相对位置」的诉求,四种实现代价",
+    "subtitle": "判断只看两条:超出训练长度还能不能用(可外推)、要不要占参数。上两条把位置「加」进输入;下两条改 QK 内积本身",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-llm-positional-encoding.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_sin", "label": "① 正弦绝对编码(原 Transformer)" },
+    { "id": "ln_lrn", "label": "② learned 绝对编码(GPT-2/3)" },
+    { "id": "ln_rope", "label": "③ RoPE 旋转(LLaMA/GPT-NeoX)" },
+    { "id": "ln_ali", "label": "④ ALiBi 线性偏置(BLOOM/MPT)" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "位置怎么进来", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "相对性从哪来", "fromCol": 2, "toCol": 2, "variant": "emphasis" },
+    { "id": "ph3", "label": "能不能外推", "fromCol": 3, "toCol": 3 }
+  ],
+  "mainPath": ["s1", "s2", "s3", "s4"],
+  "nodes": [
+    { "id": "s1", "lane": "ln_sin", "col": 0, "type": "frontend", "label": "正弦公式", "sublabel": "sin/cos,波长几何级数", "icon": "start", "width": 150 },
+    { "id": "s2", "lane": "ln_sin", "col": 1, "type": "backend", "label": "加在输入嵌入", "sublabel": "只在第 0 层注入一次", "width": 150 },
+    { "id": "s3", "lane": "ln_sin", "col": 2, "type": "cloud", "label": "可线性表达偏移", "sublabel": "PE(pos+k) 是 PE(pos) 的线性函数", "width": 160 },
+    { "id": "s4", "lane": "ln_sin", "col": 3, "type": "database", "label": "理论可外推", "sublabel": "AIAYN Table 3:与 learned 几乎同分", "width": 175, "icon": "neutral" },
+
+    { "id": "l1", "lane": "ln_lrn", "col": 0, "type": "frontend", "label": "学一张嵌入表", "sublabel": "[max_len, d] 直接学", "icon": "start", "width": 150 },
+    { "id": "l2", "lane": "ln_lrn", "col": 1, "type": "backend", "label": "加在输入嵌入", "sublabel": "同正弦,只注入一次", "width": 150 },
+    { "id": "l3", "lane": "ln_lrn", "col": 2, "type": "cloud", "label": "关系全靠学", "sublabel": "无结构先验,深层会衰减", "width": 160 },
+    { "id": "l4", "lane": "ln_lrn", "col": 3, "type": "external", "label": "硬上限", "sublabel": "超过 max_len 没嵌入可查", "width": 175, "icon": "failure" },
+
+    { "id": "r1", "lane": "ln_rope", "col": 0, "type": "frontend", "label": "旋转矩阵 R_m", "sublabel": "配对成 d/2 个二维平面", "icon": "start", "width": 160 },
+    { "id": "r2", "lane": "ln_rope", "col": 1, "type": "backend", "label": "每层转 Q、K", "sublabel": "q→R_m q,k→R_n k", "width": 150 },
+    { "id": "r3", "lane": "ln_rope", "col": 2, "type": "cloud", "label": "内积只依赖 m−n", "sublabel": "(R_m q)·(R_n k)=q·R_(n−m) k", "width": 175 },
+    { "id": "r4", "lane": "ln_rope", "col": 3, "type": "database", "label": "改 base 就能拉长", "sublabel": "Llama 3:θ 10k→500k,支持 32k+", "width": 185, "icon": "success" },
+
+    { "id": "a1", "lane": "ln_ali", "col": 0, "type": "frontend", "label": "不加位置嵌入", "sublabel": "零参数,不在输入动手", "icon": "start", "width": 155 },
+    { "id": "a2", "lane": "ln_ali", "col": 1, "type": "backend", "label": "减线性距离惩罚", "sublabel": "softmax(q·kᵀ − m·|i−j|)", "width": 165 },
+    { "id": "a3", "lane": "ln_ali", "col": 2, "type": "cloud", "label": "m 是预设斜率", "sublabel": "每 head 一组几何级数,不学", "width": 165 },
+    { "id": "a4", "lane": "ln_ali", "col": 3, "type": "external", "label": "外推强但硬编码衰减", "sublabel": "1024 训练→2048 持平,快 11%", "width": 185, "icon": "decision" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "s1", "to": "s2", "label": "算好再加", "role": "main" },
+    { "id": "e2", "from": "s2", "to": "s3", "label": "波长几何级数", "role": "main" },
+    { "id": "e3", "from": "s3", "to": "s4", "label": "理论上可以", "role": "main" },
+    { "id": "e4", "from": "s4", "to": "l1", "label": "被更省事的替代", "role": "branch" },
+    { "id": "e5", "from": "l1", "to": "l2", "label": "查表取向量", "role": "main" },
+    { "id": "e6", "from": "l2", "to": "l3", "label": "位置只在浅层", "role": "main" },
+    { "id": "e7", "from": "l3", "to": "l4", "label": "于是 context 卡 2k", "role": "error" },
+    { "id": "e8", "from": "l4", "to": "r1", "label": "换思路:改造内积", "role": "branch" },
+    { "id": "e9", "from": "r1", "to": "r2", "label": "每层都作用", "role": "main" },
+    { "id": "e10", "from": "r2", "to": "r3", "label": "旋转矩阵正交", "role": "main" },
+    { "id": "e11", "from": "r3", "to": "r4", "label": "频率可拉伸", "role": "main" },
+    { "id": "e12", "from": "l4", "to": "a1", "label": "另一条外推路线", "role": "branch" },
+    { "id": "e13", "from": "a1", "to": "a2", "label": "惩罚项进 softmax", "role": "main" },
+    { "id": "e14", "from": "a2", "to": "a3", "label": "归纳偏置偏近因", "role": "main" },
+    { "id": "e15", "from": "a3", "to": "a4", "label": "训练长度外仍可用", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么位置编码必须「相对化」",
+      "items": [
+        "语言的关键不是「第 5 个字」,而是「相距 3 个字」",
+        "正弦编码的巧处:对任意固定偏移 k,PE(pos+k) 可表示为 PE(pos) 的线性函数 → 容易学「按相对位置 attend」",
+        "learned 表没有这个结构,所以一到 max_len 就死"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "RoPE 的三条性质(RoFormer §3)",
+      "items": [
+        "用绝对位置的旋转实现显式相对位置依赖:θ_j = base^(−2j/d),R_m = block_diag(Rot(mθ_j))",
+        "不占参数;每层 QK 都注入位置(不只在输入层)",
+        "随相对距离增大内积有远程衰减趋势;序列长度灵活"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "长上下文扩展的抓手在 RoPE 频率上",
+      "items": [
+        "改 base(θ)就是拉伸波长,Llama 3 把它从 10000 提到 500,000(Xiong et al. 2023)",
+        "NTK-aware scaling / 位置插值 PI / YaRN 都是对频率动手术",
+        "learned PE 没有这个抓手 —— 不要指望它外推",
+        "RoPE 的相对性还是 StreamingLLM 按 cache 内位置重编号的前提"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "RoPE vs ALiBi:为什么 LLaMA 系选 RoPE",
+      "items": [
+        "ALiBi 零参数、外推强(PPL 与「在 2048 上训练的正弦模型」持平),但把距离衰减硬编码进分数,远距离信息被系统性压制",
+        "RoPE 更灵活(可学任意相对模式)、生态更大(LLaMA/Qwen/Mistral 全用)",
+        "两条相对位置路线并存:ALiBi 见于 BLOOM/MPT 等"
+      ]
+    }
+  ]
+}

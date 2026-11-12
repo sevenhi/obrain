@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "LMCache 分层缓存:L0/L1/L2",
+    "subtitle": "在 vLLM 引擎 KV 之上加一层可卸载、可共享的缓存;GPU 当前 batch、CPU 近会话、磁盘/远端跨实例复用",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-prodstack-lmcache.dataflow.html"
+  },
+  "stages": [
+    {
+      "label": "① 产生 KV"
+    },
+    {
+      "label": "② 逐层下沉"
+    },
+    {
+      "label": "③ 命中回读"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "hbm",
+      "type": "database",
+      "label": "L0 GPU HBM",
+      "sublabel": "vLLM block 当前 batch",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "cpu",
+      "type": "backend",
+      "label": "L1 CPU 内存",
+      "sublabel": "cpuOffloadingBufferSize 20G",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "disk",
+      "type": "database",
+      "label": "L2 磁盘/远端共享",
+      "sublabel": "cacheserverSpec 集群级",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "hit",
+      "type": "frontend",
+      "label": "再次命中",
+      "sublabel": "多轮/共享前缀直读",
+      "stage": 2,
+      "row": 2
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "hbm",
+      "to": "cpu",
+      "label": "会话结束 KV 卸到 CPU"
+    },
+    {
+      "id": "f2",
+      "from": "cpu",
+      "to": "disk",
+      "label": "跨实例/跨轮落盘共享"
+    },
+    {
+      "id": "f3",
+      "from": "disk",
+      "to": "hit",
+      "label": "再次进来直接命中,不重算"
+    },
+    {
+      "id": "f4",
+      "from": "cpu",
+      "to": "hit",
+      "label": "L1 快速恢复"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "与 prefix cache 是叠加不是替代",
+      "items": [
+        "进程内命中走 vLLM 自身 prefix caching",
+        "进程外/跨 Pod 才落到 LMCache",
+        "三层容量从小到大、延迟从低到高"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "diagram_type": "waterfall",
+  "meta": {
+    "title": "Chunked prefill 的 step 时间轴:长 prefill 被切成三块缝进 decode 空隙",
+    "subtitle": "不做 chunk 时一个长 prefill 独占整步预算、decode 被挤到后面;切块后每步只占一部分预算,decode 请求不必暂停(时序为示意,token 数取自文中示例)",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-chunked-prefill-timeline.waterfall.html",
+    "evidence": "illustrative",
+    "unit": "ms"
+  },
+  "layout": { "width": 900 },
+  "spans": [
+    { "id": "s1", "name": "step 1:decode A + B,prefill C 前 512 token", "start": 0, "duration": 22, "service": "step", "detail": "预算 2048,decode 只占几十 token,剩给 prefill" },
+    { "id": "s2", "name": "step 2:decode A + B,prefill C 中 512 token", "start": 24, "duration": 22, "service": "step", "detail": "继续切,decode 仍然每步都在跑" },
+    { "id": "s3", "name": "step 3:decode A + B,prefill C 尾 200 token", "start": 48, "duration": 18, "service": "step", "detail": "尾块不足预算,剩余预算可以再塞新请求" },
+    { "id": "s1a", "name": "decode A(每步 1 token)", "start": 0, "duration": 22, "parent": "s1", "service": "decode" },
+    { "id": "s1b", "name": "decode B(每步 1 token)", "start": 0, "duration": 22, "parent": "s1", "service": "decode" },
+    { "id": "s1c", "name": "prefill C 前 512", "start": 2, "duration": 20, "parent": "s1", "service": "prefill" },
+    { "id": "s2a", "name": "decode A", "start": 24, "duration": 22, "parent": "s2", "service": "decode" },
+    { "id": "s2b", "name": "decode B", "start": 24, "duration": 22, "parent": "s2", "service": "decode" },
+    { "id": "s2c", "name": "prefill C 中 512", "start": 26, "duration": 20, "parent": "s2", "service": "prefill" },
+    { "id": "s3a", "name": "decode A", "start": 48, "duration": 18, "parent": "s3", "service": "decode" },
+    { "id": "s3b", "name": "decode B", "start": 48, "duration": 18, "parent": "s3", "service": "decode" },
+    { "id": "s3c", "name": "prefill C 尾 200", "start": 50, "duration": 14, "parent": "s3", "service": "prefill" },
+    { "id": "alt", "name": "对照:不切块,prefill C 独占一步 1224 token", "start": 70, "duration": 40, "service": "no-chunk", "detail": "这一步 decode 全停,后续请求 TTFT 被整体推迟" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么需要 chunk",
+      "items": [
+        "单次 prefill 本身就能打满 GPU(compute-bound)",
+        "不切:一个长 prompt 吃掉整步预算,decode 请求被挤到后面",
+        "后果:prefill 队列顺序执行,后面的请求 TTFT 整体被推迟"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "收益与代价",
+      "items": [
+        "收益:decode 与 prefill 同 batch 混合,GPU 每步都填满",
+        "代价:单个 prefill 的延迟略增(拆开做)",
+        "取舍:吞吐(填满 GPU)vs prefill 延迟(一次做完)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "V1 vs V0 的差别",
+      "items": [
+        "V1:条件允许即默认开启(enabled by default whenever possible)",
+        "V0:按模型特性条件启用 —— 所以老教程的开关经验别照搬",
+        "V1 不需要手动设 enable_chunked_prefill(默认 True)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "旋钮与坑",
+      "items": [
+        "long_prefill_token_threshold 是「多长算长 prompt」的分类阈值,不是 chunk 大小",
+        "TensorRT-LLM 也做 chunked prefill,说明这是行业共识而非 vLLM 独有 trick",
+        "SLOWeave(arXiv:2609.07883)往「按截止时间自适应调 chunk」走;Nexus 走 P/D 分离,是另一条路线"
+      ]
+    }
+  ]
+}

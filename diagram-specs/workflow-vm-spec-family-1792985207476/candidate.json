@@ -1,0 +1,96 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "草稿模型家族:五种结构",
+  "subtitle": "EAGLE-3 / MTP / DFlash / DSpark / P-EAGLE 的结构要点与草稿方式",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-spec-family.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "aux",
+   "label": "吃 verifier 中间表示"
+  },
+  {
+   "id": "native",
+   "label": "模型原生头"
+  },
+  {
+   "id": "block",
+   "label": "块内并行"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "eagle",
+   "lane": "aux",
+   "col": 0,
+   "type": "backend",
+   "label": "EAGLE-3",
+   "sublabel": "小型 decoder + fc 融合多层 aux"
+  },
+  {
+   "id": "peagle",
+   "lane": "aux",
+   "col": 1,
+   "type": "backend",
+   "label": "P-EAGLE",
+   "sublabel": "并行预测多 token,降 drafting 延迟"
+  },
+  {
+   "id": "mtp",
+   "lane": "native",
+   "col": 0,
+   "type": "backend",
+   "label": "MTP",
+   "sublabel": "原生 Multi-Token Prediction 头"
+  },
+  {
+   "id": "dflash",
+   "lane": "block",
+   "col": 0,
+   "type": "backend",
+   "label": "DFlash",
+   "sublabel": "锚点块草稿,滑窗注意力"
+  },
+  {
+   "id": "dspark",
+   "lane": "block",
+   "col": 1,
+   "type": "backend",
+   "label": "DSpark",
+   "sublabel": "DFlash+Markov+confidence 头"
+  }
+ ],
+ "edges": [
+  {
+   "from": "eagle",
+   "to": "peagle",
+   "label": "并行化变体",
+   "variant": "dashed"
+  },
+  {
+   "from": "dflash",
+   "to": "dspark",
+   "label": "warm-start",
+   "variant": "emphasis"
+  },
+  {
+   "from": "eagle",
+   "to": "mtp",
+   "label": "串行自回归 vs 每步一个",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "接受率是第一驱动",
+   "items": [
+    "草稿再快,接受率低就是负优化",
+    "部署格式与引擎对齐:层数/vocab 映射/aux layer ids"
+   ]
+  }
+ ]
+}

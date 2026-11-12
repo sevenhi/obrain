@@ -1,0 +1,145 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Philox-4×32 的一轮:两个乘子 + Weyl 序列推 key,重复 10 轮",
+    "subtitle": "S-box 是广义 Feistel,群运算用 xor、扩散用乘法。mulhi/mullo 各一条单指令,所以它在 GPU 上最快",
+    "locale": "zh-CN",
+    "output": "diagrams/rng-philox-round.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_in", "label": "① 输入 4 字" },
+    { "id": "ln_sbox", "label": "② 乘法扩散" },
+    { "id": "ln_pbox", "label": "③ 交叉与异或" },
+    { "id": "ln_key", "label": "④ key 推进" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "一轮之内", "fromCol": 0, "toCol": 2 },
+    { "id": "ph2", "label": "轮末更新", "fromCol": 3, "toCol": 4, "variant": "emphasis" },
+    { "id": "ph3", "label": "重复到第 10 轮", "fromCol": 5, "toCol": 5 }
+  ],
+  "mainPath": ["c0", "mul0", "hi1", "cnext", "weyl", "loop"],
+  "nodes": [
+    {
+      "id": "c0",
+      "lane": "ln_in",
+      "col": 0,
+      "type": "frontend",
+      "label": "计数器 c0 / c2",
+      "sublabel": "4×32-bit 里的两个",
+      "icon": "start",
+      "width": 150
+    },
+    {
+      "id": "mul0",
+      "lane": "ln_sbox",
+      "col": 1,
+      "type": "backend",
+      "label": "mullo(c, M)",
+      "sublabel": "M0=0xD2511F53",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "hi1",
+      "lane": "ln_sbox",
+      "col": 2,
+      "type": "backend",
+      "label": "mulhi(c, M)",
+      "sublabel": "M1=0xCD9E8D57",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "cnext",
+      "lane": "ln_pbox",
+      "col": 3,
+      "type": "backend",
+      "label": "重排 + 异或 key",
+      "sublabel": "hi1⊕c1⊕k0 与 hi0⊕c3⊕k1",
+      "icon": "neutral",
+      "width": 150
+    },
+    {
+      "id": "weyl",
+      "lane": "ln_key",
+      "col": 4,
+      "type": "security",
+      "label": "key 加常数",
+      "sublabel": "k0+=0x9E3779B9,k1+=0xBB67AE85",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "loop",
+      "lane": "ln_key",
+      "col": 5,
+      "type": "cloud",
+      "label": "满 10 轮输出",
+      "sublabel": "cuRAND 的 PHILOX4_32_10",
+      "icon": "success",
+      "width": 150
+    },
+    {
+      "id": "rounds",
+      "lane": "ln_sbox",
+      "col": 2,
+      "type": "external",
+      "label": "最小轮数 7",
+      "sublabel": "cuRAND 留 3 轮安全裕度",
+      "icon": "neutral",
+      "width": 150,
+      "yOffset": 122
+    },
+    {
+      "id": "avalanche",
+      "lane": "ln_in",
+      "col": 1,
+      "type": "external",
+      "label": "乘子怎么来",
+      "sublabel": "χ² 量化 avalanche + 遗传式搜索",
+      "icon": "neutral",
+      "width": 150,
+      "yOffset": 122
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "c0", "to": "mul0", "label": "取低半", "role": "main" },
+    { "id": "e2", "from": "mul0", "to": "hi1", "label": "两块各算高低半", "role": "main", "variant": "emphasis" },
+    { "id": "e3", "from": "hi1", "to": "cnext", "label": "高半拿来交叉", "role": "main" },
+    { "id": "e4", "from": "cnext", "to": "weyl", "label": "本轮状态成型", "role": "main" },
+    { "id": "e5", "from": "weyl", "to": "loop", "label": "第 10 轮收尾", "role": "main" },
+    { "id": "e6", "from": "weyl", "to": "mul0", "label": "没到 10 轮就回炉", "role": "branch", "variant": "dashed" },
+    { "id": "e7", "from": "avalanche", "to": "mul0", "label": "定下 M0/M1", "role": "branch", "variant": "dashed" },
+    { "id": "e8", "from": "rounds", "to": "loop", "label": "才是实际用的轮数", "role": "branch", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么选中 4×32 而不是 4×64",
+      "items": [
+        "整条链只依赖 32-bit 乘法,GPU(和低功耗嵌入式 CPU)支持更好",
+        "SC11 实测 GTX580 上 202 GB/s/chip,是已知单芯片最高吞吐",
+        "x86 上 mulhi+mullo 还能一条指令同时算"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "无状态的直接后果",
+      "items": [
+        "给定 (counter, key) 就能算出输出,不需要保存中间状态",
+        "断点续算、跨 kernel、跨设备都只是换 counter 起点",
+        "因此 curand_init 的开销可以彻底避开(见 cuRAND 那张图)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "常被记错的数字",
+      "items": [
+        "Philox-4×32 的乘子是 0xD2511F53 / 0xCD9E8D57,不是随手常数",
+        "Crush-resistant 最小轮数:4×32-7 / 2×64-6 / 4×64-7",
+        "cuRAND 用 10 轮 = 7 轮 + 3 轮裕度"
+      ]
+    }
+  ]
+}

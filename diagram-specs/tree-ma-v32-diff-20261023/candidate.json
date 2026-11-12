@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "V3 → V3.2 的结构 diff:全部新增项都在为 DSA 服务",
+    "subtitle": "官方原话「唯一架构改动是引入 DSA」;代码级逐项对照后,新增/改动的 8 个条目无一例外都服务于稀疏注意力",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-v32-diff-tree.tree.html"
+  },
+  "layout": {
+    "direction": "down",
+    "gapX": 22,
+    "gapY": 44,
+    "nodeW": 150,
+    "nodeMaxW": 170
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "V3.2-Exp 结构 diff",
+      "sublabel": "唯一增量 = DSA"
+    },
+    {
+      "id": "newcls",
+      "parent": "root",
+      "label": "新增类/函数",
+      "sublabel": "4 项"
+    },
+    {
+      "id": "indexer",
+      "parent": "newcls",
+      "label": "Indexer(约 53 行)",
+      "sublabel": "索引器主体"
+    },
+    {
+      "id": "rot",
+      "parent": "newcls",
+      "label": "rotate_activation",
+      "sublabel": "哈达玛旋转"
+    },
+    {
+      "id": "ln",
+      "parent": "newcls",
+      "label": "LayerNorm",
+      "sublabel": "V3 只有 RMSNorm"
+    },
+    {
+      "id": "wdeq",
+      "parent": "newcls",
+      "label": "weight_dequant 内联",
+      "sublabel": "签名改为 (weight, scale)"
+    },
+    {
+      "id": "args",
+      "parent": "root",
+      "label": "ModelArgs 新字段",
+      "sublabel": "仅 DSA 维度"
+    },
+    {
+      "id": "h",
+      "parent": "args",
+      "label": "index_n_heads=64",
+      "sublabel": "索引器头数"
+    },
+    {
+      "id": "d",
+      "parent": "args",
+      "label": "index_head_dim=128",
+      "sublabel": "2 的幂,Hadamard 可用"
+    },
+    {
+      "id": "k",
+      "parent": "args",
+      "label": "index_topk=2048",
+      "sublabel": "每 query 选多少 KV"
+    },
+    {
+      "id": "mla",
+      "parent": "root",
+      "label": "MLA 改动",
+      "sublabel": "两处"
+    },
+    {
+      "id": "emb",
+      "parent": "mla",
+      "label": "内嵌 self.indexer",
+      "sublabel": "每注意力层一个"
+    },
+    {
+      "id": "paths",
+      "parent": "mla",
+      "label": "两条路径都插 index_mask",
+      "sublabel": "MHA prefill / MQA decode"
+    },
+    {
+      "id": "rope",
+      "parent": "root",
+      "label": "apply_rotary_emb 加 interleaved",
+      "sublabel": "索引器用 False"
+    },
+    {
+      "id": "kern",
+      "parent": "root",
+      "label": "kernel import 变化",
+      "sublabel": "新增 fp8_index"
+    },
+    {
+      "id": "blk",
+      "parent": "root",
+      "label": "Block 改双残差流",
+      "sublabel": "工程性,非数学变化"
+    },
+    {
+      "id": "train",
+      "parent": "root",
+      "label": "两阶段训练",
+      "sublabel": "dense 预热 + 稀疏续训"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两阶段训练(结构之外的关键配套)",
+      "items": [
+        "Dense 预热:冻结除索引器外所有参数,只训索引器 1000 步(2.1B tokens)",
+        "预热用 KL 损失,让索引器分布对齐主注意力(跨头求和 + L1 归一化)",
+        "稀疏续训:引入 top-k,全参数 15000 步(943.7B tokens)",
+        "索引器输入 detach:索引器只吃 KL,主模型只吃 LM 损失"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "什么没变(一字未动)",
+      "items": [
+        "MoE:256 routed + 1 shared,top-8,分组路由 noaux_tc 不变",
+        "MTP:仍保留,不变",
+        "位置编码:解耦 RoPE + YaRN 不变(索引器另用非交织)",
+        "主干超参:hidden 7168 / 61 层 / 128 头 / kv_lora 512 全继承 V3"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "R1 是另一条正交支线",
+      "items": [
+        "R1 网络结构 = DeepSeek-V3 原样,不新增任何算子/层/注意力",
+        "V3-Base + GRPO + 冷启动/蒸馏,全在后训练与推理时",
+        "本质是 inference-time scaling:延长 CoT 换推理能力",
+        "V3.2 改「网络怎么算」,R1 改「怎么训、怎么推理」"
+      ]
+    }
+  ]
+}

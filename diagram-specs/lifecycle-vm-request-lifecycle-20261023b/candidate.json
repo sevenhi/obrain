@@ -1,0 +1,59 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "一个请求在 V1 调度器里的状态流转(含抢占回收)",
+    "subtitle": "核心是「每步重排」:running 不是终点而是每步重新竞争;块不足时被抢回 waiting,靠 prefix cache 减少重算",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-request-lifecycle.lifecycle.html"
+  },
+  "mainPath": ["add", "waiting", "running", "finished"],
+  "states": [
+    { "id": "add", "type": "start", "label": "add_request", "sublabel": "新请求进 waiting 队列", "step": "1" },
+    { "id": "waiting", "type": "waiting", "label": "WAITING", "sublabel": "等预算 + 等块", "step": "2" },
+    { "id": "running", "type": "active", "label": "RUNNING", "sublabel": "已分配 KV 块,每步续 token", "step": "3" },
+    { "id": "finished", "type": "success", "label": "FINISHED", "sublabel": "释放块回池", "step": "4" },
+    { "id": "preempt", "type": "failure", "label": "被抢占", "sublabel": "allocate_slots 返回 None,默认抢 running 队尾", "step": "3a" },
+    { "id": "aborted", "type": "neutral", "label": "ABORTED", "sublabel": "客户端取消或超时", "step": "4a" },
+    { "id": "prefix", "type": "external", "label": "prefix cache 命中", "sublabel": "重排时跳过已算前缀", "step": "2a" }
+  ],
+  "transitions": [
+    { "id": "t1", "from": "add", "to": "waiting", "label": "入队", "variant": "emphasis" },
+    { "id": "t2", "from": "waiting", "to": "running", "label": "schedule 选中 + allocate_slots 成功", "variant": "emphasis" },
+    { "id": "t3", "from": "running", "to": "finished", "label": "生成到 EOS / max_tokens" },
+    { "id": "t4", "from": "running", "to": "preempt", "label": "块不足被抢", "variant": "security" },
+    { "id": "t5", "from": "preempt", "to": "waiting", "label": "释放块进 LRU,computed 归零", "variant": "security" },
+    { "id": "t6", "from": "waiting", "to": "prefix", "label": "重排前先查缓存", "variant": "dashed" },
+    { "id": "t7", "from": "prefix", "to": "running", "label": "命中部分不算,直接补算差额", "variant": "dashed" },
+    { "id": "t8", "from": "running", "to": "aborted", "label": "客户端取消", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "V1 只有 recompute 一种抢占模式",
+      "items": [
+        "释放被抢请求的 KV cache 块(进 LRU 前缀缓存)",
+        "num_computed_tokens 置 0,退回 waiting 重排",
+        "靠 prefix cache 命中减少重算,不是「保留部分进度」——那是 V0 的概念"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "为什么每步都要重排",
+      "items": [
+        "decode 每请求每步只产 1 token,不重排 GPU 就空转",
+        "完成的请求必须立刻让位,否则新请求只能干等",
+        "块的分配/释放是按 token 精确的,所以调度器敢每步动手(见 PagedAttention)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两个默认值决定了状态机的形状",
+      "items": [
+        "max_num_running_reqs 默认 128:running 有上限,所以 waiting 一定排得起来",
+        "max_num_batched_tokens 默认 2048:预算决定每步能推进几个请求",
+        "enable_chunked_prefill 默认 True:prefill 也能跨步存活,不是一个状态一次做完"
+      ]
+    }
+  ]
+}

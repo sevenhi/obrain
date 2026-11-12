@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "每卡显存账:四类占用各由谁来摊",
+    "subtitle": "参数被 PP 与 EP 双重切、梯度随参数走、优化器由 ZeRO-1 单独切一刀、激活靠重计算与 FP8 压单份大小;四笔账都过,才敢不用 TP",
+    "locale": "zh-CN",
+    "output": "diagrams/di-v3-memory-budget.tree.html"
+  },
+  "layout": {
+    "direction": "right",
+    "nodeW": 210,
+    "gapX": 30,
+    "gapY": 48
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "每卡显存预算",
+      "sublabel": "装得下 671B 才不用 TP",
+      "collapsed": false
+    },
+    {
+      "id": "param",
+      "label": "① 参数",
+      "parent": "root",
+      "sublabel": "PP × EP 双重切,DualPipe 再 ×2"
+    },
+    {
+      "id": "param_pp",
+      "label": "PP 切层",
+      "parent": "param",
+      "sublabel": "每卡只存 1/16 的层"
+    },
+    {
+      "id": "param_ep",
+      "label": "EP 切专家",
+      "parent": "param",
+      "sublabel": "每卡只存 1/64 的专家,2× 由此吸收"
+    },
+    {
+      "id": "grad",
+      "label": "② 梯度",
+      "parent": "root",
+      "sublabel": "随参数分片,ZeRO-1 不切梯度本体"
+    },
+    {
+      "id": "grad_ar",
+      "label": "反传后全局归约",
+      "parent": "grad",
+      "sublabel": "每 step 一次 all-reduce"
+    },
+    {
+      "id": "opt",
+      "label": "③ 优化器状态",
+      "parent": "root",
+      "sublabel": "ZeRO-1 DP 单独切一刀"
+    },
+    {
+      "id": "opt_bf16",
+      "label": "Adam moments 降 BF16",
+      "parent": "opt",
+      "sublabel": "直接省一半"
+    },
+    {
+      "id": "opt_fp32",
+      "label": "master 权重与梯度累加留 FP32",
+      "parent": "opt",
+      "sublabel": "数值稳定性底线"
+    },
+    {
+      "id": "act",
+      "label": "④ 激活",
+      "parent": "root",
+      "sublabel": "PP 决定驻留数,DualPipe 峰值 PP+1"
+    },
+    {
+      "id": "act_re",
+      "label": "点名重算",
+      "parent": "act",
+      "sublabel": "RMSNorm + MLA up-proj 反传时重算"
+    },
+    {
+      "id": "act_swiglu",
+      "label": "SwiGLU 只缓存输入",
+      "parent": "act",
+      "sublabel": "FP8 细粒度量化,输出重算"
+    },
+    {
+      "id": "act_fp8",
+      "label": "FP8 激活缓存",
+      "parent": "act",
+      "sublabel": "attention 后那个 Linear 用 E5M6 特例"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两条容易记反的账",
+      "items": [
+        "参数随 PP 反比下降,激活随 micro-batch 驻留数上升",
+        "1F1B 激活约 1×PP 份,DualPipe 是 PP+1 份",
+        "DualPipe 的 2× 是「参数」不是「激活」"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么激活侧要「点名」而不是一刀切",
+      "items": [
+        "全层重计算浪费算力;点名重算只挑便宜算子",
+        "RMSNorm 便宜、MLA up-projection 激活大,重算它俩最划算",
+        "贵的激活(SwiGLU 输出)改为 FP8 缓存 + 重算"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "杂项但真省的两处",
+      "items": [
+        "EMA 放 CPU 内存异步更新:不占 GPU 显存、不占额外时间",
+        "no token-dropping:省掉 token drop 的缓冲与重排显存"
+      ]
+    }
+  ]
+}

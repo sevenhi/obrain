@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "QuIP# 三招:旋转消灭 outlier + 格码本 + 微调",
+    "locale": "zh-CN",
+    "subtitle": "W → 随机 Hadamard 非相干 → E8P 格量化 → fine-tuning → 推理 dequant",
+    "output": "diagrams/qt-quip-sharp-pipeline.dataflow.html"
+  },
+  "stages": [
+    {
+      "label": "① 原权重"
+    },
+    {
+      "label": "② 非相干"
+    },
+    {
+      "label": "③ 格量化"
+    },
+    {
+      "label": "④ 微调"
+    },
+    {
+      "label": "⑤ 推理"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "w",
+      "type": "backend",
+      "label": "原权重 W",
+      "sublabel": "含 outlier,非均匀",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "rht",
+      "type": "backend",
+      "label": "随机 Hadamard 变换",
+      "sublabel": "W̃ = H_L·S_L·W·S_Rᵀ·H_Rᵀ",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "e8",
+      "type": "backend",
+      "label": "E8P 格码本 VQ",
+      "sublabel": "2^16 条目 → 2^8 查表 + 8bit 符号/shift",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "ft",
+      "type": "backend",
+      "label": "fine-tuning",
+      "sublabel": "量化过程中微调拟合原模型",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "deq",
+      "type": "backend",
+      "label": "推理 dequant",
+      "sublabel": "Uᵀ·dequant·(Vx)",
+      "stage": 4,
+      "row": 0
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "w",
+      "to": "rht",
+      "label": "均匀化,消灭 outlier"
+    },
+    {
+      "id": "f2",
+      "from": "rht",
+      "to": "e8",
+      "label": "球状分布→格码"
+    },
+    {
+      "id": "f3",
+      "from": "e8",
+      "to": "ft",
+      "label": "压 2-bit/3-bit 尾部误差"
+    },
+    {
+      "id": "f4",
+      "from": "ft",
+      "to": "deq",
+      "label": "前向 U/V 抵消"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "RHT 的随机化来源",
+      "items": [
+        "Hadamard 用 FWHT O(n log n),无显式矩阵乘法",
+        "对角随机 ±1 缩放避免固定 Hadamard 偶然对齐",
+        "Table 1:Hadamard vs Fourier 8.22 vs 8.30"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "E8 格码",
+      "items": [
+        "E8 = (Z⁸ ∪ (Z⁸+½·1)) ∩ {1ᵀx 偶数},8 维最优单位球填充格",
+        "E8P:2^16 条目只查 2^8 表,剩余 8bit 存符号/shift",
+        "小到能常驻 L1,推理零 cache 抖动"
+      ]
+    }
+  ]
+}

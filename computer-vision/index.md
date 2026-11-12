@@ -6,10 +6,12 @@ source:
   - "web: ONNX Runtime 官方文档 | https://onnxruntime.ai/docs/ | 阅读日期 2026-10-23(最新发布 1.31.0)"
   - "web: NVIDIA TensorRT 官方文档 | https://docs.nvidia.com/deeplearning/tensorrt/latest/ | 阅读日期 2026-10-23(当前版 11.4.0)"
   - "code: NVIDIA Model Optimizer | github.com/NVIDIA/Model-Optimizer(原仓库名 TensorRT-Model-Optimizer 会 301 重定向到此) + 文档站 https://nvidia.github.io/Model-Optimizer/ | 阅读日期 2026-10-25(commit 3c423a9f165b,2026-10-24;PR #2889 vLLM fake-quant 导出改走 Megatron-Bridge——本 commit 改的是 LLM 量化导出链,落地在 quantization 域;PR #2922 剪枝适配 Megatron-Core 26.10;PR #2943 AutoQuant 自动 batch 探测;PR #2738 DP=EP 专家并行 PTQ;PR #2930 硬化 specdec smoke test;PR #2816 Windows ONNX external data 损坏修复——**本篇域**,依赖升 onnx 1.23.2)"
-date: 2026-10
+date: 2026-11
 ---
 
 # Computer Vision
+
+**快速入口**:[ViT 基础与权重来源](concepts/vision-transformer-basics.md) · [检测/分割](concepts/object-detection-segmentation.md) · [NeRF 表示](concepts/nerf-view-synthesis.md) · [部署流程](frameworks/onnx-tensorrt-deployment.md) · [来源](references.md)。
 
 > 领域索引(导航起始页)。定位:**视觉模型的三条主线——基础机制(ViT patchify/CLS、检测/分割三大范式)、表示(NeRF 隐式场景表示、CCNN 连续卷积核)与部署效率(TRT-ViT 硬件感知架构、OREPA 重参数化)**。2026-09 新建,2026-10 补齐 ViT 基础与检测/分割两篇核心支柱,由多篇论文(ViT/DeiT、Faster/Mask R-CNN/DETR/YOLO/SAM、NeRF/NeRF++、TRT-ViT、OREPA、CCNN)+ 1 篇官方文档综合的部署 howto 提炼为 **7 个 concept/howto**。**正文在 `concepts/`,每篇可独立读懂**;本页只导航。
 

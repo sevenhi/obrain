@@ -1,0 +1,109 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "选 BACKEND:五个枚举怎么挑",
+  "subtitle": "AUTO/TRITON/FLASH/TRITON_DECODE/FLYDSL;默认 AUTO,追求性能才上 FLASH",
+  "locale": "zh-CN",
+  "output": "diagrams/at-backend-selection.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "default",
+   "label": "默认"
+  },
+  {
+   "id": "perf",
+   "label": "追求性能"
+  },
+  {
+   "id": "special",
+   "label": "特殊场景"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "auto",
+   "lane": "default",
+   "col": 0,
+   "type": "frontend",
+   "label": "AUTO(默认)",
+   "sublabel": "启发式,通常 Triton 系"
+  },
+  {
+   "id": "triton",
+   "lane": "default",
+   "col": 1,
+   "type": "backend",
+   "label": "TRITON",
+   "sublabel": "标准 flex_attention 内核"
+  },
+  {
+   "id": "flash",
+   "lane": "perf",
+   "col": 2,
+   "type": "backend",
+   "label": "FLASH",
+   "sublabel": "FA4 CuTeDSL,1.2–3.2×,需 flash 包"
+  },
+  {
+   "id": "decode",
+   "lane": "special",
+   "col": 1,
+   "type": "backend",
+   "label": "TRITON_DECODE",
+   "sublabel": "解码场景,短序列"
+  },
+  {
+   "id": "flydsl",
+   "lane": "special",
+   "col": 2,
+   "type": "backend",
+   "label": "FLYDSL",
+   "sublabel": "ROCm gfx950 BF16,不支持回退 Triton"
+  }
+ ],
+ "edges": [
+  {
+   "from": "auto",
+   "to": "triton",
+   "label": "默认落在 Triton 系",
+   "variant": "emphasis"
+  },
+  {
+   "from": "triton",
+   "to": "flash",
+   "label": "Hopper/Blackwell+compute-bound 换 FLASH",
+   "variant": "emphasis"
+  },
+  {
+   "from": "triton",
+   "to": "decode",
+   "label": "decode 短序列可试",
+   "variant": "dashed"
+  },
+  {
+   "from": "flash",
+   "to": "flydsl",
+   "label": "ROCm 侧实验等价物",
+   "variant": "dashed"
+  }
+ ],
+ "mainPath": [
+  "auto",
+  "triton",
+  "flash"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "FLASH 前置核对",
+   "items": [
+    "PyTorch nightly + flash-attn-4(CuTeDSL)",
+    "dynamic=False(捕获标量时)",
+    "BLOCK_SIZE 匹配(SM100=(256,128),SM80/90=(128,128))",
+    "无「捕获 buffer 求梯度」需求"
+   ]
+  }
+ ]
+}

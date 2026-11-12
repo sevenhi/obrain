@@ -1,0 +1,140 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "少一个 a 后缀会发生什么:sm_90 vs sm_90a 的两种命运",
+    "subtitle": "architecture-accelerated 特性(CUDA 12.0 起)的 PTX 没有前向兼容保证;带 a 才被允许发射这些指令,不带 a 则编译期放行、运行期才炸",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-arch-suffix.lifecycle.html"
+  },
+  "mainPath": [
+    "s_write",
+    "s_cmake",
+    "s_ok",
+    "s_run"
+  ],
+  "states": [
+    {
+      "id": "s_write",
+      "type": "start",
+      "label": "写 kernel,用 Tensor Core 特性",
+      "sublabel": "mma.sync / wgmma / tcgen05",
+      "step": "①"
+    },
+    {
+      "id": "s_cmake",
+      "type": "active",
+      "label": "cmake 指定 CUTLASS_NVCC_ARCHS",
+      "sublabel": "90 还是 90a,这里决定命运",
+      "step": "②"
+    },
+    {
+      "id": "s_ok",
+      "type": "decision",
+      "label": "后缀带 a ?",
+      "sublabel": "sm_90a / sm_100a 才合法",
+      "step": "③"
+    },
+    {
+      "id": "s_run",
+      "type": "success",
+      "label": "编出可执行,运行正常",
+      "sublabel": "PTX 与真实架构匹配",
+      "step": "④"
+    },
+    {
+      "id": "s_build",
+      "type": "failure",
+      "label": "编译期不报错,照样生成二进制",
+      "sublabel": "sm_90 不含这些指令的资格",
+      "step": "③-b"
+    },
+    {
+      "id": "s_crash",
+      "type": "failure",
+      "label": "运行时报错",
+      "sublabel": "architecture-accelerated feature",
+      "step": "④-b"
+    },
+    {
+      "id": "s_fix",
+      "type": "active",
+      "label": "改回 sm_90a 重新构建",
+      "sublabel": "改 NVCC_ARCHS 即可,不用改代码",
+      "step": "⑤"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "s_write",
+      "to": "s_cmake",
+      "label": "进入构建",
+      "variant": "default"
+    },
+    {
+      "from": "s_cmake",
+      "to": "s_ok",
+      "label": "看目标架构后缀",
+      "variant": "default"
+    },
+    {
+      "from": "s_ok",
+      "to": "s_run",
+      "label": "是:正常路线",
+      "variant": "default"
+    },
+    {
+      "from": "s_ok",
+      "to": "s_build",
+      "label": "否:编出来但没有资格",
+      "variant": "dashed"
+    },
+    {
+      "from": "s_build",
+      "to": "s_crash",
+      "label": "到运行时才暴露",
+      "variant": "dashed"
+    },
+    {
+      "from": "s_crash",
+      "to": "s_fix",
+      "label": "照报错改后缀",
+      "variant": "default"
+    },
+    {
+      "from": "s_fix",
+      "to": "s_cmake",
+      "label": "重新 cmake,不用动代码",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "为什么编译期抓不到",
+      "items": [
+        "CUDA 12.0 引入 architecture-accelerated features",
+        "这类 PTX 无前向兼容保证:编译器不阻止你写 sm_90",
+        "错在运行期,不在编译期——所以排查会绕远路"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "哪些目标要带 a",
+      "items": [
+        "Hopper Tensor Core:sm_90a",
+        "数据中心 Blackwell:sm_100a",
+        "GeForce Blackwell(RTX 50)是 SM120,要用 120a,与 100a 不兼容"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "别为了省事给全架构编",
+      "items": [
+        "不设 NVCC_ARCHS 会编该 CUDA 支持的全部架构",
+        "十几个架构意味着十几倍编译时间",
+        "收窄到目标架构是「省时」和「正确」同一件事"
+      ]
+    }
+  ]
+}

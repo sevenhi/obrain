@@ -1,0 +1,179 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "grouped GEMM 只 group M:三个变体各管什么场景",
+    "subtitle": "MoE 各 expert 共享同一 hidden/intermediate 形状,只有 token 数(M)不同——所以 DeepGEMM 只沿 M 轴分组,N、K 必须固定",
+    "locale": "zh-CN",
+    "output": "diagrams/di-dg-grouped-gemm.workflow.html",
+    "viewBox": [
+      1131,
+      680
+    ]
+  },
+  "lanes": [
+    {
+      "id": "ln_ask",
+      "label": "先判:token 数在 CPU 上可知吗"
+    },
+    {
+      "id": "ln_c",
+      "label": "可知 → contiguous 布局"
+    },
+    {
+      "id": "ln_m",
+      "label": "不可知(CUDA graph)→ masked 布局"
+    },
+    {
+      "id": "ln_b",
+      "label": "反向:K-grouped 变体"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "n_start",
+      "lane": "ln_ask",
+      "col": 0,
+      "type": "backend",
+      "label": "token 按 expert 分组",
+      "sublabel": "只有 M 不同",
+      "width": 168,
+      "icon": "start"
+    },
+    {
+      "id": "n_dec",
+      "lane": "ln_ask",
+      "col": 1,
+      "type": "security",
+      "label": "CPU 知道 token 数?",
+      "sublabel": "知道→连续 / 否→mask",
+      "width": 168,
+      "icon": "decision"
+    },
+    {
+      "id": "n_pack",
+      "lane": "ln_c",
+      "col": 2,
+      "type": "database",
+      "label": "拼成一张连续张量",
+      "sublabel": "contiguous 变体",
+      "width": 160
+    },
+    {
+      "id": "n_align",
+      "lane": "ln_c",
+      "col": 3,
+      "type": "security",
+      "label": "每段按 M block 对齐",
+      "sublabel": "get_mk_alignment()",
+      "width": 168
+    },
+    {
+      "id": "n_mask",
+      "lane": "ln_m",
+      "col": 2,
+      "type": "database",
+      "label": "mask 标出有效段",
+      "sublabel": "masked 变体",
+      "width": 150
+    },
+    {
+      "id": "n_deepep",
+      "lane": "ln_m",
+      "col": 3,
+      "type": "messagebus",
+      "label": "输入来自 DeepEP",
+      "sublabel": "低延迟 + CUDA graph",
+      "width": 168,
+      "icon": "messagebus"
+    },
+    {
+      "id": "n_kgroup",
+      "lane": "ln_b",
+      "col": 4,
+      "type": "backend",
+      "label": "正向 group M",
+      "sublabel": "反向 group K",
+      "width": 150
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "n_start",
+      "to": "n_dec",
+      "label": "先看 layout 能力",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "n_dec",
+      "to": "n_pack",
+      "label": "知道:直接拼",
+      "role": "branch"
+    },
+    {
+      "id": "e3",
+      "from": "n_pack",
+      "to": "n_align",
+      "label": "不对齐会错段边界",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "n_dec",
+      "to": "n_mask",
+      "label": "不知道:只能 mask",
+      "role": "branch"
+    },
+    {
+      "id": "e5",
+      "from": "n_mask",
+      "to": "n_deepep",
+      "label": "解码步的常态",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "n_align",
+      "to": "n_kgroup",
+      "label": "反向换另一种分组",
+      "role": "branch"
+    }
+  ],
+  "mainPath": [
+    "n_start",
+    "n_dec",
+    "n_pack",
+    "n_align"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "和 CUTLASS 的 grouped GEMM 差在哪",
+      "items": [
+        "CUTLASS 传统 grouped GEMM 可 group 任意维",
+        "DeepGEMM 只 group M:N、K 必须固定",
+        "理由:各 expert 的 hidden/inter 形状本来就一样"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么解码非得 masked",
+      "items": [
+        "开 CUDA graph 后 CPU 不知道各 expert 收到多少 token",
+        "mask 张量让 kernel 只算有效段",
+        "典型输入正是 DeepEP 的低延迟 dispatch 输出"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "反向是另一个变体",
+      "items": [
+        "权重反向:k_grouped_fp8_gemm_tn_contiguous",
+        "此时 M、N 固定,K 才是被分组的轴",
+        "记住:正向 group M、反向 group K"
+      ]
+    }
+  ]
+}

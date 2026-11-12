@@ -1,0 +1,71 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "把 CPU-GPU 同步从采样算法里挤出去",
+    "subtitle": "随机采样本可以用 multinomial,但那会同步;换成「除以指数噪声再取 argmax」在数学上等价,却全程留在 GPU。纯 top-k 有一条 k.max() 同步,是已知取舍",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-sync-free-sampling.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_naive", "label": "① 朴素写法(有同步)" },
+    { "id": "ln_real", "label": "② vLLM 实际写法" },
+    { "id": "ln_cost", "label": "③ 收益与代价" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "朴素方案", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "免同步方案", "fromCol": 1, "toCol": 1, "variant": "emphasis" },
+    { "id": "p3", "label": "边界与取舍", "fromCol": 2, "toCol": 2 }
+  ],
+  "nodes": [
+    { "id": "n1", "lane": "ln_naive", "col": 0, "type": "external", "label": "multinomial", "sublabel": "需要回 CPU 判断", "icon": "start" },
+    { "id": "n2", "lane": "ln_naive", "col": 1, "type": "security", "label": "全词表排序", "sublabel": "每步 decode 都排一遍", "icon": "neutral" },
+
+    { "id": "r1", "lane": "ln_real", "col": 0, "type": "backend", "label": "取 q ~ Exp(1)", "sublabel": "每候选一个噪声", "icon": "active" },
+    { "id": "r2", "lane": "ln_real", "col": 1, "type": "backend", "label": "argmax(probs/q)", "sublabel": "等价按 probs 采样", "icon": "success" },
+    { "id": "r3", "lane": "ln_real", "col": 2, "type": "backend", "label": "纯 top-k 捷径", "sublabel": "topk 取第 k 大值当阈值", "icon": "neutral" },
+
+    { "id": "c1", "lane": "ln_cost", "col": 0, "type": "cloud", "label": "全程留在 GPU", "sublabel": "无 CPU 往返", "icon": "none" },
+    { "id": "c2", "lane": "ln_cost", "col": 1, "type": "cloud", "label": "换后端不保证逐位一致", "sublabel": "FlashInfer 是拒绝采样", "icon": "none" },
+    { "id": "c3", "lane": "ln_cost", "col": 2, "type": "cloud", "label": "k.max() 一次同步", "sublabel": "损害 async 调度", "icon": "none" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "r1", "to": "r2", "label": "除法 + argmax 一步出 token", "role": "main" },
+    { "id": "e2", "from": "r2", "to": "r3", "label": "top-p 时仍需排序", "role": "main" },
+    { "id": "e3", "from": "n1", "to": "c1", "label": "反过来:它必须同步", "variant": "dashed", "role": "error" },
+    { "id": "e4", "from": "n2", "to": "r3", "label": "反过来:捷径免全排", "variant": "dashed", "role": "error" },
+    { "id": "e5", "from": "r1", "to": "c1", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e6", "from": "r2", "to": "c2", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e7", "from": "r3", "to": "c3", "label": "", "variant": "dashed", "role": "async" }
+  ],
+  "mainPath": ["r1", "r2", "r3"],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "为什么 argmax(probs/q) 等价于按 probs 采样",
+      "items": [
+        "这是 Gumbel-max 技巧的指数噪声变体",
+        "对每个候选独立取 Exp(1),再按 probs/q 取最大",
+        "最大者被选中的概率恰好正比于 probs,且天然可 batch 化"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "带 seed 的行为什么逐行处理",
+      "items": [
+        "请求级种子按行号映射到 torch.Generator",
+        "于是 q[i].exponential_(generator=...) 逐行覆写噪声",
+        "源码 TODO(woosuk) 自认逐行慢,吞吐敏感场景别乱开"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "可复现性的边界",
+      "items": [
+        "固定 seed 只保证同一后端内一致",
+        "FlashInfer 走拒绝采样,作者注明统计等价但不保证逐位一致",
+        "实验复现要固定 VLLM_USE_FLASHINFER_SAMPLER"
+      ]
+    }
+  ]
+}

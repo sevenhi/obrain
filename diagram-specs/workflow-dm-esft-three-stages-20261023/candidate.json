@@ -1,0 +1,72 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "ESFT 三阶段:打分 → 选专家 → 特化训练",
+    "subtitle": "三个脚本串成一条流水线:先把任务数据上「哪些专家被激活」统计出来,再按分数裁剪出每层要训的专家名单,最后只把这批专家从 buffer 升回 parameter",
+    "locale": "zh-CN",
+    "output": "diagrams/dm-esft-three-stages.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_step", "label": "① 阶段(脚本)" },
+    { "id": "ln_mech", "label": "② 内部在做什么" },
+    { "id": "ln_artifact", "label": "③ 留下来的东西" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "① 打分", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "② 选专家", "fromCol": 1, "toCol": 1, "variant": "emphasis" },
+    { "id": "p3", "label": "③ 特化训练", "fromCol": 2, "toCol": 2 }
+  ],
+  "nodes": [
+    { "id": "s_score", "lane": "ln_step", "col": 0, "type": "backend", "label": "在评估集上前向", "sublabel": "get_expert_scores.py", "icon": "start" },
+    { "id": "s_cfg", "lane": "ln_step", "col": 1, "type": "backend", "label": "聚合并裁剪专家", "sublabel": "generate_expert_config.py", "icon": "decision" },
+    { "id": "s_train", "lane": "ln_step", "col": 2, "type": "backend", "label": "解冻并训练", "sublabel": "train.py 调 to_esft", "icon": "active" },
+
+    { "id": "m_log", "lane": "ln_mech", "col": 0, "type": "security", "label": "打开激活日志", "sublabel": "log_expert_weights=True", "icon": "neutral" },
+    { "id": "m_top_p", "lane": "ln_mech", "col": 1, "type": "security", "label": "每层按分数截断", "sublabel": "top_p=0.2 累积裁剪", "icon": "neutral" },
+    { "id": "m_swap", "lane": "ln_mech", "col": 2, "type": "security", "label": "parameter↔buffer 互换", "sublabel": "优化器只看得见 parameter", "icon": "neutral" },
+
+    { "id": "a_log", "lane": "ln_artifact", "col": 0, "type": "database", "label": "逐层激活记录", "sublabel": "expert_ids + weights", "icon": "database" },
+    { "id": "a_cfg", "lane": "ln_artifact", "col": 1, "type": "database", "label": "专家名单", "sublabel": "expert_cfg.json", "icon": "database" },
+    { "id": "a_adapter", "lane": "ln_artifact", "col": 2, "type": "database", "label": "adapter 权重包", "sublabel": "只含被训专家", "icon": "success" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "s_score", "to": "s_cfg", "label": "拿激活记录聚合 26 层分数", "role": "main" },
+    { "id": "e2", "from": "s_cfg", "to": "s_train", "label": "名单即「谁可训」清单", "role": "main" },
+    { "id": "e3", "from": "s_score", "to": "m_log", "label": "前向时逐层落盘", "role": "main" },
+    { "id": "e4", "from": "s_cfg", "to": "m_top_p", "label": "分数→排序→累加", "role": "main" },
+    { "id": "e5", "from": "s_train", "to": "m_swap", "label": "只动被选中的专家", "role": "main" },
+    { "id": "e6", "from": "m_log", "to": "a_log", "label": "写 jsonl", "role": "main" },
+    { "id": "e7", "from": "m_top_p", "to": "a_cfg", "label": "每层一个专家列表", "role": "main" },
+    { "id": "e8", "from": "m_swap", "to": "a_adapter", "label": "checkpoint 只存可训部分", "role": "main" }
+  ],
+  "mainPath": ["s_score", "s_cfg", "s_train"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么这三步顺序不能换",
+      "items": [
+        "没有①的激活统计,就不知道哪些专家值得训,只能全量解冻",
+        "没有②的裁剪名单,③退化成普通全参数微调,省不了任何东西",
+        "①要在评估集上跑前向,②只是 numpy 级统计,③才真正占用 GPU 训练"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两个容易踩的坑",
+      "items": [
+        "expert_ids 与 expert_weights 必须同时落盘:一个算 token 命中次数,一个算门控软权重",
+        "n_sample_tokens 默认 131072,采样太少时分数噪声大,选出的专家集合会在重跑之间跳动"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "产物为什么天然是 adapter",
+      "items": [
+        "state_dict 只保存 parameter,buffer 不进优化器",
+        "「冻成 buffer」的专家因此既不产生梯度,也不进训练产物",
+        "省存储不是额外优化,是这套机制的推论"
+      ]
+    }
+  ]
+}

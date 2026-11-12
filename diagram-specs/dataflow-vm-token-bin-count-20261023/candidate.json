@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "分桶计数:一次 scatter 同时算出「次数」和「出现过」",
+    "subtitle": "每条序列开一个 vocab_size+1 的计数桶,把所有历史 token 一次性 scatter_add_ 进去,再从同一个数组切出两个视图:一个给 frequency 当次数,一个给 presence / repetition 当布尔掩码",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-token-bin-count.dataflow.html",
+    "viewBox": [1080, 460]
+  },
+  "stages": [
+    { "label": "① 历史 token" },
+    { "label": "② 补长并上传" },
+    { "label": "③ 入桶" },
+    { "label": "④ 切视图" },
+    { "label": "⑤ 消费" }
+  ],
+  "nodes": [
+    { "id": "hist", "type": "database", "label": "prompt + 已生成", "sublabel": "嵌套列表形态", "stage": 0, "row": 0, "width": 116, "height": 64 },
+    { "id": "pad", "type": "backend", "label": "pad 到同长", "sublabel": "pad 值 = 词表大小", "stage": 1, "row": 0, "width": 116, "height": 64 },
+    { "id": "bucket", "type": "database", "label": "计数桶", "sublabel": "vocab_size+1 每序列", "stage": 2, "row": 0, "width": 116, "height": 64 },
+    { "id": "counts", "type": "database", "label": "出现次数", "sublabel": "截掉 pad 列", "stage": 3, "row": 0, "width": 116, "height": 64 },
+    { "id": "mask", "type": "database", "label": "布尔掩码", "sublabel": "是否出现", "stage": 3, "row": 1, "width": 116, "height": 64 },
+    { "id": "freq", "type": "backend", "label": "frequency 用次数", "sublabel": "logits -= f × counts", "stage": 4, "row": 0, "width": 116, "height": 64 },
+    { "id": "pres", "type": "backend", "label": "presence 用掩码", "sublabel": "repetition 也用这个", "stage": 4, "row": 1, "width": 116, "height": 64 }
+  ],
+  "flows": [
+    { "id": "f1", "from": "hist", "to": "pad", "label": "统一长度", "route": "straight" },
+    { "id": "f2", "from": "pad", "to": "bucket", "label": "int64 非阻塞上传", "route": "straight" },
+    { "id": "f3", "from": "bucket", "to": "counts", "label": "scatter_add_ 累加", "route": "straight", "labelDy": -30 },
+    { "id": "f4", "from": "bucket", "to": "mask", "label": "同一数组另一视图", "route": "straight", "labelDy": 54 },
+    { "id": "f5", "from": "counts", "to": "freq", "label": "线性扣除" },
+    { "id": "f6", "from": "mask", "to": "pres", "label": "并集后取值" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么 pad 填词表大小就安全",
+      "items": [
+        "词表内不存在 id == vocab_size 的 token",
+        "pad 列永远落在桶的最后一格,不会与真实 token 混",
+        "统计时把这一列切掉即可,不需要额外判断分支"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "async 调度下的 -1 占位",
+      "items": [
+        "无惩罚的行用 -1 占位,直接 scatter 会越界",
+        "所以先 masked_fill_ 成 vocab_size 再统计",
+        "源码自注 currently quite inefficient and will be reworked"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "一次统计,三处复用",
+      "items": [
+        "三个惩罚共用同一份桶数据,不必各扫一遍历史",
+        "代价是每条序列一个 vocab_size 级数组,显存随 batch 线性增长",
+        "所以它必须留在 GPU 上:回 CPU 统计就等于一次同步"
+      ]
+    }
+  ]
+}

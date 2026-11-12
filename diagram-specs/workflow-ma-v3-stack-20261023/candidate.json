@@ -1,0 +1,141 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "V3 全模型:61 层,前 3 层 dense MLP、后 58 层 MoE",
+    "subtitle": "主干与 V2 完全一致(MLA + DeepSeekMoE + RMSNorm + RoPE + YaRN),两处结构级增量在别处:MoE 路由改 sigmoid + aux-loss-free,训练时挂 MTP。注意 inference/model.py 的 ModelArgs 默认值是小型示例,不是 671B",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-v3-stack.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_io", "label": "输入 / 输出" },
+    { "id": "ln_blk", "label": "Block 主干(×61)" },
+    { "id": "ln_attn", "label": "注意力分支" },
+    { "id": "ln_ffn", "label": "FFN 分支" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 嵌入与堆叠入口", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 每层两分支", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "③ 收尾投影", "fromCol": 4, "toCol": 5 }
+  ],
+  "mainPath": ["tok", "emb", "n1", "mla", "n2", "moe", "head"],
+  "nodes": [
+    {
+      "id": "tok",
+      "lane": "ln_io",
+      "col": 0,
+      "type": "external",
+      "label": "tokens",
+      "sublabel": "vocab 129280",
+      "icon": "start",
+      "width": 150
+    },
+    {
+      "id": "emb",
+      "lane": "ln_io",
+      "col": 1,
+      "type": "backend",
+      "label": "Embedding",
+      "sublabel": "→ dim 7168",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "n1",
+      "lane": "ln_blk",
+      "col": 2,
+      "type": "backend",
+      "label": "attn_norm",
+      "sublabel": "RMSNorm,eps 1e-6",
+      "icon": "neutral",
+      "width": 150
+    },
+    {
+      "id": "mla",
+      "lane": "ln_attn",
+      "col": 3,
+      "type": "frontend",
+      "label": "MLA",
+      "sublabel": "d_c 512 / d_h^R 64",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "n2",
+      "lane": "ln_blk",
+      "col": 3,
+      "type": "backend",
+      "label": "ffn_norm",
+      "sublabel": "残差相加后再归一",
+      "icon": "neutral",
+      "width": 150
+    },
+    {
+      "id": "moe",
+      "lane": "ln_ffn",
+      "col": 4,
+      "type": "database",
+      "label": "MoE 或 dense MLP",
+      "sublabel": "前 3 层 dense,后 58 层 256+1",
+      "icon": "database",
+      "width": 150
+    },
+    {
+      "id": "head",
+      "lane": "ln_io",
+      "col": 5,
+      "type": "cloud",
+      "label": "RMSNorm → LM Head",
+      "sublabel": "7168 → 129280,不 tie",
+      "icon": "success",
+      "width": 150
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "tok", "to": "emb", "label": "查表", "role": "main" },
+    { "id": "e2", "from": "emb", "to": "n1", "label": "进第 1 层", "role": "main" },
+    { "id": "e3", "from": "n1", "to": "mla", "label": "先归一", "role": "main" },
+    { "id": "e4", "from": "mla", "to": "n2", "label": "残差相加", "role": "main" },
+    { "id": "e5", "from": "n2", "to": "moe", "label": "第 4 层起走 MoE", "role": "main", "variant": "emphasis" },
+    { "id": "e6", "from": "moe", "to": "head", "label": "61 层堆完", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "真实 671B 配置(以 config 为准)",
+      "items": [
+        "n_layers 61 / d 7168 / n_h 128 / d_h 128",
+        "d_c 512(latent KV)/ d_c' 1536(Q 压缩)/ d_h^R 64",
+        "N_s 1 共享 + N_r 256 路由,K_r 8(inter 2048)",
+        "dense MLP inter_dim 18432(前 3 层)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "别被 inference/model.py 的默认值骗到",
+      "items": [
+        "该文件 ModelArgs 默认值是「可运行的小型示例」:27 层 / dim 2048 / 64 专家",
+        "那是 __main__ 自测用,不是 671B 真实配置",
+        "佐证:Gate.__init__ 里 self.bias 只在 dim==7168 时才创建"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "V3 相对 V2 只有三处实质变化",
+      "items": [
+        "MoE 路由:sigmoid 亲和度 + top-k 归一化 + route_scale 2.5(V2 是 softmax + 不归一化 ×16)",
+        "负载均衡:aux-loss-free bias 项(V2 是纯 aux loss)",
+        "训练目标:+ MTP(预测额外 1 token);注意力结构完全不变"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "规模数字",
+      "items": [
+        "671B 总参 / 37B 激活(每 token)",
+        "训练 14.8T tokens,H800 × 2048,2.788M GPU 小时",
+        "FP8 混合精度,全程无不可恢复 loss spike"
+      ]
+    }
+  ]
+}

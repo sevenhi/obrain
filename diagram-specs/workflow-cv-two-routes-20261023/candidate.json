@@ -1,0 +1,155 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "两条部署路线怎么选:ORT 当基线,TRT 要深优化",
+    "subtitle": "选路线优先看模型算子、动态 shape、量化需求和目标硬件,而不是只看导出格式",
+    "locale": "zh-CN",
+    "output": "diagrams/cv-two-routes.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_in", "label": "① 共同起点" },
+    { "id": "ln_judge", "label": "② 三个判断" },
+    { "id": "ln_ort", "label": "③ ONNX Runtime" },
+    { "id": "ln_trt", "label": "④ TensorRT" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "同一个 ONNX", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "分流", "fromCol": 2, "toCol": 2, "variant": "emphasis" },
+    { "id": "ph3", "label": "两条落地形态", "fromCol": 3, "toCol": 4, "variant": "emphasis" }
+  ],
+  "mainPath": ["onnx", "hw", "cover", "trt", "engine", "bench"],
+  "nodes": [
+    {
+      "id": "onnx",
+      "lane": "ln_in",
+      "col": 0,
+      "type": "frontend",
+      "label": "导出的 ONNX",
+      "sublabel": "两路线共用的输入",
+      "icon": "start",
+      "width": 150
+    },
+    {
+      "id": "hw",
+      "lane": "ln_judge",
+      "col": 1,
+      "type": "security",
+      "label": "目标只有 NVIDIA GPU ?",
+      "sublabel": "还是要跨平台",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "cover",
+      "lane": "ln_judge",
+      "col": 2,
+      "type": "security",
+      "label": "算子全被 support ?",
+      "sublabel": "parser 不认就得改图",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "ort",
+      "lane": "ln_ort",
+      "col": 3,
+      "type": "cloud",
+      "label": "ORT + EP 分区",
+      "sublabel": "跨 CPU / 加速器切换",
+      "icon": "cloud",
+      "width": 150
+    },
+    {
+      "id": "fallback",
+      "lane": "ln_ort",
+      "col": 4,
+      "type": "external",
+      "label": "可能回落 CPU",
+      "sublabel": "必须查日志确认",
+      "icon": "failure",
+      "width": 150
+    },
+    {
+      "id": "trt",
+      "lane": "ln_trt",
+      "col": 3,
+      "type": "backend",
+      "label": "TRT parse + build",
+      "sublabel": "FP16/FP8/INT8/INT4",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "engine",
+      "lane": "ln_trt",
+      "col": 4,
+      "type": "database",
+      "label": "serialized engine",
+      "sublabel": "绑定版本与硬件",
+      "icon": "database",
+      "width": 150
+    },
+    {
+      "id": "bench",
+      "lane": "ln_trt",
+      "col": 5,
+      "type": "cloud",
+      "label": "端到端 benchmark",
+      "sublabel": "证明收益才值得用",
+      "icon": "success",
+      "width": 150
+    },
+    {
+      "id": "plugin",
+      "lane": "ln_judge",
+      "col": 3,
+      "type": "external",
+      "label": "写 plugin 或改图",
+      "sublabel": "先试改写,别急着造 plugin",
+      "icon": "neutral",
+      "width": 150,
+      "yOffset": 142
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "onnx", "to": "hw", "label": "先问部署在哪里", "role": "main" },
+    { "id": "e2", "from": "hw", "to": "ort", "label": "要跨平台:选 ORT", "role": "branch", "variant": "emphasis" },
+    { "id": "e3", "from": "hw", "to": "cover", "label": "只要 NVIDIA:再看算子", "role": "main" },
+    { "id": "e4", "from": "cover", "to": "trt", "label": "全覆盖:直接构建", "role": "main", "variant": "emphasis" },
+    { "id": "e5", "from": "cover", "to": "plugin", "label": "有缺口:先想四条处置", "role": "branch", "variant": "dashed" },
+    { "id": "e6", "from": "ort", "to": "fallback", "label": "分区失败就掉下去", "role": "error", "variant": "dashed" },
+    { "id": "e7", "from": "trt", "to": "engine", "label": "构建产出 plan 文件", "role": "main" },
+    { "id": "e8", "from": "engine", "to": "bench", "label": "拿数据说话", "role": "main" },
+    { "id": "e9", "from": "plugin", "to": "trt", "label": "补齐后再构建", "role": "branch" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两条路的定位差异",
+      "items": [
+        "ORT:API 稳定、可跨 EP 切换,适合当基线;性能取决于 graph partition 与算子覆盖",
+        "TRT:深度优化(融合、专用 kernel、低精度),但兼容矩阵复杂",
+        "plan 文件不能当跨机器通用产物"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "「加载成功」≠ 走对了路径",
+      "items": [
+        "ORT 某些算子不能由目标 EP 执行时会落回 CPU",
+        "必须在日志和性能里确认,而不是只看没报错",
+        "CPU fallback 是「看起来能跑但慢十倍」的典型来源"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "别为了「全图 TRT」造 plugin",
+      "items": [
+        "先用 constant folding / shape 推导 / 图简化把算子拉回常见集合",
+        "或让该子图交给 ORT 执行",
+        "端到端收益要用 benchmark 证明,不是架构洁癖"
+      ]
+    }
+  ]
+}

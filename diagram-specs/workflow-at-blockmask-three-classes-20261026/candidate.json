@@ -1,0 +1,106 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "BlockMask 三类 block:full / partial / empty",
+  "subtitle": "按 BLOCK_SIZE(默认 128)切 S×S 网格,只有整格全被 mask 才算 sparse;full 跳过 mask_mod、partial 逐元素、empty 整块跳过",
+  "locale": "zh-CN",
+  "output": "diagrams/at-blockmask-three-classes.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "judge",
+   "label": "判定"
+  },
+  {
+   "id": "full",
+   "label": "full 处理"
+  },
+  {
+   "id": "partial",
+   "label": "partial 处理"
+  },
+  {
+   "id": "empty",
+   "label": "empty 处理"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "blk",
+   "lane": "judge",
+   "col": 0,
+   "type": "frontend",
+   "label": "一个 S×S block",
+   "sublabel": "按 BLOCK_SIZE=128 切格"
+  },
+  {
+   "id": "full",
+   "lane": "full",
+   "col": 1,
+   "type": "backend",
+   "label": "full block",
+   "sublabel": "整格全参与→跳过 mask_mod"
+  },
+  {
+   "id": "partial",
+   "lane": "partial",
+   "col": 1,
+   "type": "backend",
+   "label": "partial block",
+   "sublabel": "对角线切过→逐元素 mask_mod"
+  },
+  {
+   "id": "empty",
+   "lane": "empty",
+   "col": 1,
+   "type": "backend",
+   "label": "empty block",
+   "sublabel": "整格被 mask→整块跳过(省加载)"
+  }
+ ],
+ "edges": [
+  {
+   "from": "blk",
+   "to": "full",
+   "label": "整格无 mask",
+   "variant": "emphasis"
+  },
+  {
+   "from": "blk",
+   "to": "partial",
+   "label": "对角线切过"
+  },
+  {
+   "from": "blk",
+   "to": "empty",
+   "label": "整格被 mask",
+   "variant": "dashed"
+  }
+ ],
+ "mainPath": [
+  "blk",
+  "full"
+ ],
+ "cards": [
+  {
+   "dot": "rose",
+   "title": "causal 几何算例(正文校正版)",
+   "items": [
+    "seqlen_q=768 / seqlen_kv=896,tile 128 → 6×7=42 block",
+    "full = Σ_{qi=0..5} qi = 15(下三角)",
+    "partial = 6(对角),empty = Σ(6−qi)=21(上三角)",
+    "15+6+21=42 ✓(Colfax 原文 21/15 系笔误,已校正)"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "为什么分三类",
+   "items": [
+    "full 跳过 mask_mod:causal 约 15% 加速",
+    "逐元素 mask 本身贵:约 15–20% 退化",
+    "BlockMask 是 BCSR 与非稀疏格式之间的折中"
+   ]
+  }
+ ]
+}

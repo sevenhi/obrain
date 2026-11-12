@@ -1,0 +1,244 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "MoE 层内部:一个 token 怎么被分给 2 个共享专家 + 6 个路由专家",
+    "subtitle": "共享专家恒激活、不参与路由,捕获跨 token 的共性知识;路由专家只分到 top-k 个,专注差异化知识。公式 h = u + Σ共享 FFN(u) + Σ g_i · FFN_i(u)",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-ds-moe-route.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_in",
+      "label": "① 输入与门控"
+    },
+    {
+      "id": "ln_gate",
+      "label": "② 打分与选路"
+    },
+    {
+      "id": "ln_shared",
+      "label": "③ 共享专家(恒过)"
+    },
+    {
+      "id": "ln_routed",
+      "label": "④ 路由专家(top-k)"
+    },
+    {
+      "id": "ln_out",
+      "label": "⑤ 加权求和"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "先算亲和度",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "两条路并行",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ph3",
+      "label": "再合成",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "mainPath": [
+    "u",
+    "gate",
+    "topk",
+    "scale",
+    "exp",
+    "sum"
+  ],
+  "nodes": [
+    {
+      "id": "u",
+      "lane": "ln_in",
+      "col": 0,
+      "type": "frontend",
+      "label": "token 隐状态 u_t",
+      "sublabel": "post_norm 之后",
+      "icon": "start",
+      "width": 152
+    },
+    {
+      "id": "gate",
+      "lane": "ln_gate",
+      "col": 1,
+      "type": "security",
+      "label": "Gate:线性 + softmax",
+      "sublabel": "weight [160, 5120] → 160 个分数",
+      "icon": "decision",
+      "width": 152
+    },
+    {
+      "id": "topk",
+      "lane": "ln_gate",
+      "col": 2,
+      "type": "security",
+      "label": "分组选 top-3 组",
+      "sublabel": "160 专家分 8 组,组内 max 取前 3",
+      "icon": "decision",
+      "width": 152
+    },
+    {
+      "id": "scale",
+      "lane": "ln_gate",
+      "col": 3,
+      "type": "backend",
+      "label": "组内 top-6 + 乘 16",
+      "sublabel": "不归一化,乘 16.0",
+      "icon": "neutral",
+      "width": 152
+    },
+    {
+      "id": "shared",
+      "lane": "ln_shared",
+      "col": 2,
+      "type": "database",
+      "label": "共享专家 × 2",
+      "sublabel": "恒激活,inter = 1536×2",
+      "icon": "database",
+      "width": 152
+    },
+    {
+      "id": "exp",
+      "lane": "ln_routed",
+      "col": 4,
+      "type": "backend",
+      "label": "6 个路由专家计算",
+      "sublabel": "每个是 SwiGLU,inter = 1536",
+      "icon": "active",
+      "width": 152
+    },
+    {
+      "id": "sum",
+      "lane": "ln_out",
+      "col": 5,
+      "type": "cloud",
+      "label": "加权和 + 共享输出",
+      "sublabel": "y = Σ g_i·expert_i + shared(u)",
+      "icon": "success",
+      "width": 152
+    },
+    {
+      "id": "aux",
+      "lane": "ln_gate",
+      "col": 1,
+      "type": "backend",
+      "label": "序列级 aux loss",
+      "sublabel": "seq_aux=True,α=0.001(仅训练)",
+      "icon": "clock",
+      "width": 152,
+      "yOffset": 118
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "u",
+      "to": "gate",
+      "label": "过门控权重",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "gate",
+      "to": "topk",
+      "label": "160 个 softmax 分数",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e3",
+      "from": "topk",
+      "to": "scale",
+      "label": "只在选中组内挑",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "scale",
+      "to": "exp",
+      "label": "给出 6 个索引 + 权重",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "u",
+      "to": "shared",
+      "label": "不过门控,直接送",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e6",
+      "from": "exp",
+      "to": "sum",
+      "label": "按 g_i 加权",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "shared",
+      "to": "sum",
+      "label": "恒加一份共性",
+      "role": "branch"
+    },
+    {
+      "id": "e8",
+      "from": "gate",
+      "to": "aux",
+      "label": "训练时记选中频率",
+      "role": "branch",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两个机制各解决什么",
+      "items": [
+        "细粒度专家分割:把 N 个标准专家切成 mN 个小专家、激活 mK 个 → 组合更灵活,知识更聚焦",
+        "共享专家隔离:Ks 个恒激活,吃共性知识 → 路由专家不必重复学共性,减少冗余",
+        "经验最优比:共享专家 : 激活路由专家 = 1 : 3"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "分组受限贪心(V2 的做法)",
+      "items": [
+        "160 专家分 8 组 → 先按组内 max 得分选 top-3 组",
+        "再在选中组内选 top-6 专家",
+        "比全量 top-6 更能保证「专家在组间均衡」,缓解负载不均"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "数字口径的坑",
+      "items": [
+        "「0.25× 相对标准专家」是论文 Table 口径,不是相对 dense FFN",
+        "16B 的 moe_intermediate_size=1408 对 dense 10944 约 0.129",
+        "V2 每专家 1536,对 dense 12288 是 0.125×"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "aux loss 是 V2 的方案",
+      "items": [
+        "V2 仍是「aux loss」负载均衡(seq_aux=True, α=0.001)",
+        "到 V3 才换成 aux-loss-free(bias 项动态调节)",
+        "共享专家不参与路由,所以也不进 aux loss 的统计"
+      ]
+    }
+  ]
+}

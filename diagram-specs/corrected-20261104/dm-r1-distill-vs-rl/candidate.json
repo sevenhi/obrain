@@ -1,0 +1,27 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {"title": "R1：同底座的蒸馏与直接 RL 实验", "subtitle": "2026-11-04 纠错：AIME 47.0 vs 72.6 是论文特定配方结果，不构成学生不能超越教师的定理。", "locale": "zh-CN", "quality_profile": "showcase", "output": "diagrams/dm-r1-distill-vs-rl.workflow.html"},
+  "lanes": [{"id": "rl", "label": "直接 RL"}, {"id": "sft", "label": "蒸馏 SFT"}, {"id": "data", "label": "教师数据"}],
+  "nodes": [
+    {"id": "base_rl", "lane": "rl", "col": 0, "type": "frontend", "label": "Qwen-32B 底座", "sublabel": "直接 RL 路线"},
+    {"id": "train_rl", "lane": "rl", "col": 1, "type": "backend", "label": "10K+ 步 RL", "sublabel": "论文配置"},
+    {"id": "result_rl", "lane": "rl", "col": 2, "type": "database", "label": "AIME 47.0", "sublabel": "R1-Zero-Qwen-32B"},
+    {"id": "base_sft", "lane": "sft", "col": 0, "type": "frontend", "label": "同一底座系列", "sublabel": "蒸馏路线学生"},
+    {"id": "train_sft", "lane": "sft", "col": 1, "type": "backend", "label": "仅 SFT", "sublabel": "该蒸馏实验不加 RL"},
+    {"id": "result_sft", "lane": "sft", "col": 2, "type": "database", "label": "AIME 72.6", "sublabel": "Distill-Qwen-32B"},
+    {"id": "teacher", "lane": "data", "col": 1, "type": "database", "label": "R1 整理的数据", "sublabel": "约 800k SFT 样本"}
+  ],
+  "edges": [
+    {"from": "base_rl", "to": "train_rl", "label": "训练", "role": "main"},
+    {"from": "train_rl", "to": "result_rl", "label": "评测", "role": "main"},
+    {"from": "base_sft", "to": "train_sft", "label": "初始化学生", "role": "main"},
+    {"from": "teacher", "to": "train_sft", "label": "监督数据", "role": "branch"},
+    {"from": "train_sft", "to": "result_sft", "label": "评测", "role": "main"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "实验结论与来源", "items": ["Table 6 / §4.1：两条路线 AIME 相差 25.6 个点。相同底座不意味着数据、总计算量与训练过程受控相同。", "固定论文：https://github.com/deepseek-ai/DeepSeek-R1/blob/0cf78561f1d51c84a21b2190626b21116d5c68bb/DeepSeek_R1.pdf"]},
+    {"dot": "amber", "title": "数据与因果边界", "items": ["约 800k 包括约 600k 推理与 200k 非推理样本，不能统称 800k 推理轨迹。", "该实验支持这一配方下蒸馏有效；不能排他地把差距归因于推理范式，也不能推出任意任务上学生必然低于教师。"]},
+    {"dot": "rose", "title": "不是性能复现", "items": ["本轮未训练或重测模型；数字为固定论文报告，不能视作 2026 年最新排名。", "突破能力边界的研究建议与模型能力的数学上界不同；提示词建议也不保证真实执行了可靠推理。"]}
+  ]
+}

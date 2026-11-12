@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "双工叠在轮次栈之上:继承链",
+    "subtitle": "双工类只扩展、不污染通用 turn-based 路径;三条链(Base/Engine/Orchestrator)并行演进",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-omni-inheritance.tree.html"
+  },
+  "nodes": [
+    {
+      "id": "base",
+      "label": "OmniBase / EngineBase / Orchestrator"
+    },
+    {
+      "id": "turn",
+      "label": "Omni(turn) / AsyncOmniEngine / Orchestrator",
+      "parent": "base"
+    },
+    {
+      "id": "duplex",
+      "label": "DuplexOmni / DuplexOmniEngine / DuplexOrchestrator",
+      "parent": "turn"
+    },
+    {
+      "id": "sm",
+      "label": "DuplexSessionManager / SessionRunner",
+      "parent": "duplex",
+      "sublabel": "租约/背压/会话状态"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "架构纪律",
+      "items": [
+        "双工层只扩展,不反向依赖轮次层",
+        "会话身份/账本/租约/绑定归引擎统一管"
+      ]
+    }
+  ]
+}

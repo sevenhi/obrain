@@ -3,11 +3,13 @@ title: Model Runner V2(MRV2):vLLM 执行层的重设计——持久 batch 解耦
 type: concept
 tags: [vllm, model-runner, mrv2, persistent-batch, async-scheduling, cuda-graph, uva, triton, sampling, gumbel, speculative-decoding, kv-cache]
 source:
+  - "code: 旧基线实际已有 MRV2 开关与自动判定 | https://github.com/vllm-project/vllm/blob/b74ac0bc61d8b8f74848664b1a3b4e878f047861/vllm/config/vllm.py#L620 | reviewed 2026-11-04"
   - "code: vLLM 源码一手实读 (main @2d40c0609, 2026-10-22 抓取) | https://github.com/vllm-project/vllm/tree/2d40c0609 | vllm/config/vllm.py(use_v2_model_runner 判定)、vllm/v1/worker/gpu_worker.py、vllm/v1/worker/gpu/{model_runner.py, states.py, buffer_utils.py, cudagraph_utils.py, input_batch.py, sample/gumbel.py, sample/logprob.py}"
   - "web: vLLM Model Runner V2 Design Document | https://docs.vllm.ai/en/latest/design/model_runner_v2/ | 2026-10-23 实抓(与仓库 docs/design/model_runner_v2.md 逐字一致,206 行)"
   - "code: vLLM 文档源文件 docs/design/model_runner_v2.md | https://github.com/vllm-project/vllm/blob/main/docs/design/model_runner_v2.md | 首次提交 PR https://github.com/vllm-project/vllm/pull/35819 (2026-03-02)"
   - "web: vLLM 官方文档首页 | https://docs.vllm.ai/en/latest/ | 2026-10-23 实测 200"
 date: 2026-10
+reviewed: 2026-11-04
 ---
 
 # Model Runner V2(MRV2):vLLM 执行层的重设计
@@ -15,6 +17,8 @@ date: 2026-10
 > **TL;DR**:MRV2 不是"再快一点"的调优,而是把 V1 执行层里**耦合掉的东西拆开**——① 持久 batch 状态与每步输入张量解耦(请求拿到**永久行号**,preemption 当结束处理),于是不再需要 `CachedRequestState` 这份备份;② 明确以 **async-first** 为前提(执行 = 一条没有 CPU 同步点的 CUDA stream),用"状态不 pin + 每次 pin 一份临时副本"从根上消掉 V1 的 async barrier;③ 大状态(block table / `num_computed_tokens` / `all_token_ids`)改走 **`StagedWriteTensor` + UVA 环形缓冲**,只搬 diff、一次 kernel 落盘;④ 采样器 Triton 化(Gumbel-max 单遍、top-k logprob 只算选中的 token);⑤ CUDA Graph 有显式 `CudaGraphManager`,能把投机解码的多步 draft **融进一张图**。**默认已开**(2026-10 的 main:`use_v2_model_runner` 除非命中不支持特性/无 Triton/特定 ROCm 架构,否则为 True),所以"新代码跑在 MRV2 上"是默认事实,旧的 `gpu_model_runner.py` 只在回退路径里。
 
 > ⚠ 官方文档原文仍写着 *"not yet feature-complete, not rigorously tested, and still has open design decisions"*——但代码里它已经是**默认路径**。正确姿势:**以源码为准判断"当前跑哪个 runner",以设计文档理解"为什么这么设计"**,两者都要看。
+
+> **版本边界（2026-11-04 复核）**：本文“当前/main/最新”均指所列 2026-10 快照,不是 2026-11-04 发行版认证。旧基线 `b74ac0bc6` 也已有 MRV2 开关和带回退的默认启用判定,并非从本文新增之日才出现。默认值、显式环境变量与运行日志需一起检查;“基线旧”不能推出“实际一定跑 V1”。
 
 ---
 
@@ -110,7 +114,7 @@ def execute_step(...):
 
 CPU 只写 `self.states`,GPU 只读 `tmp_states`,**不需要任何显式同步**。代价是每步多一次 CPU 内拷贝(量小),换来的是"永远不会漏掉某块缓冲没被保护"——这比"记得给每块缓冲加 barrier"可靠一个量级。
 
-> **可复用的判断**:CPU↔GPU 竞态用"**双缓冲/快照**"消,而不是用"**同步点**"消;只要数据量小于一次同步的代价,双缓冲总是更优且更难写错。
+> **可复用的判断**:快照可避免这里的 CPU 写/GPU 读同一缓冲竞态,但仍须保证快照寿命、stream 顺序与缓冲复用安全。是否优于同步取决于拷贝成本、内存压力和在飞批次数,不是“数据小就总是更优”的定理。
 
 ### 2.3 这条设计直接改了 `max_concurrent_batches`
 
@@ -284,8 +288,8 @@ def dispatch(num_reqs, num_tokens, uniform_token_count, num_active_loras, max_qu
 | 项 | 库内旧基线(2026-09) | 当前(2026-10-22 一手核实) |
 |---|---|---|
 | 源码快照 | `b74ac0bc6` = `v0.28.1rc0-40` | main `2d40c0609` = `v0.32.1rc0-353`;PyPI 最新发布 **v0.32.0** |
-| Model Runner | `vllm/v1/worker/gpu_model_runner.py`(V1) | **默认 `vllm/v1/worker/gpu/model_runner.py`(MRV2)**;V1 仅回退路径 |
-| 开关 | 无 | `VLLM_USE_V2_MODEL_RUNNER`(bool,`None` = 走自动判定) |
+| Model Runner | 已有 MRV2 自动判定;命中回退条件或显式关闭时才走 V1 | 默认自动判定 MRV2;仍须核对功能/平台与显式配置 |
+| 开关 | 已有 `VLLM_USE_V2_MODEL_RUNNER`;`config/vllm.py:620` 读取,无回退条件时 `:652` 返回 True | 同名开关;`None` 走自动判定,具体回退集按该快照检查 |
 
 ### 6.1 自动判定逻辑(`VllmConfig.use_v2_model_runner`,源码 `config/vllm.py`)
 
@@ -309,7 +313,7 @@ env 显式给了 → 用它
 | KV | `kv_sharing_fast_prefill` |
 | 平台 | 无 Triton;特定 ROCm 模型架构 |
 
-**实践含义**:这些条件**任意一条命中就整机回退 V1**,不是"降级某个功能"。所以调优前先看启动日志里是 `Using V2 Model Runner` 还是 `Model Runner V2 does not yet support ...; using the V1 model runner instead`——**日志直接告诉你在哪条跑**,别猜。
+**实践含义**:表中条件用于**未显式设置环境变量时的自动判定**;命中时回退整个 runner,不是只降级某个功能。显式开关在这段判定前返回,不等于强制开启后所有功能都安全可用。调优前同时记录版本、环境变量与 `Using V2 Model Runner`/回退日志,不要只猜默认值。
 
 ---
 

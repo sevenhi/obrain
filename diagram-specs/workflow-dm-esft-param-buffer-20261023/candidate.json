@@ -1,0 +1,72 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "冻结的实现:parameter ↔ buffer 互换(esft.py 的核心技巧)",
+    "subtitle": "不写一行 requires_grad=False:先把整个模型降级成 buffer,再按名单把选中专家升级回 nn.Parameter。优化器只收集 parameter,于是「谁可训」由张量注册类型决定",
+    "locale": "zh-CN",
+    "output": "diagrams/dm-esft-param-buffer.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_call", "label": "① 调用链(训练侧)" },
+    { "id": "ln_state", "label": "② 张量注册状态怎么变" },
+    { "id": "ln_disk", "label": "③ 落到磁盘" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "全冻", "fromCol": 0, "toCol": 1 },
+    { "id": "p2", "label": "按名单解冻", "fromCol": 2, "toCol": 2, "variant": "emphasis" },
+    { "id": "p3", "label": "产物", "fromCol": 3, "toCol": 3 }
+  ],
+  "nodes": [
+    { "id": "a1", "lane": "ln_call", "col": 0, "type": "backend", "label": "to_esft(model, cfg)", "sublabel": "一个入口搞定,无手工遍历", "icon": "start" },
+    { "id": "a2", "lane": "ln_call", "col": 1, "type": "security", "label": "先全冻", "sublabel": "to_buffer 扫全模型", "icon": "neutral" },
+    { "id": "a3", "lane": "ln_call", "col": 2, "type": "backend", "label": "逐层查名单", "sublabel": "只认 DeepseekV2MoE", "icon": "decision" },
+    { "id": "a4", "lane": "ln_call", "col": 3, "type": "backend", "label": "按名单解冻", "sublabel": "to_param 升回参数", "icon": "active" },
+
+    { "id": "b1", "lane": "ln_state", "col": 0, "type": "external", "label": "nn.Parameter", "sublabel": "优化器唯一认得的东西", "icon": "neutral" },
+    { "id": "b2", "lane": "ln_state", "col": 1, "type": "external", "label": "buffer", "sublabel": "随模型存盘,但无梯度", "icon": "neutral" },
+    { "id": "b3", "lane": "ln_state", "col": 2, "type": "external", "label": "name 记进 param_list", "sublabel": "不留名字就还原不回去", "icon": "neutral" },
+    { "id": "b4", "lane": "ln_state", "col": 3, "type": "external", "label": "少数 param + 多数 buffer", "sublabel": "两类张量在同一模型里共存", "icon": "neutral" },
+
+    { "id": "c1", "lane": "ln_disk", "col": 3, "type": "database", "label": "checkpoint 即 adapter", "sublabel": "state_dict 只序列化 param", "icon": "success" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "a1", "to": "a2", "label": "第一步就把全模型压成 buffer", "role": "main" },
+    { "id": "e2", "from": "a2", "to": "a3", "label": "全冻之后才谈解冻谁", "role": "main" },
+    { "id": "e3", "from": "a3", "to": "a4", "label": "名单里有 → 升回 parameter", "role": "main" },
+    { "id": "e4", "from": "a4", "to": "c1", "label": "只存 parameter", "role": "main" },
+    { "id": "e5", "from": "a1", "to": "b1", "label": "进来时全是 Parameter", "variant": "dashed", "role": "async" },
+    { "id": "e6", "from": "a2", "to": "b2", "label": "降级:删注册改登记", "variant": "dashed", "role": "async" },
+    { "id": "e7", "from": "a3", "to": "b3", "label": "留下还原用的名字", "variant": "dashed", "role": "async" },
+    { "id": "e8", "from": "a4", "to": "b4", "label": "互换后的混合状态", "variant": "dashed", "role": "async" }
+  ],
+  "mainPath": ["a1", "a2", "a3", "a4", "c1"],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "为什么用 buffer 而不是 requires_grad=False",
+      "items": [
+        "requires_grad=False 只是关掉梯度,参数仍在优化器与 state_dict 里",
+        "换成 buffer 后,该张量彻底不属于「可训练参数」这一类别",
+        "于是 checkpoint 天然只含被训部分,不用额外裁剪脚本"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两个必须核对的实现细节",
+      "items": [
+        "只能处理 DeepseekV2MoE 类型的 mlp,别的基座要改这个类型判断",
+        "首层不是 MoE,打分脚本写死 N_LAYERS=26(总 27 层),to_esft 同样跳过"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "state_dict 的保存/加载不受影响",
+      "items": [
+        "buffer 也进 state_dict,只是不进优化器",
+        "所以基座权重照样能完整存取,不会因为「冻结」而丢东西",
+        "这也是能「基座 + adapter」分开管理的前提"
+      ]
+    }
+  ]
+}

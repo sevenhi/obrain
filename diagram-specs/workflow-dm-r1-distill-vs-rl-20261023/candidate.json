@@ -1,0 +1,84 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "蒸馏 vs 直接 RL:同底座 Qwen-32B,72.6 对 47.0",
+    "subtitle": "左边让 Qwen-32B-Base 自己跑 10K+ 步大规模 RL,右边让它吃 R1 生成的 800k 推理轨迹只做 SFT。论文 Table 6 的这个对照是新手最该记的实验",
+    "locale": "zh-CN",
+    "output": "diagrams/dm-r1-distill-vs-rl.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_rl", "label": "路线 A:自己跑 RL" },
+    { "id": "ln_sft", "label": "路线 B:吃 R1 的轨迹" },
+    { "id": "ln_why", "label": "结论" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "两条路", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "结果与解读", "fromCol": 2, "toCol": 2, "variant": "emphasis" }
+  ],
+  "mainPath": ["base", "rl", "a47"],
+  "nodes": [
+    { "id": "base", "lane": "ln_rl", "col": 0, "type": "frontend", "label": "Qwen-32B-Base", "sublabel": "同一份底座,公平对照", "icon": "start", "width": 165 },
+    { "id": "rl", "lane": "ln_rl", "col": 1, "type": "backend", "label": "10K+ 步大规模 RL", "sublabel": "数学/代码/STEM 数据", "width": 175 },
+    { "id": "a47", "lane": "ln_rl", "col": 2, "type": "security", "label": "AIME 47.0", "sublabel": "R1-Zero-Qwen-32B", "icon": "failure", "width": 165 },
+
+    { "id": "teacher", "lane": "ln_sft", "col": 0, "type": "database", "label": "R1 当 teacher", "sublabel": "生成 800k 推理样本", "icon": "start", "width": 160 },
+    { "id": "sft", "lane": "ln_sft", "col": 1, "type": "backend", "label": "只做 SFT", "sublabel": "不做 RL", "width": 150 },
+    { "id": "b72", "lane": "ln_sft", "col": 2, "type": "security", "label": "AIME 72.6", "sublabel": "Distill-Qwen-32B,超 o1-mini(63.6)", "icon": "success", "width": 190 },
+
+    { "id": "asset", "lane": "ln_why", "col": 0, "type": "cloud", "label": "推理模式才是资产", "sublabel": "大模型发现的东西,不是算力能替代的", "width": 195 },
+    { "id": "ceiling", "lane": "ln_why", "col": 1, "type": "external", "label": "但天花板锁在 teacher", "sublabel": "蒸馏只能继承,不能超越", "icon": "decision", "width": 175 },
+    { "id": "frontier", "lane": "ln_why", "col": 2, "type": "backend", "label": "突破边界仍靠底座 + RL", "sublabel": "更强底座 + 大规模 RL 才能推前沿", "width": 195 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "base", "to": "rl", "label": "自己试错", "role": "main" },
+    { "id": "e2", "from": "rl", "to": "a47", "label": "费算力且打不过", "role": "error" },
+    { "id": "e3", "from": "base", "to": "teacher", "label": "换成抄轨迹", "role": "branch" },
+    { "id": "e4", "from": "teacher", "to": "sft", "label": "不跑 RL", "role": "main" },
+    { "id": "e5", "from": "sft", "to": "b72", "label": "+25.6 个点", "role": "main" },
+    { "id": "e6", "from": "a47", "to": "asset", "label": "为什么差这么多", "role": "branch" },
+    { "id": "e7", "from": "asset", "to": "ceiling", "label": "但也别神话它", "role": "main" },
+    { "id": "e8", "from": "ceiling", "to": "frontier", "label": "所以两条都要", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Table 6 的两个数字(§5 原文)",
+      "items": [
+        "R1-Zero-Qwen-32B(同底座自己跑 10K+ 步 RL):AIME 47.0",
+        "Distill-Qwen-32B(同底座吃 R1 蒸馏数据只做 SFT):AIME 72.6",
+        "差的 25.6 个点不是训练技巧,是「推理范式」的差距"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "蒸馏的全家成绩(README 表)",
+      "items": [
+        "Distill-Qwen-32B:AIME 72.6 / MATH-500 94.3 / LiveCodeBench 57.2,创 dense 模型纪录",
+        "Distill-Qwen-7B:AIME 55.5,超 QwQ-32B-Preview(44.0)",
+        "Distill-14B:69.7,大幅领先 QwQ-32B",
+        "Distill-Qwen-1.5B:AIME 28.9,数学上超 GPT-4o(9.3)与 Claude-3.5-Sonnet(16.0)",
+        "六个 dense 模型:Qwen2.5-Math-1.5B/7B、Qwen2.5-14B/32B、Llama-3.1-8B、Llama-3.3-70B-Instruct"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "两条论文结论(原文)",
+      "items": [
+        "小模型自己跑大规模 RL 费算力且打不过蒸馏 —— 大模型发现的推理模式才是关键资产",
+        "蒸馏经济有效,但突破智能边界仍要靠更强底座 + 大规模 RL",
+        "换句话说:蒸馏只能继承,不能超越"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "蒸馏模型的已知天花板",
+      "items": [
+        "只有 SFT、没加 RL(官方留白给社区)",
+        "能力上限被 teacher 锁死",
+        "上手指南(README §6):temperature 0.5–0.7(推荐 0.6)、不要加 system prompt、数学题加 Please reason step by step…boxed{}",
+        "偶尔输出空 think 跳过思考 —— 强制以 think\\n 开头可保证进入推理模式"
+      ]
+    }
+  ]
+}

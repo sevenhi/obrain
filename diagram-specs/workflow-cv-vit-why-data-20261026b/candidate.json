@@ -1,0 +1,101 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "ViT 的数据敏感性:归纳偏置的账单",
+    "locale": "zh-CN",
+    "subtitle": "CNN 天生有局部性/平移等变先验,小数据是免费午餐、大数据反成天花板;ViT 无先验,靠大数据学回来",
+    "output": "diagrams/cv-vit-why-data.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_small",
+      "label": "小数据(<1M 图)"
+    },
+    {
+      "id": "ln_big",
+      "label": "大数据(JFT-300M)"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "ln_small",
+      "col": 0,
+      "type": "backend",
+      "label": "CNN 归纳偏置",
+      "sublabel": "局部性/平移等变 = 免费午餐",
+      "icon": "start"
+    },
+    {
+      "id": "s1",
+      "lane": "ln_small",
+      "col": 1,
+      "type": "backend",
+      "label": "CNN 全面占优",
+      "sublabel": "ViT 从头训基本必输",
+      "icon": "success"
+    },
+    {
+      "id": "b0",
+      "lane": "ln_big",
+      "col": 0,
+      "type": "backend",
+      "label": "ViT 无先验",
+      "sublabel": "从数据学回空间结构",
+      "icon": "start"
+    },
+    {
+      "id": "b1",
+      "lane": "ln_big",
+      "col": 1,
+      "type": "backend",
+      "label": "ViT 反超且不饱和",
+      "sublabel": "ViT-H/14 88.55% top-1",
+      "icon": "success"
+    },
+    {
+      "id": "b2",
+      "lane": "ln_big",
+      "col": 2,
+      "type": "backend",
+      "label": "训练算力更省",
+      "sublabel": "2.5k TPUv3-days < BiT-L 9.9k",
+      "icon": "active"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "label": "小数据免费午餐",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "b0",
+      "to": "b1",
+      "label": "大数据学回来",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "b1",
+      "to": "b2",
+      "label": "不仅更准",
+      "role": "main"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Fig.4 因果解释(§4.1)",
+      "items": [
+        "小数据端 CNN 在上,大数据端 ViT 反超",
+        "CNN 先验小数据免费、大数据成天花板",
+        "Table 2:ViT-H/14 预训练 2.5k TPUv3-core-days,不到 BiT-L 1/3"
+      ]
+    }
+  ]
+}

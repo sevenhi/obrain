@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "diagram_type": "timeline",
+  "meta": {
+    "title": "上下文扩展的方法演进:从位置插值到逐维搜索",
+    "subtitle": "按论文发布时间排列。四个节点对应本文引用的四篇主源,最后一条是工业界从预训练侧解决的路线",
+    "locale": "zh-CN",
+    "evidence": "illustrative",
+    "output": "diagrams/ma-ctx-timeline.timeline.html"
+  },
+  "lanes": [
+    { "id": "ln_acad", "label": "学术方法" },
+    { "id": "ln_comm", "label": "社区实践" },
+    { "id": "ln_ind", "label": "工业预训练" }
+  ],
+  "events": [
+    {
+      "id": "rope",
+      "at": "2021-04-20T00:00:00+08:00",
+      "title": "RoPE 原始定义",
+      "detail": "θ_d = base^(−2d/D),把相对距离编码进旋转角。后续所有扩展方法都在改它",
+      "lane": "ln_acad",
+      "kind": "default"
+    },
+    {
+      "id": "pi",
+      "at": "2023-06-28T00:00:00+08:00",
+      "title": "PI:位置插值",
+      "detail": "m′ = m·L/L′,1000 步微调把 LLaMA 扩到 32k;理论上界比外推小 ~600×",
+      "lane": "ln_acad",
+      "kind": "change"
+    },
+    {
+      "id": "ntk",
+      "at": "2023-07-15T00:00:00+08:00",
+      "title": "NTK-aware:社区方案",
+      "detail": "调大 base 让低频维拉伸、高频维几乎不动,零微调可用;无独立论文",
+      "lane": "ln_comm",
+      "kind": "action"
+    },
+    {
+      "id": "yarn",
+      "at": "2023-08-31T00:00:00+08:00",
+      "title": "YaRN:NTK-by-parts + 温度",
+      "detail": "按波长分段 + cos/sin 乘 sqrt(1/t)。128k 处 PPL 2.37;同目标长度比 PI 便宜 5×(A100 小时口径)",
+      "lane": "ln_acad",
+      "kind": "change"
+    },
+    {
+      "id": "longrope",
+      "at": "2024-02-21T00:00:00+08:00",
+      "title": "LongRoPE:逐维搜索",
+      "detail": "进化搜索 rescale 因子 + 渐进两阶段,≤1000 步扩到 2048k,再用 8k 回调保短窗口",
+      "lane": "ln_acad",
+      "kind": "change"
+    },
+    {
+      "id": "llama3",
+      "at": "2024-07-31T00:00:00+08:00",
+      "title": "Llama 3:改 base + 渐进预训练",
+      "detail": "θ 10k→500k,8k→128k 六阶段渐进,长上下文档 ~800B tokens",
+      "lane": "ln_ind",
+      "kind": "recovery"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "演进的主线:越来越不均匀",
+      "items": [
+        "PI:全维均匀压缩(最粗)",
+        "NTK:按频率高低给不同缩放(但仍是解析式)",
+        "YaRN:按波长分三档 + 温度补偿",
+        "LongRoPE:放弃解析式,逐维搜"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "2024 年之后的重心转移",
+      "items": [
+        "方法研究仍在推进,但生产级 128k 更常靠「原生预训练」",
+        "插值方法退居「老模型改造」与「研究长窗口」两个场景",
+        "部署前先问「这扩展是谁做的」,比研究哪个公式更重要"
+      ]
+    }
+  ]
+}

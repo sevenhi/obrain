@@ -1,0 +1,72 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "CudaGraphManager.dispatch:命中就重放,不命中显式回退",
+    "subtitle": "图的生命周期、捕获条件、分派规则全在一个类里;dispatch 找不到匹配就返回 cg_mode=NONE 的描述符,而不是「以为命中了」",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-cudagraph-dispatch.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_key", "label": "构造查表键" },
+    { "id": "ln_lookup", "label": "查候选列表" },
+    { "id": "ln_desc", "label": "兼容性判定" },
+    { "id": "ln_out", "label": "出口" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 键与候选", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 逐个试", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "③ 命中或回退", "fromCol": 4, "toCol": 5 }
+  ],
+  "nodes": [
+    { "id": "in", "lane": "ln_key", "col": 0, "type": "backend", "label": "num_reqs / num_tokens", "sublabel": "另有 uniform_token_count 等", "icon": "start" },
+    { "id": "key", "lane": "ln_key", "col": 1, "type": "backend", "label": "key = (num_tokens, loras)", "sublabel": "LoRA 用预建映射表查", "icon": "active" },
+    { "id": "hit", "lane": "ln_lookup", "col": 2, "type": "security", "label": "key 在 _candidates 里?", "sublabel": "且 _graphs_captured 且 num_tokens>0", "icon": "decision" },
+    { "id": "each", "lane": "ln_desc", "col": 3, "type": "security", "label": "_is_compatible(desc, ...)", "sublabel": "逐个试候选描述符", "icon": "decision" },
+    { "id": "replay", "lane": "ln_out", "col": 5, "type": "backend", "label": "返回命中 desc,replay", "sublabel": "整图一次重放", "icon": "success" },
+    { "id": "none", "lane": "ln_out", "col": 4, "type": "external", "label": "返回 cg_mode=NONE", "sublabel": "显式回退,不是静默失败", "icon": "failure" },
+    { "id": "prof", "lane": "ln_key", "col": 3, "type": "database", "label": "profile_cudagraph_memory", "sublabel": "只捕获最大的 N 个,按增量外推", "icon": "database" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "in", "to": "key", "label": "两个维度定键", "role": "main" },
+    { "id": "e2", "from": "key", "to": "hit", "label": "O(1) 查表", "role": "main" },
+    { "id": "e3", "from": "hit", "to": "each", "label": "有候选才逐个试", "role": "main" },
+    { "id": "e4", "from": "each", "to": "replay", "label": "兼容就重放", "role": "main" },
+    { "id": "e5", "from": "hit", "to": "none", "label": "无候选:显式回退", "role": "branch" },
+    { "id": "e6", "from": "each", "to": "none", "label": "都不兼容:显式回退", "role": "branch", "variant": "dashed" },
+    { "id": "e7", "from": "prof", "to": "replay", "label": "捕获阶段先估显存", "role": "async", "variant": "dashed" }
+  ],
+  "mainPath": ["in", "key", "hit", "each", "replay"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "设计要点:一个类管到底",
+      "items": [
+        "图的生命周期、捕获条件、分派规则全在一个类里",
+        "LoRA 场景预建 num_active_loras → captured case 映射表",
+        "把每次调用的 bisect 换成一次 dict 查表",
+        "ModelCudaGraphManager 在其上加模型相关状态"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "debug 提示",
+      "items": [
+        "dispatch 返回 cg_mode=NONE 是正常回退,不是 bug",
+        "怀疑图没命中时,打印返回的 BatchExecutionDescriptor 比读代码猜快",
+        "profile_cudagraph_memory 只捕获最大 N 个描述符 + 按内存增量外推",
+        "这正是把 dummy_run 的职责拆出来的结果"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "把 γ 个 draft step 融进一张图",
+      "items": [
+        "post-prefill 的所有 draft step 捕获进一张全图(V1 是每步一张、replay γ 次)",
+        "attention metadata 在循环前建一次,步间变化的张量保持地址稳定、原地更新",
+        "backend 必须实现 update_draft_decode_metadata():它在捕获期跑,只有它的 GPU 操作会进图",
+        "门禁:每个 draft attention group 要声明 supports_draft_decode_metadata_update,否则回退成每步重建"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,276 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DSA 完整数据流:从 qr 到 top-2048 稀疏注意力",
+    "subtitle": "索引器复用主注意力的 qr latent,key 侧独立;ReLU 打分在 FP8 域内完成,选出的 top-k 转成 index_mask 加回 scores——非 top-k 位置直接变 −inf,softmax 自然稀疏",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-dsa-pipeline.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_q",
+      "label": "共享 query 路径"
+    },
+    {
+      "id": "ln_k",
+      "label": "索引器 key 路径"
+    },
+    {
+      "id": "ln_score",
+      "label": "FP8 打分与选择"
+    },
+    {
+      "id": "ln_main",
+      "label": "主注意力落地"
+    },
+    {
+      "id": "ln_mask",
+      "label": "稀疏落地"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "① 复用低秩 q",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "② 索引器预处理",
+      "fromCol": 2,
+      "toCol": 3
+    },
+    {
+      "id": "ph3",
+      "label": "③ 打分与稀疏",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "emphasis"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "qr",
+      "lane": "ln_q",
+      "col": 0,
+      "type": "backend",
+      "label": "qr = q_norm(wq_a(x))",
+      "sublabel": "与主注意力同一变量",
+      "icon": "start"
+    },
+    {
+      "id": "wqb",
+      "lane": "ln_q",
+      "col": 1,
+      "type": "backend",
+      "label": "索引器 wq_b 展开 64 头",
+      "sublabel": "1536 → 64×128",
+      "icon": "active"
+    },
+    {
+      "id": "rot_q",
+      "lane": "ln_q",
+      "col": 2,
+      "type": "security",
+      "label": "部分 RoPE + 哈达玛旋转",
+      "sublabel": "interleaved=False",
+      "icon": "neutral"
+    },
+    {
+      "id": "quant_q",
+      "lane": "ln_q",
+      "col": 3,
+      "type": "backend",
+      "label": "act_quant 量化 q",
+      "sublabel": "得到 q_fp8 + scale",
+      "icon": "active"
+    },
+    {
+      "id": "wk",
+      "lane": "ln_k",
+      "col": 1,
+      "type": "backend",
+      "label": "独立 wk + LayerNorm",
+      "sublabel": "7168 → 128,新增 LN",
+      "icon": "active"
+    },
+    {
+      "id": "rot_k",
+      "lane": "ln_k",
+      "col": 2,
+      "type": "security",
+      "label": "同款 RoPE + 旋转",
+      "sublabel": "再 act_quant",
+      "icon": "neutral"
+    },
+    {
+      "id": "kcache",
+      "lane": "ln_k",
+      "col": 3,
+      "type": "database",
+      "label": "写索引器 k_cache",
+      "sublabel": "FP8,与主 kv_cache 分开",
+      "icon": "database"
+    },
+    {
+      "id": "w",
+      "lane": "ln_score",
+      "col": 4,
+      "type": "backend",
+      "label": "weights_proj 出每头标量",
+      "sublabel": "× H_I^-0.5,折入 FP8 缩放",
+      "icon": "active"
+    },
+    {
+      "id": "fp8idx",
+      "lane": "ln_score",
+      "col": 5,
+      "type": "security",
+      "label": "fp8_index 核内打分",
+      "sublabel": "Σ w·ReLU(q·k)",
+      "icon": "decision"
+    },
+    {
+      "id": "topk",
+      "lane": "ln_main",
+      "col": 5,
+      "type": "security",
+      "label": "Top-k 2048",
+      "sublabel": "min(index_topk, end_pos)",
+      "icon": "decision"
+    },
+    {
+      "id": "mask",
+      "lane": "ln_mask",
+      "col": 5,
+      "type": "backend",
+      "label": "index_mask 加回 scores",
+      "sublabel": "非 top-k 置 −inf",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "qr",
+      "to": "wqb",
+      "label": "只新增 wq_b",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "wqb",
+      "to": "rot_q",
+      "label": "64 头 × 128 维",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "rot_q",
+      "to": "quant_q",
+      "label": "旋转后量化",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "qr",
+      "to": "wk",
+      "label": "key 侧不复用",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "wk",
+      "to": "rot_k",
+      "label": "128 维再处理",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "rot_k",
+      "to": "kcache",
+      "label": "专属 FP8 cache",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "quant_q",
+      "to": "w",
+      "label": "q_fp8 与 scale",
+      "role": "main"
+    },
+    {
+      "id": "e8",
+      "from": "w",
+      "to": "fp8idx",
+      "label": "每头权重已折缩放",
+      "role": "main"
+    },
+    {
+      "id": "e9",
+      "from": "kcache",
+      "to": "fp8idx",
+      "label": "核内读 k_cache",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e10",
+      "from": "fp8idx",
+      "to": "topk",
+      "label": "索引分数 I(t,s)",
+      "role": "main"
+    },
+    {
+      "id": "e11",
+      "from": "topk",
+      "to": "mask",
+      "label": "选中的 2048 个位置",
+      "role": "main"
+    }
+  ],
+  "mainPath": [
+    "qr",
+    "wqb",
+    "rot_q",
+    "quant_q",
+    "w",
+    "fp8idx",
+    "topk",
+    "mask"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "复杂度:O(L²) → O(L·k)",
+      "items": [
+        "主注意力只算 top-k 条:O(L·k),k=2048",
+        "索引器仍是 O(L²),但头数 64、头维 128、FP8 实现",
+        "索引器算量远小于主 MLA → 端到端长上下文显著加速",
+        "H800 实测每百万 token 成本显著下降;API 价格下调 50%+"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "ReLU 而非 softmax 的理由",
+      "items": [
+        "公式 (1) 用 ReLU:为了吞吐,FP8 下实现高效",
+        "索引分数只是排序用的代理量,不需要归一化",
+        "每头权重 w 由 query 派生的标量,是「软」权重",
+        "H_I=64 个头的分数加权求和成一个标量 I(t,s)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "两条主注意力路径",
+      "items": [
+        "MQA decode(长序列,真稀疏):latent 全头共享,每 query 只看 2048 个 latent",
+        "masked MHA prefill(短序列):先算全注意力,再叠 index_mask",
+        "两者等价,短序列下 masked MHA 更省",
+        "index_mask += mask,所以因果/长度约束与稀疏选择共用同一次加法"
+      ]
+    }
+  ]
+}

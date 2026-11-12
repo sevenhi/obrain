@@ -1,0 +1,126 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "三大抽象:Modifier / Recipe / Pipeline",
+  "subtitle": "Recipe 是 Modifier 的有序列表;Pipeline 决定校准数据怎么流过模型",
+  "locale": "zh-CN"
+ },
+ "lanes": [
+  {
+   "id": "recipe",
+   "label": "Recipe 编排"
+  },
+  {
+   "id": "modifier",
+   "label": "Modifier 算法原语"
+  },
+  {
+   "id": "pipeline",
+   "label": "Pipeline 校准流"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "rcp",
+   "lane": "recipe",
+   "col": 0,
+   "type": "frontend",
+   "label": "Recipe",
+   "sublabel": "有序 Modifier 列表"
+  },
+  {
+   "id": "tf",
+   "lane": "modifier",
+   "col": 0,
+   "type": "backend",
+   "label": "Transform",
+   "sublabel": "AWQ/SmoothQuant 先压平"
+  },
+  {
+   "id": "qn",
+   "lane": "modifier",
+   "col": 1,
+   "type": "backend",
+   "label": "Quantization",
+   "sublabel": "GPTQ/RTN/FP8 落低比特"
+  },
+  {
+   "id": "ck",
+   "lane": "modifier",
+   "col": 2,
+   "type": "database",
+   "label": "compressed-tensors",
+   "sublabel": "vLLM 可加载 checkpoint"
+  },
+  {
+   "id": "cal",
+   "lane": "pipeline",
+   "col": 0,
+   "type": "database",
+   "label": "校准数据",
+   "sublabel": "dataset + splits"
+  },
+  {
+   "id": "st",
+   "lane": "pipeline",
+   "col": 1,
+   "type": "backend",
+   "label": "激活统计 hook",
+   "sublabel": "Hessian/通道 max"
+  },
+  {
+   "id": "fd",
+   "lane": "pipeline",
+   "col": 2,
+   "type": "backend",
+   "label": "逐层供数",
+   "sublabel": "basic / sequential"
+  }
+ ],
+ "edges": [
+  {
+   "from": "rcp",
+   "to": "tf",
+   "label": "按序驱动",
+   "variant": "emphasis"
+  },
+  {
+   "from": "tf",
+   "to": "qn",
+   "label": "先压平再量化",
+   "variant": "emphasis"
+  },
+  {
+   "from": "qn",
+   "to": "ck",
+   "label": "写出低比特权重"
+  },
+  {
+   "from": "cal",
+   "to": "st",
+   "label": "前向收集激活"
+  },
+  {
+   "from": "st",
+   "to": "fd",
+   "label": "整模型/逐层"
+  },
+  {
+   "from": "fd",
+   "to": "qn",
+   "label": "供 Hessian/通道max",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "amber",
+   "title": "顺序敏感",
+   "items": [
+    "Transform 永远在 Quantization 之前",
+    "写反会得到既非 AWQ 也非干净 RTN 的结果"
+   ]
+  }
+ ]
+}

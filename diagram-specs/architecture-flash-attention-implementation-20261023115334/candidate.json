@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "FlashAttention 四代内核架构:FA1 → FA2 → FA3 → FA4",
+    "subtitle": "标准 attention 的 HBM 访存 Θ(Nd+N²) 如何被逐代压到 Θ(N²d²/M),每一代解决一层瓶颈",
+    "output": "diagrams/flash-attention-implementation.architecture.html",
+    "animation": "trace",
+    "visual_preset": "blueprint",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "stdattn", "type": "external", "label": "标准 Attention", "sublabel": "S/P 中间矩阵写 HBM", "pos": [40, 300], "size": [128, 62], "tag": "Θ(Nd + N²) 访存" },
+    { "id": "fa1", "type": "cloud", "label": "FA1 (2022)", "sublabel": "IO-aware tiling + online softmax", "pos": [240, 300], "size": [150, 62], "tag": "A100 · 25-40% MFU" },
+    { "id": "fa2", "type": "backend", "label": "FA2 (2023)", "sublabel": "work partitioning + 序列维并行", "pos": [470, 300], "size": [150, 62], "tag": "A100/H100 · 50-73% MFU" },
+    { "id": "fa3", "type": "security", "label": "FA3 (2024)", "sublabel": "WGMMA + TMA + overlap 流水", "pos": [700, 300], "size": [150, 62], "tag": "H100 · ~75% FP16" },
+    { "id": "fa4", "type": "frontend", "label": "FA4 (2026)", "sublabel": "CuTe DSL + tcgen05/UMMA + TMEM", "pos": [930, 300], "size": [150, 62], "tag": "B200 · 1613 TFLOPS/71%" },
+    { "id": "onlinesoftmax", "type": "database", "label": "Online Softmax", "sublabel": "running max m + sum l,块间 rescale", "pos": [240, 480], "size": [150, 62], "tag": "数学精确,非近似" },
+    { "id": "warpq", "type": "database", "label": "Warp 按 Q 行切分", "sublabel": "行间独立,免跨 warp 归约", "pos": [470, 480], "size": [150, 62], "tag": "non-matmul 推迟除 ℓ" },
+    { "id": "pingpong", "type": "database", "label": "Pingpong 调度", "sublabel": "1 producer + 2 consumer warpgroup", "pos": [700, 480], "size": [150, 62], "tag": "softmax 藏进 GEMM 影子" },
+    { "id": "tmem", "type": "database", "label": "TMEM + 2-CTA MMA", "sublabel": "accumulator 驻留 Tensor Memory", "pos": [930, 480], "size": [150, 62], "tag": "软 exp + 条件 rescale" },
+    { "id": "sram", "type": "cloud", "label": "SRAM 分块复用", "sublabel": "Bc ≈ M/(4d),中间矩阵不落 HBM", "pos": [240, 160], "size": [150, 62], "tag": "FA1 达 IO 下界" },
+    { "id": "lse", "type": "messagebus", "label": "LSE 统计量", "sublabel": "前向只存 m + log l", "pos": [470, 160], "size": [150, 62], "tag": "反向重算换显存 O(N)" },
+    { "id": "fp8", "type": "messagebus", "label": "FP8 低精度路径", "sublabel": "block quant + incoherent proc.", "pos": [700, 160], "size": [150, 62], "tag": "2.6× 误差降低" },
+    { "id": "blackwell", "type": "messagebus", "label": "非对称硬件缩放应对", "sublabel": "TC 翻倍但 smem/exp 未跟上", "pos": [930, 160], "size": [150, 62], "tag": "SM100 无 WGMMA" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Ampere 时代(A100)", "wraps": ["stdattn", "fa1", "fa2"] },
+    { "kind": "security-group", "label": "Hopper(H100):异步指令", "wraps": ["fa3", "fp8", "pingpong"] },
+    { "kind": "region", "label": "Blackwell(B200):tcgen05", "wraps": ["fa4", "tmem", "blackwell"] }
+  ],
+  "connections": [
+    { "from": "stdattn", "to": "fa1", "label": "搬得少:IO 最优", "variant": "emphasis" },
+    { "from": "fa1", "to": "fa2", "label": "算得满:利用率", "variant": "emphasis" },
+    { "from": "fa2", "to": "fa3", "label": "算搬同时:异步", "variant": "emphasis" },
+    { "from": "fa3", "to": "fa4", "label": "非对称硬件缩放", "variant": "emphasis" },
+    { "from": "onlinesoftmax", "to": "fa1", "label": "块间精确合并", "variant": "dashed" },
+    { "from": "sram", "to": "fa1", "label": "tiling 复用", "variant": "dashed" },
+    { "from": "warpq", "to": "fa2", "label": "免通信划分", "variant": "dashed" },
+    { "from": "lse", "to": "fa2", "label": "只存统计量", "variant": "dashed" },
+    { "from": "fp8", "to": "fa3", "label": "E4M3 保精度", "variant": "dashed" },
+    { "from": "pingpong", "to": "fa3", "label": "warp specialization", "variant": "dashed" },
+    { "from": "tmem", "to": "fa4", "label": "容量翻倍", "variant": "dashed" },
+    { "from": "blackwell", "to": "fa4", "label": "软 exp 替代 SFU", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "四代演进主线",
+      "items": [
+        "FA1 解决「搬得少」:IO-aware tiling + online softmax,达 IO 下界",
+        "FA2 解决「算得满」:减少 non-matmul FLOPs + warp 按 Q 行切分 + 序列维并行",
+        "FA3 解决「算搬同时」:WGMMA 异步 + TMA + 计算通信重叠;FA4 延伸到 Blackwell"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "问题起点:attention 是 memory-bound",
+      "items": [
+        "标准实现 S = QK^T、P = softmax(S) 两个 N×N 矩阵写 HBM 再读回",
+        "N=8192, d=128 时 S 矩阵 ≈ 128MB,SRAM(~192KB)装不下",
+        "FlashAttention 把访存降到 Θ(N²d²/M),端到端 2-4× 加速,显存 O(N²)→O(N)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "每代的关键实现技术",
+      "items": [
+        "FA1:online softmax 增量维护 m/l,逐块 rescale,精确合并",
+        "FA2:除 ℓ 推迟到最终一次;non-matmul 比 matmul 贵 ~16× 是削减动机",
+        "FA3:pingpong 让 softmax 落在 GEMM 影子里(exp 单元比 TC 慢 2-3 个量级)",
+        "FA4:TMEM + 2-CTA 协作 + 软件模拟 exp,应对 TC 翻倍但 smem/exp 没跟上"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "数学不变量",
+      "items": [
+        "四代全部数学精确、非近似,只换硬件载体与调度策略",
+        "「计算注意力」与「写回中间矩阵」解耦,每次 HBM 读写服务整行输出",
+        "反向靠前向存 LSE + 重算 P,显存 O(N²)→O(N),代价约 2× 重复 FLOPs"
+      ]
+    }
+  ]
+}

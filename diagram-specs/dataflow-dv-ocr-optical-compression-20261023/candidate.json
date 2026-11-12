@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "DeepSeek-OCR 的光学压缩:一页文档压成几十~几百个 vision token,LLM 负责「解压」",
+    "subtitle": "论文起点是 LLM 长文本的 O(n²) 账单:同一页纸,text token 上千、vision token 只要几十到几百。压缩比 = 原文 text token 数 / 实际 vision token 数",
+    "locale": "zh-CN",
+    "output": "diagrams/dv-ocr-optical-compression.dataflow.html"
+  },
+  "stages": [
+    { "label": "① 高分辨率输入" },
+    { "label": "② DeepEncoder 双塔" },
+    { "label": "③ 线性投影" },
+    { "label": "④ 压成少 token" },
+    { "label": "⑤ MoE 解码" }
+  ],
+  "nodes": [
+    {
+      "id": "page",
+      "type": "database",
+      "label": "1024² 文档页",
+      "sublabel": "整页当一张图",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "clip",
+      "type": "backend",
+      "label": "CLIP-L-14@224",
+      "sublabel": "24 层 / w1024,语义",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "sam",
+      "type": "backend",
+      "label": "SAM-ViT-B",
+      "sublabel": "12 层 / w768,细节",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "proj",
+      "type": "backend",
+      "label": "linear 投影",
+      "sublabel": "2048 → 1280",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "tokens",
+      "type": "database",
+      "label": "几十~几百 token",
+      "sublabel": "压缩 10× 仍 97% 精度",
+      "stage": 3,
+      "row": 1
+    },
+    {
+      "id": "moe",
+      "type": "security",
+      "label": "3B-MoE-A570M",
+      "sublabel": "64 专家 top-6 + 2 共享",
+      "stage": 4,
+      "row": 1
+    }
+  ],
+  "flows": [
+    { "id": "f1", "from": "page", "to": "clip", "label": "224 输入拿语义" },
+    { "id": "f2", "from": "page", "to": "sam", "label": "1024 输入拿细节" },
+    { "id": "f3", "from": "clip", "to": "proj", "label": "1024 维" },
+    { "id": "f4", "from": "sam", "to": "proj", "label": "768 维,拼成 2048" },
+    { "id": "f5", "from": "proj", "to": "tokens", "label": "压进 1280 维空间" },
+    { "id": "f6", "from": "tokens", "to": "moe", "label": "稀疏激活 6/64 专家" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "压缩比的量化结论",
+      "items": [
+        "压缩比 <10× 时 OCR 精度 97%",
+        "压缩比 20× 时仍约 60% —— 1 个 vision token 顶 20 个 text token",
+        "OmniDocBench:100 token 超过 GOT-OCR2.0(256 token/页)",
+        "少于 800 token 超过 MinerU2.0(平均 6000+ token/页)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么「纯视觉」能压文本",
+      "items": [
+        "同一页内容的 text token 数与文字量成正比,与像素无关",
+        "vision token 数由 patch 网格决定,与字数几乎无关",
+        "→ 字越多压缩越狠。这是 OCR 场景的特殊性,不是通用规律"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "解码器不是 V3 的缩小版",
+      "items": [
+        "结构是 DeepSeekMoE,但 use_mla = false(显式写在 config)",
+        "num_key_value_heads = num_attention_heads,是 MHA",
+        "套 V3 的 MLA 配置估 KV cache 会直接算错"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "生产侧的真实数字",
+      "items": [
+        "单卡 A100-40G,每天可生成 200k+ 页训练数据",
+        "PDF 并发约 2500 tokens/s(README)",
+        "2025-10 起上游 vLLM 官方支持,需 nightly"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "diagram_type": "waterfall",
+  "meta": {
+    "title": "一层之内:计算、all-to-all、PP 通信与 SM 划分怎么叠",
+    "subtitle": "跨节点 EP 把计算:通信推到 ≈1:1(论文口径),所以通信必须整段藏进计算窗口;时间轴为相对量,只表达重叠关系与比例",
+    "locale": "zh-CN",
+    "evidence": "illustrative",
+    "unit": "ms",
+    "output": "diagrams/di-v3-a2a-timeline.waterfall.html"
+  },
+  "spans": [
+    { "id": "attn", "name": "Attention 计算", "start": 0, "end": 8, "service": "计算 SM(GEMM 侧)", "detail": "MLA 的 attention 段,是 dispatch 要藏进去的第一个窗口", "status": "ok" },
+    { "id": "mlp", "name": "MLP / expert GEMM", "start": 8, "end": 20, "service": "计算 SM(GEMM 侧)", "detail": "grouped expert GEMM,combine 要藏进它的头部与尾部间隙", "status": "ok" },
+    { "id": "disp", "name": "a2a dispatch(token→expert)", "start": 6, "end": 12, "service": "通信 SM(20 / 132)", "detail": "IB 发送 → IB→NVLink 转发 → NVLink 接收,三段由独立 warp 组负责", "status": "ok" },
+    { "id": "comb", "name": "a2a combine(expert→token)", "start": 18, "end": 24, "service": "通信 SM(20 / 132)", "detail": "NVLink 发送 → NVLink→IB 转发并累加 → IB 接收并累加", "status": "ok" },
+    { "id": "ppsend", "name": "PP send(激活)", "start": 9, "end": 12, "service": "PP 流(相邻 stage)", "detail": "与另一方向 micro-batch 的计算重叠,不吃独立时间", "status": "ok" },
+    { "id": "pprecv", "name": "PP recv(梯度)", "start": 19, "end": 23, "service": "PP 流(相邻 stage)", "detail": "反方向微批的梯度回传,同样落在计算窗口内", "status": "ok" },
+    { "id": "idle", "name": "若不重叠:等网络的时间(≈50%)", "start": 0, "end": 20, "service": "反事实基线", "detail": "计算:通信 ≈1:1 意味着不做重叠就有一半时间在等网络——这是整套 infra 的出发点", "status": "incomplete" }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "重叠需要四件事同时成立",
+      "items": [
+        "(a) chunk 内四段重排:attention → dispatch → MLP → combine",
+        "(b) 通信/计算 SM 显式配比(20 SM 给通信,10 个 channel)",
+        "(c) node-limited routing 把 IB 流量限到可藏(M=4)",
+        "(d) DeepEP 内核把 IB 与 NVLink 两级都吃满"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "为什么不是「裸异步一下」",
+      "items": [
+        "异步只解决「能并发」,不解决「带宽够不够、SM 抢不抢」",
+        "通信 SM 占多了计算掉、占少了藏不住,必须手工配比",
+        "缺任何一件,通信就从窗口里溢出成气泡"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "两个带宽数字",
+      "items": [
+        "NVLink 160 GB/s vs IB 50 GB/s,约 3.2×",
+        "所以 token 尽量在节点内落地:平均每节点 3.2 个 expert",
+        "IB 只走「非落地不可」的那一跳"
+      ]
+    }
+  ]
+}

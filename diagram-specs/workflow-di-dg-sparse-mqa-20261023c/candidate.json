@@ -1,0 +1,210 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "两个打分环节别混:全量 MQA 打分 → 选块 → 稀疏 MQA 重打分",
+    "subtitle": "§1.6 的 fp8_fp4_mqa_logits 对全量 KV 打分,产出的 logits 供 DeepSelect 做 TopK;§1.7 的 sparse 版本只对已选出的稀疏块再打一次分。方向相反、串行衔接,不是同一件事",
+    "locale": "zh-CN",
+    "output": "diagrams/di-dg-sparse-mqa.workflow.html",
+    "viewBox": [
+      1131,
+      660
+    ]
+  },
+  "lanes": [
+    {
+      "id": "ln_full",
+      "label": "① 全量打分(fp8_fp4_mqa_logits)"
+    },
+    {
+      "id": "ln_pick",
+      "label": "② 选块(DeepSelect TopK)"
+    },
+    {
+      "id": "ln_sparse",
+      "label": "③ 稀疏重打分(sparse_mqa_logits)"
+    },
+    {
+      "id": "ln_gap",
+      "label": "两端实现差异(别混)"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "n_qkv",
+      "lane": "ln_full",
+      "col": 0,
+      "type": "backend",
+      "label": "全量 KV",
+      "sublabel": "不分页/分页",
+      "width": 104,
+      "icon": "start"
+    },
+    {
+      "id": "n_full",
+      "lane": "ln_full",
+      "col": 1,
+      "type": "backend",
+      "label": "加权 ReLU 打分",
+      "sublabel": "Σ relu(q·kv·sf)·w",
+      "width": 104
+    },
+    {
+      "id": "n_logits",
+      "lane": "ln_full",
+      "col": 2,
+      "type": "database",
+      "label": "全量 logits",
+      "sublabel": "每 query 对全部 KV",
+      "width": 104
+    },
+    {
+      "id": "n_topk",
+      "lane": "ln_pick",
+      "col": 3,
+      "type": "security",
+      "label": "TopK 选块",
+      "sublabel": "出 block indices",
+      "width": 104,
+      "icon": "decision"
+    },
+    {
+      "id": "n_meta",
+      "lane": "ln_sparse",
+      "col": 3,
+      "type": "security",
+      "label": "prepare 元数据",
+      "sublabel": "复用调度信息",
+      "width": 104
+    },
+    {
+      "id": "n_sp",
+      "lane": "ln_sparse",
+      "col": 4,
+      "type": "backend",
+      "label": "只算选中块",
+      "sublabel": "MXFP4/8 KV",
+      "width": 104
+    },
+    {
+      "id": "n_idx",
+      "lane": "ln_sparse",
+      "col": 5,
+      "type": "backend",
+      "label": "稀疏 logits",
+      "sublabel": "给 indexer",
+      "width": 104,
+      "icon": "success"
+    },
+    {
+      "id": "n_nv",
+      "lane": "ln_gap",
+      "col": 0,
+      "type": "external",
+      "label": "NV 切在 CTA 内",
+      "sublabel": "kSplitKV=512/640",
+      "width": 124,
+      "icon": "external"
+    },
+    {
+      "id": "n_as",
+      "lane": "ln_gap",
+      "col": 2,
+      "type": "external",
+      "label": "Ascend 切在 core",
+      "sublabel": "num_ai_cores",
+      "width": 124,
+      "icon": "external"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "n_qkv",
+      "to": "n_full",
+      "label": "对全部 KV 算一遍",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "n_full",
+      "to": "n_logits",
+      "label": "压缩后的加权和",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "n_logits",
+      "to": "n_topk",
+      "label": "交给 DeepSelect 选块",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "n_topk",
+      "to": "n_meta",
+      "label": "选中块 → 调度元数据",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "n_meta",
+      "to": "n_sp",
+      "label": "元数据复用,只算有效块",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "n_sp",
+      "to": "n_idx",
+      "label": "重打分结果供索引",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "n_nv",
+      "to": "n_as",
+      "label": "归并粒度不同,不要互相套",
+      "variant": "dashed",
+      "role": "branch"
+    }
+  ],
+  "mainPath": [
+    "n_qkv",
+    "n_full",
+    "n_logits",
+    "n_topk",
+    "n_meta",
+    "n_sp",
+    "n_idx"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两个方向的打分",
+      "items": [
+        "① 全量:每个 query 对所有 KV 打一次,目的是「找出哪些块重要」",
+        "③ 稀疏:只对 TopK 选出的块再打,目的是「给 indexer 精确 logits」",
+        "串行衔接,不是同一环节,也不是 FlashMLA sparse"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "元数据是复用的抓手",
+      "items": [
+        "sparse_kv_block_indices 给块索引,sparse_block_kv=8/16",
+        "num_max_sparse_blocks 封顶,不设就是全量退化成 ①",
+        "metadata 一次生成多次复用,省掉每步重算调度"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "split-KV 的做法两端不同",
+      "items": [
+        "NVIDIA SM100:单个 CTA 内切 KV,math warpgroups 用 __hadd2_rn 累加",
+        "Ascend:按 AI core 切,每 core 写自己负责的 output_ranges",
+        "Ascend paged wrapper 还有 FIRST/REUSE 状态缓存 KV 快照,NVIDIA 纯 C++ binding 没有"
+      ]
+    }
+  ]
+}

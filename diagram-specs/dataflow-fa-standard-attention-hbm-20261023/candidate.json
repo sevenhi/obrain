@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "标准 Attention 为什么慢:N×N 中间矩阵在 HBM 里来回",
+    "subtitle": "三步流水 S→P→O,每一步的中间矩阵都要写入 HBM 再读回——瓶颈不是计算,是内存搬运",
+    "locale": "zh-CN",
+    "output": "diagrams/fa-standard-attention-hbm.dataflow.html"
+  },
+  "stages": [
+    { "label": "① 从 HBM 读入" },
+    { "label": "② 算 S=Q@Kᵀ" },
+    { "label": "③ softmax → P" },
+    { "label": "④ 中间矩阵往返" },
+    { "label": "⑤ O=P@V 写回" }
+  ],
+  "nodes": [
+    { "id": "qkv", "type": "database", "label": "Q, K, V", "sublabel": "各 N×d,从 HBM 读", "stage": 0, "row": 0 },
+    { "id": "s", "type": "backend", "label": "S = Q@Kᵀ·scale", "sublabel": "N×N 注意力分数", "stage": 1, "row": 0 },
+    { "id": "s_hbm", "type": "database", "label": "S 写入 HBM", "sublabel": "N=8192,d=128 时 ≈128MB", "stage": 1, "row": 1 },
+    { "id": "p", "type": "backend", "label": "P = softmax(S)", "sublabel": "N×N 概率矩阵", "stage": 2, "row": 0 },
+    { "id": "p_hbm", "type": "database", "label": "P 写入 HBM", "sublabel": "又一个 N×N 落盘", "stage": 2, "row": 1 },
+    { "id": "reread", "type": "database", "label": "S、P 读回 GPU", "sublabel": "中间矩阵来回两次", "stage": 3, "row": 0 },
+    { "id": "o", "type": "backend", "label": "O = P@V", "sublabel": "N×d 输出", "stage": 4, "row": 0 },
+    { "id": "o_hbm", "type": "database", "label": "O 写回 HBM", "sublabel": "唯一的必要写出", "stage": 4, "row": 1 }
+  ],
+  "flows": [
+    { "id": "f1", "from": "qkv", "to": "s", "label": "读 Q、K" },
+    { "id": "f2", "from": "s", "to": "s_hbm", "label": "Θ(N²) 次写出" },
+    { "id": "f3", "from": "s_hbm", "to": "p", "label": "读回 S 做 softmax" },
+    { "id": "f4", "from": "p", "to": "p_hbm", "label": "Θ(N²) 次写出" },
+    { "id": "f5", "from": "p_hbm", "to": "reread", "label": "读回 P" },
+    { "id": "f6", "from": "reread", "to": "o", "label": "P 与 V 相乘" },
+    { "id": "f7", "from": "qkv", "to": "o", "label": "读 V", "variant": "dashed" },
+    { "id": "f8", "from": "o", "to": "o_hbm", "label": "Θ(Nd) 次写出" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "问题焦点",
+      "items": [
+        "GPU SRAM 只有 ~192KB,装不下 128MB 的 S",
+        "S、P 两个 N×N 矩阵各往返 HBM 一次",
+        "HBM 访存 Θ(Nd + N²):N² 项随序列长度二次方增长"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "FlashAttention 的答案(对比)",
+      "items": [
+        "分块 + online softmax,S/P 只存在 SRAM 不落 HBM",
+        "HBM 访存降到 Θ(N²d²/M)(M = SRAM 大小)",
+        "长序列下数倍到近一个量级的访存减少,端到端 2-4× 加速"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "核心洞察",
+      "items": [
+        "attention 计算量 Θ(N²d) 不是瓶颈",
+        "内存搬运才是瓶颈(memory-bound)",
+        "时间全花在搬 N×N 矩阵,而不是算"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "tile-based vs Stream-K:工作怎么分给 CTA",
+    "subtitle": "传统分解按输出 tile 分派,尾批只干一点活就退场;Stream-K 按「内层迭代数」均分 K 方向工作,所有 CTA 几乎同时下班,代价是跨 CTA 归约",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-streamk-vs-tile.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_tile", "label": "tile-based:按输出块分" },
+    { "id": "ln_sk", "label": "Stream-K:按迭代数分" },
+    { "id": "ln_fix", "label": "Stream-K 的额外步骤" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 分派工作", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 收尾与归约", "fromCol": 2, "toCol": 3, "variant": "emphasis" }
+  ],
+  "nodes": [
+    { "id": "grid", "lane": "ln_tile", "col": 0, "type": "backend", "label": "按输出 tile 建网格", "sublabel": "⌈M/TileM⌉×⌈N/TileN⌉ 个 CTA", "icon": "start" },
+    { "id": "whole", "lane": "ln_tile", "col": 1, "type": "backend", "label": "每 CTA 算一整块 K", "sublabel": "独立,无需跨 CTA 通信", "icon": "active" },
+    { "id": "tail", "lane": "ln_tile", "col": 2, "type": "security", "label": "尾批只干一点就退场", "sublabel": "tile 数不能被 SM 数整除时", "icon": "decision" },
+    { "id": "idle", "lane": "ln_tile", "col": 3, "type": "external", "label": "GPU 尾部空闲", "sublabel": "tail effect", "icon": "failure" },
+    { "id": "split", "lane": "ln_sk", "col": 0, "type": "backend", "label": "把 K 当一条工作流均分", "sublabel": "work-centric,不按 tile", "icon": "start" },
+    { "id": "share", "lane": "ln_sk", "col": 1, "type": "backend", "label": "每个 CTA 拿等量迭代", "sublabel": "可跨 tile 边界,也可只做某 tile 一段", "icon": "active" },
+    { "id": "sync", "lane": "ln_sk", "col": 2, "type": "backend", "label": "几乎同时下班", "sublabel": "不再有尾部空闲", "icon": "success" },
+    { "id": "fix", "lane": "ln_fix", "col": 3, "type": "security", "label": "fixup:跨 CTA 归约 partial", "sublabel": "持最后 K-split 的 CTA 用 barrier 轮询合并", "icon": "decision" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "grid", "to": "whole", "label": "一块输出归一个 CTA", "role": "main" },
+    { "id": "e2", "from": "whole", "to": "tail", "label": "tile 数整除不了 SM 数时", "role": "main" },
+    { "id": "e3", "from": "tail", "to": "idle", "label": "最后一批 CTA 早退", "role": "error" },
+    { "id": "e4", "from": "split", "to": "share", "label": "按迭代数切,不按 tile 切", "role": "main" },
+    { "id": "e5", "from": "share", "to": "sync", "label": "份额严格均等", "role": "main" },
+    { "id": "e6", "from": "sync", "to": "fix", "label": "但 K 被切开了", "role": "branch" }
+  ],
+  "mainPath": ["grid", "whole", "tail", "idle"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Stream-K 的实测收益(官方论文)",
+      "items": [
+        "32,824 种 GEMM 几何上评估",
+        "相对 CUTLASS 峰值提速最高 14×",
+        "相对 cuBLAS 最高 6.7×",
+        "平均性能更高、更稳,尤其长而扁的非方阵"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "fixup 的真实代价(上之前先看)",
+      "items": [
+        "一个输出 tile 的 K 维被拆给多个 CTA → 必须跨 CTA 归约",
+        "SM90 默认在同一 kernel 内由持最后 K-split 的 CTA 合并(不是独立 kernel)",
+        "默认 ReductionMode::Deterministic,不是「天然不可复现」",
+        "要更高吞吐才选 Nondeterministic(放弃位级确定性)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "tail effect 的准确判据",
+      "items": [
+        "判据是「输出 tile 总数 ⌈M/TileM⌉×⌈N/TileN⌉ 不能被 SM 数整除」",
+        "不是按「网格 / H·W」判——H·W 是卷积记法,GEMM 用 M/N",
+        "Stream-K 在 CUTLASS 里是模板参数 cutlass::gemm::StreamKScheduler",
+        "经 GemmUniversal 注入,要显式选,不是默认行为"
+      ]
+    }
+  ]
+}

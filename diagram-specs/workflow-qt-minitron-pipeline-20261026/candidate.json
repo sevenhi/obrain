@@ -1,0 +1,118 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "Minitron 主线:打分发分 → 结构化剪 → 蒸馏恢复",
+  "subtitle": "拿已训好的大模型,用 1024 条样本纯前向打分,按轴切掉最不重要参数,再用 KL 蒸馏在 <3% token 上恢复",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-minitron-pipeline.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "score",
+   "label": "重要性打分"
+  },
+  {
+   "id": "prune",
+   "label": "结构化剪枝"
+  },
+  {
+   "id": "distill",
+   "label": "蒸馏恢复"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "big",
+   "lane": "score",
+   "col": 0,
+   "type": "frontend",
+   "label": "已训好的大模型",
+   "sublabel": "如 Nemotron-4 15B"
+  },
+  {
+   "id": "act",
+   "lane": "score",
+   "col": 1,
+   "type": "backend",
+   "label": "激活幅度打分",
+   "sublabel": "纯前向,1024 样本,~5 分钟"
+  },
+  {
+   "id": "cut",
+   "lane": "prune",
+   "col": 2,
+   "type": "backend",
+   "label": "按轴切最不重要参数",
+   "sublabel": "深度/神经元/头/emb 四轴"
+  },
+  {
+   "id": "kd",
+   "lane": "distill",
+   "col": 3,
+   "type": "backend",
+   "label": "KL 蒸馏",
+   "sublabel": "<3% 原始 token 量"
+  },
+  {
+   "id": "out",
+   "lane": "distill",
+   "col": 4,
+   "type": "backend",
+   "label": "恢复精度的小模型",
+   "sublabel": "8B/4B"
+  }
+ ],
+ "edges": [
+  {
+   "from": "big",
+   "to": "act",
+   "label": "只跑前向,不用梯度",
+   "variant": "emphasis"
+  },
+  {
+   "from": "act",
+   "to": "cut",
+   "label": "按敏感度切",
+   "variant": "emphasis"
+  },
+  {
+   "from": "cut",
+   "to": "kd",
+   "label": "剪完立刻用 teacher logits 补",
+   "variant": "emphasis"
+  },
+  {
+   "from": "kd",
+   "to": "out",
+   "label": "恢复精度"
+  }
+ ],
+ "mainPath": [
+  "big",
+  "act",
+  "cut",
+  "kd",
+  "out"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "一组能自验的数字",
+   "items": [
+    "8B 只花 94B token(Nemotron-3 8B 用 3.8T = 40× 更少)",
+    "MMLU 比从头训高最多 16%",
+    "四尺寸族总算力省 1.8×"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "只剪不蒸馏几乎没用",
+   "items": [
+    "15B→4B 常规训练 24.57 ≈ 随机初始化 24.36",
+    "蒸馏才是主体:MMLU 24.36→37.81(+13.5 点)",
+    "迭代剪优于一次性:先 15B→8B 再 8B→4B,MMLU 再加 4.6 点"
+   ]
+  }
+ ]
+}

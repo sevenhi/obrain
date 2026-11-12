@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "V3.2-Exp 全模型结构:61 个 Block,MLA 内嵌 Indexer,FFN 前 3 层 dense 其余 MoE",
+    "subtitle": "主干与 V3 完全一致;唯一的结构差异藏在 MLA 内部——每个注意力层多挂一个轻量索引器,FFN 侧仍是 256 routed + 1 shared 的 top-8 MoE",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-v32-block.architecture.html",
+    "viewBox": [1120, 700]
+  },
+  "components": [
+    { "id": "tok", "type": "external", "label": "tokens", "sublabel": "vocab = 129280", "pos": [450, 30], "size": [220, 66] },
+    { "id": "emb", "type": "backend", "label": "ParallelEmbedding", "sublabel": "→ dim 7168", "pos": [450, 130], "size": [220, 66] },
+    { "id": "blocks", "type": "backend", "label": "× 61 个 Block", "sublabel": "attn_norm → MLA → ffn_norm → FFN", "pos": [450, 230], "size": [220, 76] },
+    { "id": "norm", "type": "backend", "label": "RMSNorm", "sublabel": "带 residual 的融合分支", "pos": [450, 340], "size": [220, 66] },
+    { "id": "lmhead", "type": "external", "label": "lm_head", "sublabel": "dim → vocab", "pos": [450, 440], "size": [220, 66] },
+    { "id": "mla", "type": "frontend", "label": "MLA + DSA", "sublabel": "唯一结构增量", "pos": [830, 120], "size": [250, 80] },
+    { "id": "idx", "type": "security", "label": "Indexer", "sublabel": "64 头 × 128 维 / top-2048", "pos": [830, 230], "size": [250, 80] },
+    { "id": "moe", "type": "database", "label": "MoE(FFN)", "sublabel": "256 routed + 1 shared,top-8", "pos": [830, 350], "size": [250, 80] },
+    { "id": "dense", "type": "database", "label": "dense MLP", "sublabel": "前 3 层(first_k_dense_replace)", "pos": [830, 460], "size": [250, 80] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "Block 内部(双残差 pre-norm,工程性变化)", "wraps": ["blocks", "mla", "idx", "moe", "dense"] },
+    { "kind": "region", "label": "每个注意力层内嵌一个索引器(参数增量极小)", "wraps": ["mla", "idx"] }
+  ],
+  "connections": [
+    { "id": "c1", "from": "tok", "to": "emb", "label": "查表并投影" },
+    { "id": "c2", "from": "emb", "to": "blocks", "label": "进 61 层" },
+    { "id": "c3", "from": "blocks", "to": "norm", "label": "最后一层输出" },
+    { "id": "c4", "from": "norm", "to": "lmhead", "label": "投到词表" },
+    { "id": "c5", "from": "blocks", "to": "mla", "label": "attn_norm 后", "variant": "emphasis" },
+    { "id": "c6", "from": "mla", "to": "idx", "label": "复用 qr latent", "variant": "emphasis" },
+    { "id": "c7", "from": "idx", "to": "mla", "label": "回传 top-k mask", "variant": "dashed" },
+    { "id": "c8", "from": "blocks", "to": "moe", "label": "ffn_norm 后(第 4 层起)" },
+    { "id": "c9", "from": "blocks", "to": "dense", "label": "前 3 层走 dense" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "真实超参(以 config.json 为准)",
+      "items": [
+        "hidden_size 7168 / 61 层 / 128 头",
+        "q_lora_rank 1536,kv_lora_rank 512(MLA 压缩瓶颈)",
+        "qk_nope 128 / qk_rope 64,v_head_dim 128",
+        "max_position_embeddings 163840(RoPE theta=10000 + YaRN factor=40)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "别被 v32_model.py 的 ModelArgs 骗到",
+      "items": [
+        "文件里的 ModelArgs 是降采样 smoke-test 配置(dim=2048 / 27 层 / 16 头)",
+        "不代表真实模型;真实超参只能看官方 config.json",
+        "唯一「代码与 checkpoint 对齐」的是索引器维度 128/64/2048"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "演进主线:以稀疏/低秩换效率",
+      "items": [
+        "V2:MLA 低秩省 KV 显存",
+        "V3:MoE 稀疏省算力 + MTP",
+        "V3.2:DSA 稀疏同时省长上下文算力与 KV 读取",
+        "约束始终是 FLOPs 与 KV cache 双账单,质量不倒退"
+      ]
+    }
+  ]
+}

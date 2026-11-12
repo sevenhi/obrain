@@ -1,0 +1,141 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "Executor 抽象:一层抽象 + 三条后端",
+  "subtitle": "Executor.get_class 按 distributed_executor_backend 分派",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-ray-executor-dispatch.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "abs",
+   "label": "抽象层"
+  },
+  {
+   "id": "backend",
+   "label": "后端实现"
+  },
+  {
+   "id": "scope",
+   "label": "部署范围"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "exc",
+   "lane": "abs",
+   "col": 0,
+   "type": "backend",
+   "label": "Executor(ABC)",
+   "sublabel": "uses_ray / supports_pp"
+  },
+  {
+   "id": "gc",
+   "lane": "abs",
+   "col": 1,
+   "type": "backend",
+   "label": "get_class(vllm_config)",
+   "sublabel": "按 backend 分派",
+   "icon": "decision"
+  },
+  {
+   "id": "uni",
+   "lane": "backend",
+   "col": 0,
+   "type": "backend",
+   "label": "UniProcExecutor",
+   "sublabel": "单进程单 GPU"
+  },
+  {
+   "id": "mp",
+   "lane": "backend",
+   "col": 1,
+   "type": "backend",
+   "label": "MultiprocExecutor",
+   "sublabel": "本机多进程"
+  },
+  {
+   "id": "ray",
+   "lane": "backend",
+   "col": 2,
+   "type": "backend",
+   "label": "RayDistributedExecutor",
+   "sublabel": "跨节点 Ray actor"
+  },
+  {
+   "id": "s1",
+   "lane": "scope",
+   "col": 0,
+   "type": "frontend",
+   "label": "单卡",
+   "sublabel": "supports_pp=False"
+  },
+  {
+   "id": "s2",
+   "lane": "scope",
+   "col": 1,
+   "type": "frontend",
+   "label": "单节点多卡",
+   "sublabel": "免 Ray 开销"
+  },
+  {
+   "id": "s3",
+   "lane": "scope",
+   "col": 2,
+   "type": "frontend",
+   "label": "多节点",
+   "sublabel": "placement group + rank 重排"
+  }
+ ],
+ "edges": [
+  {
+   "from": "exc",
+   "to": "gc",
+   "label": "读 backend 字段"
+  },
+  {
+   "from": "gc",
+   "to": "uni",
+   "label": "uni",
+   "variant": "dashed"
+  },
+  {
+   "from": "gc",
+   "to": "mp",
+   "label": "mp",
+   "variant": "dashed"
+  },
+  {
+   "from": "gc",
+   "to": "ray",
+   "label": "ray",
+   "variant": "emphasis"
+  },
+  {
+   "from": "uni",
+   "to": "s1",
+   "label": "单卡"
+  },
+  {
+   "from": "mp",
+   "to": "s2",
+   "label": "单节点"
+  },
+  {
+   "from": "ray",
+   "to": "s3",
+   "label": "跨节点"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "选型判断",
+   "items": [
+    "单节点多卡优先 mp(无 Ray 编排开销)",
+    "跨节点才用 ray;不要默认上 Ray 让单机背 placement group 成本"
+   ]
+  }
+ ]
+}

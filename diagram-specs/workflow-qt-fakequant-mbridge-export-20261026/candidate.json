@@ -1,0 +1,98 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "为什么换到 Megatron-Bridge 导出",
+  "subtitle": "三件实质能力:任意 TP/EP/PP、VLM、折叠后配置清理;校验前移是最值得抄的工程实践",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-fakequant-mbridge-export.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "cap",
+   "label": "三件能力"
+  },
+  {
+   "id": "pre",
+   "label": "校验前移"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "par",
+   "lane": "cap",
+   "col": 0,
+   "type": "backend",
+   "label": "任意并行度 TP/EP/PP",
+   "sublabel": "save_hf_pretrained 存已 shard 模型"
+  },
+  {
+   "id": "vlm",
+   "lane": "cap",
+   "col": 1,
+   "type": "backend",
+   "label": "VLM 支持",
+   "sublabel": "QAD 只存语言模型,视觉塔从 HF 载入"
+  },
+  {
+   "id": "clean",
+   "lane": "cap",
+   "col": 2,
+   "type": "backend",
+   "label": "折叠后配置清理",
+   "sublabel": "pop quantization_config + 删 hf_quant_config.json"
+  },
+  {
+   "id": "chk",
+   "lane": "pre",
+   "col": 0,
+   "type": "security",
+   "label": "check_mcore_quantizers",
+   "sublabel": "动任何权重前统一拒掉"
+  },
+  {
+   "id": "all",
+   "lane": "pre",
+   "col": 1,
+   "type": "security",
+   "label": "集合式失败",
+   "sublabel": "任一 rank 失败,所有 rank 抛"
+  }
+ ],
+ "edges": [
+  {
+   "from": "par",
+   "to": "vlm",
+   "label": "--tp_size 只与 fakequant 同用",
+   "variant": "emphasis"
+  },
+  {
+   "from": "vlm",
+   "to": "clean",
+   "label": "别让 BF16 权重被当量化模型",
+   "variant": "emphasis"
+  },
+  {
+   "from": "chk",
+   "to": "all",
+   "label": "导出是集合操作,早退=卡 collective",
+   "variant": "security"
+  }
+ ],
+ "mainPath": [
+  "par",
+  "vlm",
+  "clean"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "拒绝清单(语义上不能仿真)",
+   "items": [
+    "MTP 与 lm_head 的激活量化",
+    "AWQ / SVDQuant(需全模型 pre-quant-scale)",
+    "tied weights;--export_extra_modules 互斥"
+   ]
+  }
+ ]
+}

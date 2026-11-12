@@ -1,0 +1,95 @@
+{
+ "schema_version": 1,
+ "diagram_type": "dataflow",
+ "meta": {
+  "title": "训练与 rollout 的显存组成",
+  "subtitle": "分卡各算各的;colocate 隐含 offload,且不能与 async 同用",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-vime-memory-topology.dataflow.html"
+ },
+ "stages": [
+  {
+   "label": "① 训练侧"
+  },
+  {
+   "label": "② rollout 侧"
+  },
+  {
+   "label": "③ 拓扑开关"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "tp",
+   "type": "backend",
+   "label": "训练显存",
+   "sublabel": "参数+优化器+梯度+激活",
+   "stage": 0,
+   "row": 0
+  },
+  {
+   "id": "rp",
+   "type": "backend",
+   "label": "rollout 显存",
+   "sublabel": "权重+KV+workspace",
+   "stage": 1,
+   "row": 0
+  },
+  {
+   "id": "col",
+   "type": "frontend",
+   "label": "colocate",
+   "sublabel": "训练与 vLLM 同 GPU",
+   "stage": 2,
+   "row": 0
+  },
+  {
+   "id": "off",
+   "type": "frontend",
+   "label": "offload",
+   "sublabel": "隐含,权重升降",
+   "stage": 2,
+   "row": 1
+  },
+  {
+   "id": "ext",
+   "type": "external",
+   "label": "外部 serving",
+   "sublabel": "num-gpus 0 只起 router",
+   "stage": 2,
+   "row": 2
+  }
+ ],
+ "flows": [
+  {
+   "from": "tp",
+   "to": "rp",
+   "label": "分卡各算各的"
+  },
+  {
+   "from": "rp",
+   "to": "col",
+   "label": "同机放一起"
+  },
+  {
+   "from": "col",
+   "to": "off",
+   "label": "隐含"
+  },
+  {
+   "from": "col",
+   "to": "ext",
+   "label": "或走外部引擎"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "rose",
+   "title": "colocate 互斥",
+   "items": [
+    "--colocate 会隐含 --offload",
+    "不能与 async 同用,train_async.py 开头 assert"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,245 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "MLA.forward 的两条路径:稀疏化如何落地",
+    "subtitle": "同一个 indexer 结果在两条路径上以两种方式生效:短序列 prefill 走 masked MHA(先算全注意力再叠 mask),长序列 decode 走 MQA(只在 2048 个 latent 上加权)",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-mla-two-paths.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_in",
+      "label": "入口判定"
+    },
+    {
+      "id": "ln_mha",
+      "label": "路径 A:masked MHA(prefill)"
+    },
+    {
+      "id": "ln_mqa",
+      "label": "路径 B:MQA(decode,真稀疏)"
+    },
+    {
+      "id": "ln_common",
+      "label": "共用的索引器与出口"
+    },
+    {
+      "id": "ln_mqa_out",
+      "label": "MQA 出口"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "① 读 mask 决定路径",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "② 各自算 scores",
+      "fromCol": 2,
+      "toCol": 3
+    },
+    {
+      "id": "ph3",
+      "label": "③ 叠 index_mask 后归一化",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "emphasis"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "q",
+      "lane": "ln_in",
+      "col": 0,
+      "type": "backend",
+      "label": "q_A 与 qr 就绪",
+      "sublabel": "qr 同时喂给索引器",
+      "icon": "start"
+    },
+    {
+      "id": "dec",
+      "lane": "ln_in",
+      "col": 1,
+      "type": "security",
+      "label": "mask is not None ?",
+      "sublabel": "有 mask = 短序列 prefill",
+      "icon": "decision"
+    },
+    {
+      "id": "full",
+      "lane": "ln_mha",
+      "col": 2,
+      "type": "backend",
+      "label": "先算全注意力 scores",
+      "sublabel": "einsum(bshd,bthd) × scale",
+      "icon": "active"
+    },
+    {
+      "id": "mha_mask",
+      "lane": "ln_mha",
+      "col": 4,
+      "type": "backend",
+      "label": "scores += index_mask",
+      "sublabel": "bsz×seqlen×seqlen 全矩阵",
+      "icon": "neutral"
+    },
+    {
+      "id": "absorb",
+      "lane": "ln_mqa",
+      "col": 2,
+      "type": "backend",
+      "label": "吸收 wkv_b 的 latent 内积",
+      "sublabel": "q_nope·kv_cache + q_pe·pe_cache",
+      "icon": "active"
+    },
+    {
+      "id": "mqa_mask",
+      "lane": "ln_mqa",
+      "col": 4,
+      "type": "backend",
+      "label": "scores += index_mask",
+      "sublabel": "bsz×1×end_pos 单行",
+      "icon": "neutral"
+    },
+    {
+      "id": "idx",
+      "lane": "ln_common",
+      "col": 3,
+      "type": "security",
+      "label": "indexer 出 topk_indices",
+      "sublabel": "两条路径共用同一份",
+      "icon": "neutral"
+    },
+    {
+      "id": "sm_mha",
+      "lane": "ln_common",
+      "col": 5,
+      "type": "backend",
+      "label": "softmax → P@V",
+      "sublabel": "非 top-k 位置为 −inf",
+      "icon": "success"
+    },
+    {
+      "id": "sm_mqa",
+      "lane": "ln_mqa_out",
+      "col": 5,
+      "type": "backend",
+      "label": "softmax 后加权 latent",
+      "sublabel": "只有 2048 个位置非零",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "q",
+      "to": "dec",
+      "label": "每层判一次",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "dec",
+      "to": "full",
+      "label": "是:prefill 路径",
+      "role": "branch"
+    },
+    {
+      "id": "e3",
+      "from": "dec",
+      "to": "absorb",
+      "label": "否:decode 路径",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e4",
+      "from": "full",
+      "to": "idx",
+      "label": "先要 qr 出索引",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "absorb",
+      "to": "idx",
+      "label": "同一份索引器",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e6",
+      "from": "idx",
+      "to": "mha_mask",
+      "label": "全矩阵 mask",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "idx",
+      "to": "mqa_mask",
+      "label": "单行 mask",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e8",
+      "from": "mha_mask",
+      "to": "sm_mha",
+      "label": "等价结果",
+      "role": "main"
+    },
+    {
+      "id": "e9",
+      "from": "mqa_mask",
+      "to": "sm_mqa",
+      "label": "真稀疏省算力",
+      "role": "main",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "q",
+    "dec",
+    "full",
+    "idx",
+    "mha_mask",
+    "sm_mha"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么两种都要",
+      "items": [
+        "短序列 prefill:全注意力本来就不贵,加 mask 比稀疏实现简单",
+        "长序列 decode:每步只 1 个 token,必须走真稀疏才有收益",
+        "两者数学等价(mask 只是把非 top-k 的 score 置 −inf)",
+        "所以官方 inference 实现选「按 mask 是否存在」分叉"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "MQA 模式为什么是真身",
+      "items": [
+        "latent vector(KV 条目)跨 query 的所有注意力头共享",
+        "每个 query 只 attend 它 top-k 选中的 2048 个 latent",
+        "对应论文 Figure 1 的 MQA 版 MLA",
+        "index_mask 形状是 bsz×1×end_pos:只有一个 query 行,不是全矩阵"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "index_mask 的两个来源叠加",
+      "items": [
+        "index_mask = full(-inf).scatter_(-1, topk_indices, 0)",
+        "再 index_mask += mask:因果与长度约束共用同一次加法",
+        "所以稀疏选择不会破坏原有 mask 语义",
+        "scores 加完后 softmax 自然只在那 2048 个位置非零"
+      ]
+    }
+  ]
+}

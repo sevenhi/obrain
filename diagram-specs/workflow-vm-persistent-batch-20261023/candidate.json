@@ -1,0 +1,228 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Persistent Batch:每请求一条永久行,每步只 gather 一次",
+    "subtitle": "V1 把持久状态张量直接当模型输入,join/finish 时常要整张量重排;MRV2 把「持久状态」与「本步输入」彻底分家,插入/删除变成标记一行空闲",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-persistent-batch.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_state",
+      "label": "持久状态(常驻 GPU / UVA)"
+    },
+    {
+      "id": "ln_step",
+      "label": "每步动作"
+    },
+    {
+      "id": "ln_out",
+      "label": "本步输入(临时)"
+    },
+    {
+      "id": "ln_life",
+      "label": "请求生命周期"
+    },
+    {
+      "id": "ln_free",
+      "label": "空行回收"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "① 预分配与占行",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "② 每步 gather",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ph3",
+      "label": "③ 生命周期收尾",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "nodes": [
+    {
+      "id": "alloc",
+      "lane": "ln_state",
+      "col": 0,
+      "type": "database",
+      "label": "预分配 max_num_reqs 行",
+      "sublabel": "多数平台默认 1024",
+      "icon": "database"
+    },
+    {
+      "id": "row",
+      "lane": "ln_state",
+      "col": 1,
+      "type": "backend",
+      "label": "活跃请求固定占一行",
+      "sublabel": "整个生命周期不搬家",
+      "icon": "active"
+    },
+    {
+      "id": "gather",
+      "lane": "ln_step",
+      "col": 2,
+      "type": "backend",
+      "label": "按 idx_mapping gather",
+      "sublabel": "顺序由 attention backend 决定",
+      "icon": "neutral"
+    },
+    {
+      "id": "run",
+      "lane": "ln_step",
+      "col": 3,
+      "type": "backend",
+      "label": "执行 + 回写同一行",
+      "sublabel": "不需要 CachedRequestState",
+      "icon": "active"
+    },
+    {
+      "id": "inp",
+      "lane": "ln_out",
+      "col": 3,
+      "type": "database",
+      "label": "input_ids / positions",
+      "sublabel": "query_start_loc、seq_lens",
+      "icon": "database"
+    },
+    {
+      "id": "inp2",
+      "lane": "ln_out",
+      "col": 4,
+      "type": "database",
+      "label": "block_tables 等",
+      "sublabel": "纯临时,本步用完即弃",
+      "icon": "database"
+    },
+    {
+      "id": "fin",
+      "lane": "ln_life",
+      "col": 5,
+      "type": "security",
+      "label": "finish / 抢占",
+      "sublabel": "当 completion 处理",
+      "icon": "decision"
+    },
+    {
+      "id": "free",
+      "lane": "ln_free",
+      "col": 5,
+      "type": "backend",
+      "label": "标记该行空闲",
+      "sublabel": "零跨行搬移",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "alloc",
+      "to": "row",
+      "label": "行数上限 = max_num_seqs",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "row",
+      "to": "gather",
+      "label": "取本步要算的行",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "gather",
+      "to": "run",
+      "label": "拼出输入张量",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "run",
+      "to": "inp",
+      "label": "本步输入来自 gather",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e5",
+      "from": "inp",
+      "to": "inp2",
+      "label": "顺序可任意",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e6",
+      "from": "run",
+      "to": "fin",
+      "label": "请求结束或被抢占",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "fin",
+      "to": "free",
+      "label": "恢复时按全新请求重写",
+      "role": "main"
+    },
+    {
+      "id": "e8",
+      "from": "free",
+      "to": "row",
+      "label": "行可被新请求占用",
+      "role": "return",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "alloc",
+    "row",
+    "gather",
+    "run",
+    "fin",
+    "free"
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "代价:空转也占显存",
+      "items": [
+        "行数上限 = max_num_seqs 预分配,空行也占着",
+        "all_token_ids 是 (max_num_reqs, max_model_len) int32",
+        "源码注释直说「可能是几个 GB」",
+        "正因为太大,MRV2 给它用 UVA 而不是 GPU 显存"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "收益:没有跨行搬移",
+      "items": [
+        "插入/删除 = 标记一行为空闲",
+        "preemption 语义简化为「结束 + 重新开始」",
+        "省掉「部分状态还在、部分已清」的中间态",
+        "CachedRequestState 没有必要存在了 —— 双份真相消失"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "1024 这个默认值从哪来",
+      "items": [
+        "ArgUtils.get_batch_defaults:≥70 GiB 显存且非 A100 的卡,max_num_seqs 默认 1024",
+        "SchedulerConfig.DEFAULT_MAX_NUM_SEQS = 128 只是 class 级兜底",
+        "所以别只 grep 常量,要看按显存分档的逻辑",
+        "显存账要按 (max_num_seqs × max_model_len) int32 重算"
+      ]
+    }
+  ]
+}

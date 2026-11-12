@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Sinkhorn-Knopp:把任意系数矩阵压成双随机矩阵",
+    "subtitle": "mHC 唯一的「机制」就是这段迭代——行归一与列归一交替 20 轮,几何上等于把矩阵投影到 Birkhoff 多面体",
+    "locale": "zh-CN",
+    "output": "diagrams/di-sinkhorn-projection.dataflow.html"
+  },
+  "stages": [
+    { "label": "① 展平 + 一次投影" },
+    { "label": "② 三路系数分岔" },
+    { "label": "③ 行/列交替归一" },
+    { "label": "④ 双随机输出" }
+  ],
+  "nodes": [
+    { "id": "x", "type": "frontend", "label": "x_l 展平 + RMSNorm", "sublabel": "vec(x) ∈ R^(1×nC)", "stage": 0, "row": 0 },
+    { "id": "phi", "type": "database", "label": "φ 与 b(合并 bias)", "sublabel": "一次 TF32 GEMM", "stage": 0, "row": 1 },
+    { "id": "pre", "type": "backend", "label": "H_pre = sigmoid", "sublabel": "n 个,只非负", "stage": 1, "row": 0 },
+    { "id": "post", "type": "backend", "label": "H_post = 2·sigmoid", "sublabel": "n 个,取值 (0,2)", "stage": 1, "row": 1 },
+    { "id": "resexp", "type": "backend", "label": "M = exp(h̃_res)", "sublabel": "n² 个,先取正", "stage": 1, "row": 2 },
+    { "id": "row", "type": "security", "label": "行归一,行和→1", "sublabel": "加 sinkhorn_eps", "stage": 2, "row": 0 },
+    { "id": "col", "type": "security", "label": "列归一,列和→1", "sublabel": "交替 20 轮", "stage": 2, "row": 1 },
+    { "id": "hres", "type": "external", "label": "H_res 双随机", "sublabel": "谱范数 ≤1、乘法封闭", "stage": 3, "row": 0 },
+    { "id": "bwd", "type": "cloud", "label": "反向重算整条迭代", "sublabel": "不存 20 轮中间量", "stage": 3, "row": 1 }
+  ],
+  "flows": [
+    { "id": "f1", "from": "x", "to": "phi", "label": "除以范数挪到乘之后" },
+    { "id": "f2", "from": "phi", "to": "resexp", "label": "24 个 logit 分三路" },
+    { "id": "f3", "from": "phi", "to": "pre", "label": "前 n 个" },
+    { "id": "f4", "from": "phi", "to": "post", "label": "中 n 个" },
+    { "id": "f5", "from": "resexp", "to": "row", "label": "进入交替归一" },
+    { "id": "f6", "from": "row", "to": "col", "label": "行钉住后修列" },
+    { "id": "f7", "from": "col", "to": "hres", "label": "有限轮 = 近似双随机" },
+    { "id": "f8", "from": "hres", "to": "bwd", "label": "反向重跑同 20 轮", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么叫「投影」",
+      "items": [
+        "exp 保证元素为正,行/列交替归一把和钉到 1",
+        "t_max→∞ 时严格收敛到 Birkhoff 多面体上的点",
+        "有限轮只是近似解——所以复合增益是 1.6 而不是 1"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "数值口径提醒",
+      "items": [
+        "num_sinkhorn_iters 是运行时参数:论文实验取 20,DeepGEMM 单测取 10",
+        "写 benchmark 结论必须对齐口径,别把 10 轮当 20 轮",
+        "轮数太少会放大后续层的累计偏差"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "精度坑",
+      "items": [
+        "系数是 O(1) 量级的 logit,Sinkhorn 的指数会放大误差",
+        "φ 必须用 TF32 GEMM(fp32),降到 bf16 会掉精度",
+        "行归一后要加 sinkhorn_eps,避免除零/退化"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "为什么能省显存",
+      "items": [
+        "反向不存 20 轮的中间矩阵,在 kernel 内重算整条迭代",
+        "省的是 n² 个矩阵 × 20 轮的反向激活",
+        "代价是反向多算一遍(算力换显存)"
+      ]
+    }
+  ]
+}

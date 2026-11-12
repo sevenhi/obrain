@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "diagram_type": "waterfall",
+  "meta": {
+    "title": "为什么「多验几个」几乎不花时间:草稿串行叠加,验证只占一次前向的时长",
+    "subtitle": "示意量级(非实测基准):基线每 token 20ms;投机下草稿 4×2ms 串行叠 8ms,验证 4 个候选仍只 22ms(≈1 次前向),一步换来 3 个接受 token",
+    "locale": "zh-CN",
+    "evidence": "illustrative",
+    "unit": "ms",
+    "output": "diagrams/vm-spec-timeline.waterfall.html"
+  },
+  "layout": { "width": 940 },
+  "spans": [
+    {
+      "id": "b1",
+      "name": "基线 · token 1",
+      "start": 0,
+      "duration": 20,
+      "service": "标准自回归",
+      "detail": "一次完整前向:读全部权重 + 读 KV cache",
+      "status": "ok"
+    },
+    {
+      "id": "b2",
+      "name": "基线 · token 2",
+      "start": 20,
+      "duration": 20,
+      "service": "标准自回归",
+      "status": "ok"
+    },
+    {
+      "id": "b3",
+      "name": "基线 · token 3",
+      "start": 40,
+      "duration": 20,
+      "service": "标准自回归",
+      "status": "ok"
+    },
+    {
+      "id": "b4",
+      "name": "基线 · token 4",
+      "start": 60,
+      "duration": 20,
+      "service": "标准自回归",
+      "status": "ok"
+    },
+    {
+      "id": "d1",
+      "name": "草稿 · 候选 1",
+      "start": 0,
+      "duration": 2,
+      "service": "draft 小模型",
+      "detail": "小模型,单 token 便宜但仍串行",
+      "status": "ok"
+    },
+    {
+      "id": "d2",
+      "name": "草稿 · 候选 2",
+      "start": 2,
+      "duration": 2,
+      "service": "draft 小模型",
+      "status": "ok"
+    },
+    {
+      "id": "d3",
+      "name": "草稿 · 候选 3",
+      "start": 4,
+      "duration": 2,
+      "service": "draft 小模型",
+      "status": "ok"
+    },
+    {
+      "id": "d4",
+      "name": "草稿 · 候选 4",
+      "start": 6,
+      "duration": 2,
+      "service": "draft 小模型",
+      "status": "ok"
+    },
+    {
+      "id": "v1",
+      "name": "验证 4 候选一次前向",
+      "start": 8,
+      "duration": 22,
+      "service": "目标模型",
+      "detail": "访存受限:并行验 4 个位置与算 1 个位置的搬运量同级",
+      "status": "ok"
+    },
+    {
+      "id": "r1",
+      "name": "重采样被拒位置",
+      "start": 30,
+      "duration": 2,
+      "service": "残差分布",
+      "detail": "只在有拒绝时发生,代价可忽略",
+      "status": "ok"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "这张图的量级从哪来",
+      "items": [
+        "T_single ≈ T_verify:两者都是「读一遍权重 + 读 KV」,测算是访存不是算术",
+        "T_draft 随 γ 线性增长:草稿再小也是串行,这是唯一的真实成本",
+        "所以「草稿越小越快」比「草稿越准」在成本端重要,在收益端则相反"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "读法和真实数字",
+      "items": [
+        "本图是示意量级,不是某一台机器的实测",
+        "真实基准:Leviathan 2022 在 T5-XXL 上端到端 2~3×",
+        "中文场景与高并发下实测常低于 2×,因为 α 更低、验证更 compute-bound"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "γ 拉长的边际递减",
+      "items": [
+        "α=0.8 时:γ=5 → 3.69 token/步,γ=7 → 4.16",
+        "但草稿耗时从 5×2ms 涨到 7×2ms,验证峰值显存也涨",
+        "→ 收益涨 13%,成本涨 40%,不划算"
+      ]
+    }
+  ]
+}

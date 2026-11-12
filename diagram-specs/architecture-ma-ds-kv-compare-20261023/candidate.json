@@ -1,0 +1,280 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "三档 KV cache 压缩:MHA 32768 → GQA 2048 → MLA 576",
+    "subtitle": "同样 128 个查询头、128 头维,三种注意力机制每层每 token 要驻留的 KV 元素数相差 57 倍。GQA 砍的是「头数」,MLA 砍的是「维度」——这是两条不同的压缩路径",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-ds-kv-compare.architecture.html",
+    "viewBox": [
+      1080,
+      560
+    ]
+  },
+  "components": [
+    {
+      "id": "q",
+      "type": "frontend",
+      "label": "128 个查询头(三者相同)",
+      "sublabel": "每头 128 维;差别不在 Q 侧",
+      "pos": [
+        360,
+        40
+      ],
+      "size": [
+        360,
+        62
+      ]
+    },
+    {
+      "id": "mha",
+      "type": "database",
+      "label": "MHA:每头独占 K/V",
+      "sublabel": "2 × 128 头 × 128 维",
+      "pos": [
+        40,
+        168
+      ],
+      "size": [
+        280,
+        66
+      ]
+    },
+    {
+      "id": "gqa",
+      "type": "database",
+      "label": "GQA-8:8 头共享",
+      "sublabel": "2 × 8 头 × 128 维",
+      "pos": [
+        390,
+        168
+      ],
+      "size": [
+        280,
+        66
+      ]
+    },
+    {
+      "id": "mla",
+      "type": "database",
+      "label": "MLA:低秩 latent",
+      "sublabel": "512 + 64(解耦 RoPE)",
+      "pos": [
+        740,
+        168
+      ],
+      "size": [
+        280,
+        66
+      ]
+    },
+    {
+      "id": "mha_n",
+      "type": "security",
+      "label": "32768 元素",
+      "sublabel": "基准,1×",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        280,
+        62
+      ]
+    },
+    {
+      "id": "gqa_n",
+      "type": "security",
+      "label": "2048 元素",
+      "sublabel": "缩 16×(砍 8 倍头数 × 2)",
+      "pos": [
+        390,
+        300
+      ],
+      "size": [
+        280,
+        62
+      ]
+    },
+    {
+      "id": "mla_n",
+      "type": "security",
+      "label": "576 元素",
+      "sublabel": "缩 57×;相对 GQA 再压 3.6×",
+      "pos": [
+        740,
+        300
+      ],
+      "size": [
+        280,
+        62
+      ]
+    },
+    {
+      "id": "mha_why",
+      "type": "backend",
+      "label": "没有压缩",
+      "sublabel": "长上下文下就是显存墙",
+      "pos": [
+        40,
+        430
+      ],
+      "size": [
+        280,
+        66
+      ]
+    },
+    {
+      "id": "gqa_why",
+      "type": "backend",
+      "label": "砍头:多 Q 共用一组 K/V",
+      "sublabel": "会损失「不同 Q 看不同视角」",
+      "pos": [
+        390,
+        430
+      ],
+      "size": [
+        280,
+        66
+      ]
+    },
+    {
+      "id": "mla_why",
+      "type": "cloud",
+      "label": "砍维度:重构而非共享",
+      "sublabel": "KV 仍按头区分,只是从 latent 算出",
+      "pos": [
+        740,
+        430
+      ],
+      "size": [
+        280,
+        66
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "q",
+      "to": "mha",
+      "label": "每头配一份",
+      "labelAt": [
+        250,
+        140
+      ]
+    },
+    {
+      "id": "c2",
+      "from": "q",
+      "to": "gqa",
+      "label": "8 头共享一份",
+      "labelAt": [
+        520,
+        140
+      ]
+    },
+    {
+      "id": "c3",
+      "from": "q",
+      "to": "mla",
+      "label": "全头共享 latent + 1 份 pe",
+      "variant": "emphasis",
+      "labelAt": [
+        830,
+        140
+      ]
+    },
+    {
+      "id": "c4",
+      "from": "mha",
+      "to": "mha_n",
+      "label": "直接数",
+      "labelAt": [
+        180,
+        276
+      ]
+    },
+    {
+      "id": "c5",
+      "from": "gqa",
+      "to": "gqa_n",
+      "label": "直接数",
+      "labelAt": [
+        530,
+        276
+      ]
+    },
+    {
+      "id": "c6",
+      "from": "mla",
+      "to": "mla_n",
+      "label": "512+64",
+      "variant": "emphasis",
+      "labelAt": [
+        880,
+        276
+      ]
+    },
+    {
+      "id": "c7",
+      "from": "mha_n",
+      "to": "mha_why",
+      "label": "为什么不用",
+      "labelAt": [
+        180,
+        400
+      ]
+    },
+    {
+      "id": "c8",
+      "from": "gqa_n",
+      "to": "gqa_why",
+      "label": "代价是什么",
+      "labelAt": [
+        530,
+        400
+      ]
+    },
+    {
+      "id": "c9",
+      "from": "mla_n",
+      "to": "mla_why",
+      "label": "代价是什么",
+      "variant": "emphasis",
+      "labelAt": [
+        880,
+        400
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两个除法别搞混",
+      "items": [
+        "GQA-8 的 2048 = 2 × 8 头 × 128 维;相对 MHA 是 16×",
+        "MLA 的 576 = 512(latent)+ 64(k_pe),不含「头」这个维度",
+        "32768 / 576 ≈ 57,这是论文「KV cache 缩小约 57×」的来源"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "MLA 压缩的代价不是免费的",
+      "items": [
+        "牺牲「K/V 直接可见」:每次 attention 都要从 latent 升维或做 absorb",
+        "升维计算成了新的算力开销,所以要用 absorb 把 W^UK/W^UV 吸收进 q 与输出投影",
+        "这也是 FlashMLA 这类专用内核存在的理由"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "V1-67B 的 GQA 是这条线的起点",
+      "items": [
+        "64 个查询头 : 8 个 KV 头 = 8:1 压缩",
+        "这是 DeepSeek 第一次在规模压力下砍 KV cache",
+        "V2 的 MLA 是「砍维度」的第二步,不是替代 GQA 的思路,而是更进一步"
+      ]
+    }
+  ]
+}

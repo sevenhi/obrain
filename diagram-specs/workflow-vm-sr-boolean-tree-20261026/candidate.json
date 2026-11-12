@@ -1,0 +1,133 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "决策布尔规则树:AND/OR/NOT 功能完备",
+    "subtitle": "叶子引用信号规则名,复合走 and/or/not;Shannon 结论保证任意可表达策略都能合成,priority 解决冲突",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-sr-boolean-tree.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_leaf",
+      "label": "① 叶子"
+    },
+    {
+      "id": "ln_comp",
+      "label": "② 复合"
+    },
+    {
+      "id": "ln_res",
+      "label": "③ 结果"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "dom",
+      "lane": "ln_leaf",
+      "col": 0,
+      "type": "backend",
+      "label": "domain:business",
+      "sublabel": "信号规则名"
+    },
+    {
+      "id": "code",
+      "lane": "ln_leaf",
+      "col": 0,
+      "type": "backend",
+      "label": "code_keywords 命中",
+      "sublabel": "",
+      "yOffset": 110
+    },
+    {
+      "id": "and",
+      "lane": "ln_comp",
+      "col": 1,
+      "type": "security",
+      "label": "AND 节点",
+      "sublabel": "条件全部满足"
+    },
+    {
+      "id": "or",
+      "lane": "ln_comp",
+      "col": 1,
+      "type": "security",
+      "label": "OR 节点",
+      "sublabel": "任一满足",
+      "yOffset": 110
+    },
+    {
+      "id": "not",
+      "lane": "ln_comp",
+      "col": 1,
+      "type": "security",
+      "label": "NOT 节点",
+      "sublabel": "严格一元",
+      "yOffset": 220
+    },
+    {
+      "id": "hit",
+      "lane": "ln_res",
+      "col": 2,
+      "type": "cloud",
+      "label": "命中 Decision",
+      "sublabel": "按 priority 先命中先赢"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "dom",
+      "to": "and",
+      "label": "引规则",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "code",
+      "to": "or",
+      "label": "引规则",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e3",
+      "from": "and",
+      "to": "hit",
+      "label": "为真",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e4",
+      "from": "or",
+      "to": "hit",
+      "label": "为真",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "not",
+      "to": "hit",
+      "label": "取反",
+      "role": "branch",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "dom",
+    "and",
+    "hit"
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Shannon 1938 结论被借用",
+      "items": [
+        "{∧,∨,¬} 功能完备,任意策略可合成",
+        "深度 1 扁平 AND/OR 是简单策略推荐形态",
+        "嵌套可表达 nor/nand/xor,YAML 缩进即逻辑嵌套"
+      ]
+    }
+  ]
+}

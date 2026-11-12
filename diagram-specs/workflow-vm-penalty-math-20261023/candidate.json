@@ -1,0 +1,72 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "三个惩罚算子按固定顺序依次改写同一个 token 的 logit",
+    "subtitle": "repetition → frequency → presence,顺序写在 apply_penalties 里。前一个是乘性(改符号两侧),后两个是加性(线性平移);参数语义与取值范围完全不同,不可互换",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-penalty-math.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_in", "label": "① 先查历史" },
+    { "id": "ln_rep", "label": "② 乘性:repetition" },
+    { "id": "ln_freq", "label": "③ 加性:frequency" },
+    { "id": "ln_pres", "label": "④ 加性:presence" },
+    { "id": "ln_note", "label": "这一算子的关键事实" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "看是否出现", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "乘性一支", "fromCol": 1, "toCol": 1 },
+    { "id": "p3", "label": "加性一支", "fromCol": 2, "toCol": 3, "variant": "emphasis" }
+  ],
+  "nodes": [
+    { "id": "h1", "lane": "ln_in", "col": 0, "type": "database", "label": "该 token 的历史", "sublabel": "prompt ∪ output 掩码", "icon": "start" },
+    { "id": "r1", "lane": "ln_rep", "col": 1, "type": "security", "label": "乘性缩放 logit", "sublabel": "正÷penalty,负×penalty", "icon": "decision" },
+    { "id": "f1", "lane": "ln_freq", "col": 2, "type": "backend", "label": "按次数线性扣", "sublabel": "logits -= freq × counts", "icon": "active" },
+    { "id": "p1", "lane": "ln_pres", "col": 3, "type": "backend", "label": "按出现扣固定量", "sublabel": "logits -= presence × 1", "icon": "active" },
+
+    { "id": "n0", "lane": "ln_note", "col": 0, "type": "cloud", "label": "没出现过就都不动", "sublabel": "乘 1.0 / 扣 0", "icon": "none" },
+    { "id": "n1", "lane": "ln_note", "col": 1, "type": "cloud", "label": "参数 1.0 = 不惩罚", "sublabel": ">1 抑制,无上界", "icon": "none" },
+    { "id": "n2", "lane": "ln_note", "col": 2, "type": "cloud", "label": "参数域 [-2, 2]", "sublabel": "负值反向鼓励重复", "icon": "none" },
+    { "id": "n3", "lane": "ln_note", "col": 3, "type": "cloud", "label": "OpenAI 原生语义", "sublabel": "与次数无关,只看 0/1", "icon": "none" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "h1", "to": "r1", "label": "出现过才进乘性一支", "role": "main" },
+    { "id": "e2", "from": "r1", "to": "f1", "label": "改完再按次数扣", "role": "main" },
+    { "id": "e3", "from": "f1", "to": "p1", "label": "最后按出现扣一次", "role": "main" },
+    { "id": "e4", "from": "h1", "to": "n0", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e5", "from": "r1", "to": "n1", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e6", "from": "f1", "to": "n2", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e7", "from": "p1", "to": "n3", "label": "", "variant": "dashed", "role": "async" }
+  ],
+  "mainPath": ["h1", "r1", "f1", "p1"],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "乘性与加性为什么不能合并",
+      "items": [
+        "乘性作用在 logit 的符号两侧:正数除以 >1 变小,负数乘以 >1 更负",
+        "加性只是线性平移,与 logit 原本多大多小无关",
+        "所以同一个参数值,对高热 token 与低热 token 的效果形状并不相同"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "repetition 连提示词里的重复都算",
+      "items": [
+        "掩码是 prompt_mask | output_mask,不是只用生成部分",
+        "长系统提示里反复出现的词,从第一个 token 起就被压",
+        "这是与直觉最容易偏差的点:以为只惩罚「自己刚生成的重复」"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "哪个是 vLLM 扩展,哪个是 OpenAI 原生",
+      "items": [
+        "repetition_penalty:vLLM 自定义算子,有独立 CUDA kernel(libtorch_stable/sampler.cu)",
+        "frequency / presence:源码注释明写 follows the definition in OpenAI API",
+        "别指望 repetition 有「按次数」的效果——它只看出现过没有"
+      ]
+    }
+  ]
+}

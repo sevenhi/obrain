@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "#478 的竞态:graph replay 时 %gridid 不是「这一次」",
+    "subtitle": "屏障状态原本用硬件 grid id 当代次;CUDA graph 每次 replay 复用同一个 gridid,于是第 2 次 replay 的「目标值」正好等于第 1 次留下的终态——迟到的初始化 CTA 一放行,waiter 就读到上一次的旧 partial",
+    "locale": "zh-CN",
+    "output": "diagrams/di-mhc-cuda-graph-race.sequence.html"
+  },
+  "participants": [
+    { "id": "init", "type": "backend", "label": "初始化 CTA", "sublabel": "按 m_block init 屏障" },
+    { "id": "bar", "type": "database", "label": "gmem 屏障线", "sublabel": "128B/行,头部 8B 存 state" },
+    { "id": "wait", "type": "security", "label": "Mix/Norm waiter", "sublabel": "等 state 达标才干活" },
+    { "id": "partial", "type": "external", "label": "split partial", "sublabel": "工作区里的中间结果" },
+    { "id": "epoch", "type": "cloud", "label": "epoch 计数(修复)", "sublabel": "存第 0 行尾部 64B" }
+  ],
+  "segments": [
+    { "from": 160, "to": 372, "label": "第 1 次 replay:即时启动,gridid 每次都变,没事" },
+    { "from": 388, "to": 560, "label": "第 2 次 replay:gridid 恒定 → 代次撞车" },
+    { "from": 576, "to": 800, "label": "修复后:代次由 kernel 自己推进" }
+  ],
+  "messages": [
+    { "id": "m1", "from": "init", "to": "bar", "y": 168, "label": "init:状态 = (gridid+1)·128 + 0" },
+    { "id": "m2", "from": "wait", "to": "bar", "y": 216, "label": "轮询:state − base ≥ kNumSplits 才放行" },
+    { "id": "m3", "from": "init", "to": "partial", "y": 264, "label": "算完本片 k-block,写 partial" },
+    { "id": "m4", "from": "init", "to": "bar", "y": 312, "label": "arrive:状态推到 (gridid+1)·128 + 56", "note": "第 1 次 replay 的正常终态" },
+    { "id": "m5", "from": "init", "to": "bar", "y": 396, "label": "replay 2:同一 gridid,残留值 = 本次目标值", "variant": "security", "note": "encode_state 的算术完全不变,所以撞得严丝合缝" },
+    { "id": "m6", "from": "wait", "to": "bar", "y": 444, "label": "初始化 CTA 迟到,但 waiter 已放行", "variant": "security" },
+    { "id": "m7", "from": "wait", "to": "partial", "y": 492, "label": "读到上一次 replay 的旧 partial", "variant": "security", "note": "偶发数值错误,只在 graph replay 下出现" },
+    { "id": "m8", "from": "init", "to": "bar", "y": 584, "label": "init 前先 deserialize:用 Epoch::get() 编状态" },
+    { "id": "m9", "from": "init", "to": "epoch", "y": 632, "label": "kernel 尾部 retire:最后一个 CTA 推进 epoch", "variant": "emphasis", "note": "atomic_add(exit_count) == num_ctas−1 才进" },
+    { "id": "m10", "from": "wait", "to": "bar", "y": 680, "label": "新代次 → 目标值不同,必须等本次 arrive", "variant": "emphasis" },
+    { "id": "m11", "from": "wait", "to": "partial", "y": 728, "label": "读到的一定是本次 replay 的 partial", "variant": "return" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "为什么难复现",
+      "items": [
+        "即时启动(eager)每次 gridid 都变,永远不复现",
+        "只在 CUDA graph replay 下偶发数值错误",
+        "wait_init 的无符号距离判断(state−base ≥ splits)在 gridid 恒定时失效:基线与陈旧值重合"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "修法:把 epoch 塞进缓冲区空闲尾部",
+      "items": [
+        "128B 一条线只用头部 8B,尾部 16B 原本空着",
+        "kSplitBarrierEpochOffset=64、ExitCountOffset=72",
+        "不动 host 侧缓冲形状,屏障与它的代次同址,生命周期天然同步"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "时序约束(源码注释)",
+      "items": [
+        "epoch 从 cudaGridDependencySynchronize() 之后到所有 CTA 退出前保持稳定",
+        "所以 barrier init 必须严格放在该同步之后",
+        "kernel 尾部在所有角色 __syncthreads、TMEM 释放之后才 retire"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "三条可复用教训",
+      "items": [
+        "别用硬件 ID 给「同一次逻辑执行」打标签——要用 kernel 自己推进、存在显存里的计数器",
+        "屏障缓冲的空闲字节可以征用,并用静态断言锁住布局",
+        "graph 捕获前必须 warm up:首次 zero 不能进图,单测已把这条写成契约"
+      ]
+    }
+  ]
+}

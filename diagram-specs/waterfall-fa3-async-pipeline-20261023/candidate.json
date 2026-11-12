@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "diagram_type": "waterfall",
+  "meta": {
+    "title": "FA3 三层异步流水:TMA / WGMMA / softmax 重叠",
+    "subtitle": "FA3 on Hopper:同一时间轴上,数据搬运(TMA)、GEMM(WGMMA)、softmax 互相重叠,计算单元几乎不空闲",
+    "locale": "zh-CN",
+    "evidence": "illustrative",
+    "unit": "us",
+    "output": "diagrams/fa-fa3-async-pipeline.waterfall.html"
+  },
+  "spans": [
+    { "id": "load_kv0", "name": "TMA load K0,V0", "start": 0, "end": 8, "service": "TMA(硬件搬运)", "detail": "硬件单元异步搬 K/V 块到 SMEM,不占 warp,mbarrier 通知就绪" },
+    { "id": "load_kv1", "name": "TMA load K1,V1", "start": 8, "end": 16, "service": "TMA(硬件搬运)", "detail": "算 QK0 的同时预取下一块——搬运与计算重叠" },
+    { "id": "load_kv2", "name": "TMA load K2,V2", "start": 16, "end": 24, "service": "TMA(硬件搬运)", "detail": "流水持续推进,producer warp 只负责发起" },
+    { "id": "gemm_qk0", "name": "WGMMA: Q@K0ᵀ → S0", "start": 8, "end": 22, "service": "WGMMA(异步 GEMM)", "detail": "wgmma.async 发起即返回不阻塞;wait_group 等结果就绪" },
+    { "id": "softmax0", "name": "softmax(S0) → P0", "start": 22, "end": 32, "service": "Softmax(SFU exp)", "detail": "exp 吞吐极低(≈3.9 TFLOPS 量级),必须藏进 GEMM 影子" },
+    { "id": "gemm_qk1", "name": "WGMMA: Q@K1ᵀ → S1", "start": 22, "end": 36, "service": "WGMMA(异步 GEMM)", "detail": "与 softmax 重叠:softmax 算 P0 的同时,下一个 QK 已在算" },
+    { "id": "gemm_pv0", "name": "WGMMA: P0@V0 → O", "start": 32, "end": 46, "service": "WGMMA(异步 GEMM)", "detail": "第二个 GEMM 用 downcast 后的 P0,结果累加进输出块" },
+    { "id": "softmax1", "name": "softmax(S1) → P1", "start": 36, "end": 46, "service": "Softmax(SFU exp)", "detail": "pingpong:WG1 的 softmax 落在 WG2 的 GEMM 影子里" },
+    { "id": "gemm_pv1", "name": "WGMMA: P1@V1 → O", "start": 46, "end": 60, "service": "WGMMA(异步 GEMM)", "detail": "稳态:同一时刻 GEMM 与 softmax 都在飞,延迟被完全隐藏" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "关键数字(H100)",
+      "items": [
+        "BF16 前向 ~75% MFU(最高 ~740 TFLOPS)",
+        "FP8 前向 ~1.2-1.3 PFLOPS(61-66% MFU)",
+        "BF16 相对 FA2 加速 1.5-2×",
+        "pingpong:570 → 620-640 TFLOPS"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么必须重叠",
+      "items": [
+        "exp(特殊函数单元)≈3.9 TFLOPS,比 matmul 低 2-3 个数量级",
+        "seqlen 8K / hd128 下 exp 可占 ~50% 周期,FP8 下更糟",
+        "softmax 与 GEMM 串行 → FA2 在 Hopper 只有 ~35% 利用率"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "分工(warp specialization)",
+      "items": [
+        "1 个 producer warpgroup:只发 TMA load",
+        "2 个 consumer warpgroup:WGMMA + softmax(pingpong 交错)",
+        "setmaxnreg:producer 少寄存器、consumer 多"
+      ]
+    }
+  ]
+}

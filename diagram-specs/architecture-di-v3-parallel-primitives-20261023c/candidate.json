@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "六种并行原语:各切什么、通信什么、V3 用不用",
+    "subtitle": "上排是 V3 训练真正采用的三维(PP / EP / ZeRO-1 DP);下排是被刻意放弃的三维(TP / SP / CP),放弃理由都挂在各自连线上",
+    "locale": "zh-CN",
+    "output": "diagrams/di-v3-parallel-primitives.architecture.html",
+    "viewBox": [
+      1131,
+      460
+    ]
+  },
+  "components": [
+    {
+      "id": "pp",
+      "type": "backend",
+      "label": "PP 流水线并行",
+      "sublabel": "切「层」:相邻 stage 传激活/梯度",
+      "pos": [
+        30,
+        96
+      ],
+      "size": [
+        330,
+        78
+      ],
+      "tag": "PP16",
+      "icon": "backend"
+    },
+    {
+      "id": "ep",
+      "type": "database",
+      "label": "EP 专家并行",
+      "sublabel": "切「MoE 专家」:每层两次 all-to-all",
+      "pos": [
+        400,
+        96
+      ],
+      "size": [
+        330,
+        78
+      ],
+      "tag": "EP64",
+      "icon": "database"
+    },
+    {
+      "id": "dp",
+      "type": "security",
+      "label": "DP 数据并行",
+      "sublabel": "切「batch」:梯度 all-reduce",
+      "pos": [
+        770,
+        96
+      ],
+      "size": [
+        330,
+        78
+      ],
+      "tag": "ZeRO-1",
+      "icon": "security"
+    },
+    {
+      "id": "tp",
+      "type": "frontend",
+      "label": "TP 张量并行",
+      "sublabel": "切「单层权重矩阵」:每层 all-reduce",
+      "pos": [
+        30,
+        290
+      ],
+      "size": [
+        330,
+        78
+      ],
+      "tag": "训练不用",
+      "icon": "frontend"
+    },
+    {
+      "id": "sp",
+      "type": "external",
+      "label": "SP 序列并行",
+      "sublabel": "切「序列维」:与 TP 同步 all-gather",
+      "pos": [
+        400,
+        290
+      ],
+      "size": [
+        330,
+        78
+      ],
+      "tag": "训练未用",
+      "icon": "external"
+    },
+    {
+      "id": "cp",
+      "type": "external",
+      "label": "CP 上下文并行",
+      "sublabel": "按 token 切超长序列:注意力 a2a",
+      "pos": [
+        770,
+        290
+      ],
+      "size": [
+        330,
+        78
+      ],
+      "tag": "未用(seq=4K)",
+      "icon": "external"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "V3 训练采用:三个正交维度同时切",
+      "wraps": [
+        "pp",
+        "ep",
+        "dp"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "region",
+      "label": "V3 训练刻意放弃:显存已在别处省出来",
+      "wraps": [
+        "tp",
+        "sp",
+        "cp"
+      ],
+      "pad": 16
+    }
+  ],
+  "connections": [
+    {
+      "id": "c1",
+      "from": "pp",
+      "to": "ep",
+      "label": "同一批卡再切专家维",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [
+        380,
+        214
+      ]
+    },
+    {
+      "id": "c2",
+      "from": "ep",
+      "to": "dp",
+      "label": "专家切碎后只切优化器",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [
+        750,
+        214
+      ]
+    },
+    {
+      "id": "c3",
+      "from": "tp",
+      "to": "sp",
+      "label": "SP 与 TP 捆绑,一起弃",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [
+        380,
+        408
+      ]
+    },
+    {
+      "id": "c4",
+      "from": "sp",
+      "to": "cp",
+      "label": "4K 序列无需 CP",
+      "variant": "dashed",
+      "fromSide": "right",
+      "toSide": "left",
+      "labelAt": [
+        750,
+        408
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "最容易混的一笔账",
+      "items": [
+        "TP 切的是「一层怎么算」,EP 切的是「专家放哪」",
+        "256 个细粒度专家整体切走(EP)比竖切矩阵(TP)同步点更少",
+        "硬上 TP 会把 all-reduce 与 MoE 的 a2a 叠在同一关键路径"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "显存归谁",
+      "items": [
+        "PP:每卡只存 1/PP 的层,激活随 micro-batch 驻留数涨",
+        "EP:每卡只存 1/EP 的专家",
+        "ZeRO-1:只切 Adam moments,参数/梯度仍全量"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么 4K 序列不需要 SP/CP",
+      "items": [
+        "预训练 seq=4K,单卡放得下整条序列的激活",
+        "SP/CP 是为超长上下文与 TP 组内激活冗余服务的",
+        "推理侧才回到 TP4+SP(prefill 用 EP32,decode 用 TP4+SP)"
+      ]
+    }
+  ]
+}

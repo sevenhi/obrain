@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "V1 调度器只有一个抽象:让 num_computed_tokens 追上 num_tokens_with_spec",
+    "subtitle": "源码注释(scheduler.py:502-511)原话:每个 request 只有这两个数,每一步调度器尽力让前者追上后者。这一条通吃下面五种情况",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-token-budget-model.tree.html"
+  },
+  "layout": { "direction": "down", "nodeW": 210, "gapX": 24, "gapY": 58 },
+  "nodes": [
+    { "id": "root", "label": "统一 token 预算模型", "sublabel": "num_computed_tokens → num_tokens_with_spec" },
+    { "id": "decode", "label": "普通 decode", "parent": "root", "sublabel": "with_spec = computed + 1,每步续 1 个 token" },
+    { "id": "prefill", "label": "prefill", "parent": "root", "sublabel": "with_spec 一次跳很多(整段 prompt)" },
+    { "id": "chunk", "label": "chunked prefill", "parent": "root", "sublabel": "一次只给一部分 token 预算" },
+    { "id": "prefix", "label": "prefix caching", "parent": "root", "sublabel": "命中的前缀直接算已 computed(跳过)" },
+    { "id": "spec", "label": "speculative decoding", "parent": "root", "sublabel": "with_spec 含 lookahead 的投机 token" },
+    { "id": "v0", "label": "对比 V0:分阶段", "parent": "decode", "sublabel": "waiting 只做 prefill、running 只做 decode,两条代码路径" },
+    { "id": "v1", "label": "V1:不分阶段", "parent": "decode", "sublabel": "两队列仍在,但调度逻辑统一成追赶模型" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么这个抽象强",
+      "items": [
+        "prefill / decode 不再是两个阶段,只是「差多少」不同的同一种追赶",
+        "prefix caching 命中 = 差值直接变小,不用特殊分支",
+        "spec decoding 的 token 落差 = 差值暂时为负,模型照样成立"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "默认值与预算",
+      "items": [
+        "max_num_batched_tokens 默认 2048(源码注释:mainly for convenience when testing)",
+        "max_num_seqs 默认 128",
+        "enable_chunked_prefill 默认 True"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "别照搬老教程",
+      "items": [
+        "网上一大批调度文章讲的是 V0 语义",
+        "V0 里 waiting 只 prefill、running 只 decode,还有 swap/recompute 两种抢占",
+        "当前主线看 vllm/v1/,不是老版本笔记"
+      ]
+    }
+  ]
+}

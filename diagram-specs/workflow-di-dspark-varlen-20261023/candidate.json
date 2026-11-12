@@ -1,0 +1,191 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DSpark:按 confidence 在 GPU 上动态分配验证长度",
+    "subtitle": "定长 5 的浪费在于低概率 draft 也占验证算力;DSpark 用「预期接受率排序 + 硬件吞吐曲线」贪心选边际收益最大的前缀子集",
+    "locale": "zh-CN",
+    "output": "diagrams/di-dspark-varlen.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_draft",
+      "label": "草稿侧"
+    },
+    {
+      "id": "ln_cpu",
+      "label": "CPU 调度"
+    },
+    {
+      "id": "ln_gpu",
+      "label": "GPU 重算"
+    },
+    {
+      "id": "ln_verify",
+      "label": "验证"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "① 出草稿与置信度",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "② 定 total_q 预算",
+      "fromCol": 2,
+      "toCol": 3
+    },
+    {
+      "id": "ph3",
+      "label": "③ 逐请求长度上卡算",
+      "fromCol": 4,
+      "toCol": 4,
+      "variant": "emphasis"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "df",
+      "lane": "ln_draft",
+      "col": 0,
+      "type": "backend",
+      "label": "DFlash 出 5 个 draft",
+      "sublabel": "NEXTN_DECODE=5",
+      "icon": "active"
+    },
+    {
+      "id": "ch",
+      "lane": "ln_draft",
+      "col": 1,
+      "type": "security",
+      "label": "Confidence Head 预测接受率",
+      "sublabel": "confidence_head_fused",
+      "icon": "neutral"
+    },
+    {
+      "id": "curve",
+      "lane": "ln_cpu",
+      "col": 2,
+      "type": "database",
+      "label": "查 baseline_ms 曲线",
+      "sublabel": "_decode_perf_curve",
+      "icon": "database"
+    },
+    {
+      "id": "greedy",
+      "lane": "ln_cpu",
+      "col": 3,
+      "type": "backend",
+      "label": "贪心加 draft 取最大吞吐",
+      "sublabel": "expected/time_ms",
+      "icon": "decision"
+    },
+    {
+      "id": "cum",
+      "lane": "ln_gpu",
+      "col": 4,
+      "type": "backend",
+      "label": "逐请求重算长度",
+      "sublabel": "cumprod+topk+scatter",
+      "icon": "active"
+    },
+    {
+      "id": "ver",
+      "lane": "ln_verify",
+      "col": 4,
+      "type": "backend",
+      "label": "varlen 验证",
+      "sublabel": "5.00 → 3.2–4.4",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "df",
+      "to": "ch",
+      "label": "每个 draft 一个接受率",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "ch",
+      "to": "curve",
+      "label": "接受率进排序池",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "curve",
+      "to": "greedy",
+      "label": "每档 batch size 一个耗时",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "greedy",
+      "to": "cum",
+      "label": "先定 total_q,逐请求长度只能在 GPU 上定",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "cum",
+      "to": "ver",
+      "label": "结果写回 pinned 供验证读",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "ver",
+      "to": "greedy",
+      "label": "接受率回灌(第 N−2 轮才用)",
+      "role": "return",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "df",
+    "ch",
+    "curve",
+    "greedy",
+    "cum",
+    "ver"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "实测数字(EP64/DP64,单源 Q&A)",
+      "items": [
+        "验证长度 5.00 → 3.2–4.4,少验证约 30% token",
+        "平均接受长度基本不变(3.29 vs 3.20)",
+        "生产点 ~60 并发/rank 吞吐 +4–7%",
+        "低并发反而略亏:16 并发 −1.5%,96 并发 +11.0%——调度收益盖不过碎片化"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "时序纪律:谁用第几轮 accept rate",
+      "items": [
+        "算 total_q 预算:永远用 N−2 轮",
+        "算每请求 seqlens_q:非 ZOS 用 N−1 轮",
+        "ZOS 下 CPU 只能先按 N−2 轮出初值(第 N−1 轮还在 GPU),真分配在 GPU 重算",
+        "目的:第 i 个 draft 是否被验证,不受它自己及之后的 confidence 影响"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "与通用框架的差异",
+      "items": [
+        "vLLM/SGLang 通用框架通常是「定长 draft + 全量验证」",
+        "DSpark 的差异点是 confidence 驱动的变长预算分配",
+        "新请求(remap=−1)confidence 视为 0,不占验证预算",
+        "曲线缓存:DEEPINFER_DECODE_PERF_CACHE_DIR,TTL 默认 3600s"
+      ]
+    }
+  ]
+}

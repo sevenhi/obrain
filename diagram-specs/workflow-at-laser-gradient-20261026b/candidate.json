@@ -1,0 +1,126 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "LASER:softmax 梯度饱和与指数变换",
+    "locale": "zh-CN",
+    "subtitle": "softmax 的 Jacobian 每项都乘概率 a;LLM 里 ~80% 概率 <10⁻³ → 反向梯度被极度缩小。LASER 改对 exp(V) 做 attention",
+    "output": "diagrams/at-laser-gradient.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_std",
+      "label": "标准 softmax attention"
+    },
+    {
+      "id": "ln_laser",
+      "label": "LASER"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "ln_std",
+      "col": 0,
+      "type": "backend",
+      "label": "前向 a = softmax(ã)",
+      "sublabel": "注意力权重",
+      "icon": "start"
+    },
+    {
+      "id": "s1",
+      "lane": "ln_std",
+      "col": 1,
+      "type": "backend",
+      "label": "Jacobian ∝ a_j",
+      "sublabel": "∂a_j/∂ã_i = a_j(1−a_i)",
+      "icon": "active"
+    },
+    {
+      "id": "s2",
+      "lane": "ln_std",
+      "col": 2,
+      "type": "security",
+      "label": "梯度被压缩",
+      "sublabel": "80% 概率 <10⁻³ → 梯度消失",
+      "icon": "failure"
+    },
+    {
+      "id": "l0",
+      "lane": "ln_laser",
+      "col": 0,
+      "type": "backend",
+      "label": "对 exp(V) 做 attention",
+      "sublabel": "laser(X)=log(softmax(QKᵀ)·exp(V))",
+      "icon": "start"
+    },
+    {
+      "id": "l1",
+      "lane": "ln_laser",
+      "col": 1,
+      "type": "backend",
+      "label": "Jacobian ~ 1−a₁",
+      "sublabel": "不再带 α 乘子",
+      "icon": "active"
+    },
+    {
+      "id": "l2",
+      "lane": "ln_laser",
+      "col": 2,
+      "type": "backend",
+      "label": "低饱和",
+      "sublabel": "概率再小梯度不消失",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "label": "反向传播",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "s2",
+      "label": "每项都乘概率 a",
+      "role": "error"
+    },
+    {
+      "id": "e3",
+      "from": "l0",
+      "to": "l1",
+      "label": "对 ã 求导",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "l1",
+      "to": "l2",
+      "label": "上限从 a_j 级变 ~1−a₁ 级",
+      "role": "main"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "2.2B 训练收益",
+      "items": [
+        "达到 test loss 2.327:27.22h → 24.88h(−9.4%)",
+        "同等 loss 2.347 省 15.65% 参数(幂律拟合)",
+        "下游 one-shot 平均 63.39% vs 62.34%"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "等价视角",
+      "items": [
+        "LASER ≈ 带注意力偏置的 soft-max 检索",
+        "log-sum-exp 是 max 的可微逼近",
+        "尖分布利于检索,但标准 softmax 以梯度消失为代价"
+      ]
+    }
+  ]
+}

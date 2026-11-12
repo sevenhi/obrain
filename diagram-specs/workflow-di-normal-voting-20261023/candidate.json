@@ -1,0 +1,266 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "NORMAL 引擎的同型投票:ALL 点 + ANY 点 + 两轮 MIN all-reduce",
+    "subtitle": "attention DP 要求全组每步同型(都 prompt 或都 decode);两类投票点用同一个 MIN 原语编码「想做」的不同极性,第二轮 MIN 确认「真有 rank 排出了活」,否则会死循环",
+    "locale": "zh-CN",
+    "output": "diagrams/di-normal-voting.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_step",
+      "label": "步推进与投票点判定"
+    },
+    {
+      "id": "ln_all",
+      "label": "ALL 点(每 70 decode step):全员想做才做"
+    },
+    {
+      "id": "ln_any",
+      "label": "ANY 点(每 100 decode step):任一 rank 想做就做"
+    },
+    {
+      "id": "ln_v2",
+      "label": "第二轮确认(防死循环,必需)"
+    },
+    {
+      "id": "ln_out",
+      "label": "本步出口(全组同型)"
+    },
+    {
+      "id": "ln_dec",
+      "label": "decode 出口(同样是全组同型)"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "① 入口",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "② 第一轮投票",
+      "fromCol": 2,
+      "toCol": 3
+    },
+    {
+      "id": "ph3",
+      "label": "③ 第二轮确认",
+      "fromCol": 4,
+      "toCol": 4
+    },
+    {
+      "id": "ph4",
+      "label": "④ 出口",
+      "fromCol": 5,
+      "toCol": 5,
+      "variant": "emphasis"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "s0",
+      "lane": "ln_step",
+      "col": 0,
+      "type": "backend",
+      "label": "decode_step 前进一格",
+      "sublabel": "各 rank 计数天然一致",
+      "icon": "active"
+    },
+    {
+      "id": "s1",
+      "lane": "ln_step",
+      "col": 1,
+      "type": "security",
+      "label": "命中投票点?",
+      "sublabel": "两类点重合时按 ANY 算",
+      "icon": "decision"
+    },
+    {
+      "id": "a1",
+      "lane": "ln_all",
+      "col": 2,
+      "type": "backend",
+      "label": "want = cache≤0.9 且有待办",
+      "sublabel": "GPU_CACHE_PREFILL_WATERMARK",
+      "icon": "neutral"
+    },
+    {
+      "id": "a2",
+      "lane": "ln_all",
+      "col": 3,
+      "type": "security",
+      "label": "MIN(want ? 1 : 0) == 1 ?",
+      "sublabel": "MIN all-reduce 极性不同",
+      "icon": "decision"
+    },
+    {
+      "id": "y1",
+      "lane": "ln_any",
+      "col": 2,
+      "type": "backend",
+      "label": "want = cache≤0.9 且有待办",
+      "sublabel": "GPU_CACHE_PREFILL_WATERMARK",
+      "icon": "neutral"
+    },
+    {
+      "id": "y2",
+      "lane": "ln_any",
+      "col": 3,
+      "type": "security",
+      "label": "MIN(want ? 0 : 1) == 0 ?",
+      "sublabel": "MIN all-reduce 极性不同",
+      "icon": "decision"
+    },
+    {
+      "id": "c1",
+      "lane": "ln_v2",
+      "col": 4,
+      "type": "security",
+      "label": "第二轮:any_scheduled?",
+      "sublabel": "MIN(outputs ? 0 : 1) == 0",
+      "icon": "decision"
+    },
+    {
+      "id": "p1",
+      "lane": "ln_out",
+      "col": 5,
+      "type": "backend",
+      "label": "本步做 prefill",
+      "sublabel": "全组同型 prompt step",
+      "icon": "success"
+    },
+    {
+      "id": "d1",
+      "lane": "ln_dec",
+      "col": 5,
+      "type": "database",
+      "label": "本步做 decode",
+      "sublabel": "全组同型 decode step",
+      "icon": "stop"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "s0",
+      "to": "s1",
+      "label": "每步判一次",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "s1",
+      "to": "a1",
+      "label": "ALL 点命中",
+      "role": "branch"
+    },
+    {
+      "id": "e3",
+      "from": "s1",
+      "to": "y1",
+      "label": "ANY 点命中",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e4",
+      "from": "a1",
+      "to": "a2",
+      "label": "want 已算好",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "y1",
+      "to": "y2",
+      "label": "want 已算好",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "a2",
+      "to": "c1",
+      "label": "是:全员都想做,去确认真有活",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "y2",
+      "to": "c1",
+      "label": "是:至少一 rank 想做",
+      "role": "main",
+      "variant": "dashed"
+    },
+    {
+      "id": "e8",
+      "from": "s1",
+      "to": "d1",
+      "label": "否:普通 decode 步",
+      "role": "branch"
+    },
+    {
+      "id": "e9",
+      "from": "a2",
+      "to": "d1",
+      "label": "否:有人不想做,退回 decode",
+      "role": "branch"
+    },
+    {
+      "id": "e10",
+      "from": "c1",
+      "to": "p1",
+      "label": "是:确有 rank 排出活,做 prompt 步",
+      "role": "main"
+    },
+    {
+      "id": "e11",
+      "from": "c1",
+      "to": "d1",
+      "label": "否:全组空手,转 decode 避免死循环",
+      "role": "error"
+    }
+  ],
+  "mainPath": [
+    "s0",
+    "s1",
+    "a1",
+    "a2",
+    "c1",
+    "p1"
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "同一个 MIN 原语,两种极性",
+      "items": [
+        "ALL 点:把「想做」编码成 1 → MIN==1 表示全员都想做",
+        "ANY 点:把「想做」编码成 0 → MIN==0 表示至少一个 rank 想做",
+        "默认间隔:ALL 点 70 步、ANY 点 100 步(DEEPINFER_PREFILL_ATTEMPT_INTERVAL / _ANY_)",
+        "后果:孤立 rank 的 prefill 最多被饿 100 个 decode step"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "第二轮 MIN 为什么不能省",
+      "items": [
+        "第一轮 want 只看了 waiting 队列非空",
+        "_schedule_prefill 仍可能空手(slot 满 / KV 块不够)",
+        "全组空手还硬做 prompt 步 → decode_step 被清零 → 下步又落 ALL 点 → 又投票又空手",
+        "「running 满 + waiting 非空」时就是死循环;第二轮确认确有活才转 prompt"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "watermark 与陪跑",
+      "items": [
+        "cache 占用 ≤0.9 才允许 prefill,否则先让 decode 消化(挤爆 decode 更亏)",
+        "部分 rank 有活时,没活的 rank 陪跑空 prompt step 以保持步型一致",
+        "decode_step 各 rank 一致,所以投票次数与语义天然对齐,不会卡死在 allreduce"
+      ]
+    }
+  ]
+}

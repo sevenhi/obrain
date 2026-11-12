@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "Faster R-CNN 到 Mask R-CNN:RPN 与并行掩码分支",
+    "subtitle": "共享卷积特征 → RPN 出候选 → RoIAlign 抠特征 → 检测头与掩码头并行。掩码分支是并行加的,不是串行(先框后掩码会伤精度)",
+    "locale": "zh-CN",
+    "output": "diagrams/cv-faster-mask-rcnn.dataflow.html",
+    "viewBox": [1080, 500]
+  },
+  "stages": [
+    { "label": "① 骨干" },
+    { "label": "② 提候选" },
+    { "label": "③ 抠 RoI" },
+    { "label": "④ 并行双头" },
+    { "label": "⑤ 输出" }
+  ],
+  "nodes": [
+    { "id": "backbone", "type": "backend", "label": "骨干卷积", "sublabel": "VGG-16 / ResNet-101", "stage": 0, "row": 0 },
+    { "id": "rpn", "type": "backend", "label": "RPN", "sublabel": "每位置出框+分数", "stage": 1, "row": 0 },
+    { "id": "roi", "type": "security", "label": "RoIAlign", "sublabel": "替代 RoIPool", "stage": 2, "row": 0 },
+    { "id": "det", "type": "backend", "label": "检测头", "sublabel": "分类 + 框回归", "stage": 3, "row": 0 },
+    { "id": "mask", "type": "backend", "label": "掩码头", "sublabel": "每实例一张 H×W", "stage": 3, "row": 1 },
+    { "id": "out", "type": "external", "label": "检测方案", "sublabel": "框 + 类别 + 分数", "stage": 4, "row": 0 },
+    { "id": "outm", "type": "external", "label": "实例分割", "sublabel": "Faster 走不到这一路", "stage": 4, "row": 1 }
+  ],
+  "flows": [
+    { "id": "f1", "from": "backbone", "to": "rpn", "label": "共享全部卷积特征", "route": "straight", "labelDy": -30 },
+    { "id": "f2", "from": "rpn", "to": "roi", "label": "每图约 300 个候选", "route": "straight", "labelDy": -30 },
+    { "id": "f3", "from": "roi", "to": "det", "label": "同一份 RoI 特征", "route": "straight", "labelDy": -30 },
+    { "id": "f4", "from": "roi", "to": "mask", "label": "Mask R-CNN 加的这一路", "route": "straight", "labelDy": 54 },
+    { "id": "f5", "from": "det", "to": "out", "label": "NMS 已在模型内做完", "route": "straight", "labelDy": -30 },
+    { "id": "f6", "from": "mask", "to": "outm", "label": "像素级掩码", "route": "straight", "labelDy": 54 }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "RPN 为什么几乎零成本",
+      "items": [
+        "全卷积网络,在共享特征图每个位置同时预测框边界与 objectness",
+        "与检测头共享全部卷积特征,论文原话 nearly cost-free",
+        "论文把它类比为「告诉网络往哪看」的 attention 机制"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "掩码分支必须并行",
+      "items": [
+        "Mask R-CNN 在 Faster R-CNN 上并行加一条掩码分支",
+        "串行做(先定框再算掩码)会伤精度",
+        "同框架还能直接扩展人体关键点"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "数字锚点(换环境必须重测)",
+      "items": [
+        "Faster R-CNN VGG-16:全流水线 5fps,300 proposals 达 VOC/COCO SOTA",
+        "Mask R-CNN ResNet-101:mask AP 35.7,5fps,COCO 三项全冠",
+        "RoIAlign 是掩码质量关键(论文 §3)"
+      ]
+    }
+  ]
+}

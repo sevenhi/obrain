@@ -1,0 +1,85 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "五条「微调」路线各自的定位:ESFT 站在哪一格",
+    "subtitle": "同一句「微调」在 MoE 时代分成五种做法。逐行读:这行动什么 → 因此适合什么 → 与 ESFT 是什么关系。ESFT 是「MoE 专用的 PEFT」,与 LoRA 正交可组合,与 EPLB 完全不在一层",
+    "locale": "zh-CN",
+    "output": "diagrams/dm-esft-route-position.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_full", "label": "全量微调" },
+    { "id": "ln_lora", "label": "LoRA / adapter" },
+    { "id": "ln_esft", "label": "ESFT(本篇)" },
+    { "id": "ln_rl", "label": "R1 式 RL(GRPO)" },
+    { "id": "ln_eplb", "label": "EPLB / LPLB(infra)" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "动的是什么", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "什么时候用", "fromCol": 1, "toCol": 1 },
+    { "id": "p3", "label": "与 ESFT 的关系", "fromCol": 2, "toCol": 2, "variant": "emphasis" }
+  ],
+  "nodes": [
+    { "id": "f_what", "lane": "ln_full", "col": 0, "type": "external", "label": "改全部参数", "sublabel": "含所有专家", "icon": "start" },
+    { "id": "f_when", "lane": "ln_full", "col": 1, "type": "external", "label": "数据多、不算力", "sublabel": "效果上限最高", "icon": "neutral" },
+    { "id": "f_rel", "lane": "ln_full", "col": 2, "type": "cloud", "label": "ESFT 的对照基线", "sublabel": "省参数省存储省干扰", "icon": "none" },
+
+    { "id": "l_what", "lane": "ln_lora", "col": 0, "type": "backend", "label": "加低秩旁路矩阵", "sublabel": "原权重完全不动", "icon": "neutral" },
+    { "id": "l_when", "lane": "ln_lora", "col": 1, "type": "backend", "label": "dense 模型为主", "sublabel": "通用 PEFT 首选", "icon": "neutral" },
+    { "id": "l_rel", "lane": "ln_lora", "col": 2, "type": "cloud", "label": "正交可组合", "sublabel": "ESFT 选「哪些」,LoRA 管「怎么存」", "icon": "none" },
+
+    { "id": "s_what", "lane": "ln_esft", "col": 0, "type": "backend", "label": "训被选专家本体", "sublabel": "不新增任何结构", "icon": "success" },
+    { "id": "s_when", "lane": "ln_esft", "col": 1, "type": "backend", "label": "MoE 领域定制", "sublabel": "稀疏结构自己说该训谁", "icon": "success" },
+    { "id": "s_rel", "lane": "ln_esft", "col": 2, "type": "cloud", "label": "PEFT 的 MoE 特化版", "sublabel": "本篇讲的就是这一行", "icon": "none" },
+
+    { "id": "r_what", "lane": "ln_rl", "col": 0, "type": "backend", "label": "调全模型策略", "sublabel": "梯度来自奖励而非标签", "icon": "neutral" },
+    { "id": "r_when", "lane": "ln_rl", "col": 1, "type": "backend", "label": "激励推理能力", "sublabel": "长链思考涌现", "icon": "neutral" },
+    { "id": "r_rel", "lane": "ln_rl", "col": 2, "type": "cloud", "label": "目标不同,非替代", "sublabel": "ESFT 注入知识,RL 改行为", "icon": "none" },
+
+    { "id": "e_what", "lane": "ln_eplb", "col": 0, "type": "security", "label": "复制/重排专家", "sublabel": "只搬不改数值", "icon": "neutral" },
+    { "id": "e_when", "lane": "ln_eplb", "col": 1, "type": "security", "label": "部署时摊负载", "sublabel": "推理阶段的活", "icon": "neutral" },
+    { "id": "e_rel", "lane": "ln_eplb", "col": 2, "type": "cloud", "label": "最容易报错的混淆", "sublabel": "训练时挑 vs 推理时摊", "icon": "none" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "f_what", "to": "f_when", "label": "成本换效果", "role": "main" },
+    { "id": "e2", "from": "f_when", "to": "f_rel", "label": "对照", "role": "main" },
+    { "id": "e3", "from": "l_what", "to": "l_when", "label": "旁路承载改动", "role": "main" },
+    { "id": "e4", "from": "l_when", "to": "l_rel", "label": "组合关系", "role": "main" },
+    { "id": "e5", "from": "s_what", "to": "s_when", "label": "省参数是主要卖点", "role": "main" },
+    { "id": "e6", "from": "s_when", "to": "s_rel", "label": "定位", "role": "main" },
+    { "id": "e7", "from": "r_what", "to": "r_when", "label": "奖励驱动", "role": "main" },
+    { "id": "e8", "from": "r_when", "to": "r_rel", "label": "目标差异", "role": "main" },
+    { "id": "e9", "from": "e_what", "to": "e_when", "label": "部署阶段才发生", "role": "main" },
+    { "id": "e10", "from": "e_when", "to": "e_rel", "label": "层级不同", "role": "main" }
+  ],
+  "mainPath": ["s_what", "s_when", "s_rel"],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "ESFT 与 LoRA 为什么正交",
+      "items": [
+        "LoRA 回答「用什么结构承载改动」:低秩旁路",
+        "ESFT 回答「哪些参数需要改动」:被激活的那批专家",
+        "两者可叠加:先按专家圈定范围,再在范围内挂低秩旁路"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "最容易踩的混淆:ESFT vs EPLB",
+      "items": [
+        "ESFT:训练阶段决定「谁被训练」,改的是权重数值",
+        "EPLB/LPLB:推理阶段决定「专家放哪张卡」,搬副本不改数值",
+        "一个落在 checkpoint 里,一个落在部署拓扑里"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "什么时候不该用 ESFT",
+      "items": [
+        "数据量足够大、算力存储不紧张 → 全量微调效果上限仍更高",
+        "目标是推理行为(长链思考)→ 走 R1 式 RL,不是知识注入",
+        "基座不是 MoE → 没有专家可选,只能走 LoRA 或全量"
+      ]
+    }
+  ]
+}

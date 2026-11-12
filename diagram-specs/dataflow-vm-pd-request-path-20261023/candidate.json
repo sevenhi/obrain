@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "一条请求的 PD 路径:五次交接,每一跳都是新的失败点",
+    "subtitle": "传输的单位是 KV block / slot(不是连续大 buffer);接收端必须做 slot 映射才能直接进本地 block table。第 3 跳是新增的一跳,也是唯一一跳不在 vLLM 单体里存在的",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-pd-request-path.dataflow.html",
+    "viewBox": [
+      1180,
+      440
+    ]
+  },
+  "stages": [
+    {
+      "label": "① 入口路由"
+    },
+    {
+      "label": "② Prefill 前向"
+    },
+    {
+      "label": "③ KV 交接"
+    },
+    {
+      "label": "④ Decode 接管"
+    },
+    {
+      "label": "⑤ 回收"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "pick",
+      "type": "frontend",
+      "label": "网关选实例",
+      "sublabel": "按 prompt 长度 + 复用",
+      "stage": 0,
+      "row": 0,
+      "width": 152
+    },
+    {
+      "id": "hold",
+      "type": "database",
+      "label": "向 decode 预留",
+      "sublabel": "先占位或后申请",
+      "stage": 0,
+      "row": 1,
+      "width": 152
+    },
+    {
+      "id": "fwd",
+      "type": "backend",
+      "label": "prompt 前向",
+      "sublabel": "可 chunked 切块",
+      "stage": 1,
+      "row": 0,
+      "width": 152
+    },
+    {
+      "id": "art",
+      "type": "database",
+      "label": "产出 KV + 首 token",
+      "sublabel": "不是 logits",
+      "stage": 1,
+      "row": 1,
+      "width": 152
+    },
+    {
+      "id": "pack",
+      "type": "backend",
+      "label": "按 block/slot 打包",
+      "sublabel": "不是连续大 buffer",
+      "stage": 2,
+      "row": 0,
+      "width": 152
+    },
+    {
+      "id": "chan",
+      "type": "messagebus",
+      "label": "RDMA / NVLink",
+      "sublabel": "带宽与尾延迟在此产生",
+      "stage": 2,
+      "row": 1,
+      "width": 152
+    },
+    {
+      "id": "reg",
+      "type": "database",
+      "label": "写本地 block table",
+      "sublabel": "slot 映射必须一致",
+      "stage": 3,
+      "row": 0,
+      "width": 152
+    },
+    {
+      "id": "cont",
+      "type": "backend",
+      "label": "本地续 decode",
+      "sublabel": "仍走 continuous batching",
+      "stage": 3,
+      "row": 1,
+      "width": 152
+    },
+    {
+      "id": "free",
+      "type": "backend",
+      "label": "两边释放 block",
+      "sublabel": "池内保留前缀块",
+      "stage": 4,
+      "row": 0,
+      "width": 152
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "pick",
+      "to": "hold",
+      "label": "同时占两个池的位置",
+      "route": "straight"
+    },
+    {
+      "id": "f2",
+      "from": "hold",
+      "to": "fwd",
+      "label": "位置到手才开算",
+      "route": "straight",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f3",
+      "from": "fwd",
+      "to": "art",
+      "label": "前向结束产出 KV",
+      "route": "straight"
+    },
+    {
+      "id": "f4",
+      "from": "art",
+      "to": "pack",
+      "label": "只打包 KV,不传 logits",
+      "route": "straight",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f5",
+      "from": "pack",
+      "to": "chan",
+      "label": "下到传输通道",
+      "route": "straight"
+    },
+    {
+      "id": "f6",
+      "from": "chan",
+      "to": "reg",
+      "label": "到位后先注册",
+      "route": "straight",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f7",
+      "from": "reg",
+      "to": "cont",
+      "label": "映射成功才续 decode",
+      "route": "straight"
+    },
+    {
+      "id": "f8",
+      "from": "cont",
+      "to": "free",
+      "label": "序列结束后回收",
+      "route": "straight"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "五步对应的五类故障",
+      "items": [
+        "① 路由没预留 → decode 侧无位置,请求重排队",
+        "② prefill 超时 → 预留位置被白占,要有租约/超时释放",
+        "③ 传输慢或断 → 尾延迟拖累 TTFT,需重传或回退"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "另两类故障",
+      "items": [
+        "④ 接收端缓冲满 → 反压 prefill,把 TTFT 拖回混批水平",
+        "⑤ decode 侧 slot 映射不一致 → KV 对不上,输出乱码或崩溃",
+        "任一步都要能一键降级回单体实例"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "传输通道四层选型",
+      "items": [
+        "硬件互联:NVLink/NVSwitch(节点内)、RDMA/RoCE(跨节点)、IB GPUDirect",
+        "传输库:NIXL、NCCL P2P、自研 RPC(Dynamo 等框架共用 NIXL)",
+        "KV 池:LMCache、Mooncake KV 池、共享存储(3FS/SSD 后备)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "引擎插件层",
+      "items": [
+        "vLLM 的 KVCacheConnector / kv_transfer/ 把传输接到 KV 生命周期上",
+        "不用改调度器,靠 kv_transfer_config 配",
+        "版本演进最快,字段名上线前必须用当前 --help 核对"
+      ]
+    }
+  ]
+}

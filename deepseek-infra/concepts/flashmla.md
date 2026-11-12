@@ -3,11 +3,13 @@ title: FlashMLA — MLA 注意力内核库(dense + sparse)
 type: concept
 tags: [flashmla, mla, dsa, sparse-attention, dense-attention, kv-cache, fp8, fp4, ascend, npu, hopper]
 source:
+  - "code: FlashMLA 固定快照 README/flash_mla_interface.py（当前 sparse decode 与 dense prefill/backward） | https://github.com/deepseek-ai/FlashMLA/tree/2e5429fc5653bab6e081f09477126f731882a6a9 | reviewed 2026-11-04"
   - "code: deepseek-ai/FlashMLA(main;昇腾版 2026-09-30 已合入 main,commit 2e5429f;2026-10-15 ABI 稳定化 commit 0f11e17)| https://github.com/deepseek-ai/FlashMLA ↑primary"
   - "code: deepseek-ai/FlashMLA/docs/20260930-ascend-prefill-deep-dive.md(昇腾稀疏 prefill 机制)| https://github.com/deepseek-ai/FlashMLA"
   - "code: deepseek-ai/FlashMLA/docs/20250929-hopper-fp8-sparse-deep-dive.md(FP8 sparse decoding)| https://github.com/deepseek-ai/FlashMLA"
   - "code: deepseek-ai/FlashMLA/docs/20250422-new-kernel-deep-dive.md(dense decoding)| https://github.com/deepseek-ai/FlashMLA"
 date: 2026-09
+reviewed: 2026-11-04
 ---
 
 # FlashMLA — MLA 注意力内核库(dense + sparse)
@@ -16,7 +18,7 @@ date: 2026-09
 
 **FlashMLA** 是 DeepSeek 的**注意力内核库**,支撑 DeepSeek-V4.1 在 NVIDIA GPU 与华为昇腾 NPU 上的推理。它含**两套内核**:
 
-- **dense 内核**:普通 MLA 的 **prefill + decoding + backward**(开源周 Day 1 定位即 MLA 高效解码;2025-04 deep-dive 的 dense decoding 660 TFLOPS 属此内核);
+- **当前 dense 内核**:该快照 README 列出 **MHA prefill + backward**;历史上的 dense MLA decoding(2025-04 的 660 TFLOPS)属于旧版本路径,不能并入当前支持矩阵;
 - **sparse 内核**:token 级稀疏注意力的 prefill + decoding(**decoding 用 FP8/FP4 KV cache**),**服务 DSA(DeepSeek Sparse Attention)**;另有融合 Q-norm、Q-RoPE、attention、O-RoPE(共轭)、FP8 cast 的 fused kernel。
 
 **三层关系务必分清(本域 P0)**:DSA(稀疏注意力**机制/架构层**)→ 由 **DeepSelect**(TopK)选出每个 token 该 attend 哪些 KV 的 **indices** → 再由 **FlashMLA sparse** 按 indices 算稀疏注意力。**FlashMLA 是实现 DSA 的内核库,不是 DSA 本身**。
@@ -24,6 +26,8 @@ date: 2026-09
 **⚠ 昇腾版 breaking change**:昇腾版 **2026-09-30 已合入 main(commit 2e5429f)**。该版本**移除 Hopper 架构支持、移除 V3/V3.2/V4.0 旧模型、改 FP8/FP4 KV cache 格式**,只服务 DeepSeek-V4.1(含 NVIDIA + 昇腾);**旧模型/旧 KV cache 切旧 commit `ba89a346`**——三条 breaking change、旧 commit 号与昇腾 deep-dive 文档均已由 README 明写,无需待核。
 
 **⚠ "410 TFLOPS" 双义(必须标平台)**:NVIDIA sparse decoding 是 410 TFLOPS(H800),昇腾 sparse prefill 也是 410 TFlops(950)——同名数字,平台完全不同,引用时必须标注。
+
+> **复核范围**:2026-11-04 对照固定 `2e5429f...` 快照的 README 与公开接口;本文“当前”指所列版本,不是审查日最新 release。性能数字均为上游报告,未做 GPU/NPU 复现。该快照 `flash_mla_interface.py` 明确 decoding 仅支持 sparse quantized KV;fused kernel 小节写 CUDA only,不得把新闻段落的提升直接归到 Ascend。
 
 ---
 
@@ -101,7 +105,7 @@ flash_mla_with_kvcache(..., is_fp8_kvcache=True, indices=...)
 | sparse prefill | **410 TFlops** | **95%** 硬件峰值 |
 | sparse decoding | **360 TFlops** | **83%** 硬件峰值 |
 
-昇腾版另有 **fused norm-RoPE-attn-RoPE-cast kernel**,decoding 下再优化 **10–15%**。
+同版 README News 报告 **fused norm-RoPE-attn-RoPE-cast kernel** 的 decoding 优化 **10–15%**,但其专门小节明确 **CUDA only, Ascend not supported**。因此这里保留上游提升口径,不将它归为昇腾已实现的能力;后续版本的平台支持须另查 dispatch 与测试。
 
 ---
 

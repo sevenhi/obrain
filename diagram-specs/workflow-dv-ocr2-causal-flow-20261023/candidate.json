@@ -1,0 +1,147 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Visual Causal Flow:把「光栅顺序」换成「按语义的因果顺序」再喂给 LLM",
+    "subtitle": "传统 VLM 把 visual token 按左上→右下固定送进 LLM;OCR-2 让 encoder 先做 1D 因果重排(决定看哪、按什么顺序),再由 LLM 做 1D 因果解码,用两级级联逼近 2D 理解",
+    "locale": "zh-CN",
+    "output": "diagrams/dv-ocr2-causal-flow.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_in", "label": "输入" },
+    { "id": "ln_old", "label": "一代:光栅顺序", "variant": "exception" },
+    { "id": "ln_new", "label": "二代:因果重排" },
+    { "id": "ln_out", "label": "LLM 解码" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 同一页版面", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 两种排序策略", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "③ 解压成文本", "fromCol": 4, "toCol": 5 }
+  ],
+  "nodes": [
+    {
+      "id": "doc",
+      "lane": "ln_in",
+      "col": 0,
+      "type": "database",
+      "label": "复杂版面文档",
+      "sublabel": "标题 + 正文块 + 图表混排",
+      "icon": "database"
+    },
+    {
+      "id": "patch",
+      "lane": "ln_in",
+      "col": 1,
+      "type": "backend",
+      "label": "切 patch 得 token",
+      "sublabel": "替代方案:动态分辨率 (0-6)×768²",
+      "icon": "neutral"
+    },
+    {
+      "id": "raster",
+      "lane": "ln_old",
+      "col": 2,
+      "type": "backend",
+      "label": "光栅顺序",
+      "sublabel": "左上→右下,配固定位置编码",
+      "icon": "neutral"
+    },
+    {
+      "id": "flatten",
+      "lane": "ln_old",
+      "col": 3,
+      "type": "security",
+      "label": "版面逻辑被打断",
+      "sublabel": "跨栏句子被图表 token 隔断",
+      "icon": "failure"
+    },
+    {
+      "id": "sam",
+      "lane": "ln_new",
+      "col": 2,
+      "type": "backend",
+      "label": "SAM-ViT-B 出细节",
+      "sublabel": "12 层,全局注意力在 [2,5,8,11]",
+      "icon": "backend"
+    },
+    {
+      "id": "qwen",
+      "lane": "ln_new",
+      "col": 3,
+      "type": "security",
+      "label": "Qwen2-0.5B 做因果重排",
+      "sublabel": "dim 896,按语义决定顺序",
+      "icon": "active"
+    },
+    {
+      "id": "proj",
+      "lane": "ln_new",
+      "col": 4,
+      "type": "backend",
+      "label": "linear 投影 → 1280",
+      "sublabel": "input_dim 从 2048 变 896",
+      "icon": "backend"
+    },
+    {
+      "id": "moe",
+      "lane": "ln_out",
+      "col": 5,
+      "type": "frontend",
+      "label": "3B-MoE-A570M 解码",
+      "sublabel": "与一代同一个解码器",
+      "icon": "frontend"
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "doc", "to": "patch", "label": "整页切块", "role": "main" },
+    { "id": "e2", "from": "patch", "to": "raster", "label": "按坐标排序(一代)", "role": "branch" },
+    { "id": "e3", "from": "raster", "to": "flatten", "label": "看得到字,读不懂结构", "role": "error" },
+    { "id": "e4", "from": "patch", "to": "sam", "label": "按区域编码(二代)", "role": "branch" },
+    { "id": "e5", "from": "sam", "to": "qwen", "label": "细节特征进因果底座", "role": "main" },
+    { "id": "e6", "from": "qwen", "to": "proj", "label": "重排后的序列", "role": "main" },
+    { "id": "e7", "from": "proj", "to": "moe", "label": "按语义顺序解压", "role": "main" },
+    { "id": "e8", "from": "flatten", "to": "moe", "label": "顺序错了,解压质量掉", "role": "error", "variant": "dashed" }
+  ],
+  "mainPath": ["doc", "patch", "sam", "qwen", "proj", "moe"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两代 encoder 的对应关系",
+      "items": [
+        "一代:CLIP-L(语义)+ SAM-B(细节),input_dim 2048",
+        "二代:Qwen2-0.5B(因果)+ SAM-B(细节),input_dim 896",
+        "细节塔没换,换的是「语义塔」:从「对齐语义」升级到「推理顺序」"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "范式问题是这篇的真正野心",
+      "items": [
+        "2D 图像理解能否用「两级级联的 1D 因果推理」达成?",
+        "第一级 encoder 做 1D 因果重排:决定看哪、按什么顺序",
+        "第二级 LLM 做 1D 因果解码",
+        "若成立,所有 VLM 都不必再设计复杂 2D 注意力"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "支持模式(README)",
+      "items": [
+        "动态分辨率:默认 (0-6)×768×768 + 1×1024×1024",
+        "对应 (0-6)×144 + 256 个 visual token",
+        "两种 prompt:转 markdown(带 grounding)/ Free OCR(无版面)",
+        "PDF 并发速度与一代持平(on-par)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "部署坑",
+      "items": [
+        "cuda11.8 + torch2.6.0 + vllm-0.8.5(README 指定)",
+        "vLLM 需 nightly,且 enable_prefix_caching=False",
+        "NGramPerReqLogitsProcessor 抑制重复 token",
+        "OCR 与 OCR-2 同环境会报 transformers 版本冲突 — README 明示无需处理"
+      ]
+    }
+  ]
+}

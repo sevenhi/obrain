@@ -1,0 +1,136 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "压缩比决定精度:10× 以内守 97%,20× 掉到 60% —— 这条曲线才是 OCR 系的评估重点",
+    "subtitle": "评估 OCR 系模型别只看榜单分数,要看「压缩比-精度曲线」:一代的价值正在于用 100 个 vision token 超过 GOT-OCR2.0 的 256 个",
+    "locale": "zh-CN",
+    "output": "diagrams/dv-ocr-compression-curve.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_token", "label": "vision token 预算" },
+    { "id": "ln_check", "label": "压缩比档位" },
+    { "id": "ln_qual", "label": "解码精度" },
+    { "id": "ln_use", "label": "适用场景" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 高预算:保精度", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 压 10×:仍是可生产档", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "③ 压 20×:只适合当记忆/检索", "fromCol": 4, "toCol": 5 }
+  ],
+  "nodes": [
+    {
+      "id": "many",
+      "lane": "ln_token",
+      "col": 0,
+      "type": "database",
+      "label": "800+ token / 页",
+      "sublabel": "对照 MinerU2.0 平均 6000+",
+      "icon": "database"
+    },
+    {
+      "id": "hundred",
+      "lane": "ln_token",
+      "col": 1,
+      "type": "database",
+      "label": "约 100 token / 页",
+      "sublabel": "对照 GOT-OCR2.0 的 256",
+      "icon": "database"
+    },
+    {
+      "id": "c10",
+      "lane": "ln_check",
+      "col": 2,
+      "type": "backend",
+      "label": "压缩比 < 10×",
+      "sublabel": "1 token 顶 10 个 text token",
+      "icon": "neutral"
+    },
+    {
+      "id": "c20",
+      "lane": "ln_check",
+      "col": 3,
+      "type": "backend",
+      "label": "压缩比 20×",
+      "sublabel": "1 token 顶 20 个",
+      "icon": "neutral"
+    },
+    {
+      "id": "p97",
+      "lane": "ln_qual",
+      "col": 4,
+      "type": "security",
+      "label": "OCR 精度 97%",
+      "sublabel": "可直接用于数据生产",
+      "icon": "success"
+    },
+    {
+      "id": "p60",
+      "lane": "ln_qual",
+      "col": 4,
+      "type": "security",
+      "label": "OCR 精度约 60%",
+      "sublabel": "只够做粗读/定位",
+      "icon": "failure",
+      "yOffset": 90
+    },
+    {
+      "id": "prod",
+      "lane": "ln_use",
+      "col": 5,
+      "type": "backend",
+      "label": "训练数据生成",
+      "sublabel": "A100-40G 日产 200k+ 页",
+      "icon": "backend"
+    },
+    {
+      "id": "memo",
+      "lane": "ln_use",
+      "col": 5,
+      "type": "backend",
+      "label": "长文本记忆 / 遗忘研究",
+      "sublabel": "论文摘要明示的方向",
+      "icon": "neutral",
+      "yOffset": 90
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "many", "to": "hundred", "label": "压到 1/8 仍更好", "role": "main" },
+    { "id": "e2", "from": "hundred", "to": "c10", "label": "进入 10× 档", "role": "main" },
+    { "id": "e3", "from": "c10", "to": "c20", "label": "继续压缩", "role": "main" },
+    { "id": "e4", "from": "c10", "to": "p97", "label": "97% 精度", "role": "main" },
+    { "id": "e5", "from": "c20", "to": "p60", "label": "掉到 60%", "role": "error" },
+    { "id": "e6", "from": "p97", "to": "prod", "label": "精度够,进产线", "role": "main" },
+    { "id": "e7", "from": "p60", "to": "memo", "label": "精度不够,换用途", "role": "branch" }
+  ],
+  "mainPath": ["many", "hundred", "c10", "p97", "prod"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "「最少的 token」才是这代的核心卖点",
+      "items": [
+        "OmniDocBench:100 token 超过 GOT-OCR2.0(256 token/页)",
+        "少于 800 token 超过 MinerU2.0(平均 6000+ token/页)",
+        "论文自评「最少 vision token 的端到端 SOTA」"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "20× 档的意义在别处",
+      "items": [
+        "不是「OCR 更狠」,而是「长文本能否压成图像存进上下文」",
+        "60% 精度对「记忆/遗忘」研究是有效信号",
+        "对生产 OCR 则不够 —— 别把研究结论当产能指标"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "评估口径要写清",
+      "items": [
+        "压缩比 = ground-truth text token 数 / 实际 vision token 数",
+        "分母是「模型实际用的」,不是「模型能用的」",
+        "不同 tokenizer 下 text token 数会变,跨模型对比要说明口径"
+      ]
+    }
+  ]
+}

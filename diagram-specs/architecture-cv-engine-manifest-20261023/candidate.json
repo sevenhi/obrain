@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Engine 发布物该装什么:七个必备项 + 兼容性边界",
+    "subtitle": "serialized engine 对版本与硬件有兼容限制,不能默认一个 plan 文件跨 GPU / CUDA / TensorRT 版本复用",
+    "locale": "zh-CN",
+    "output": "diagrams/cv-engine-manifest.architecture.html"
+  },
+  "layout": { "mode": "grid", "cols": 4, "gapX": 54, "gapY": 60, "cellW": 178, "cellH": 104 },
+  "components": [
+    {
+      "id": "engine",
+      "type": "database",
+      "label": "engine 或构建配置",
+      "sublabel": "两者至少留一个",
+      "icon": "database",
+      "size": [178, 104],
+      "row": 0,
+      "col": 0
+    },
+    {
+      "id": "onnx_rev",
+      "type": "backend",
+      "label": "ONNX / checkpoint revision",
+      "sublabel": "能追溯回哪次训练",
+      "size": [178, 104],
+      "row": 0,
+      "col": 1
+    },
+    {
+      "id": "manifest",
+      "type": "security",
+      "label": "版本兼容 manifest",
+      "sublabel": "TRT / CUDA / driver / GPU",
+      "icon": "security",
+      "size": [178, 104],
+      "row": 0,
+      "col": 2
+    },
+    {
+      "id": "profiles",
+      "type": "frontend",
+      "label": "dynamic shape profiles",
+      "sublabel": "min / opt / max 三档",
+      "size": [178, 104],
+      "row": 1,
+      "col": 0
+    },
+    {
+      "id": "tactics",
+      "type": "backend",
+      "label": "精度与 tactic 信息",
+      "sublabel": "precision / workspace / plugin",
+      "size": [178, 104],
+      "row": 1,
+      "col": 1
+    },
+    {
+      "id": "regress",
+      "type": "database",
+      "label": "数值回归样本 + 结果",
+      "sublabel": "发布后能对比",
+      "icon": "database",
+      "size": [178, 104],
+      "row": 1,
+      "col": 2
+    },
+    {
+      "id": "buildcmd",
+      "type": "backend",
+      "label": "build 命令",
+      "sublabel": "能一键重建",
+      "size": [178, 104],
+      "row": 2,
+      "col": 0
+    },
+    {
+      "id": "rollback",
+      "type": "external",
+      "label": "回滚用旧 engine",
+      "sublabel": "升级前必须留着",
+      "icon": "stop",
+      "size": [178, 104],
+      "row": 2,
+      "col": 1
+    },
+    {
+      "id": "smoke",
+      "type": "cloud",
+      "label": "独立端口 smoke test",
+      "sublabel": "过了再切流量",
+      "icon": "success",
+      "size": [178, 104],
+      "row": 2,
+      "col": 3
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "发布包里必须有的七项",
+      "wraps": ["engine", "onnx_rev", "manifest", "profiles", "tactics", "regress", "buildcmd"],
+      "pad": 16
+    }
+  ],
+  "connections": [
+    { "from": "onnx_rev", "to": "engine", "label": "从哪份图构建的" },
+    { "from": "manifest", "to": "engine", "label": "限制它在哪能跑" },
+    { "from": "profiles", "to": "engine", "label": "决定输入形状边界" },
+    { "from": "tactics", "to": "engine", "label": "复现同一份构建" },
+    { "from": "buildcmd", "to": "engine", "label": "坏了能重建", "variant": "dashed" },
+    { "from": "engine", "to": "regress", "label": "拿样本验证没退化" },
+    { "from": "regress", "to": "smoke", "label": "通过才上线" },
+    { "from": "rollback", "to": "smoke", "label": "出问题退回去", "variant": "dashed" },
+    { "from": "manifest", "to": "rollback", "label": "版本一变就得换 engine" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "plan 文件不是可移植产物",
+      "items": [
+        "engine 绑定 TensorRT 版本、CUDA 版本、GPU 架构(SM)",
+        "也不能默认跨 driver 版本复用",
+        "所以「engine 或可重建的构建配置」必须留一个,不能两个都没有"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "升级 TensorRT 时要重新检查三样",
+      "items": [
+        "API 变化(尤其 plugin 接口)",
+        "engine 序列化格式兼容性",
+        "calibration cache 是否还能用"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "benchmark 时不能混进的两件事",
+      "items": [
+        "engine build 时间:构建期成本,不能算进在线请求延迟",
+        "首次请求延迟:预热后的 kernel latency 不能代表它",
+        "两者都要单独记录,否则延迟数字没意义"
+      ]
+    }
+  ]
+}

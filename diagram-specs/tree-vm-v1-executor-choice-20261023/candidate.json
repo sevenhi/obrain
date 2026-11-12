@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "Executor 三选一:同一份 Worker 代码,三种进程形态",
+    "subtitle": "Executor.get_class() 按 ParallelConfig 分派(executor/abstract.py:49)。TP / PP / DP 三种并行是另一层正交选择,通信后端由 GroupCoordinator 统一封装",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-v1-executor-choice.tree.html",
+    "viewBox": [
+      1120,
+      720
+    ]
+  },
+  "layout": {
+    "direction": "right",
+    "gapX": 48,
+    "gapY": 30,
+    "nodeW": 200,
+    "nodeMaxW": 260
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "ModelExecutor(抽象)",
+      "sublabel": "executor/abstract.py:49"
+    },
+    {
+      "id": "uni",
+      "parent": "root",
+      "label": "UniProcExecutor",
+      "sublabel": "单 GPU:直接持有 Worker,与 EngineCore 同进程"
+    },
+    {
+      "id": "mp",
+      "parent": "root",
+      "label": "MultiprocExecutor",
+      "sublabel": "单节点多 GPU:子进程 + 共享内存张量"
+    },
+    {
+      "id": "ray",
+      "parent": "root",
+      "label": "RayDistributedExecutor(默认)",
+      "sublabel": "跨节点:Ray actor + NCCL"
+    },
+    {
+      "id": "ray2",
+      "parent": "ray",
+      "label": "RayExecutorV2",
+      "sublabel": "需 VLLM_USE_RAY_V2_EXECUTOR_BACKEND 开启"
+    },
+    {
+      "id": "tp",
+      "parent": "mp",
+      "label": "TP:按 head 切权重",
+      "sublabel": "Column/RowParallelLinear 自动 all-reduce"
+    },
+    {
+      "id": "pp",
+      "parent": "mp",
+      "label": "PP:按层分 stage",
+      "sublabel": "isend/irecv_tensor_dict 传中间张量"
+    },
+    {
+      "id": "dp",
+      "parent": "ray",
+      "label": "DP:多组 EngineCore",
+      "sublabel": "DPEngineCoreProc,各自处理请求子集"
+    },
+    {
+      "id": "comm",
+      "parent": "root",
+      "label": "GroupCoordinator 通信封装",
+      "sublabel": "pynccl / custom_all_reduce / shm_broadcast / ray_communicator"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "单选的判据",
+      "items": [
+        "只有一张卡 → UniProc(此时 Worker 与 EngineCore 同进程,没有跨进程开销)",
+        "一台机器多卡 → Multiproc(共享内存传张量,比 RPC 快)",
+        "跨机器 → Ray(actor 负责放置与生命周期)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "并行维度与 Executor 正交",
+      "items": [
+        "Executor 决定「进程/actor 怎么摆」",
+        "TP/PP/DP 决定「模型与请求怎么切」",
+        "同一个 Ray 集群里可以同时开 TP 和 PP"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "V0 到 V1 的常见误读",
+      "items": [
+        "网上教程多是 V0(engine/llm_engine.py 两阶段调度)",
+        "V1 是统一 token 预算 + 独立 EngineCore,读源码先看 vllm/v1/",
+        "V0 里 Worker 全在独立进程;V1 单卡时不是"
+      ]
+    }
+  ]
+}

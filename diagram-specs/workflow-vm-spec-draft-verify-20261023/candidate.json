@@ -1,0 +1,146 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "投机解码:草稿串行猜 γ 个,目标模型一次前向并行验 γ 个",
+    "subtitle": "关键不在「猜得准」,而在「验证几乎免费」——decode 是访存受限,γ 个候选的一次前向 ≈ 1 个 token 的一次前向,接受 k 个就一步产出 k+1 个",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-spec-draft-verify.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_base", "label": "基线:标准自回归" },
+    { "id": "ln_draft", "label": "投机:草稿阶段" },
+    { "id": "ln_verify", "label": "投机:验证阶段" },
+    { "id": "ln_out", "label": "产出与回退", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 串行猜", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 一次并行验", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "③ 产出 / 回退", "fromCol": 4, "toCol": 5 }
+  ],
+  "nodes": [
+    {
+      "id": "base",
+      "lane": "ln_base",
+      "col": 0,
+      "type": "backend",
+      "label": "每步 1 次完整前向",
+      "sublabel": "1 token / 步,串行",
+      "icon": "clock"
+    },
+    {
+      "id": "mem",
+      "lane": "ln_base",
+      "col": 1,
+      "type": "database",
+      "label": "访存受限",
+      "sublabel": "读权重 + 读 KV cache 远大于算",
+      "icon": "database"
+    },
+    {
+      "id": "draft",
+      "lane": "ln_draft",
+      "col": 0,
+      "type": "backend",
+      "label": "草稿模型串行猜 γ 个",
+      "sublabel": "小模型,γ = num_spec_tokens",
+      "icon": "active"
+    },
+    {
+      "id": "cand",
+      "lane": "ln_draft",
+      "col": 1,
+      "type": "database",
+      "label": "γ 个候选 token",
+      "sublabel": "带各自的草稿概率 q(x)",
+      "icon": "neutral"
+    },
+    {
+      "id": "verify",
+      "lane": "ln_verify",
+      "col": 2,
+      "type": "security",
+      "label": "目标模型一次前向",
+      "sublabel": "并行算 γ+1 个位置概率",
+      "icon": "active"
+    },
+    {
+      "id": "reject",
+      "lane": "ln_verify",
+      "col": 3,
+      "type": "security",
+      "label": "拒绝采样比对",
+      "sublabel": "min(1, p/q) 决定接受",
+      "icon": "decision"
+    },
+    {
+      "id": "emit",
+      "lane": "ln_out",
+      "col": 4,
+      "type": "backend",
+      "label": "接受 k 个 + 1 bonus",
+      "sublabel": "一步产出 k+1 个 token",
+      "icon": "success"
+    },
+    {
+      "id": "roll",
+      "lane": "ln_out",
+      "col": 5,
+      "type": "security",
+      "label": "拒绝位重新采样",
+      "sublabel": "回退到第一个被拒位置",
+      "icon": "failure"
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "base", "to": "mem", "label": "算力大量闲置", "role": "branch" },
+    { "id": "e2", "from": "draft", "to": "cand", "label": "逐 token 出,小模型快", "role": "main" },
+    { "id": "e3", "from": "cand", "to": "verify", "label": "整批一次喂进去", "role": "main" },
+    { "id": "e4", "from": "verify", "to": "reject", "label": "拿到目标侧条件概率 p", "role": "main" },
+    { "id": "e5", "from": "reject", "to": "emit", "label": "前 k 个接受", "role": "main" },
+    { "id": "e6", "from": "reject", "to": "roll", "label": "第一个被拒处", "role": "error" },
+    { "id": "e7", "from": "mem", "to": "emit", "label": "验证 ≈ 一次前向的代价", "role": "branch", "variant": "dashed" }
+  ],
+  "mainPath": ["draft", "cand", "verify", "reject", "emit"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么不改变输出分布",
+      "items": [
+        "接受与否由 min(1, p(x)/q(x)) 的规范采样决定",
+        "被接受的一定是目标模型自己会采出的 token",
+        "被拒处用残差分布 (p−q)+ 重采样,补回概率质量",
+        "结论:输出与标准采样严格同分布,不是近似"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "期望产出公式(Leviathan 2022)",
+      "items": [
+        "E[每步 token] = (1 − α^(γ+1)) / (1 − α),几何级数含 bonus",
+        "α=0.8、γ=5 时 ≈ 3.69 个 token / 步",
+        "α 从 0.6→0.8 收益 2.38→3.69;γ 从 5→7 只到 4.16",
+        "→ 提接受率比拉长草稿划算得多"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "墙钟加速还要扣草稿成本",
+      "items": [
+        "加速比 = E[每步 token] × T_single / (T_draft(γ) + T_verify(γ))",
+        "T_draft 随 γ 线性增长,T_verify ≈ T_single(访存受限)",
+        "高并发时 batch 变大,verify 从 memory-bound 转 compute-bound",
+        "收益转负 —— 这才是 dynamic SD 存在的原因"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "隐性前提:KV cache 复用",
+      "items": [
+        "draft 与 verify 必须共享同一份目标模型 KV cache",
+        "验证时只算新增候选位置的增量 KV",
+        "所以分页 KV(paged attention)是它的底座,不是可选项"
+      ]
+    }
+  ]
+}

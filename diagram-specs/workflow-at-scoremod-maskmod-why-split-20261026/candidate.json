@@ -1,0 +1,92 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "为什么 score_mod 和 mask_mod 要分开:两层理由",
+  "subtitle": "mask 只是 score_mod 的特例(torch.where(mask,-inf)),却必须独立成 API",
+  "locale": "zh-CN",
+  "output": "diagrams/at-scoremod-maskmod-why-split.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "q",
+   "label": "问题"
+  },
+  {
+   "id": "sem",
+   "label": "语义理由"
+  },
+  {
+   "id": "eff",
+   "label": "效率理由"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "only",
+   "lane": "q",
+   "col": 0,
+   "type": "frontend",
+   "label": "只用 score_mod 表达 mask",
+   "sublabel": "torch.where(mask,score,-inf)"
+  },
+  {
+   "id": "sem",
+   "lane": "sem",
+   "col": 1,
+   "type": "backend",
+   "label": "语义上不可判定",
+   "sublabel": "预计算时手里没有真实 score 值"
+  },
+  {
+   "id": "eff",
+   "lane": "eff",
+   "col": 2,
+   "type": "backend",
+   "label": "效率上根本不同",
+   "sublabel": "被 mask 的块可整块跳过计算"
+  }
+ ],
+ "edges": [
+  {
+   "from": "only",
+   "to": "sem",
+   "label": "无法从任意 score_mod 猜出哪是 masking",
+   "variant": "emphasis"
+  },
+  {
+   "from": "only",
+   "to": "eff",
+   "label": "稀疏要能整块跳过",
+   "variant": "dashed"
+  },
+  {
+   "from": "sem",
+   "to": "eff",
+   "label": "结论:纯位置掩码显式拆出"
+  }
+ ],
+ "mainPath": [
+  "only",
+  "sem"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "两层理由都来自博客 FAQ",
+   "items": [
+    "语义:预计算 BlockMask 时无真实 score,不可判定",
+    "效率:mask 掉的位置可整块跳过,score_mod 做不到"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "代价与收益",
+   "items": [
+    "逐元素 mask 约 15–20% 退化",
+    "causal ~50% 稀疏,不用就慢 2×",
+    "full block 跳过 mask_mod 再省 ~15%"
+   ]
+  }
+ ]
+}

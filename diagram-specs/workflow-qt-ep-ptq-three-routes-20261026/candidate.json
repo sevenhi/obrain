@@ -1,0 +1,114 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "三条路线对比:复现 / 纯 FSDP2 / DP=EP",
+  "subtitle": "两条现成路各自死因不同;DP=EP 同时解决显存与精度,后者才是关键",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-ep-ptq-three-routes.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "route",
+   "label": "三条路线"
+  },
+  {
+   "id": "verdict",
+   "label": "结论"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "rep",
+   "lane": "route",
+   "col": 0,
+   "type": "backend",
+   "label": "复现(replicate)",
+   "sublabel": "每 rank 整模型"
+  },
+  {
+   "id": "fsdp",
+   "lane": "route",
+   "col": 1,
+   "type": "backend",
+   "label": "仅 FSDP2 分片",
+   "sublabel": "每次前向 all-gather 所有专家"
+  },
+  {
+   "id": "dpep",
+   "lane": "route",
+   "col": 2,
+   "type": "backend",
+   "label": "DP=EP",
+   "sublabel": "专家按 rank 分片,token 找专家"
+  },
+  {
+   "id": "v1",
+   "lane": "verdict",
+   "col": 0,
+   "type": "security",
+   "label": "显存装不下",
+   "sublabel": "amax 只覆盖局部 token"
+  },
+  {
+   "id": "v2",
+   "lane": "verdict",
+   "col": 1,
+   "type": "security",
+   "label": "根本没省显存",
+   "sublabel": "分片又每前向聚回来"
+  },
+  {
+   "id": "v3",
+   "lane": "verdict",
+   "col": 2,
+   "type": "backend",
+   "label": "amax 覆盖全局 token 池",
+   "sublabel": "一次 dispatch+combine"
+  }
+ ],
+ "edges": [
+  {
+   "from": "rep",
+   "to": "v1",
+   "label": "每个 rank 都要整模型",
+   "variant": "security"
+  },
+  {
+   "from": "fsdp",
+   "to": "v2",
+   "label": "gather every expert every forward",
+   "variant": "security"
+  },
+  {
+   "from": "dpep",
+   "to": "v3",
+   "label": "每个专家见到所有 rank 路由给它的 token",
+   "variant": "emphasis"
+  }
+ ],
+ "mainPath": [
+  "dpep",
+  "v3"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "精度那一列是共同死因",
+   "items": [
+    "PTQ 激活 scale 靠校准 amax 定",
+    "数据并行下每 rank 只喂自己 batch 切片",
+    "某专家只被本 rank token 路由到→amax 系统性偏差"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "DP=EP 的分工",
+   "items": [
+    "dense 层 + router 数据并行",
+    "routed experts 按 rank 分片(EP)",
+    "token 经 all-to-all dispatch 到拥有专家的 rank"
+   ]
+  }
+ ]
+}

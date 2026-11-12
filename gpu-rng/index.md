@@ -5,10 +5,12 @@ tags: [gpu, rng, prng, philox, mtgp, curand]
 source:
   - "pdf: Parallel Random Numbers: As Easy as 1, 2, 3 (SC11 Best Paper) | DOI 10.1145/2063384.2063405"
   - "pdf: Variants of Mersenne Twister Suitable for Graphic Processors | arXiv:1005.4973"
-date: 2026-10
+date: 2026-11
 ---
 
 # GPU 随机数生成 (gpu-rng)
+
+**快速入口**:[两条 PRNG 路线与 cuRAND](concepts/gpu-random-number-generation.md) · [公开来源](references.md)。安全边界:Philox/Threefry 不适用于密码学,统计测试通过不构成安全保证。
 
 > 领域索引。主题:GPU 上高质量伪随机数怎么生成——counter-based(无状态双射)与 F2-linear 大块并行(MTGP)两条路线,及 cuRAND 工程落地。
 > 域定位刻意收窄为 RNG(原计划 gpu-numerics,单个 concept 撑不起"数值算法"域,审批修正为 gpu-rng)。后续若新增 GPU 数值算法条目(如采样/噪声/量化随机化),可再评估扩域。
@@ -29,7 +31,8 @@ date: 2026-10
 1. **极致吞吐 + 可复现** → Philox(counter-based);用应用变量拼 counter/key 得机器无关流
 2. **超长周期 + 高维等分布** → MTGP(一 block 一 state,≤256 线程,参数集离线预生成)
 3. **XORWOW 只配当 baseline**:BigCrush 系统性 reject,勿用于严肃蒙特卡洛
-4. F2-linear(MT/MTGP/WELL)在 LinearComp/MatrixRank 测试上失败是共性,常规实数模拟一般无碍;密码学或线性结构敏感场景必须 counter-based
+4. F2-linear(MT/MTGP/WELL)在 LinearComp/MatrixRank 测试上的弱点需按模拟任务评估;不能把 counter-based 类别当作密码学安全保证。Random123 明确 Philox/Threefry **不用于密码学或安全用途**;密钥、安全 token 等应使用适当的 CSPRNG/系统安全随机接口。
+5. 整数随机流复现、浮点分布转换逐位复现、并行算法结果逐位复现是三个不同层次,需分别核对算法/版本/执行顺序。
 
 ## 已知缺口
 

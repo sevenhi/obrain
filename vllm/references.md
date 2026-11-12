@@ -2,7 +2,7 @@
 title: vllm 外部链接索引
 type: reference
 tags: [vllm, llm-serving, references]
-date: 2026-09
+date: 2026-11
 ---
 
 # References — vllm
@@ -44,6 +44,7 @@ date: 2026-09
 ## 源码(一手实读,commit b74ac0bc6)
 
 - vLLM GitHub — https://github.com/vllm-project/vllm
+- MRV2 旧基线已有启用判定与环境变量(2026-11-04 核对,不代表今日最新发行版) — https://github.com/vllm-project/vllm/blob/b74ac0bc61d8b8f74848664b1a3b4e878f047861/vllm/config/vllm.py#L620
 - 版本现状(2026-10-23 实查):PyPI 最新发布 **v0.32.0**(上传 2026-10-18),main 为 `v0.32.1rc0-353-g2d40c0609`(2026-10-22)
 - Model Runner V2 篇的一手实读路径(v0.32 main):vllm/config/vllm.py(`use_v2_model_runner`)、vllm/v1/worker/gpu_worker.py、vllm/v1/worker/gpu/{model_runner.py, states.py, buffer_utils.py, cudagraph_utils.py, input_batch.py, sample/gumbel.py, sample/logprob.py}
 - Model Runner V2 设计文档源文件 — https://github.com/vllm-project/vllm/blob/main/docs/design/model_runner_v2.md

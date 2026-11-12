@@ -19,10 +19,14 @@ source:
   - "code: NVIDIA/Model-Optimizer PR #2816 Windows ONNX external data 损坏(onnx 1.21→1.23.2,commit 3c423a9f165b;属 CV 导出域,落地在 computer-vision)| https://github.com/NVIDIA/Model-Optimizer/pull/2816"
   - "web: ModelOpt 公告 *Quantizing a 4.9 TB Qwen3.8 Model on a Single GPU*(2026-09-28,逐层校准/逐层导出/单卡生产数据;注意文档站每页 title 都烤入 `0.0.1.dev1+<HEAD sha>`,**任何 commit 都会让该页 hash 变**,判变化须比正文)| https://nvidia.github.io/Model-Optimizer/announcements/20260928-single-gpu-ptq.html"
   - "web: vLLM Quantization | https://docs.vllm.ai/en/latest/features/quantization/ | 阅读日期 2026-09-27"
-date: 2026-10
+date: 2026-11
 ---
 
 # 量化与压缩
+
+**按任务进入**:[PTQ 算法](concepts/ptq-gptq-awq-smoothquant.md) · [KV 量化](concepts/kv-cache-quantization.md) · [FP8/FP4 数值与 scale](concepts/fp8-fp4-formats.md) · [MoE 逐层校准](concepts/moe-gptq-layerwise-calibration.md) · [专家并行校准](concepts/expert-parallel-ptq-calibration.md) · [fake-quant 验收](concepts/vllm-fakequant-eval-export.md) · [来源](references.md)。
+
+**数值边界**:per-tensor 是每张量而非整网共享 scale;粒度与 Delayed/JIT 更新时间策略分开。E4M3 最小正规数 2^-6、最小非零子正规数 2^-9,实际下溢还要看 scale、舍入与 kernel 的 flush-to-zero。
 
 ## 一句话定位
 

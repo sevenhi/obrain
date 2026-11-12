@@ -1,0 +1,115 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "sidecar 怎么活到运行时:vLLM 侧恢复顺序",
+  "subtitle": "顺序错了会静默错;最后那个 raise 把「折叠没生效」变成显式失败",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-fakequant-sidecar-restore.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "restore",
+   "label": "恢复"
+  },
+  {
+   "id": "fold",
+   "label": "折叠+校验"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "s1",
+   "lane": "restore",
+   "col": 0,
+   "type": "backend",
+   "label": "读 sidecar,映射 HF→vLLM 名",
+   "sublabel": "convert_modelopt_state_to_vllm"
+  },
+  {
+   "id": "s2",
+   "lane": "restore",
+   "col": 1,
+   "type": "backend",
+   "label": "restore + set state",
+   "sublabel": "载 ranges 再载 values"
+  },
+  {
+   "id": "s3",
+   "lane": "restore",
+   "col": 2,
+   "type": "backend",
+   "label": "post_restore + shard pqs",
+   "sublabel": "并行修正后按形状切"
+  },
+  {
+   "id": "f1",
+   "lane": "fold",
+   "col": 3,
+   "type": "backend",
+   "label": "mtq.fold_weight(model)",
+   "sublabel": "权重折叠"
+  },
+  {
+   "id": "f2",
+   "lane": "fold",
+   "col": 4,
+   "type": "security",
+   "label": "硬校验:无启用的权重量化器",
+   "sublabel": "有则 raise,double-quantization"
+  }
+ ],
+ "edges": [
+  {
+   "from": "s1",
+   "to": "s2",
+   "label": "先 ranges 后 values",
+   "variant": "emphasis"
+  },
+  {
+   "from": "s2",
+   "to": "s3",
+   "label": "shard 必须在 post_restore 之后",
+   "variant": "emphasis"
+  },
+  {
+   "from": "s3",
+   "to": "f1",
+   "label": "恢复完再折叠",
+   "variant": "emphasis"
+  },
+  {
+   "from": "f1",
+   "to": "f2",
+   "label": "把折叠没生效变成显式失败",
+   "variant": "security"
+  }
+ ],
+ "mainPath": [
+  "s1",
+  "s2",
+  "s3",
+  "f1",
+  "f2"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "为什么顺序不能乱",
+   "items": [
+    "set_quantizer_state_dict 不跑 modelopt_post_restore",
+    "post_restore_vllm_parallel_linears 必须手动补",
+    "shard_pre_quant_scale_for_tp 靠 weight H_in 判 pqs 长度"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "那个 raise 是范式",
+   "items": [
+    "量化器没折干净不会崩也不会 NaN",
+    "只会权重被量化两次、指标轻微变差",
+    "这类错误数值比对抓不住,只能断言「该关的都关了」"
+   ]
+  }
+ ]
+}

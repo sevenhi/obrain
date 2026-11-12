@@ -1,0 +1,240 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "TiledMMA 的最小端到端用法:铺 tile → get_slice → partition",
+    "subtitle": "四步就能跑通一条 GEMM 的线程级视图;最易踩的坑是 partition_A/B/C 属于 ThrMMA 而不是 TiledMMA",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-tiledmma-partition.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "build",
+      "label": "构造"
+    },
+    {
+      "id": "slice",
+      "label": "取单线程视角"
+    },
+    {
+      "id": "part",
+      "label": "切 data layout"
+    },
+    {
+      "id": "run",
+      "label": "执行与校验"
+    }
+  ],
+  "phases": [
+    {
+      "id": "p1",
+      "label": "把 Atom 铺开",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "p2",
+      "label": "按线程切片",
+      "fromCol": 2,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "p3",
+      "label": "分片与执行",
+      "fromCol": 3,
+      "toCol": 5,
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "atom",
+    "tiled",
+    "slice",
+    "partA",
+    "partBC",
+    "gemm"
+  ],
+  "nodes": [
+    {
+      "id": "atom",
+      "lane": "build",
+      "col": 0,
+      "type": "frontend",
+      "label": "MMA_Atom{}",
+      "sublabel": "一条硬件指令的封装",
+      "width": 150
+    },
+    {
+      "id": "tiled",
+      "lane": "build",
+      "col": 1,
+      "type": "frontend",
+      "label": "make_tiled_mma",
+      "sublabel": "第二参数是 Layout,决定怎么铺 tile",
+      "width": 150
+    },
+    {
+      "id": "slice",
+      "lane": "slice",
+      "col": 2,
+      "type": "security",
+      "label": "get_slice(thread_idx)",
+      "sublabel": "返回 ThrMMA —— 坑就在这一步",
+      "width": 150
+    },
+    {
+      "id": "partA",
+      "lane": "part",
+      "col": 3,
+      "type": "backend",
+      "label": "partition_A",
+      "sublabel": "本线程的 A 子矩阵 fragment",
+      "width": 150
+    },
+    {
+      "id": "partBC",
+      "lane": "part",
+      "col": 4,
+      "type": "backend",
+      "label": "partition_B / C",
+      "sublabel": "同理切 B 与累加器",
+      "width": 150
+    },
+    {
+      "id": "gemm",
+      "lane": "run",
+      "col": 5,
+      "type": "backend",
+      "label": "cute::gemm",
+      "sublabel": "执行本线程的原子 mma",
+      "width": 150
+    },
+    {
+      "id": "verify",
+      "lane": "run",
+      "col": 4,
+      "type": "database",
+      "label": "inverse TV 反查",
+      "sublabel": "校验分布有没有猜对",
+      "width": 150,
+      "yOffset": 104
+    },
+    {
+      "id": "err",
+      "lane": "slice",
+      "col": 3,
+      "type": "external",
+      "label": "错法:tiled_mma.partition",
+      "sublabel": "编译不过:该方法不在 TiledMMA 上",
+      "width": 176,
+      "yOffset": 104
+    },
+    {
+      "id": "copy",
+      "lane": "part",
+      "col": 5,
+      "type": "cloud",
+      "label": "TiledCopy 同构",
+      "sublabel": "多线程/多 Atom 间编排拷贝",
+      "width": 150,
+      "yOffset": 104
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "atom",
+      "to": "tiled",
+      "variant": "emphasis",
+      "label": "铺成更大微内核"
+    },
+    {
+      "id": "e2",
+      "from": "tiled",
+      "to": "slice",
+      "variant": "emphasis",
+      "label": "按线程索引切片"
+    },
+    {
+      "id": "e3",
+      "from": "slice",
+      "to": "partA",
+      "variant": "emphasis",
+      "label": "ThrMMA 才有 partition"
+    },
+    {
+      "id": "e4",
+      "from": "partA",
+      "to": "partBC",
+      "variant": "default",
+      "label": "同一套切法"
+    },
+    {
+      "id": "e5",
+      "from": "partBC",
+      "to": "gemm",
+      "variant": "emphasis",
+      "label": "fragment 就绪"
+    },
+    {
+      "id": "e6",
+      "from": "gemm",
+      "to": "verify",
+      "variant": "dashed",
+      "label": "反查分布对不对"
+    },
+    {
+      "id": "e7",
+      "from": "tiled",
+      "to": "err",
+      "variant": "security",
+      "label": "别在这里调 partition"
+    },
+    {
+      "id": "e8",
+      "from": "partA",
+      "to": "copy",
+      "variant": "dashed",
+      "label": "拷贝侧用对称写法"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "最易踩的坑",
+      "items": [
+        "TiledMMA 提供 partition_shape_A/B/C、thrfrg_*、make_fragment_*",
+        "但 partition_A/B/C 是 ThrMMA(TiledMMA::get_slice() 的返回物)的成员",
+        "必须先 get_slice(tid),再 partition;顺序反了编译不过"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "inverse TV 的 1D→2D 折算",
+      "items": [
+        "inverse TV 返回的是 1D 索引,不是 (thread, value) 坐标",
+        "必须用 TV layout 的 shape 手动折成 2D",
+        "不折算直接用会拿错线程/值——这是验证环节的隐蔽坑"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "两个 shape 别混",
+      "items": [
+        "partition_shape_A/B/C 给的是「按线程分布后的形状」",
+        "make_fragment_* 给的是「本线程实际持有的寄存器块」",
+        "Shape_MNK 属于 Atom(整条指令),不属于 TiledMMA"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "往上还能长",
+      "items": [
+        "TiledCopy 与 TiledMMA 同构,负责搬运侧的线程编排",
+        "再上一层是 Collective(加架构同步,组成一个 stage 的搬算)",
+        "最上层 Kernel + TileScheduler 组装成完整 GEMM"
+      ]
+    }
+  ]
+}

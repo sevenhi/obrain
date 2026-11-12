@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "CUTLASS 4.8.1 已知问题:三类「不报错但算错数」的坑",
+    "subtitle": "release note 明确列的坑都是编译器/指令级的,API 层不报错、编译也能过,只在运行结果上暴露——写内核前先对一遍",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-build-pitfalls.tree.html"
+  },
+  "layout": {
+    "direction": "right",
+    "nodeW": 215,
+    "gapX": 28,
+    "gapY": 44
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "label": "v4.8.1 已知问题",
+      "sublabel": "2026-10 补丁版,只有 2 commit"
+    },
+    {
+      "id": "fp8",
+      "label": "① FP8 packed 减法算错",
+      "parent": "root",
+      "sublabel": "MMA_K=128 路径"
+    },
+    {
+      "id": "fp8_p",
+      "label": "触发:inline PTX sub.rn.e4m3x4",
+      "parent": "fp8",
+      "sublabel": "e5m2x4 同理"
+    },
+    {
+      "id": "fp8_fix",
+      "label": "规避:不要用",
+      "parent": "fp8",
+      "sublabel": "等上游 CTK 修"
+    },
+    {
+      "id": "rubin",
+      "label": "② Rubin(SM107)编译错",
+      "parent": "root",
+      "sublabel": "packed mixed-input 组合"
+    },
+    {
+      "id": "rubin_p",
+      "label": "触发:16-bit 结果 + 32-bit 输入",
+      "parent": "rubin",
+      "sublabel": "或首操作数是编译期常量"
+    },
+    {
+      "id": "rubin_fix",
+      "label": "规避:拆成显式转换",
+      "parent": "rubin",
+      "sublabel": "或避开该组合"
+    },
+    {
+      "id": "tma",
+      "label": "③ TMA descriptor 缩小后越界",
+      "parent": "root",
+      "sublabel": "v4.8.1 已修"
+    },
+    {
+      "id": "tma_p",
+      "label": "触发:tensormap_replace 改小 extent",
+      "parent": "tma",
+      "sublabel": "grouped GEMM 每 group 尺寸不同"
+    },
+    {
+      "id": "tma_fix",
+      "label": "需要旧行为:keep_oob_fetch_window",
+      "parent": "tma",
+      "sublabel": "保留原始越界抓取窗口"
+    },
+    {
+      "id": "tma_who",
+      "label": "同族受害面",
+      "parent": "tma",
+      "sublabel": "FlashAttention / paged KV / 变长 batch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "第三项的机制值得单记",
+      "items": [
+        "设备端改 descriptor 是「缩窗口」不是「换指针」",
+        "cuTensorMapEncodeTiled 的已知问题:收缩后 TMA 仍按最初 box 预取",
+        "于是读到不该访问的地址,Blackwell/Rubin 上表现为非法访存"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "谁会踩到",
+      "items": [
+        "grouped GEMM(每 group 尺寸不同)",
+        "变长 batch / paged KV 这类动态形状内核",
+        "FA 侧的解法可对照读:每 CTA 一份 descriptor + fence/prefetch 协议"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "版本对照别记错",
+      "items": [
+        "v4.8.0 = 功能版,新增 Rubin SM107 初步支持",
+        "v4.8.1 = 补丁版:4 条 CuTe DSL 修复 + 上述 3 条已知问题",
+        "无新特性,纯修"
+      ]
+    }
+  ]
+}

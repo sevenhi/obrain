@@ -1,0 +1,126 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "Worker 创建与 Rank 重排:创建顺序 ≠ 逻辑 rank",
+  "subtitle": "Ray 落卡不确定,拿到 IP 后显式 adjust_rank",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-ray-rank-rerank.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "create",
+   "label": "创建"
+  },
+  {
+   "id": "reorder",
+   "label": "重排"
+  },
+  {
+   "id": "apply",
+   "label": "下发"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "pg",
+   "lane": "create",
+   "col": 0,
+   "type": "backend",
+   "label": "placement group",
+   "sublabel": "bundle 级 GPU 绑定"
+  },
+  {
+   "id": "bun",
+   "lane": "create",
+   "col": 1,
+   "type": "backend",
+   "label": "选 bundle",
+   "sublabel": "按 ray_device_key 过滤"
+  },
+  {
+   "id": "act",
+   "lane": "create",
+   "col": 2,
+   "type": "backend",
+   "label": "RayWorkerWrapper",
+   "sublabel": "每 rank 一个 actor"
+  },
+  {
+   "id": "ip",
+   "lane": "reorder",
+   "col": 0,
+   "type": "backend",
+   "label": "收集 worker IP",
+   "sublabel": "get_node_and_physical_gpu_ids"
+  },
+  {
+   "id": "sort",
+   "lane": "reorder",
+   "col": 1,
+   "type": "backend",
+   "label": "sort_by_driver_then_worker_ip",
+   "sublabel": "driver 同节点优先"
+  },
+  {
+   "id": "map",
+   "lane": "apply",
+   "col": 0,
+   "type": "backend",
+   "label": "rerank_mapping",
+   "sublabel": "created_rank→adjusted_rank"
+  },
+  {
+   "id": "adj",
+   "lane": "apply",
+   "col": 1,
+   "type": "backend",
+   "label": "adjust_rank",
+   "sublabel": "下发所有 worker"
+  }
+ ],
+ "edges": [
+  {
+   "from": "pg",
+   "to": "bun",
+   "label": "遍历 bundle_specs"
+  },
+  {
+   "from": "bun",
+   "to": "act",
+   "label": "创建 actor"
+  },
+  {
+   "from": "act",
+   "to": "ip",
+   "label": "取 IP 与 GPU"
+  },
+  {
+   "from": "ip",
+   "to": "sort",
+   "label": "排序键",
+   "variant": "emphasis"
+  },
+  {
+   "from": "sort",
+   "to": "map",
+   "label": "生成映射"
+  },
+  {
+   "from": "map",
+   "to": "adj",
+   "label": "collective_rpc 下发",
+   "variant": "emphasis"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "rose",
+   "title": "排序键",
+   "items": [
+    "driver 同节点优先 > worker 数少者优先 > IP 小者优先",
+    "目的:TP 组内 worker 落同一节点,降低 all-reduce 延迟"
+   ]
+  }
+ ]
+}

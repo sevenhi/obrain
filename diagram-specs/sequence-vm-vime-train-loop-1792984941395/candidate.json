@@ -1,0 +1,87 @@
+{
+ "schema_version": 1,
+ "diagram_type": "sequence",
+ "meta": {
+  "title": "一个 rollout_id 的训练-采样闭环",
+  "subtitle": "Data Buffer → RolloutManager → vLLM → reward → 训练 → 权重同步",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-vime-train-loop.sequence.html"
+ },
+ "participants": [
+  {
+   "id": "db",
+   "type": "database",
+   "label": "Data Buffer"
+  },
+  {
+   "id": "rm",
+   "type": "backend",
+   "label": "RolloutManager"
+  },
+  {
+   "id": "v",
+   "type": "frontend",
+   "label": "vLLM engines"
+  },
+  {
+   "id": "a",
+   "type": "backend",
+   "label": "Megatron Actor"
+  }
+ ],
+ "messages": [
+  {
+   "from": "db",
+   "to": "rm",
+   "y": 160,
+   "label": "生成请求(prompt/custom generate)"
+  },
+  {
+   "from": "rm",
+   "to": "v",
+   "y": 220,
+   "label": "批量采样 /inference/v1/generate"
+  },
+  {
+   "from": "v",
+   "to": "rm",
+   "y": 280,
+   "label": "轨迹 token",
+   "variant": "return"
+  },
+  {
+   "from": "rm",
+   "to": "rm",
+   "y": 340,
+   "label": "rm_hub 计算 reward",
+   "note": "reward 只在 rollout 侧生效,不改 loss"
+  },
+  {
+   "from": "rm",
+   "to": "db",
+   "y": 400,
+   "label": "rollout data",
+   "variant": "return"
+  },
+  {
+   "from": "db",
+   "to": "a",
+   "y": 460,
+   "label": "训练 batch"
+  },
+  {
+   "from": "a",
+   "to": "a",
+   "y": 520,
+   "label": "async_train(RL loss)",
+   "note": "loss 在 Megatron loss.py"
+  },
+  {
+   "from": "a",
+   "to": "v",
+   "y": 600,
+   "label": "update_weights(周期推送)",
+   "variant": "emphasis"
+  }
+ ]
+}

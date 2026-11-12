@@ -3,7 +3,7 @@ title: Computer Vision - 参考资料索引
 type: reference
 tags: [nerf, vit, cnn, reparameterization, tensorrt, object-detection, segmentation, detr, yolo, sam]
 source: "web: 本域论文来源索引 | 见下方 arXiv/官方链接"
-date: 2026-10
+date: 2026-11
 ---
 
 # 参考资料索引
@@ -61,6 +61,8 @@ date: 2026-10
 | SAM 官方代码(facebookresearch) | https://github.com/facebookresearch/segment-anything | vit_b/l/h checkpoint、SamPredictor/SamAutomaticMaskGenerator API、ONNX 导出脚本 |
 | SAM 2 官方代码(facebookresearch) | https://github.com/facebookresearch/segment-anything-2 | 视频扩展(arXiv:2408.00714)、流式 memory |
 | Ultralytics YOLO 官方仓库/文档 | https://github.com/ultralytics/ultralytics | YOLO11 检测/分割/分类/姿态/OBB 五任务、COCO 性能表、导出部署 |
+
+- torchvision ViT 固定源码(IMAGENET1K_V1 为修改版 DeiT 配方从头训练,不是 Google JFT checkpoint) — https://github.com/pytorch/vision/blob/3ac97aa9120137381ed1060f37237e44485ac2aa/torchvision/models/vision_transformer.py#L351
 
 ## 阅读顺序建议
 

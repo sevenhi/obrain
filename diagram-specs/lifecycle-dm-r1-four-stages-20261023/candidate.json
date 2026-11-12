@@ -1,0 +1,195 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "R1 的四阶段流水线:每一次 SFT/RL 交替都在补上一步的短板",
+    "subtitle": "冷启动 SFT 修可读性 → 推理 RL 提能力(加语言一致性 reward)→ 拒采样重训 SFT(约 800k 样本、2 个 epoch)→ 全场景 RL 补通用对齐。R1-Zero 只走第 2 步,所以能力到但话说不清",
+    "locale": "zh-CN",
+    "output": "diagrams/dm-r1-four-stages.lifecycle.html"
+  },
+  "mainPath": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "done"
+  ],
+  "states": [
+    {
+      "id": "base",
+      "type": "start",
+      "label": "V3-Base 671B",
+      "sublabel": "671B MoE 底座",
+      "step": "起点"
+    },
+    {
+      "id": "s1",
+      "type": "active",
+      "label": "① 冷启动 SFT",
+      "sublabel": "数千条长 CoT",
+      "step": "阶段 1"
+    },
+    {
+      "id": "s2",
+      "type": "active",
+      "label": "② 推理向 RL",
+      "sublabel": "大规模 GRPO",
+      "step": "阶段 2"
+    },
+    {
+      "id": "s3",
+      "type": "active",
+      "label": "③ 拒采样 + SFT",
+      "sublabel": "约 800k 样本",
+      "step": "阶段 3"
+    },
+    {
+      "id": "s4",
+      "type": "active",
+      "label": "④ 全场景 RL",
+      "sublabel": "规则 + reward model",
+      "step": "阶段 4"
+    },
+    {
+      "id": "done",
+      "type": "success",
+      "label": "R1 正式版",
+      "sublabel": "AIME 79.8",
+      "step": "终点"
+    },
+    {
+      "id": "zero",
+      "type": "external",
+      "label": "R1-Zero 旁支",
+      "sublabel": "跳过 ①③",
+      "step": "对照实验"
+    },
+    {
+      "id": "zero_bad",
+      "type": "failure",
+      "label": "可读性差",
+      "sublabel": "纯 RL 只管对",
+      "step": "R1-Zero 的缺陷"
+    },
+    {
+      "id": "lang",
+      "type": "decision",
+      "label": "语言一致性 reward",
+      "sublabel": "加到 accuracy 上",
+      "step": "阶段 2 的新增项"
+    },
+    {
+      "id": "hh",
+      "type": "waiting",
+      "label": "helpfulness 分治",
+      "sublabel": "只评 summary",
+      "step": "阶段 4 的细节"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "t0",
+      "from": "base",
+      "to": "s1",
+      "label": "先教说话"
+    },
+    {
+      "id": "t1",
+      "from": "s1",
+      "to": "s2",
+      "label": "再上 RL"
+    },
+    {
+      "id": "t2",
+      "from": "s2",
+      "to": "s3",
+      "label": "产数据"
+    },
+    {
+      "id": "t3",
+      "from": "s3",
+      "to": "s4",
+      "label": "再对齐"
+    },
+    {
+      "id": "t4",
+      "from": "s4",
+      "to": "done",
+      "label": "定版"
+    },
+    {
+      "id": "t5",
+      "from": "base",
+      "to": "zero",
+      "label": "对照",
+      "variant": "dashed"
+    },
+    {
+      "id": "t6",
+      "from": "zero",
+      "to": "zero_bad",
+      "label": "能力到"
+    },
+    {
+      "id": "t7",
+      "from": "zero_bad",
+      "to": "s1",
+      "label": "补冷启动",
+      "variant": "dashed"
+    },
+    {
+      "id": "t8",
+      "from": "s2",
+      "to": "lang",
+      "label": "新增"
+    },
+    {
+      "id": "t9",
+      "from": "s4",
+      "to": "hh",
+      "label": "分治"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "冷启动到底值什么(论文 §2.3.1)",
+      "items": [
+        "防 RL 早期不稳定",
+        "可读性(格式:special_token + reasoning_process + special_token + summary)",
+        "人类先验带来的性能潜力 —— 不只是修文的,也是修能力的",
+        "代价:数千条长 CoT 要人写,这是 R1 唯一的重人工环节"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "四阶段的数字",
+      "items": [
+        "阶段 ①:数千条长 CoT,过滤不友好回答",
+        "阶段 ②:同 R1-Zero 的大规模 GRPO;语言一致性 reward 消融显示略降性能但更可读",
+        "阶段 ③:推理 ~600k(多采样留对的,引入 V3 做生成式 reward 判分)+ 非推理 ~200k(写作/事实 QA/自认知/翻译,复用 V3 管道)= ~800k,训 2 epoch",
+        "阶段 ④:推理仍用规则 reward;通用数据用 reward model"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "R1 最终成绩(README,pass@1,温度 0.6 采 64 次)",
+      "items": [
+        "AIME 2024 79.8(o1-1217 = 79.2)、MATH-500 97.3、LiveCodeBench 65.9",
+        "Codeforces 96.3 百分位 / 2029 rating;MMLU 90.8;AlpacaEval2.0 87.6;ArenaHard 92.3",
+        "数学 / 竞赛代码对标 o1-1217",
+        "工程向代码仍落后:SWE Verified 49.2、Aider 53.3"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "R1-Zero 的成绩要读对照基线",
+      "items": [
+        "AIME 2024:15.6% → 71.0%(RL 过程中持续上涨);cons@64 = 86.7%",
+        "GPQA Diamond 73.3、LiveCodeBench 50.0、Codeforces 1444",
+        "注意:GPQA/LiveCodeBench/Codeforces 用 o1-mini 对照,AIME/MATH 用 o1-0912 —— 两条基线混用",
+        "统一对更强的 o1-0912,这三项仍落后 —— 真正全面超过 o1 的是加了冷启动的完整 R1"
+      ]
+    }
+  ]
+}

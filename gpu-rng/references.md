@@ -2,7 +2,7 @@
 title: gpu-rng 参考资料索引
 type: reference
 tags: [gpu, rng, prng, curand, references]
-date: 2026-09
+date: 2026-11
 ---
 
 # gpu-rng 参考资料
@@ -15,6 +15,9 @@ date: 2026-09
 - Variants of Mersenne Twister Suitable for Graphic Processors — https://arxiv.org/abs/1005.4973
 
 ## 官方实现/参数集
+
+- Random123 README 固定源码安全声明(Philox/Threefry 不适用于密码学或安全用途;2026-11-04 核对) — https://github.com/DEShawResearch/random123/blob/726a093cd9a73f3ec3c8d7a70ff10ed8efec8d13/README.md
+- CUDA 12.6.3 Best Practices:shared-memory 同地址读取广播与不同地址同 bank 冲突的区别 — https://docs.nvidia.com/cuda/archive/12.6.3/cuda-c-best-practices-guide/index.html#shared-memory-and-memory-banks
 
 - Random123(ARS/Threefry/Philox,C/C++/CUDA/OpenCL)— https://www.thesalmons.org/john/random123/ ;GitHub: https://github.com/deshawresearch/random123
 - MTGP / MTGPDC 源码与参数集(広島大)— https://www.math.sci.hiroshima-u.ac.jp/m-mat/MT/MTGP/

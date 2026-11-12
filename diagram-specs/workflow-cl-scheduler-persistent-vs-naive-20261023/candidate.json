@@ -1,0 +1,81 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "tile-based 的尾批空闲 vs persistent 的循环领活",
+    "subtitle": "朴素做法 launch 的 threadblock 数 = tile 数;persistent 只 launch ≈SM 数,每个驻留、从队列循环领下一个 tile。差别不在算力,在尾批那一刻有多少 SM 在空转",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-scheduler-persistent-vs-naive.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_naive", "label": "朴素 tile-based:一 tile 一 CTA" },
+    { "id": "ln_persist", "label": "Persistent(3.x 默认)" },
+    { "id": "ln_fix", "label": "config 位置" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "launch 多少个 block", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "尾批怎么办", "fromCol": 2, "toCol": 2, "variant": "emphasis" }
+  ],
+  "mainPath": ["cells", "oneeach", "tail"],
+  "nodes": [
+    { "id": "cells", "lane": "ln_naive", "col": 0, "type": "frontend", "label": "输出切成 tile 网格", "sublabel": "⌈M/TileM⌉×⌈N/TileN⌉ 块", "icon": "start", "width": 175 },
+    { "id": "oneeach", "lane": "ln_naive", "col": 1, "type": "backend", "label": "一个 block 一块", "sublabel": "launch 数 = tile 总数", "width": 165 },
+    { "id": "tail", "lane": "ln_naive", "col": 2, "type": "security", "label": "尾批干一点就退场", "sublabel": "tile 数整除不了 SM 数时", "icon": "failure", "width": 185 },
+
+    { "id": "smonly", "lane": "ln_persist", "col": 0, "type": "frontend", "label": "只 launch ≈SM 数", "sublabel": "一 SM 一 CTA 或少几倍", "icon": "start", "width": 165 },
+    { "id": "loop", "lane": "ln_persist", "col": 1, "type": "backend", "label": "驻留 + 循环领 tile", "sublabel": "工作队列取下一个", "width": 175 },
+    { "id": "none", "lane": "ln_persist", "col": 2, "type": "security", "label": "无尾部空闲", "sublabel": "省掉每 tile 一次 launch 开销", "icon": "success", "width": 185 },
+
+    { "id": "cfg", "lane": "ln_fix", "col": 1, "type": "database", "label": "RasterOrder + max_swizzle", "sublabel": "AlongM/AlongN,组大小 1/2/4/8", "width": 215 },
+    { "id": "tag", "lane": "ln_fix", "col": 2, "type": "external", "label": "模板参数,非运行时", "sublabel": "GemmUniversal 的 scheduler tag", "width": 195 }
+  ],
+  "edges": [
+    { "id": "e1", "from": "cells", "to": "oneeach", "label": "网格即 launch 网格", "role": "main" },
+    { "id": "e2", "from": "oneeach", "to": "tail", "label": "除不尽就有尾批", "role": "error" },
+    { "id": "e3", "from": "tail", "to": "smonly", "label": "改成固定 block 数", "role": "branch" },
+    { "id": "e4", "from": "smonly", "to": "loop", "label": "驻留不退出", "role": "main" },
+    { "id": "e5", "from": "loop", "to": "none", "label": "领到队列空为止", "role": "main" },
+    { "id": "e6", "from": "loop", "to": "cfg", "label": "领的顺序可调", "role": "branch" },
+    { "id": "e7", "from": "cfg", "to": "tag", "label": "在哪配", "role": "main" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三类调度器先分清(§3.0 表)",
+      "items": [
+        "Persistent(默认):PersistentTileSchedulerSm90 / sm90_tile_scheduler.hpp —— 固定 block 数,驻留循环领 tile",
+        "Stream-K:PersistentTileSchedulerSm90StreamK / sm90_tile_scheduler_stream_k.hpp —— 均分 K 维迭代,跨 CTA 归约",
+        "Grouped:sm90_tile_scheduler_group.hpp —— 一个 launch 服务多个 problem",
+        "朴素 tile-based:仅最简档,已非 Hopper 默认"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "最常见的误解",
+      "items": [
+        "在 CUTLASS 3.x(Hopper/Blackwell)语境下,「每 tile 一 CTA 的朴素 tile-based」不再是默认",
+        "Hopper+ 的默认是 persistent tile scheduler:一 SM 一 CTA、循环领 tile",
+        "所谓 tile-based 只是最朴素的档位,不是 3.x 的起点"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "调度器的两大控制维(§3.0)",
+      "items": [
+        "persistence:线程块是否驻留循环(还是每 tile 一 launch)—— 影响 launch 开销与占用",
+        "rasterization order:领 tile 的顺序 —— 直接影响 L2 cache 局部性",
+        "日常最常动的是第二个,不是换调度器"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "怎么换调度器(§5 最小可复现)",
+      "items": [
+        "调度器是 GemmUniversal 的模板参数,不是运行时配置",
+        "cutlass::gemm::StreamKScheduler / PersistentScheduler / GroupScheduler / DynamicPersistentScheduler / StaticPersistentScheduler",
+        "DecompositionMode:Heuristic(按几何自动选,Stream-K 不总是最优)/ DataParallel / SplitK / StreamK",
+        "示例:47_ampere_gemm_universal_streamk、49_hopper_gemm_with_collective_builder、57_hopper_grouped_gemm、74_blackwell_gemm_streamk"
+      ]
+    }
+  ]
+}

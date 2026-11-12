@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "DeepJIT:安装期零编译,首次调用才出 CUBIN",
+    "subtitle": "pip install 阶段完全不碰 nvcc;第一次用到某个 kernel 形状才编译,结果按缓存键落盘复用——「装得轻」与「按形状即时生成」由此同时成立",
+    "locale": "zh-CN",
+    "output": "diagrams/di-dg-jit-flow.dataflow.html",
+    "viewBox": [
+      900,
+      520
+    ]
+  },
+  "stages": [
+    {
+      "label": "① 安装"
+    },
+    {
+      "label": "② 首次调用"
+    },
+    {
+      "label": "③ 查缓存"
+    },
+    {
+      "label": "④ 编译加载"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "wheel",
+      "type": "frontend",
+      "label": "pip 装 wheel",
+      "sublabel": "不编 CUDA",
+      "stage": 0,
+      "row": 0,
+      "width": 140
+    },
+    {
+      "id": "call",
+      "type": "backend",
+      "label": "首次 GEMM 调用",
+      "sublabel": "形状决定 kernel",
+      "stage": 1,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "sig",
+      "type": "security",
+      "label": "算缓存键",
+      "sublabel": "五段 hash 拼成",
+      "stage": 2,
+      "row": 0,
+      "width": 140
+    },
+    {
+      "id": "hit",
+      "type": "database",
+      "label": "查 DG_JIT_CACHE_DIR",
+      "sublabel": "默认 ~/.dj",
+      "stage": 2,
+      "row": 1,
+      "width": 160
+    },
+    {
+      "id": "compile",
+      "type": "backend",
+      "label": "NVCC → CUBIN",
+      "sublabel": "按设备即时编",
+      "stage": 3,
+      "row": 0,
+      "width": 150
+    },
+    {
+      "id": "load",
+      "type": "backend",
+      "label": "Driver API 加载",
+      "sublabel": "进入执行",
+      "stage": 3,
+      "row": 1,
+      "width": 150
+    }
+  ],
+  "flows": [
+    {
+      "from": "wheel",
+      "to": "call",
+      "label": "装完没有一个 kernel 被编译",
+      "labelDy": 64
+    },
+    {
+      "from": "call",
+      "to": "sig",
+      "label": "按形状/精度算签名",
+      "labelDy": 64
+    },
+    {
+      "from": "sig",
+      "to": "hit",
+      "label": "先查磁盘缓存",
+      "labelDy": 64,
+      "labelAt": [
+        530,
+        315
+      ]
+    },
+    {
+      "from": "hit",
+      "to": "load",
+      "label": "命中即直接加载",
+      "variant": "dashed",
+      "labelDy": -56
+    },
+    {
+      "from": "sig",
+      "to": "compile",
+      "label": "未命中才编译",
+      "variant": "emphasis",
+      "labelDy": -56
+    },
+    {
+      "from": "compile",
+      "to": "load",
+      "label": "编出 CUBIN 并回写缓存",
+      "labelDy": -56
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两个好处",
+      "items": [
+        "安装轻:不要求可见 GPU,不要求 TORCH_CUDA_ARCH_LIST",
+        "kernel 按当前设备形状与精度即时生成"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "缓存键由五部分组成",
+      "items": [
+        "extra_signature + NVCC 版本 hash",
+        "生效的编译 flag + post_hook 路径/内容 hash",
+        "源文件与 tracked include 树 hash"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "环境变量优先级",
+      "items": [
+        "DG_JIT_* 优先,回落到 DJ_JIT_*(DeepJIT 全局)",
+        "常用 DG_JIT_CACHE_DIR、DG_JIT_DEBUG、DG_JIT_DUMP_SASS",
+        "查寄存器溢出用 DG_JIT_CHECK_NO_SPILLS"
+      ]
+    }
+  ]
+}

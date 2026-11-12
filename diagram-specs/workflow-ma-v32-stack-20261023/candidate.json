@@ -1,0 +1,222 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "V3.2-Exp 全模型结构:主干与 V3 一致,增量只在 MLA 里的 Indexer",
+    "subtitle": "61 个 Block,每个注意力层挂一个轻量索引器;FFN 前 3 层 dense、其余 256 routed + 1 shared 的 top-8 MoE;真实超参以 config.json 为准",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-v32-stack.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_io",
+      "label": "输入输出"
+    },
+    {
+      "id": "ln_block",
+      "label": "Block 主干(×61)"
+    },
+    {
+      "id": "ln_attn",
+      "label": "注意力分支"
+    },
+    {
+      "id": "ln_ffn",
+      "label": "FFN 分支"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "① 嵌入与层堆叠",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "② Block 内两分支",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ph3",
+      "label": "③ 收尾投影",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "nodes": [
+    {
+      "id": "tok",
+      "lane": "ln_io",
+      "col": 0,
+      "type": "external",
+      "label": "tokens",
+      "sublabel": "vocab 129280",
+      "icon": "start"
+    },
+    {
+      "id": "emb",
+      "lane": "ln_io",
+      "col": 1,
+      "type": "backend",
+      "label": "ParallelEmbedding",
+      "sublabel": "→ dim 7168",
+      "icon": "active"
+    },
+    {
+      "id": "norm1",
+      "lane": "ln_block",
+      "col": 2,
+      "type": "backend",
+      "label": "attn_norm(带 residual)",
+      "sublabel": "双残差 pre-norm",
+      "icon": "neutral"
+    },
+    {
+      "id": "mla",
+      "lane": "ln_attn",
+      "col": 3,
+      "type": "frontend",
+      "label": "MLA + DSA",
+      "sublabel": "唯一结构增量",
+      "icon": "active"
+    },
+    {
+      "id": "idx",
+      "lane": "ln_attn",
+      "col": 4,
+      "type": "security",
+      "label": "Indexer",
+      "sublabel": "64 头×128 / top-2048",
+      "icon": "decision"
+    },
+    {
+      "id": "norm2",
+      "lane": "ln_block",
+      "col": 3,
+      "type": "backend",
+      "label": "ffn_norm",
+      "sublabel": "同样带 residual",
+      "icon": "neutral"
+    },
+    {
+      "id": "moe",
+      "lane": "ln_ffn",
+      "col": 3,
+      "type": "database",
+      "label": "FFN:MoE 或 dense MLP",
+      "sublabel": "前 3 层 dense,其余 256+1 top-8",
+      "icon": "database"
+    },
+    {
+      "id": "tail",
+      "lane": "ln_block",
+      "col": 5,
+      "type": "backend",
+      "label": "RMSNorm → lm_head",
+      "sublabel": "dim → vocab",
+      "icon": "success"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "tok",
+      "to": "emb",
+      "label": "查表并投影",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "emb",
+      "to": "norm1",
+      "label": "进第 1 层",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "norm1",
+      "to": "mla",
+      "label": "归一化后进注意力",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "mla",
+      "to": "idx",
+      "label": "复用 qr latent",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "idx",
+      "to": "mla",
+      "label": "回传 index_mask",
+      "role": "return"
+    },
+    {
+      "id": "e6",
+      "from": "mla",
+      "to": "norm2",
+      "label": "残差相加后归一化",
+      "role": "main"
+    },
+    {
+      "id": "e7",
+      "from": "norm2",
+      "to": "moe",
+      "label": "第 4 层起走 MoE",
+      "role": "main"
+    },
+    {
+      "id": "e9",
+      "from": "moe",
+      "to": "tail",
+      "label": "层堆叠结束",
+      "role": "main"
+    }
+  ],
+  "mainPath": [
+    "tok",
+    "emb",
+    "norm1",
+    "mla",
+    "norm2",
+    "moe",
+    "tail"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "真实超参(以 config.json 为准)",
+      "items": [
+        "hidden_size 7168 / 61 层 / 128 头",
+        "q_lora_rank 1536,kv_lora_rank 512(MLA 压缩瓶颈)",
+        "qk_nope 128 / qk_rope 64,v_head_dim 128",
+        "max_position_embeddings 163840(RoPE theta=10000 + YaRN factor=40)"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "别被 v32_model.py 的 ModelArgs 骗到",
+      "items": [
+        "文件里的 ModelArgs 是降采样 smoke-test 配置(dim=2048 / 27 层 / 16 头)",
+        "不代表真实模型;真实超参只能看官方 config.json",
+        "唯一「代码与 checkpoint 对齐」的是索引器维度 128 / 64 头 / 2048"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "演进主线:以稀疏/低秩换效率",
+      "items": [
+        "V2:MLA 低秩省 KV 显存",
+        "V3:MoE 稀疏省算力 + MTP",
+        "V3.2:DSA 稀疏同时省长上下文算力与 KV 读取",
+        "约束始终是 FLOPs 与 KV cache 双账单,质量不倒退"
+      ]
+    }
+  ]
+}

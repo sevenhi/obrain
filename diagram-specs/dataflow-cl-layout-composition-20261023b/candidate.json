@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "composition(A,B) 怎么算:官方例 A=(6,2):(8,2) 与 B=(4,3):(3,1)",
+    "subtitle": "A∘B 的直觉是「按 B 决定遍历顺序,再按 A 落到内存」;结果是 ((2,2),3):((24,2),8)——3 列,每列一个 2×2 子块",
+    "locale": "zh-CN",
+    "output": "diagrams/cl-layout-composition.dataflow.html"
+  },
+  "stages": [
+    {
+      "label": "① B 的坐标"
+    },
+    {
+      "label": "② 经 B 得线性下标"
+    },
+    {
+      "label": "③ 下标当 A 的坐标"
+    },
+    {
+      "label": "④ 经 A 落到内存"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "bcoord",
+      "type": "frontend",
+      "label": "B 坐标 (i,j)",
+      "sublabel": "i∈[0,4), j∈[0,3)",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "bmap",
+      "type": "backend",
+      "label": "i·3 + j·1",
+      "sublabel": "B 的 Stride<_3,_1>",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "acompose",
+      "type": "backend",
+      "label": "下标 → A 坐标",
+      "sublabel": "A 是 6×2,shape 折算",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "amap",
+      "type": "backend",
+      "label": "m·8 + n·2",
+      "sublabel": "A 的 Stride<_8,_2>",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "out",
+      "type": "database",
+      "label": "内存偏移",
+      "sublabel": "落在 A 那张表的某格",
+      "stage": 3,
+      "row": 1
+    },
+    {
+      "id": "shape",
+      "type": "external",
+      "label": "合成 shape",
+      "sublabel": "((2,2),3):3 列,每列 2×2",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "stride",
+      "type": "external",
+      "label": "合成 stride",
+      "sublabel": "((24,2),8)",
+      "stage": 2,
+      "row": 2
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "bcoord",
+      "to": "bmap",
+      "label": "先按 B 算一遍"
+    },
+    {
+      "id": "f2",
+      "from": "bmap",
+      "to": "acompose",
+      "label": "把 B 的下标当 A 的坐标用"
+    },
+    {
+      "id": "f3",
+      "from": "acompose",
+      "to": "amap",
+      "label": "再按 A 算一遍"
+    },
+    {
+      "id": "f4",
+      "from": "amap",
+      "to": "out",
+      "label": "得到最终偏移"
+    },
+    {
+      "id": "f5",
+      "from": "acompose",
+      "to": "shape",
+      "label": "第一次映射定 shape"
+    },
+    {
+      "id": "f6",
+      "from": "shape",
+      "to": "stride",
+      "label": "再叠 A 的步长"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "结果怎么读",
+      "items": [
+        "A∘B 的 shape 是 ((2,2),3):3 列,每列一个 2×2 子块",
+        "stride 是 ((24,2),8):列步长 8,块内行 24、列 2",
+        "直觉:按 B 决定遍历顺序,按 A 决定落到哪"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "可复现性",
+      "items": [
+        "上面是官方 02_layout_algebra 的原例,不是编的",
+        "在 CuTe 里 print_layout 能直接验出来",
+        "有输入、有运算、有输出,才叫可复现"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "divide 三兄弟别搞反",
+      "items": [
+        "logical_divide:保留 mode 语义,M 模仍是 M 模",
+        "zipped_divide:Tile 进 mode-0,Rest 收进嵌套 mode-1",
+        "tiled_divide:只把 Rest 部分展平,不是 flatten 整个结果"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "运算名清单(容易记错)",
+      "items": [
+        "合法:logical_divide / zipped_divide / tiled_divide / coalesce / flatten / composition / complement",
+        "不存在:left_padding、partitioned_into_TV",
+        "tiled_divide / tiled_product 是合法的(divide/product 本体)"
+      ]
+    }
+  ]
+}

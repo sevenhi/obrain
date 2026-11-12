@@ -1,0 +1,69 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "SWA bounded replay:把重算成本变成与上下文无关的常数",
+    "subtitle": "缓存命中后 SWA KV 可能缺失;精确重建要把末尾一长段重跑一遍(官方例子 20 层 × 128 token = 2,560 token-层),bounded replay 只重算末尾 128 token 并把 query 可见域收窄",
+    "locale": "zh-CN",
+    "output": "diagrams/di-swa-bounded-replay.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_hit", "label": "命中判定" },
+    { "id": "ln_block", "label": "block KV(3FS)" },
+    { "id": "ln_swa", "label": "SWA KV(host)" },
+    { "id": "ln_out", "label": "本步 forward" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 先按 block KV 定命中", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 再按 SWA 决定末块", "fromCol": 2, "toCol": 3, "variant": "emphasis" }
+  ],
+  "nodes": [
+    { "id": "need", "lane": "ln_hit", "col": 0, "type": "backend", "label": "输入长度 L", "sublabel": "上限 L−134", "icon": "start" },
+    { "id": "l1", "lane": "ln_block", "col": 1, "type": "database", "label": "查 block KV 得 L1", "sublabel": "128 的倍数", "icon": "database" },
+    { "id": "ask", "lane": "ln_swa", "col": 2, "type": "security", "label": "[L1−128, L1] 有副本?", "sublabel": "跨机走 400G VLAN", "icon": "decision" },
+    { "id": "full", "lane": "ln_out", "col": 3, "type": "backend", "label": "命中 L1,全复用", "sublabel": "不重算不覆写", "icon": "success" },
+    { "id": "replay", "lane": "ln_out", "col": 4, "type": "backend", "label": "重算末尾 128 token", "sublabel": "可见域 s..i 与 i−127", "icon": "active" },
+    { "id": "fwd", "lane": "ln_out", "col": 5, "type": "backend", "label": "与非命中后缀一起 forward", "sublabel": "只重建 SWA,block 原样", "icon": "success" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "need", "to": "l1", "label": "先算能命多长", "role": "main" },
+    { "id": "e2", "from": "l1", "to": "ask", "label": "末块是否需重算由 SWA 定", "role": "main" },
+    { "id": "e3", "from": "ask", "to": "full", "label": "在:命中长度 = L1", "role": "main" },
+    { "id": "e4", "from": "ask", "to": "replay", "label": "缺:命中长度 = L1−128", "role": "branch" },
+    { "id": "e5", "from": "full", "to": "fwd", "label": "纯后缀 prefill", "role": "main" },
+    { "id": "e6", "from": "replay", "to": "fwd", "label": "replay 段只补 SWA", "role": "main" }
+  ],
+  "mainPath": ["need", "l1", "ask", "replay", "fwd"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两处用法(都出自 Q&A)",
+      "items": [
+        "Encoder 侧:SWA 缺失时重算命中前缀末尾 128,block KV 原样复用",
+        "Decoder 侧:每次 prefill 只重算 prompt 末尾 128,结果仅供本次 decode、不进 cache",
+        "收益口径:decoder 层 prefill 计算近乎减半",
+        "重算成本与上下文长度、层数都无关"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "134 这个数从哪来",
+      "items": [
+        "128 = 窗口大小;6 = 投机回退 max(0, nextn+1)",
+        "硬约束:KEEP_TOKENS ≥ window_size + MAX_BACKTRACKING_TOKENS",
+        "生产值 compact + KEEP_TOKENS=140(128+6=134 ≤ 140)",
+        "StateBlock 槽长同为 134,落盘 state_size_to_disk 也用它"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "StateBlock 的分区原则",
+      "items": [
+        "前段 stored region:SWA 需落盘(前 20 层)",
+        "后段 dropped region:YoCo consumer SWA + 压缩状态",
+        "要落盘的全放前面 → 按 state_size_to_disk 截取即可整段排除",
+        "dropped 段靠 bounded replay 与 128 落盘粒度自洽,无跨界依赖"
+      ]
+    }
+  ]
+}

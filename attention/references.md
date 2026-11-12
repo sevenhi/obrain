@@ -2,7 +2,7 @@
 title: attention 外部链接索引
 type: reference
 tags: [transformer, attention, references]
-date: 2026-09
+date: 2026-11
 ---
 
 # References — attention
@@ -18,6 +18,7 @@ date: 2026-09
 - MEGABYTE: Predicting Million-byte Sequences with Multiscale Transformers — https://arxiv.org/abs/2305.07185 (NeurIPS 2023)
 - FlashAttention FA1 — https://arxiv.org/abs/2205.14135;FA2 — https://arxiv.org/abs/2307.08691;FA3 — https://arxiv.org/abs/2407.08608;FA4 (MLSys 2026) — arXiv:2603.05451(四代全部链接/博客口径见 [implementation/flash-attention-implementation.md](implementation/flash-attention-implementation.md) §7 溯源)
 - Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 前驱) — https://arxiv.org/abs/2112.05682
+- Rabe & Staats v3 §5.3(evaluation accuracy 与 BLEU 是不同指标) — https://arxiv.org/html/2112.05682v3#S5.SS3
 - Online normalizer calculation for softmax (Milakov & Gimelshein, online softmax 最早出处) — https://arxiv.org/abs/1805.02867
 - LLaMA/RoPE/RMSNorm/SwiGLU 等模型架构组件论文已移至 [model-architecture/references.md](../model-architecture/references.md)
 
@@ -37,6 +38,7 @@ date: 2026-09
 - Rabe & Staats 官方 JAX 实现(FA1 前驱,memory_efficient_attention 目录,含 colab 复现)— https://github.com/google-research/google-research/tree/master/memory_efficient_attention
 - Rabe & Staats PyTorch 复现(lucidrains)— https://github.com/lucidrains/memory-efficient-attention-pytorch
 - FlashAttention 官方实现仓库(含 FA1/FA2 kernel 与 `benchmarks/`)— https://github.com/Dao-AILab/flash-attention
+- FlashAttention LSE/split-K 合并专题正文 — [implementation/lse-sequence-split-merge.md](implementation/lse-sequence-split-merge.md)(本库推导、PyTorch 验证与分布式归约说明)
 - MEGABYTE 官方仓库已失效(github.com/facebookresearch/megabyte → 404,2026-09-21 实测);第三方参考实现 — https://github.com/lucidrains/MEGABYTE-pytorch
 - Transformer 官方原始代码(tensor2tensor,已归档,后继 Trax)— https://github.com/tensorflow/tensor2tensor
 

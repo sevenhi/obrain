@@ -1,0 +1,67 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DETR 用匈牙利匹配替掉 anchor 与 NMS",
+    "subtitle": "100 个可学习 object query 并行输出 100 个预测;训练时与真值做一对一最优匹配,一个真值只配一个预测,所以推理不需要 NMS。代价是收敛慢(500 epoch)",
+    "locale": "zh-CN",
+    "output": "diagrams/cv-detr-set-prediction.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_arch", "label": "① 三段结构" },
+    { "id": "ln_mech", "label": "② 内部在做什么" },
+    { "id": "ln_why", "label": "③ 换来什么 / 付出什么" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "编码", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "解码", "fromCol": 1, "toCol": 1, "variant": "emphasis" },
+    { "id": "p3", "label": "训练与推理", "fromCol": 2, "toCol": 2 }
+  ],
+  "nodes": [
+    { "id": "cnn", "lane": "ln_arch", "col": 0, "type": "backend", "label": "CNN 骨干", "sublabel": "ResNet-50 / R101", "icon": "start" },
+    { "id": "enc", "lane": "ln_arch", "col": 1, "type": "backend", "label": "transformer 编码器", "sublabel": "全位置自注意力", "icon": "active" },
+    { "id": "dec", "lane": "ln_arch", "col": 2, "type": "backend", "label": "解码器 + 100 query", "sublabel": "交叉注意力收集物体", "icon": "active" },
+    { "id": "match", "lane": "ln_mech", "col": 2, "type": "security", "label": "匈牙利二分图匹配", "sublabel": "一对一最优匹配后算损失", "icon": "decision" },
+    { "id": "pred", "lane": "ln_mech", "col": 3, "type": "backend", "label": "100 个预测", "sublabel": "score + label + cxcywh", "icon": "success" },
+    { "id": "gain", "lane": "ln_why", "col": 1, "type": "cloud", "label": "免 anchor、免 NMS", "sublabel": "R50 42 AP,FLOPs 减半", "icon": "none" },
+    { "id": "cost", "lane": "ln_why", "col": 3, "type": "cloud", "label": "收敛慢 + 小目标弱", "sublabel": "500 epoch;>100 物体被截断", "icon": "none" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "cnn", "to": "enc", "label": "特征图展平成序列", "role": "main" },
+    { "id": "e2", "from": "enc", "to": "dec", "label": "提供全局上下文", "role": "main" },
+    { "id": "e3", "from": "dec", "to": "match", "label": "训练时才有这一步", "role": "main" },
+    { "id": "e4", "from": "match", "to": "pred", "label": "匹配对算损失,未匹配监督为 ∅", "role": "main" },
+    { "id": "e5", "from": "dec", "to": "gain", "label": "去重由注意力隐式完成", "variant": "dashed", "role": "async" },
+    { "id": "e6", "from": "pred", "to": "cost", "label": "推理只需阈值过滤", "variant": "dashed", "role": "async" }
+  ],
+  "mainPath": ["cnn", "enc", "dec", "match", "pred"],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "「去重」为什么不再需要 NMS",
+      "items": [
+        "训练时一对一匹配:一个真值只能配一个预测,其余预测被监督为「无物体」",
+        "于是模型学会自己避免重复输出",
+        "重复预测会被同一物体的 query 竞争掉——这是注意力的隐式去重"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "代价别忽略",
+      "items": [
+        "训练收敛慢:500 epoch,是 Faster R-CNN 的十几倍",
+        "小目标弱(后续 Deformable DETR 缓解,本篇不展开)",
+        "100 query 是固定上限,单图超过 100 个物体直接截断"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "数字锚点",
+      "items": [
+        "官方 README:R50 骨干 42.0 box AP(COCO val5k)",
+        "与 Faster R-CNN 打平,但 FLOPs 减半、参数量相同",
+        "掩码侧还能统一做全景分割(R50 PQ 43.4,论文 Table 5)"
+      ]
+    }
+  ]
+}

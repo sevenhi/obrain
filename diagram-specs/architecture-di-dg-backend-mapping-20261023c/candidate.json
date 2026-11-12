@@ -1,0 +1,305 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "同 API 两后端:每个抽象在两边各落到什么",
+    "subtitle": "上排 NVIDIA、下排昇腾;五列是同一套抽象。包名与 API 不变,换硬件只换下面那一行——唯一不能自动对齐的是 scaling factor 的打包格式",
+    "locale": "zh-CN",
+    "output": "diagrams/di-dg-backend-mapping.architecture.html",
+    "viewBox": [
+      1130,
+      470
+    ]
+  },
+  "components": [
+    {
+      "id": "nv_gemm",
+      "type": "backend",
+      "label": "Tensor Core(WGMMA/MMA)",
+      "sublabel": "矩阵乘原语",
+      "pos": [
+        28,
+        86
+      ],
+      "size": [
+        206,
+        84
+      ]
+    },
+    {
+      "id": "as_gemm",
+      "type": "database",
+      "label": "MAD 矩阵乘加",
+      "sublabel": "矩阵乘原语",
+      "pos": [
+        28,
+        300
+      ],
+      "size": [
+        206,
+        84
+      ]
+    },
+    {
+      "id": "nv_copy",
+      "type": "backend",
+      "label": "TMA / async copy",
+      "sublabel": "数据搬运",
+      "pos": [
+        246,
+        86
+      ],
+      "size": [
+        206,
+        84
+      ]
+    },
+    {
+      "id": "as_copy",
+      "type": "database",
+      "label": "稀疏数据加载",
+      "sublabel": "数据搬运",
+      "pos": [
+        246,
+        300
+      ],
+      "size": [
+        206,
+        84
+      ]
+    },
+    {
+      "id": "nv_pipe",
+      "type": "backend",
+      "label": "persistent kernel",
+      "sublabel": "流水机制",
+      "pos": [
+        464,
+        86
+      ],
+      "size": [
+        206,
+        84
+      ]
+    },
+    {
+      "id": "as_pipe",
+      "type": "database",
+      "label": "协程流水线",
+      "sublabel": "流水机制",
+      "pos": [
+        464,
+        300
+      ],
+      "size": [
+        206,
+        84
+      ]
+    },
+    {
+      "id": "nv_smem",
+      "type": "backend",
+      "label": "shared memory(显式 tile)",
+      "sublabel": "片上布局",
+      "pos": [
+        682,
+        86
+      ],
+      "size": [
+        206,
+        84
+      ]
+    },
+    {
+      "id": "as_smem",
+      "type": "database",
+      "label": "fractal 分形(库内隐藏)",
+      "sublabel": "片上布局",
+      "pos": [
+        682,
+        300
+      ],
+      "size": [
+        206,
+        84
+      ]
+    },
+    {
+      "id": "nv_sf",
+      "type": "backend",
+      "label": "SM90 FP32 / SM100 UE8M0",
+      "sublabel": "scaling factor",
+      "pos": [
+        900,
+        86
+      ],
+      "size": [
+        206,
+        84
+      ]
+    },
+    {
+      "id": "as_sf",
+      "type": "database",
+      "label": "int16 打包,MN-major",
+      "sublabel": "scaling factor",
+      "pos": [
+        900,
+        300
+      ],
+      "size": [
+        206,
+        84
+      ]
+    },
+    {
+      "id": "api",
+      "type": "frontend",
+      "label": "deep_gemm 同一套 API(包名不变)",
+      "sublabel": "fp8_gemm_nt / m_grouped_* / mega_moe / mqa_logits",
+      "pos": [
+        300,
+        10
+      ],
+      "size": [
+        560,
+        56
+      ],
+      "icon": "frontend"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "NVIDIA 版(SM90 / SM100,CUDA 12.9+)",
+      "wraps": [
+        "nv_gemm",
+        "nv_copy",
+        "nv_pipe",
+        "nv_smem",
+        "nv_sf"
+      ],
+      "pad": 10
+    },
+    {
+      "kind": "region",
+      "label": "Ascend 版(950,CANN 9.2.0,torch_npu)",
+      "wraps": [
+        "as_gemm",
+        "as_copy",
+        "as_pipe",
+        "as_smem",
+        "as_sf"
+      ],
+      "pad": 10
+    }
+  ],
+  "connections": [
+    {
+      "id": "c_gemm",
+      "from": "nv_gemm",
+      "to": "as_gemm",
+      "label": "同一语义,不同指令",
+      "variant": "default",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        131,
+        235
+      ]
+    },
+    {
+      "id": "c_copy",
+      "from": "nv_copy",
+      "to": "as_copy",
+      "label": "各用自家搬运单元",
+      "variant": "default",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        349,
+        235
+      ]
+    },
+    {
+      "id": "c_pipe",
+      "from": "nv_pipe",
+      "to": "as_pipe",
+      "label": "目标相同写法不同",
+      "variant": "default",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        567,
+        235
+      ]
+    },
+    {
+      "id": "c_smem",
+      "from": "nv_smem",
+      "to": "as_smem",
+      "label": "显式 ↔ 隐藏",
+      "variant": "default",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        785,
+        235
+      ]
+    },
+    {
+      "id": "c_sf",
+      "from": "nv_sf",
+      "to": "as_sf",
+      "label": "格式不通用",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        1003,
+        235
+      ]
+    },
+    {
+      "id": "c_api",
+      "from": "api",
+      "to": "nv_copy",
+      "label": "开发者只写这一层",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [
+        300,
+        80
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "「API 兼容」是移植的锚",
+      "items": [
+        "开发者按 NVIDIA 版写调用,换昇腾只改环境不改代码",
+        "包名 deep_gemm 不变:算子生态从单后端变双平台的手段",
+        "DeepEP-Ascend、TileKernels v2.0.0 是同一策略"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "最容易踩的坑:scaling factor",
+      "items": [
+        "NVIDIA SM90 = FP32;SM100 = 打包 UE8M0(4 个进一个 torch.int)",
+        "昇腾 = 每对 UE8M0 沿 K 维打包进 int16,且 MN-major",
+        "跨后端复用时显式重算 SF,别沿用"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "这些行别硬对号",
+      "items": [
+        "fractal 布局由库层隐藏;NVIDIA 侧要自己管 SMEM tile",
+        "协程流水线不等于 persistent kernel,只是目标相同",
+        "两边硬件代际不同,性能数字不可横比"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "diagram_type": "timeline",
+  "meta": {
+    "title": "架构视角的时间线:同一个配方,四条分叉在不同时间点长出来",
+    "subtitle": "2023-02 LLaMA 定型三件套后,骨架再没变过;此后每一次「新模型」实际只是往四个变量里挑一个动:头共享方式、局部性、FFN 形态、KV 压缩方式",
+    "locale": "zh-CN",
+    "evidence": "observed",
+    "output": "diagrams/ma-open-model-timeline.timeline.html"
+  },
+  "layout": { "width": 1020, "breaks": "none" },
+  "lanes": [
+    { "id": "ln_dense", "label": "密集主干" },
+    { "id": "ln_eff", "label": "效率分叉(GQA / SWA)" },
+    { "id": "ln_moe", "label": "MoE 分叉" },
+    { "id": "ln_side", "label": "旁支(非 softmax)" }
+  ],
+  "events": [
+    {
+      "id": "e_gpt3",
+      "at": "2020-05-28T00:00:00Z",
+      "lane": "ln_dense",
+      "title": "GPT-3 175B:decoder-only + pre-LN + GeLU + learned 绝对位置",
+      "detail": "context 2048,BPE 50k;位置编码靠学一张表,超出 2048 无嵌入可查 —— 后面 RoPE 取代它就是为了这个",
+      "kind": "default"
+    },
+    {
+      "id": "e_llama",
+      "at": "2023-02-27T00:00:00Z",
+      "lane": "ln_dense",
+      "title": "LLaMA 65B:三件套定型(pre-RMSNorm + SwiGLU + RoPE)",
+      "detail": "MHA,context 2048,SentencePiece BPE 32k;从这一刻起「架构创新」的空间就只剩四个变量",
+      "kind": "change"
+    },
+    {
+      "id": "e_rwkv",
+      "at": "2023-05-01T00:00:00Z",
+      "lane": "ln_side",
+      "title": "RWKV 14B:线性注意力 RNN 化",
+      "detail": "训练可写成 Transformer 形态(并行),推理是 RNN(常数显存/计算);时间衰减替代位置编码",
+      "kind": "default"
+    },
+    {
+      "id": "e_l2",
+      "at": "2023-07-18T00:00:00Z",
+      "lane": "ln_eff",
+      "title": "Llama 2 70B:首次在 70B 档用 GQA-8",
+      "detail": "2T tokens,context 4k;GQA 把 KV 头从 64 压到 8,KV cache 直接降 8×",
+      "kind": "change"
+    },
+    {
+      "id": "e_mistral",
+      "at": "2023-10-01T00:00:00Z",
+      "lane": "ln_eff",
+      "title": "Mistral 7B:GQA-8 + SWA 4096 滑窗",
+      "detail": "LLaMA 配方 + 局部注意力;32k context,7B 打 Llama2-13B;Apache 2.0",
+      "kind": "change"
+    },
+    {
+      "id": "e_mixtral",
+      "at": "2024-01-09T00:00:00Z",
+      "lane": "ln_moe",
+      "title": "Mixtral 8x7B:attention 一字不改,只把 FFN 换 8 选 2",
+      "detail": "47B 总 / 13B 激活,32k ctx;MMLU 70.6 vs Llama-2-70B 的 69.9,却只用 1/5 激活参数",
+      "kind": "change"
+    },
+    {
+      "id": "e_dsv2",
+      "at": "2024-05-06T00:00:00Z",
+      "lane": "ln_moe",
+      "title": "DeepSeek-V2:236B/21B,MoE + MLA 首次组合",
+      "detail": "KV cache 省 93.3%、吞吐 5.76×,训练成本较 67B dense 省 42.5%;8.1T tokens,128K ctx",
+      "kind": "change"
+    },
+    {
+      "id": "e_qwen2",
+      "at": "2024-06-20T00:00:00Z",
+      "lane": "ln_eff",
+      "title": "Qwen2 72B:全系 GQA + DCA/YaRN 长上下文",
+      "detail": "64 Q 头 / 8 KV 头;0.5B~72B 的 KV 头数分别是 2/2/4/8;MoE 版 57B-A14B 是 64 路由 + 8 共享",
+      "kind": "default"
+    },
+    {
+      "id": "e_l31",
+      "at": "2024-07-23T00:00:00Z",
+      "lane": "ln_eff",
+      "title": "Llama 3.1 405B:θ 从 10k 抬到 500k,原生 131072",
+      "detail": "128 Q 头 GQA-8,tiktoken 128K 词表;15T tokens;405B dense 是最后一个 dense 旗舰",
+      "kind": "change"
+    },
+    {
+      "id": "e_qwen25",
+      "at": "2024-09-19T00:00:00Z",
+      "lane": "ln_dense",
+      "title": "Qwen2.5 72B:18T tokens,原生 128k",
+      "detail": "架构沿用 Qwen2,增长全在数据量;证明密集路线靠数据还能继续榨",
+      "kind": "default"
+    },
+    {
+      "id": "e_dsv3",
+      "at": "2024-12-26T00:00:00Z",
+      "lane": "ln_moe",
+      "title": "DeepSeek-V3:671B/37B,1+256 专家 top-8 + aux-loss-free + MTP",
+      "detail": "14.8T tokens,2.788M H800 GPU 时(≈$5.5M),无一次不可恢复 loss spike;确立「MoE 省算力 + MLA 省 KV」双支柱",
+      "kind": "alert"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "四条分叉,各自解决什么",
+      "items": [
+        "GQA:压 KV 头(8 个最常见)→ 直接决定 KV cache 大小",
+        "SWA / DCA:压注意力范围或分块 → 长上下文不爆算力",
+        "MoE:压每 token 计算 → 总参暴涨但激活只花一小份",
+        "MLA:压 KV 的低秩表示 → DeepSeek 独有的第三条路"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "读这张图的两个容易错的地方",
+      "items": [
+        "2024-06 之后密集与 MoE 是并行两条线,不是「MoE 取代 dense」",
+        "Qwen2.5 72B 的增长完全来自数据(12T→18T),架构没动 —— 这正是「公式稳定」的证据"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "本页快照边界",
+      "items": [
+        "截止 2024-12(最新收录 DeepSeek-V3、Qwen2.5、Llama 3.1)",
+        "Qwen3、DeepSeek-R1/V4 等未纳入,见续篇 open-model-landscape-2025-2026.md",
+        "选型以 HF 当日 config 为准"
+      ]
+    }
+  ]
+}

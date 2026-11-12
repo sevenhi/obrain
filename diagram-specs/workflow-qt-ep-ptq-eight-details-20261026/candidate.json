@@ -1,0 +1,118 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "八个细节对应的真实事故(incident 表)",
+  "subtitle": "三条 incident 都发生在真实模型的 EP 校准中,不是构造用例",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-ep-ptq-eight-details.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "d1",
+   "label": "细节①计数 wait"
+  },
+  {
+   "id": "d2",
+   "label": "细节②int32 溢出"
+  },
+  {
+   "id": "d3",
+   "label": "细节③定序 combine"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "c1",
+   "lane": "d1",
+   "col": 0,
+   "type": "backend",
+   "label": "计数交换后 host 没 wait",
+   "sublabel": "host 读计数定 dispatch 尺寸"
+  },
+  {
+   "id": "c2",
+   "lane": "d2",
+   "col": 0,
+   "type": "backend",
+   "label": "int32 偏移溢出",
+   "sublabel": "rows×hidden > 2^31−1"
+  },
+  {
+   "id": "c3",
+   "lane": "d3",
+   "col": 0,
+   "type": "backend",
+   "label": "combine 用 index_add_",
+   "sublabel": "原子加不定序"
+  },
+  {
+   "id": "i1",
+   "lane": "d1",
+   "col": 1,
+   "type": "security",
+   "label": "Qwen3.5-MoE EP 校准崩溃",
+   "sublabel": "与 stream 竞争→垃圾值定尺寸"
+  },
+  {
+   "id": "i2",
+   "lane": "d2",
+   "col": 1,
+   "type": "security",
+   "label": "2.68e9 元素挂到 NCCL 超时",
+   "sublabel": "batch 8×seq 4096"
+  },
+  {
+   "id": "i3",
+   "lane": "d3",
+   "col": 1,
+   "type": "security",
+   "label": "27% input scale 与单卡不同",
+   "sublabel": "Qwen3-30B-A3B top-8"
+  }
+ ],
+ "edges": [
+  {
+   "from": "c1",
+   "to": "i1",
+   "label": "下一次 all-to-all 直接崩",
+   "variant": "security"
+  },
+  {
+   "from": "c2",
+   "to": "i2",
+   "label": "collective 一直挂",
+   "variant": "security"
+  },
+  {
+   "from": "c3",
+   "to": "i3",
+   "label": "导出的 activation scale 不可复现",
+   "variant": "security"
+  }
+ ],
+ "mainPath": [
+  "c1",
+  "i1"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "可复现性优先的传输层",
+   "items": [
+    "本 PR 不报吞吐数字,定位就不是追吞吐",
+    "plain NCCL all_to_all_single",
+    "追「逐 bit 可复现、任意 rank 数、跨节点能跑」"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "峰值 RSS 对比",
+   "items": [
+    "缓冲尽早 del:2122 MiB → 706 MiB",
+    "留到最后的六个 [rows,H] 缓冲就是峰值内存",
+    "4096 token、hidden 4096、top-8、fp32 路由权重"
+   ]
+  }
+ ]
+}

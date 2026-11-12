@@ -1,0 +1,135 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "逐专家 Hessian:旧实现为什么跳过专家、修复后怎么 bit-exact",
+  "subtitle": "3-D gate_up_proj + per-expert quantizer;旧 is_quantized_linear 过滤直接跳过专家",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-moe-gptq-per-expert-hessian.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "w",
+   "label": "权重布局"
+  },
+  {
+   "id": "old",
+   "label": "旧实现"
+  },
+  {
+   "id": "fix",
+   "label": "修复机制"
+  },
+  {
+   "id": "edge",
+   "label": "边界"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "w3d",
+   "lane": "w",
+   "col": 0,
+   "type": "frontend",
+   "label": "HF fused MoE 3-D 权重",
+   "sublabel": "gate_up_proj [E,2I,H]"
+  },
+  {
+   "id": "old",
+   "lane": "old",
+   "col": 1,
+   "type": "backend",
+   "label": "旧 is_quantized_linear 过滤",
+   "sublabel": "只认 2-D+单量化器→跳过专家"
+  },
+  {
+   "id": "helper",
+   "lane": "fix",
+   "col": 1,
+   "type": "backend",
+   "label": "每专家×每投影建 GPTQHelper",
+   "sublabel": "update_weights 原地写回"
+  },
+  {
+   "id": "hook",
+   "lane": "fix",
+   "col": 2,
+   "type": "backend",
+   "label": "input quantizer hook 分桶",
+   "sublabel": "_current_expert_idx 路由"
+  },
+  {
+   "id": "fb",
+   "lane": "edge",
+   "col": 2,
+   "type": "backend",
+   "label": "无 token 路由到的专家",
+   "sublabel": "Hessian=0→退回纯搜索"
+  },
+  {
+   "id": "fp8",
+   "lane": "edge",
+   "col": 0,
+   "type": "security",
+   "label": "原生 FP8 专家",
+   "sublabel": "先 unpack_weight,否则原地更新丢"
+  }
+ ],
+ "edges": [
+  {
+   "from": "w3d",
+   "to": "old",
+   "label": "旧:被 is_quantized_linear 挡掉",
+   "variant": "security"
+  },
+  {
+   "from": "w3d",
+   "to": "helper",
+   "label": "新:逐专家建 helper",
+   "variant": "emphasis"
+  },
+  {
+   "from": "helper",
+   "to": "hook",
+   "label": "Hessian 从共享 input quantizer 取",
+   "variant": "emphasis"
+  },
+  {
+   "from": "hook",
+   "to": "fb",
+   "label": "校准集未覆盖的专家",
+   "variant": "dashed"
+  },
+  {
+   "from": "w3d",
+   "to": "fp8",
+   "label": "8-bit 打包,需解包",
+   "variant": "security"
+  }
+ ],
+ "mainPath": [
+  "w3d",
+  "helper",
+  "hook"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "口径一致才 bit-exact",
+   "items": [
+    "每个专家只拿路由到它的 token",
+    "且是输入量化之后的激活",
+    "与 dense 路径口径一致→bit-exact 等价 dense"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "imatrix 只能补 53–63%",
+   "items": [
+    "dense 模型上 imatrix 只补 plain encode→GPTQ 差距的 53–63%",
+    "MoE 里被跳过的正是「绝大部分权重」",
+    "补上专家 GPTQ 不只变快,质量也更好(KL 0.2492 vs 0.2971)"
+   ]
+  }
+ ]
+}

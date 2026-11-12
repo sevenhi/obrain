@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "可复现部署流水线:五个阶段,每段都留版本信息",
+    "subtitle": "原文 9 步压成 5 段。关键在于「验证」不在最后一段,两处都要做:ONNX 导出后一次、TRT 构建后再一次",
+    "locale": "zh-CN",
+    "output": "diagrams/cv-deploy-pipeline.dataflow.html"
+  },
+  "stages": [
+    { "label": "① 固定契约" },
+    { "label": "② 导出" },
+    { "label": "③ 图与数值验证" },
+    { "label": "④ 建基线" },
+    { "label": "⑤ 优化并打包" }
+  ],
+  "nodes": [
+    {
+      "id": "ckpt",
+      "type": "frontend",
+      "label": "训练 checkpoint",
+      "sublabel": "记 revision",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "prep",
+      "type": "frontend",
+      "label": "预处理配置",
+      "sublabel": "resize / normalize / letterbox",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "export",
+      "type": "backend",
+      "label": "导出 ONNX",
+      "sublabel": "固定 opset 与 dynamic axes",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "checker",
+      "type": "security",
+      "label": "ONNX checker",
+      "sublabel": "shape inference + 图检视",
+      "icon": "decision",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "regress",
+      "type": "security",
+      "label": "PT vs ONNX 回归",
+      "sublabel": "单算子 → 单 batch → 整图",
+      "icon": "decision",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "ort",
+      "type": "cloud",
+      "label": "ONNX Runtime 基线",
+      "sublabel": "确认没落 CPU fallback",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "profile",
+      "type": "database",
+      "label": "min/opt/max profile",
+      "sublabel": "opt 贴生产流量中心",
+      "icon": "database",
+      "stage": 3,
+      "row": 1
+    },
+    {
+      "id": "build",
+      "type": "backend",
+      "label": "TRT parse + build",
+      "sublabel": "精度 / workspace / plugin",
+      "stage": 4,
+      "row": 0
+    },
+    {
+      "id": "bench",
+      "type": "cloud",
+      "label": "目标硬件 benchmark",
+      "sublabel": "p50/p95/p99 + 显存",
+      "icon": "clock",
+      "stage": 4,
+      "row": 1
+    },
+    {
+      "id": "pack",
+      "type": "database",
+      "label": "打包发布物",
+      "sublabel": "manifest + 旧 engine 回滚",
+      "icon": "success",
+      "stage": 4,
+      "row": 2
+    }
+  ],
+  "flows": [
+    { "from": "ckpt", "to": "export", "label": "带着预处理配置一起定" },
+    { "from": "prep", "to": "export", "label": "写进图还是留给业务代码" },
+    { "from": "export", "to": "checker", "label": "先看结构对不对" },
+    { "from": "checker", "to": "regress", "label": "结构过了才比数值" },
+    { "from": "regress", "to": "ort", "label": "数值达标才建基线" },
+    { "from": "ort", "to": "profile", "label": "真实 shape 才定 profile", "labelDy": 54 },
+    { "from": "profile", "to": "build", "label": "profile 定搜索空间", "labelDy": -34 },
+    { "from": "build", "to": "bench", "label": "构建完才测" },
+    { "from": "bench", "to": "pack", "label": "精度与延迟都过了才发" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "最常见的「精度下降」不在 TensorRT 里",
+      "items": [
+        "预处理不一致:resize 插值、normalize 均值方差、letterbox 对齐",
+        "颜色通道 RGB/BGR 搞反",
+        "NMS 阈值与坐标变换在两处实现里不一致"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "每段都要落盘的版本信息",
+      "items": [
+        "模型 revision、opset、导出脚本 commit",
+        "Python / PyTorch / ONNX / TensorRT / CUDA 版本",
+        "GPU 型号、输入 shape、预处理参数"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么基线要放 ORT 那一步",
+      "items": [
+        "ORT 是跨平台基线,能证明「模型本身没问题」",
+        "必须查日志确认没有 CPU fallback,不能只看「加载成功」",
+        "TRT 出问题时,有这条基线才能二分是模型还是编译器"
+      ]
+    }
+  ]
+}

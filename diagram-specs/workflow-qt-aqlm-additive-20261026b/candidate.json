@@ -1,0 +1,92 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "AQLM:多码本加和(Additive Quantization)",
+    "locale": "zh-CN",
+    "subtitle": "每个权重写成 M 个码本条目之和,表示能力随 M 指数增长;码本输入自适应、跨层联合学习",
+    "output": "diagrams/qt-aqlm-additive.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_rep",
+      "label": "表示"
+    },
+    {
+      "id": "ln_learn",
+      "label": "学习"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "sum",
+      "lane": "ln_rep",
+      "col": 0,
+      "type": "backend",
+      "label": "权重 = M 个码本条目之和",
+      "sublabel": "Ŵᵢ = Σ_{m=1..M} C_m·b_{i,m}",
+      "icon": "start"
+    },
+    {
+      "id": "cap",
+      "lane": "ln_rep",
+      "col": 1,
+      "type": "backend",
+      "label": "表示能力指数增长",
+      "sublabel": "2^(M·B) 种组合",
+      "icon": "active"
+    },
+    {
+      "id": "ada",
+      "lane": "ln_learn",
+      "col": 0,
+      "type": "backend",
+      "label": "输入自适应码本学习",
+      "sublabel": "min||WX−ŴX||²,XXᵀ 加权",
+      "icon": "start"
+    },
+    {
+      "id": "joint",
+      "lane": "ln_learn",
+      "col": 1,
+      "type": "backend",
+      "label": "跨层联合优化",
+      "sublabel": "整块 transformer 层联合,捕捉误差耦合",
+      "icon": "active"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "sum",
+      "to": "cap",
+      "label": "加法扩容量",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "ada",
+      "to": "joint",
+      "label": "坐标下降交替更新 b/C",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "joint",
+      "to": "sum",
+      "label": "学出码本与分配",
+      "role": "branch"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "定位与结论",
+      "items": [
+        "第一个 <3-bit 区间「精度 vs 体积」Pareto 最优",
+        "2-bit 下通常 ≥ QuIP#(各自设置略胜,§5 交叉核对)",
+        "2×8-bit 码本 GPU 加速 1.2~3×,CPU 2.7~4×"
+      ]
+    }
+  ]
+}

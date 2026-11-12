@@ -1,161 +1,159 @@
 {% extends "base.html" %}
 
-{% block content %}
-  {% if page and page.is_homepage %}
-  <section class="ob-hero">
-    <div class="ob-hero__glow" aria-hidden="true"></div>
-    <div class="ob-hero__grid" aria-hidden="true"></div>
-    <div class="ob-hero__inner">
-      <div class="ob-hero__eyebrow">
-        <span class="ob-hero__dot" aria-hidden="true"></span>
-        Personal Knowledge Base
-      </div>
-      <h1 class="ob-hero__title">把复杂的<span class="ob-hero__accent">系统原理</span><br>画成能看懂的结构</h1>
-      <p class="ob-hero__lede">106 篇深度技术笔记，覆盖注意力机制、CUTLASS 内核、vLLM 推理与量化前沿。从论文到工程，每篇都追到原始出处。</p>
-      <div class="ob-hero__cta">
-        <a class="ob-btn ob-btn--primary" href="#ob-domains">浏览知识库</a>
-        <a class="ob-btn" href="attention/">从 Attention 开始</a>
-      </div>
-    </div>
-  </section>
-
-  <div class="ob-stats" id="ob-domains">
-    <div class="ob-stat"><b>106</b><span>知识篇目</span></div>
-    <div class="ob-stat"><b>10</b><span>技术领域</span></div>
-    <div class="ob-stat"><b>127</b><span>追踪上游源</span></div>
-    <div class="ob-stat"><b>867</b><span>交叉引用</span></div>
-  </div>
-  {% endif %}
-
-  <div class="ob-content-root{% if page and page.is_homepage %} ob-homepage{% endif %}">
-    {{ super() }}
-  </div>
-{% endblock %}
-
 {% block scripts %}
   {{ super() }}
   <script>
-  /* archify 图自适应高度
-     ------------------------------------------------------------
-     图是独立 HTML(交互式 SVG),内容高度差异极大:实测 232 张里
-     108 张 <=400px、42 张 >720px。写死 height:720px 会让一半的图
-     留出 300+ px 空白,另一半被截断要内部二次滚动。
-     这里按 iframe 内真实内容高度逐张设定,并在窗口尺寸变化时重算。
-     同源部署(站点自带 diagrams/)可直接读 contentDocument;
-     若将来图托管到别的域,读不到就退回 CSS 的默认高度。 */
   (function () {
-    var MIN_H = 320, MAX_H = 2400, PAD = 24;
-
-    function fit(frame) {
-      var d;
-      try { d = frame.contentDocument; } catch (e) { return; }
-      if (!d || !d.body) return;
-      var svg = d.querySelector('svg');
-      if (!svg) return;                       /* 未渲染完,lazy 图很常见 —— 等 load 事件再算 */
-      var svgH = svg.getBoundingClientRect().height;
-      if (!svgH || svgH < 40) return;
-
-      /* archify 页面结构:body > .toolbar(absolute, 44px) + .container(static)
-         + .archify-toast(fixed,不占流)。svg 只是 .container 的一部分,
-         container 里还叠着 svg 上方的步骤标题/卡片区 —— 实测 container
-         1018px 而 svg 仅 445px,只按 svg 算会把图切掉一大半。
-         正确基准是 .container 的高度(svg + 上方卡片 + 下方图例)。
-         仍不能用 body.scrollHeight:iframe 高度会反过来撑大它,自举循环。 */
-      /* archify 页面结构:html > body{padding:32px} > .toolbar(absolute,44px)
-         + .container(static) + .archify-toast(fixed,不占流)。
-         三处都要算对,否则图被切:
-         ① svg 只是 .container 的一部分(上方还有步骤标题/卡片区,实测
-            container 1018px 而 svg 仅 445px),不能用 svg 高度;
-         ② .container 的 rect 不含子元素 margin 溢出(.cards 底边比它多 32px);
-         ③ body 自己有 32px 上下 padding(共 64px),也不在 container 里。
-         所以基准取 body 的边框盒高度 —— body 没有设 height,由内容撑开,
-         iframe 高度不会反过来影响它,不存在自举循环。
-         (绝不能用 body.scrollHeight:那个值会被 iframe 高度撑大。) */
-      var root = d.documentElement;
-      var bh = d.body.getBoundingClientRect().height;
-      var h = Math.max(bh, root.scrollHeight - (root.clientHeight ? 0 : 0));
-      var target = Math.round(h + PAD);
-      target = Math.max(MIN_H, Math.min(MAX_H, target));
-      frame.style.height = target + 'px';
-      frame.dataset.fitted = '1';
+    if (window.__obReader) {
+      window.__obReader();
+      return;
     }
 
-    function fitAll() {
-      var frames = document.querySelectorAll('.archify-figure iframe');
-      for (var i = 0; i < frames.length; i++) fit(frames[i]);
-    }
+    var labels = {
+      'obrain - 个人大脑': '首页',
+      'Attention': 'Attention',
+      'Computer vision': '计算机视觉',
+      'Cutlass': 'CUTLASS',
+      'Deepseek infra': 'DeepSeek',
+      'Deepseek models': 'DeepSeek',
+      'Deepseek vision': 'DeepSeek',
+      'Gpu rng': 'GPU 随机数',
+      'Model architecture': '模型架构',
+      'Quantization': '量化与压缩',
+      'Vllm': 'vLLM'
+    };
 
     function init() {
-      fitAll();
-      /* lazy 加载 + JS 绘图:图要滚到附近才渲染,load 事件也常早于 SVG 落进 DOM。
-         用「加载事件 + 持续轮询 + IntersectionObserver」三重兜底。
-         轮询不设固定次数上限(只设 3 分钟安全阀):页面底部/末张图常常要
-         滚到才加载,固定窗口一旦用完就永久停在兜底高度,实测每页最后一张
-         最容易被漏掉。拿到有效高度后 dataset.fitted='1',轮询自然停止。 */
-      var frames = document.querySelectorAll('.archify-figure iframe');
-      for (var i = 0; i < frames.length; i++) {
-        (function (f) {
-          f.addEventListener('load', function () {
-            fit(f);
-            setTimeout(function(){ fit(f); }, 300);
-            setTimeout(function(){ fit(f); }, 1200);
-          });
-          var ticks = 0;
-          var timer = setInterval(function () {
-            if (f.dataset.fitted === '1' || ++ticks > 360) { clearInterval(timer); return; }
-            fit(f);
-          }, 500);
-          /* 进入视口(提前 800px 预判)立刻测,并延时补一次 */
-          if ('IntersectionObserver' in window) {
-            var io = new IntersectionObserver(function (es) {
-              es.forEach(function (e) {
-                if (e.isIntersecting) {
-                  fit(f);
-                  setTimeout(function(){ fit(f); }, 700);
-                  setTimeout(function(){ fit(f); }, 1800);
-                  /* 图被之后的自适应撑开页面顶部挤出视口时,上面两次可能还没测到;
-                     再补一次长延时,确保"进过一次视口"就一定能完成测量。 */
-                  setTimeout(function(){ fit(f); }, 4000);
-                }
-              });
-            }, { rootMargin: '800px' });
-            io.observe(f);
-          }
-        })(frames[i]);
-      }
-      setTimeout(fitAll, 900);
-      setTimeout(fitAll, 2400);
-    }
+      var isHome = document.title.indexOf('obrain - 个人大脑') === 0;
+      document.body.classList.toggle('ob-home', isHome);
 
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else { init(); }
-
-    /* 以下 window 级监听挂在全局对象上,而 navigation.instant 每次 SPA 跳转
-       都会重执行本脚本 —— 不加守卫会逐次累积(N 次导航后一次跳转触发 3N 次
-       fitAll)。守卫只罩全局监听;init() 必须留在守卫外:SPA 跳转后新页面的
-       iframe 是全新 DOM 元素,需要重新挂 load/轮询/IO 监听。 */
-    if (!window.__obFitInit) {
-      window.__obFitInit = 1;
-
-      var t;
-      window.addEventListener('resize', function () {
-        clearTimeout(t); t = setTimeout(fitAll, 200);
+      var internalHeadings = /^(相关条目|关键事实速记|已知缺口|溯源|阅读顺序建议)/;
+      document.querySelectorAll('.md-content h2').forEach(function (heading) {
+        if (!internalHeadings.test(heading.textContent.trim())) return;
+        var node = heading;
+        while (node) {
+          var next = node.nextElementSibling;
+          node.remove();
+          if (next && next.tagName === 'H2') break;
+          node = next;
+        }
+      });
+      document.querySelectorAll('.md-sidebar--secondary .md-nav__link').forEach(function (link) {
+        if (internalHeadings.test(link.textContent.trim())) {
+          var item = link.closest('.md-nav__item');
+          if (item) item.remove();
+        }
       });
 
-      /* Material navigation.instant 是 SPA 跳转,页面不重载,需重算。
-         注:早期版本这里有个 reviveEmpty() 会检测"body 空"就重设 src -- 那是错的:
-         lazy iframe 在未进入视口时 body 本来就是空的,重设 src 反而把正常待加载
-         的图弄成永久失败(实测 gemm-tiling 第 6 张被改写 src 后再也加载不出来)。
-         已删除,只依赖加载事件 + 轮询 + IntersectionObserver。 */
-      if (typeof document$ !== 'undefined' && document$.subscribe) {
-        document$.subscribe(function () {
-          setTimeout(fitAll, 120);
-          setTimeout(fitAll, 900);
-          setTimeout(fitAll, 2500);
+      var primaryList = document.querySelector('.md-nav--primary > .md-nav__list');
+      if (primaryList) {
+        primaryList.querySelectorAll('.ob-nav-current').forEach(function (item) {
+          item.classList.remove('ob-nav-current');
         });
+        document.body.classList.remove('ob-nav-focused');
+        var active = primaryList.querySelector('.md-nav__item--active');
+        if (active) {
+          var section = active;
+          while (section.parentElement && section.parentElement !== primaryList) {
+            section = section.parentElement.closest('.md-nav__item') || section;
+          }
+          if (section.parentElement === primaryList && section.classList.contains('md-nav__item--section')) {
+            section.classList.add('ob-nav-current');
+            document.body.classList.add('ob-nav-focused');
+          }
+        }
       }
+
+      document.querySelectorAll('.md-tabs__link, .md-nav--primary > .md-nav__list > .md-nav__item > .md-nav__link').forEach(function (link) {
+        var title = link.querySelector('.md-ellipsis') || link;
+        var label = labels[title.textContent.trim()];
+        if (label) title.textContent = label;
+      });
+
+      var primaryItems = Array.prototype.slice.call(document.querySelectorAll('.md-nav--primary > .md-nav__list > .md-nav__item'));
+      document.querySelectorAll('.md-tabs__item').forEach(function (tab) {
+        var tabLink = tab.querySelector('.md-tabs__link');
+        if (tabLink && (tabLink.getAttribute('href') === '.' || tabLink.getAttribute('href') === './')) {
+          tab.remove();
+          return;
+        }
+        if (tab.querySelector('.ob-mega-menu')) return;
+        if (!tabLink) return;
+        var target = tabLink.getAttribute('href');
+        var source = primaryItems.find(function (item) {
+          var link = item.querySelector(':scope > .md-nav__link');
+          return link && link.getAttribute('href') === target;
+        });
+        var submenu = source && source.querySelector('.md-nav');
+        if (!submenu) return;
+        var menu = document.createElement('div');
+        menu.className = 'ob-mega-menu';
+        var list = submenu.querySelector(':scope > .md-nav__list');
+        if (list) menu.appendChild(list.cloneNode(true));
+        tab.appendChild(menu);
+      });
+
+      var deepseekTabs = Array.prototype.slice.call(document.querySelectorAll('.md-tabs__item')).filter(function (tab) {
+        var link = tab.querySelector('.md-tabs__link');
+        return link && /deepseek-(infra|models|vision)/.test(link.getAttribute('href'));
+      });
+      if (deepseekTabs.length > 1) {
+        var deepseekTab = deepseekTabs[0];
+        var deepseekMenu = deepseekTab.querySelector('.ob-mega-menu');
+        deepseekTabs.slice(1).forEach(function (tab) {
+          var menu = tab.querySelector('.ob-mega-menu');
+          var list = menu && menu.querySelector('.md-nav__list');
+          if (deepseekMenu && list) {
+            Array.prototype.slice.call(list.children).forEach(function (item) {
+              deepseekMenu.querySelector('.md-nav__list').appendChild(item);
+            });
+          }
+          tab.remove();
+        });
+        var deepseekLabel = deepseekTab.querySelector('.md-ellipsis') || deepseekTab.querySelector('.md-tabs__link');
+        if (deepseekLabel) deepseekLabel.textContent = 'DeepSeek';
+      }
+
+      document.querySelectorAll('.md-content iframe[src]').forEach(function (frame) {
+        if (frame.dataset.obPreview) return;
+        var source = new URL(frame.getAttribute('src'), document.baseURI);
+        if (!source.pathname.includes('/diagrams/') || !source.pathname.endsWith('.html')) return;
+
+        document.body.classList.add('ob-has-diagram');
+
+        var figure = frame.closest('.archify-figure');
+        if (!figure) {
+          figure = document.createElement('div');
+          figure.className = 'archify-figure';
+          frame.replaceWith(figure);
+          figure.appendChild(frame);
+        }
+
+        var caption = document.createElement('p');
+        caption.className = 'ob-figure-caption';
+        var link = document.createElement('a');
+        link.href = source.href;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = '独立打开原图（新窗口）：' + (frame.title || '交互图');
+        caption.append('有界交互预览，可在图内滚动。', link);
+        figure.insertBefore(caption, frame);
+        frame.style.removeProperty('height');
+        frame.removeAttribute('height');
+        frame.loading = 'lazy';
+        frame.dataset.obPreview = '1';
+      });
+    }
+
+    window.__obReader = init;
+    if (typeof document$ !== 'undefined' && document$.subscribe) {
+      document$.subscribe(init);
+    } else if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init, { once: true });
+    } else {
+      init();
     }
   })();
   </script>
 {% endblock %}
+

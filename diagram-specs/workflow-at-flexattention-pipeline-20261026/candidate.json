@@ -1,0 +1,124 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "FlexAttention 编译流水线:几行 Python 怎么变成融合内核",
+  "subtitle": "score_mod/mask_mod 经 torch.compile 下降,按 BACKEND 选目标语言;反向图由 AOTAutograd 自动派生",
+  "locale": "zh-CN",
+  "output": "diagrams/at-flexattention-pipeline.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "mod",
+   "label": "分数修改"
+  },
+  {
+   "id": "mask",
+   "label": "掩码声明"
+  },
+  {
+   "id": "compile",
+   "label": "torch.compile"
+  },
+  {
+   "id": "triton",
+   "label": "Triton 内核"
+  },
+  {
+   "id": "flash",
+   "label": "FA4 内核"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "sm",
+   "lane": "mod",
+   "col": 0,
+   "type": "frontend",
+   "label": "score_mod",
+   "sublabel": "5 个标量入参,逐点改分数"
+  },
+  {
+   "id": "mm",
+   "lane": "mask",
+   "col": 0,
+   "type": "frontend",
+   "label": "mask_mod",
+   "sublabel": "返回 bool,决定参与计算"
+  },
+  {
+   "id": "fx",
+   "lane": "compile",
+   "col": 1,
+   "type": "backend",
+   "label": "FX IR + AOTAutograd",
+   "sublabel": "图捕获 + 自动派生反向"
+  },
+  {
+   "id": "tr",
+   "lane": "triton",
+   "col": 2,
+   "type": "backend",
+   "label": "Triton 模板内核",
+   "sublabel": "默认 AUTO,硬件覆盖广"
+  },
+  {
+   "id": "cu",
+   "lane": "flash",
+   "col": 2,
+   "type": "backend",
+   "label": "FA4 CuTeDSL 内核",
+   "sublabel": "FLASH 后端,更快(实验性)"
+  }
+ ],
+ "edges": [
+  {
+   "from": "sm",
+   "to": "fx",
+   "label": "score 函数被捕获下降",
+   "variant": "emphasis"
+  },
+  {
+   "from": "mm",
+   "to": "fx",
+   "label": "create_block_mask→BlockMask"
+  },
+  {
+   "from": "fx",
+   "to": "tr",
+   "label": "默认:生成 Triton 代码",
+   "variant": "emphasis"
+  },
+  {
+   "from": "fx",
+   "to": "cu",
+   "label": "FLASH:翻译成 CuTeDSL",
+   "variant": "dashed"
+  }
+ ],
+ "mainPath": [
+  "sm",
+  "fx",
+  "tr"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "只有两个扩展",
+   "items": [
+    "pre-softmax 分数逐点修改(score_mod)",
+    "前向+反向块稀疏迭代(mask_mod + BlockMask)",
+    "其余靠 torch.compile 既有能力:融合下降 + 自动反向"
+   ]
+  },
+  {
+   "dot": "amber",
+   "title": "下降链三步",
+   "items": [
+    "TorchDynamo 图捕获 → FX IR",
+    "AOTAutograd 从前向派生反向 joint graph",
+    "Inductor 按 BACKEND 换 handler 生成目标语言"
+   ]
+  }
+ ]
+}

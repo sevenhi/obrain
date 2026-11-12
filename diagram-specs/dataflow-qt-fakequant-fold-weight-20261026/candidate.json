@@ -1,0 +1,126 @@
+{
+ "schema_version": 1,
+ "diagram_type": "dataflow",
+ "meta": {
+  "title": "权重折叠:量化器变成一次矩阵改写",
+  "subtitle": "y=Q(w)·x 改写为 y=w′·x,w′=Q(w);顺序链逐成员折叠,每个成员的输出回到 weight dtype",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-fakequant-fold-weight.dataflow.html"
+ },
+ "stages": [
+  {
+   "label": "① 读量化器"
+  },
+  {
+   "label": "② 逐成员折叠"
+  },
+  {
+   "label": "③ 写回"
+  },
+  {
+   "label": "④ 禁用清理"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "q",
+   "type": "backend",
+   "label": "quantizer",
+   "sublabel": "Tensor / SequentialQuantizer",
+   "stage": 0,
+   "row": 0
+  },
+  {
+   "id": "m1",
+   "type": "backend",
+   "label": "成员 1(INT4 权重)",
+   "sublabel": "member(folded.float())",
+   "stage": 1,
+   "row": 0
+  },
+  {
+   "id": "m2",
+   "type": "backend",
+   "label": "成员 2(FP8 权重)",
+   "sublabel": "W4A8 顺序链第二级",
+   "stage": 1,
+   "row": 1
+  },
+  {
+   "id": "w",
+   "type": "database",
+   "label": "copy_(folded)",
+   "sublabel": "回到 weight dtype",
+   "stage": 2,
+   "row": 0
+  },
+  {
+   "id": "off",
+   "type": "security",
+   "label": "quantizer.disable()",
+   "sublabel": "含 disable_rotate,旋转已烘进",
+   "stage": 3,
+   "row": 0
+  },
+  {
+   "id": "del",
+   "type": "security",
+   "label": "删全部 buffer",
+   "sublabel": "named_buffers 枚举,别硬编码",
+   "stage": 3,
+   "row": 1
+  }
+ ],
+ "flows": [
+  {
+   "from": "q",
+   "to": "m1",
+   "label": "members=list(quantizer)",
+   "route": "straight"
+  },
+  {
+   "from": "m1",
+   "to": "m2",
+   "label": "顺序链逐成员折叠",
+   "route": "straight"
+  },
+  {
+   "from": "m2",
+   "to": "w",
+   "label": "每个成员输出回 dtype",
+   "route": "straight"
+  },
+  {
+   "from": "w",
+   "to": "off",
+   "label": "前向改用存下来的权重",
+   "route": "straight"
+  },
+  {
+   "from": "off",
+   "to": "del",
+   "label": "只删会重算的状态",
+   "route": "straight"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "三处修复(PR #2889)",
+   "items": [
+    "顺序量化器:旧 isinstance 挡掉 SequentialQuantizer→二次量化",
+    "SVDQuant:先读低秩因子再折叠,否则修正项丢",
+    "只删 _amax/_pre_quant_scale→改删全部 buffer"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "通用教训",
+   "items": [
+    "折叠=把计算搬进常量",
+    "任何能在折叠后重新应用的状态都要一起清掉",
+    "用 named_buffers() 枚举比硬编码属性名可靠"
+   ]
+  }
+ ]
+}

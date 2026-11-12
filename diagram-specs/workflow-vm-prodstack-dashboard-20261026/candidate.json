@@ -1,0 +1,148 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "监控读数心法:从三个面板定位瓶颈",
+    "subtitle": "Running/Pending/KV Usage/Hit Rate 组合判断是「算不过来」还是「缓存没吃到」,决定扩副本还是调 offload",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-prodstack-dashboard.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_see",
+      "label": "① 读面板"
+    },
+    {
+      "id": "ln_judge",
+      "label": "② 判断"
+    },
+    {
+      "id": "ln_act",
+      "label": "③ 动作"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "r",
+      "lane": "ln_see",
+      "col": 0,
+      "type": "backend",
+      "label": "Running 高 + Pending 高",
+      "sublabel": "引擎饱和"
+    },
+    {
+      "id": "k",
+      "lane": "ln_see",
+      "col": 0,
+      "type": "backend",
+      "label": "Pending 低 + KV Usage 高",
+      "sublabel": "显存瓶颈",
+      "yOffset": 110
+    },
+    {
+      "id": "h",
+      "lane": "ln_see",
+      "col": 0,
+      "type": "backend",
+      "label": "Hit Rate 低",
+      "sublabel": "复用没吃到",
+      "yOffset": 220
+    },
+    {
+      "id": "judge",
+      "lane": "ln_judge",
+      "col": 1,
+      "type": "backend",
+      "icon": "decision",
+      "label": "定位瓶颈类型",
+      "sublabel": ""
+    },
+    {
+      "id": "scale",
+      "lane": "ln_act",
+      "col": 2,
+      "type": "cloud",
+      "label": "扩副本",
+      "sublabel": "算不过来就加引擎"
+    },
+    {
+      "id": "off",
+      "lane": "ln_act",
+      "col": 2,
+      "type": "database",
+      "label": "调 offload/max_model_len",
+      "sublabel": "显存不够就下沉",
+      "yOffset": 110
+    },
+    {
+      "id": "rt",
+      "lane": "ln_act",
+      "col": 2,
+      "type": "security",
+      "label": "查前缀路由/LMCache",
+      "sublabel": "复用没吃到就修路由",
+      "yOffset": 220
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "r",
+      "to": "judge",
+      "label": "引擎饱和信号",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "k",
+      "to": "judge",
+      "label": "显存瓶颈信号",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "h",
+      "to": "judge",
+      "label": "缓存失效信号",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "judge",
+      "to": "scale",
+      "label": "算不过来→扩",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e5",
+      "from": "judge",
+      "to": "off",
+      "label": "显存瓶颈→下沉",
+      "role": "branch"
+    },
+    {
+      "id": "e6",
+      "from": "judge",
+      "to": "rt",
+      "label": "命中低→修路由",
+      "role": "branch",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "r",
+    "judge",
+    "scale"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "指标名随版本漂移",
+      "items": [
+        "vLLM 与 LMCache 的 metrics 名称随版本变",
+        "Grafana 面板要跟着升级,不能装完永远不看"
+      ]
+    }
+  ]
+}

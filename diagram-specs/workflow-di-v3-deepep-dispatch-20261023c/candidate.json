@@ -1,0 +1,194 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "DeepEP 的 dispatch 与 combine:token 怎么跨节点找 expert、怎么回来",
+    "subtitle": "去程:IB 到目标节点 → 即时 NVLink 转发到目标卡 → expert GEMM;回程:NVLink 汇聚 → 跨 IB 回原节点 → 按 token 累加。全程只占 20/132 个 SM",
+    "locale": "zh-CN",
+    "output": "diagrams/di-v3-deepep-dispatch.workflow.html",
+    "viewBox": [
+      1131,
+      660
+    ]
+  },
+  "lanes": [
+    {
+      "id": "ln_disp",
+      "label": "去程 dispatch(token → expert rank)"
+    },
+    {
+      "id": "ln_compute",
+      "label": "计算侧(grouped expert GEMM)"
+    },
+    {
+      "id": "ln_comb",
+      "label": "回程 combine(expert 结果 → token 原 rank)"
+    },
+    {
+      "id": "ln_budget",
+      "label": "SM 预算:通信不能抢计算"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "n_tok",
+      "lane": "ln_disp",
+      "col": 0,
+      "type": "backend",
+      "label": "路由后的 token",
+      "sublabel": "每 token 最多进 4 节点",
+      "width": 128,
+      "icon": "start"
+    },
+    {
+      "id": "n_ibsend",
+      "lane": "ln_disp",
+      "col": 1,
+      "type": "messagebus",
+      "label": "IB 发送",
+      "sublabel": "50 GB/s,窄的一跳",
+      "width": 128,
+      "icon": "messagebus"
+    },
+    {
+      "id": "n_nvlink",
+      "lane": "ln_disp",
+      "col": 2,
+      "type": "messagebus",
+      "label": "NVLink 即时转发",
+      "sublabel": "160 GB/s,不等后续",
+      "width": 128,
+      "icon": "messagebus"
+    },
+    {
+      "id": "n_gemm",
+      "lane": "ln_compute",
+      "col": 3,
+      "type": "backend",
+      "label": "expert GEMM",
+      "sublabel": "每卡约 4 专家",
+      "width": 128
+    },
+    {
+      "id": "n_agg",
+      "lane": "ln_comb",
+      "col": 4,
+      "type": "messagebus",
+      "label": "NVLink 汇聚→IB",
+      "sublabel": "多专家结果求和",
+      "width": 128,
+      "icon": "messagebus"
+    },
+    {
+      "id": "n_out",
+      "lane": "ln_comb",
+      "col": 5,
+      "type": "backend",
+      "label": "原 rank 累加",
+      "sublabel": "输出保 BF16",
+      "width": 128,
+      "icon": "success"
+    },
+    {
+      "id": "n_sm",
+      "lane": "ln_budget",
+      "col": 0,
+      "type": "security",
+      "label": "20 SM / 132 通信",
+      "sublabel": "10 个 channel",
+      "width": 128,
+      "icon": "security"
+    },
+    {
+      "id": "n_ptx",
+      "lane": "ln_budget",
+      "col": 2,
+      "type": "security",
+      "label": "PTX + 自调 chunk",
+      "sublabel": "吃满两级带宽",
+      "width": 128,
+      "icon": "security"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "n_tok",
+      "to": "n_ibsend",
+      "label": "非本地 expert 的 token 出节点",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "n_ibsend",
+      "to": "n_nvlink",
+      "label": "到达目标节点,立即换车",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "n_nvlink",
+      "to": "n_gemm",
+      "label": "token 落到 expert 所在卡",
+      "role": "main"
+    },
+    {
+      "id": "e4",
+      "from": "n_gemm",
+      "to": "n_agg",
+      "label": "专家输出按 token 汇聚",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "n_agg",
+      "to": "n_out",
+      "label": "跨 IB 回到原 rank 并累加",
+      "role": "main"
+    },
+    {
+      "id": "e6",
+      "from": "n_sm",
+      "to": "n_ptx",
+      "label": "在预算内铺开三段流水",
+      "role": "branch"
+    }
+  ],
+  "mainPath": [
+    "n_tok",
+    "n_ibsend",
+    "n_nvlink",
+    "n_gemm",
+    "n_agg",
+    "n_out"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么必须 node-limited routing",
+      "items": [
+        "M=4:每 token 最多发往 4 个节点,把 IB 流量限到可重叠范围",
+        "不设限制,IB 跳数随 top-8 路由发散,重叠就失效",
+        "论文把它当前提条件,不是可选优化"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "为什么 EP64 跨 8 节点能跑",
+      "items": [
+        "平均每节点 3.2 个 expert(M=4 × top-8 的自然结果)",
+        "密度高 → NVLink 转发几乎零额外开销",
+        "NVLink 160 GB/s vs IB 50 GB/s,约 3.2× 差距是设计支点"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "通信 SM 必须显式配比",
+      "items": [
+        "H800 共 132 SM,论文口径只给通信 20 个",
+        "占多了 GEMM 掉速,占少了 a2a 藏不住",
+        "dispatch/combine 各三段,每段独立 warp 组,warp 数按负载动态调"
+      ]
+    }
+  ]
+}

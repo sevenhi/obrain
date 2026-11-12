@@ -1,0 +1,104 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "21 个 PR 的分期与当前可用边界",
+  "subtitle": "传输层已合并(1/21);端到端 hf_ptq.py 的 EP 入口在 [21/21],尚未全部落地",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-ep-ptq-21-prs.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "ph",
+   "label": "21 个 PR 分期(压成三段)"
+  },
+  {
+   "id": "st",
+   "label": "当前可用边界"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "n1",
+   "lane": "ph",
+   "col": 0,
+   "type": "backend",
+   "label": "[1/21]–[12/21]",
+   "sublabel": "积木+分布计划:到 12/21 自带 EP 计划可校准"
+  },
+  {
+   "id": "n2",
+   "lane": "ph",
+   "col": 1,
+   "type": "backend",
+   "label": "[13/21]–[20/21]",
+   "sublabel": "模型 spec 与接入:DeepSeek-V3 / Kimi 等"
+  },
+  {
+   "id": "n3",
+   "lane": "ph",
+   "col": 2,
+   "type": "backend",
+   "label": "[21/21]",
+   "sublabel": "hf_ptq.py 串联,Changelog 随它落"
+  },
+  {
+   "id": "s1",
+   "lane": "st",
+   "col": 0,
+   "type": "backend",
+   "label": "本 PR:已合并 0638a27",
+   "sublabel": "仅传输层,无可直接调用入口"
+  },
+  {
+   "id": "s2",
+   "lane": "st",
+   "col": 2,
+   "type": "security",
+   "label": "端到端:尚未全部落地",
+   "sublabel": "别写成「ModelOpt 现在支持 EP PTQ」"
+  }
+ ],
+ "edges": [
+  {
+   "from": "n1",
+   "to": "n2",
+   "label": "按顺序合并",
+   "variant": "emphasis"
+  },
+  {
+   "from": "n2",
+   "to": "n3",
+   "label": "串起来",
+   "variant": "emphasis"
+  },
+  {
+   "from": "n1",
+   "to": "s1",
+   "label": "usage 只有一句:内部给 EP loader 用",
+   "variant": "dashed"
+  },
+  {
+   "from": "n3",
+   "to": "s2",
+   "label": "模型跑通验证挂在 21/21 口径下",
+   "variant": "security"
+  }
+ ],
+ "mainPath": [
+  "n1",
+  "n2",
+  "n3"
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "正确措辞",
+   "items": [
+    "传输层已合并(2026-10-24,commit 0638a27)",
+    "端到端入口在 [21/21],尚未全部落地",
+    "本 PR 无可直接调用的入口"
+   ]
+  }
+ ]
+}

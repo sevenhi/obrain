@@ -1,0 +1,133 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "consistent_hash 的 11 级 hash key 优先级",
+    "subtitle": "同一 session/user 的请求始终打同一 worker 保住 KV;优先级从 Header 一路降到 body、再到底 fallback",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-router-consistenthash.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_hdr",
+      "label": "① HTTP Header"
+    },
+    {
+      "id": "ln_body",
+      "label": "② Request Body"
+    },
+    {
+      "id": "ln_fb",
+      "label": "③ Fallback"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "sid",
+      "lane": "ln_hdr",
+      "col": 0,
+      "type": "backend",
+      "label": "X-Session-ID",
+      "sublabel": "优先级 1"
+    },
+    {
+      "id": "uid",
+      "lane": "ln_hdr",
+      "col": 0,
+      "type": "backend",
+      "label": "X-User-ID / X-Tenant-ID",
+      "sublabel": "优先级 2/3",
+      "yOffset": 110
+    },
+    {
+      "id": "tid",
+      "lane": "ln_hdr",
+      "col": 0,
+      "type": "backend",
+      "label": "X-Request/Correlation/Trace-ID",
+      "sublabel": "优先级 4-6",
+      "yOffset": 220
+    },
+    {
+      "id": "bsid",
+      "lane": "ln_body",
+      "col": 1,
+      "type": "backend",
+      "label": "session_params.session_id 等",
+      "sublabel": "优先级 7-10"
+    },
+    {
+      "id": "full",
+      "lane": "ln_fb",
+      "col": 2,
+      "type": "external",
+      "label": "整个 body hash",
+      "sublabel": "优先级 11"
+    },
+    {
+      "id": "w",
+      "lane": "ln_fb",
+      "col": 2,
+      "type": "cloud",
+      "label": "命中同一 worker",
+      "sublabel": "160 虚拟节点环",
+      "yOffset": 110
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "sid",
+      "to": "bsid",
+      "label": "无则逐级下探",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "uid",
+      "to": "bsid",
+      "label": "",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e3",
+      "from": "tid",
+      "to": "bsid",
+      "label": "",
+      "role": "branch",
+      "variant": "dashed"
+    },
+    {
+      "id": "e4",
+      "from": "bsid",
+      "to": "full",
+      "label": "仍无则",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "full",
+      "to": "w",
+      "label": "hash 到 worker",
+      "role": "main",
+      "variant": "emphasis"
+    }
+  ],
+  "mainPath": [
+    "sid",
+    "bsid",
+    "full"
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "body 里有随机字段就失效",
+      "items": [
+        "客户端什么会话字段都不给时退到整 body hash",
+        "请求体含时间戳/nonce 会让亲和完全失效",
+        "推荐 Header 传,免 JSON 解析,兼容 Nginx/Envoy"
+      ]
+    }
+  ]
+}

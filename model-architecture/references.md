@@ -2,7 +2,7 @@
 title: model-architecture 外部链接索引
 type: reference
 tags: [llm-architecture, llama, gqa, mqa, mla, context-extension, yarn, longrope, moe, mixtral, deepseek, qwen, rwkv, references]
-date: 2026-09
+date: 2026-11
 ---
 
 # References — model-architecture
@@ -20,6 +20,10 @@ date: 2026-09
 - Scaling Laws for Neural Language Models (Kaplan) — https://arxiv.org/abs/2001.08361
 
 ## 注意力头结构(MHA/MQA/GQA/MLA)
+
+- DeepSeek LLM / V1 — https://arxiv.org/abs/2401.02954
+- DeepSeek-V3.2 — https://arxiv.org/abs/2512.02556
+- DeepSeek-R1 — https://arxiv.org/abs/2501.12948 (结构视角;训练策略另见 deepseek-models)
 
 - Fast Transformer Decoding: One Write-Head is All You Need (MQA, Shazeer 2019) — https://arxiv.org/abs/1911.02150
 - GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints (Ainslie et al. 2023) — https://arxiv.org/abs/2305.13245
@@ -82,6 +86,9 @@ date: 2026-09
 ### 混合线性注意力/SSM(2026-10 补)
 
 - Mamba — https://arxiv.org/abs/2312.00752
+- Mamba 固定源码(A_log 与输入依赖的离散化 dA) — https://github.com/state-spaces/mamba/blob/8ffd905c91d207f5c0cc84fc2a2fb748655094f0/mamba_ssm/modules/mamba_simple.py
+- Flash Linear Attention 官方仓库 — https://github.com/fla-org/flash-linear-attention
+- ModelOpt PR #2912(FLA packed GDN 数据来源,不代表本库独立复现) — https://github.com/NVIDIA/Model-Optimizer/pull/2912
 - Mamba-2 (SSD) — https://arxiv.org/abs/2405.21060
 - RWKV — https://arxiv.org/abs/2305.13048
 - Griffin — https://arxiv.org/abs/2402.19427

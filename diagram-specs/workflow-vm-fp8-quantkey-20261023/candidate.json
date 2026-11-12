@@ -1,0 +1,165 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "FP8 的三层降级:量化粒度 → 激活策略 → 硬件兜底",
+    "subtitle": "fp8.py:251-290 与 :366。块量化强制动态激活;没有 FP8 硬件时 weight-only 掉到 MarlinFP8",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-fp8-quantkey.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_w", "label": "① 权重粒度" },
+    { "id": "ln_a", "label": "② 激活策略" },
+    { "id": "ln_hw", "label": "③ 硬件与内核" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "权重怎么切", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "激活跟不跟", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "落哪个内核", "fromCol": 4, "toCol": 5, "variant": "emphasis" }
+  ],
+  "mainPath": ["init", "grain", "tensor", "cutlass", "sm90"],
+  "nodes": [
+    {
+      "id": "init",
+      "lane": "ln_w",
+      "col": 0,
+      "type": "backend",
+      "label": "init 构造 QuantKey",
+      "sublabel": "Fp8LinearMethod.init",
+      "icon": "start",
+      "width": 150
+    },
+    {
+      "id": "grain",
+      "lane": "ln_w",
+      "col": 1,
+      "type": "security",
+      "label": "权重是 128×128 块 ?",
+      "sublabel": "DeepSeek 风格",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "block",
+      "lane": "ln_w",
+      "col": 2,
+      "type": "backend",
+      "label": "静态块量化 Key",
+      "sublabel": "scale 名用 weight_scale_inv",
+      "icon": "active",
+      "width": 150
+    },
+    {
+      "id": "tensor",
+      "lane": "ln_w",
+      "col": 2,
+      "type": "backend",
+      "label": "静态整张量 Key",
+      "sublabel": "一个 scale 管全部",
+      "icon": "neutral",
+      "width": 150,
+      "yOffset": 122
+    },
+    {
+      "id": "dyn128",
+      "lane": "ln_a",
+      "col": 3,
+      "type": "security",
+      "label": "块量化强制动态",
+      "sublabel": "assert not act_q_static",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "cutlass",
+      "lane": "ln_hw",
+      "col": 4,
+      "type": "security",
+      "label": "有 FP8 矩阵单元 ?",
+      "sublabel": "cutlass_fp8_supported()",
+      "icon": "decision",
+      "width": 150
+    },
+    {
+      "id": "sm90",
+      "lane": "ln_hw",
+      "col": 5,
+      "type": "cloud",
+      "label": "CUTLASS / DeepGEMM",
+      "sublabel": "激活升 per-token",
+      "icon": "success",
+      "width": 150
+    },
+    {
+      "id": "perTensorFallback",
+      "lane": "ln_a",
+      "col": 4,
+      "type": "external",
+      "label": "退回整张量激活",
+      "sublabel": "kFp8DynamicTensor",
+      "icon": "stop",
+      "width": 150,
+      "yOffset": 122
+    },
+    {
+      "id": "marlin",
+      "lane": "ln_hw",
+      "col": 5,
+      "type": "external",
+      "label": "MarlinFP8 兜底",
+      "sublabel": "use_marlin = True",
+      "icon": "failure",
+      "width": 150,
+      "yOffset": 122
+    },
+    {
+      "id": "amd",
+      "lane": "ln_hw",
+      "col": 4,
+      "type": "external",
+      "label": "AMD 平台改格式",
+      "sublabel": "e4m3fn → e4m3fnuz",
+      "icon": "neutral",
+      "width": 150,
+      "yOffset": 244
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "init", "to": "grain", "label": "先看 checkpoint 声明的粒度", "role": "main" },
+    { "id": "e2", "from": "grain", "to": "block", "label": "是:走块量化", "role": "branch", "variant": "emphasis" },
+    { "id": "e3", "from": "grain", "to": "tensor", "label": "否:走整张量", "role": "main" },
+    { "id": "e4", "from": "block", "to": "dyn128", "label": "块量化不许静态激活", "role": "branch", "variant": "emphasis" },
+    { "id": "e5", "from": "tensor", "to": "cutlass", "label": "激活策略看硬件", "role": "main" },
+    { "id": "e6", "from": "cutlass", "to": "sm90", "label": "有:升 per-token 更快", "role": "main" },
+    { "id": "e7", "from": "cutlass", "to": "perTensorFallback", "label": "无升级条件就留原样", "role": "branch", "variant": "dashed" },
+    { "id": "e8", "from": "cutlass", "to": "marlin", "label": "纯 weight-only 兜底", "role": "branch", "variant": "dashed" },
+    { "id": "e9", "from": "dyn128", "to": "amd", "label": "MoE 在 MI300x 转格式", "role": "branch", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "四个 QuantKey 名字要认全",
+      "items": [
+        "kFp8Static128BlockSym:权重 128×128 块,DeepSeek V3 口径",
+        "kFp8Dynamic128Sym:激活 per-token-group 动态",
+        "kFp8StaticTensorSym / kFp8DynamicTokenSym:整张量 与 per-token"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "两个必记的坑",
+      "items": [
+        "块量化下 act_q_static 直接 assert 失败——不是 bug,是语义不允许",
+        "scale 参数名故意叫 weight_scale_inv,别按常理找 weight_scale"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "部署时的两个现实约束",
+      "items": [
+        "没有 FP8 硬件的卡:落 MarlinFP8 weight-only,吞吐与精度同时变",
+        "AMD MI300x/MI325x 需 normalize_e4m3fn_to_e4m3fnuz,换平台先查这条"
+      ]
+    }
+  ]
+}

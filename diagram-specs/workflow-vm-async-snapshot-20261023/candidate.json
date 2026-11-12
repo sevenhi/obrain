@@ -1,0 +1,204 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "async barrier vs 换缓冲:同一块内存被 CPU 写、GPU 异步读",
+    "subtitle": "V1 用 pinned 持久状态 + 异步 barrier 包住临界区;MRV2 让状态不 pin、每步拷一份临时 pinned 快照,读取端与写入端物理分离,不需要任何显式同步",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-async-snapshot.workflow.html"
+  },
+  "lanes": [
+    {
+      "id": "ln_v1",
+      "label": "V1 写法"
+    },
+    {
+      "id": "ln_leak",
+      "label": "V1 的代价"
+    },
+    {
+      "id": "ln_v2",
+      "label": "MRV2 写法"
+    }
+  ],
+  "phases": [
+    {
+      "id": "ph1",
+      "label": "① V1 的隐患写法",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "ph2",
+      "label": "② MRV2 的写法",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "ph3",
+      "label": "③ 代价",
+      "fromCol": 4,
+      "toCol": 4,
+      "variant": "dashed"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "w1",
+      "lane": "ln_v1",
+      "col": 0,
+      "type": "frontend",
+      "label": "CPU 写 pinned states",
+      "sublabel": "pin_memory=True",
+      "icon": "active"
+    },
+    {
+      "id": "r1",
+      "lane": "ln_v1",
+      "col": 1,
+      "type": "backend",
+      "label": "GPU 非阻塞读同一块",
+      "sublabel": ".to(cuda, non_blocking=True)",
+      "icon": "database"
+    },
+    {
+      "id": "b1",
+      "lane": "ln_v1",
+      "col": 2,
+      "type": "security",
+      "label": "加异步 barrier 包住",
+      "sublabel": "为 async 后补的同步点",
+      "icon": "decision"
+    },
+    {
+      "id": "w2",
+      "lane": "ln_v2",
+      "col": 2,
+      "type": "frontend",
+      "label": "CPU 写私有 states",
+      "sublabel": "pin_memory=False",
+      "icon": "active"
+    },
+    {
+      "id": "snap",
+      "lane": "ln_v2",
+      "col": 3,
+      "type": "database",
+      "label": "每步 pin_memory() 拷快照",
+      "sublabel": "tmp_states,一次性",
+      "icon": "database"
+    },
+    {
+      "id": "r2",
+      "lane": "ln_v2",
+      "col": 4,
+      "type": "backend",
+      "label": "GPU 只读这份快照",
+      "sublabel": "地址永不被 CPU 改写",
+      "icon": "success"
+    },
+    {
+      "id": "leak",
+      "lane": "ln_leak",
+      "col": 3,
+      "type": "external",
+      "label": "漏一块缓冲区就是竞态",
+      "sublabel": "正确性靠人的记性",
+      "icon": "failure"
+    },
+    {
+      "id": "stuff",
+      "lane": "ln_leak",
+      "col": 4,
+      "type": "external",
+      "label": "CPU 工作被迫塞进临界区",
+      "sublabel": "同步点吃掉 overlap",
+      "icon": "failure"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "from": "w1",
+      "to": "r1",
+      "label": "同一块地址,写读撞车",
+      "role": "main"
+    },
+    {
+      "id": "e2",
+      "from": "r1",
+      "to": "b1",
+      "label": "于是补一个同步点",
+      "role": "main"
+    },
+    {
+      "id": "e3",
+      "from": "b1",
+      "to": "leak",
+      "label": "保护靠自觉",
+      "role": "error"
+    },
+    {
+      "id": "e4",
+      "from": "w2",
+      "to": "snap",
+      "label": "先拷一份",
+      "role": "main"
+    },
+    {
+      "id": "e5",
+      "from": "snap",
+      "to": "r2",
+      "label": "GPU 与 CPU 各碰各的内存",
+      "role": "main",
+      "variant": "emphasis"
+    },
+    {
+      "id": "e6",
+      "from": "b1",
+      "to": "stuff",
+      "label": "所有 CPU 工作都在里面",
+      "role": "error",
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "w1",
+    "r1",
+    "b1",
+    "leak"
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "可复用的判断(原文明确给出)",
+      "items": [
+        "CPU↔GPU 竞态用「双缓冲 / 快照」消,不用「同步点」消",
+        "只要数据量小于一次同步的代价,双缓冲总是更优",
+        "且更难写错:正确性靠结构保证,不靠人的记性",
+        "代价是每步多一次 CPU 内拷贝(量小)"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "这条设计直接改了 max_concurrent_batches",
+      "items": [
+        "async + MRV2:return pp_size + 1(每 PP 级一条 + 一条在飞)",
+        "V1:pp_size=1 时只能 2 条(V1 不完整支持 async + PP)",
+        "非 async:return pp_size",
+        "这个数同时决定 batch_queue 深度与 UVA 环形缓冲层数"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "同一份配置约束两个地方",
+      "items": [
+        "max_concurrent_batches 决定 engine 的 batch_queue 深度(deque maxlen)",
+        "也决定 UVA 环形缓冲至少要几层",
+        "两边必须对齐,否则出现「元数据串味」(block table 偶发错行)",
+        "MRV2 在 worker 初始化时按它反推 set_default_max_concurrency()"
+      ]
+    }
+  ]
+}

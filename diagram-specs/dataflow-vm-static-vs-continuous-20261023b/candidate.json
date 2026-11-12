@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "静态批处理 vs 连续批处理:GPU 时间轴上到底空转多少",
+    "subtitle": "静态批要等一批攒齐才开跑、且短的先结束让 GPU 越来越空;连续批每一步都重排,把新到的请求填进刚空出的位置",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-static-vs-continuous.dataflow.html"
+  },
+  "stages": [
+    {
+      "label": "① 请求到达"
+    },
+    {
+      "label": "② 攒批等待"
+    },
+    {
+      "label": "③ 执行与空转"
+    },
+    {
+      "label": "④ 吞吐结果"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "arrive",
+      "type": "frontend",
+      "label": "请求陆续到达",
+      "sublabel": "步调不一致,长度不一",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "gather",
+      "type": "security",
+      "label": "攒够一批才开跑",
+      "sublabel": "等待期 GPU 完全没用",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "run_static",
+      "type": "backend",
+      "label": "整批 prefill→decode",
+      "sublabel": "短请求先结束",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "idle",
+      "type": "external",
+      "label": "GPU 越跑越空",
+      "sublabel": "decode 算术强度极低",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "res_static",
+      "type": "database",
+      "label": "吞吐被两次浪费吃掉",
+      "sublabel": "等待 + decode 空转",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "reschedule",
+      "type": "security",
+      "label": "每步重排整个 batch",
+      "sublabel": "完成即移出,新到补进",
+      "stage": 1,
+      "row": 2
+    },
+    {
+      "id": "mix",
+      "type": "backend",
+      "label": "decode 与 prefill 混批",
+      "sublabel": "prefill 被切块,缝进 decode 的空隙",
+      "stage": 2,
+      "row": 2
+    },
+    {
+      "id": "res_cont",
+      "type": "database",
+      "label": "每一步都填满预算",
+      "sublabel": "至多到 max_num_batched_tokens(默认 2048)",
+      "stage": 3,
+      "row": 2
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "arrive",
+      "to": "gather",
+      "label": "先攒"
+    },
+    {
+      "id": "f2",
+      "from": "gather",
+      "to": "run_static",
+      "label": "攒齐才开跑"
+    },
+    {
+      "id": "f3",
+      "from": "run_static",
+      "to": "idle",
+      "label": "短的先结束"
+    },
+    {
+      "id": "f4",
+      "from": "idle",
+      "to": "res_static",
+      "label": "空转进不了吞吐"
+    },
+    {
+      "id": "f5",
+      "from": "arrive",
+      "to": "reschedule",
+      "label": "来一个就能进",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f6",
+      "from": "reschedule",
+      "to": "mix",
+      "label": "重排后立即下发",
+      "variant": "emphasis"
+    },
+    {
+      "id": "f7",
+      "from": "mix",
+      "to": "res_cont",
+      "label": "预算填满",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "静态批的两笔浪费",
+      "items": [
+        "等待浪费:请求要攒够一批才开跑,延迟与吞吐双输",
+        "decode 浪费:batch 内步调不一致,短的先结束,GPU 越跑越空",
+        "根因:decode 每请求每步只产 1 token,GPU 在「算一点、等很多」"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "吞吐数字别挂错账",
+      "items": [
+        "14-24× 是相对 HF/transformers 静态批处理的「全引擎」收益",
+        "SOSP 论文的 2-4× 是 vLLM 整机 vs Orca / FasterTransformer(两者都已是迭代级基线)",
+        "那 2-4× 主要来自 PagedAttention 的内存管理,不是调度粒度本身(对 Orca 而言连续批已不是增量)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "心法",
+      "items": [
+        "调度器从「分派一次」变成「每一次都重排」",
+        "吞吐的钥匙在调度频率,不在单次批次大小",
+        "ORCA(2022)先提出 iteration-level scheduling,vLLM 第一个做成工业可用引擎"
+      ]
+    }
+  ]
+}

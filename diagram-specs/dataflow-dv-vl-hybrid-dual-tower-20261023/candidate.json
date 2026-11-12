@@ -1,0 +1,164 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "DeepSeek-VL 的 Hybrid 双塔:低塔出语义、高塔出细节,分路投影后再融合",
+    "subtitle": "同一张图走两条分辨率通道,两个塔都冻结(freeze_low / freeze_high = true),只训投影层与 LLM;投影器名为 low_high_hybrid_split_mlp_gelu,先各自投影再拼接,这就是 Hybrid 在代码层的落点",
+    "locale": "zh-CN",
+    "output": "diagrams/dv-vl-hybrid-dual-tower.dataflow.html"
+  },
+  "stages": [
+    { "label": "① 双分辨率输入" },
+    { "label": "② 双塔编码(冻结)" },
+    { "label": "③ 分路投影" },
+    { "label": "④ 拼接 → LLM 解码" }
+  ],
+  "nodes": [
+    {
+      "id": "img_hi",
+      "type": "database",
+      "label": "1024² 原图",
+      "sublabel": "网页/PDF/图表,小字",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "img_lo",
+      "type": "database",
+      "label": "384² 缩放图",
+      "sublabel": "同一张图整体缩放",
+      "stage": 0,
+      "row": 1
+    },
+    {
+      "id": "sam",
+      "type": "backend",
+      "label": "SAM-B 高塔",
+      "sublabel": "1024²,downsample,冻结",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "siglip",
+      "type": "backend",
+      "label": "SigLIP-L 低塔",
+      "sublabel": "384²,图文对齐,冻结",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "mlp_hi",
+      "type": "backend",
+      "label": "高路 MLP",
+      "sublabel": "1024 → 4096 维",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "mlp_lo",
+      "type": "backend",
+      "label": "低路 MLP",
+      "sublabel": "1024 → 4096 维",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "fuse",
+      "type": "messagebus",
+      "label": "两路拼接",
+      "sublabel": "concat_type = tuple",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "llm",
+      "type": "frontend",
+      "label": "dense LLM 解码",
+      "sublabel": "1.3B / 7B,llama 30 层",
+      "stage": 3,
+      "row": 1
+    }
+  ],
+  "flows": [
+    {
+      "id": "f1",
+      "from": "img_hi",
+      "to": "sam",
+      "label": "原分辨率不缩放"
+    },
+    {
+      "id": "f2",
+      "from": "img_lo",
+      "to": "siglip",
+      "label": "缩到 384 保语义"
+    },
+    {
+      "id": "f3",
+      "from": "sam",
+      "to": "mlp_hi",
+      "label": "1024 维细节特征"
+    },
+    {
+      "id": "f4",
+      "from": "siglip",
+      "to": "mlp_lo",
+      "label": "1024 维语义特征"
+    },
+    {
+      "id": "f5",
+      "from": "mlp_hi",
+      "to": "fuse",
+      "label": "高路 token"
+    },
+    {
+      "id": "f6",
+      "from": "mlp_lo",
+      "to": "fuse",
+      "label": "低路 token"
+    },
+    {
+      "id": "f7",
+      "from": "fuse",
+      "to": "llm",
+      "label": "统一进 4096 维嵌层"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "amber",
+      "title": "为什么非要两个塔",
+      "items": [
+        "低塔 384²:语义强,但把 1024² 密集文档糊掉,小字/公式全丢",
+        "高塔 1024²:细节在,但 (1024/16)² = 4096 个 patch token,直接进 LLM 撑爆预算",
+        "折中:低塔给「说了什么」,高塔给「写的什么字」"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "两塔输出维度故意对齐到 1024",
+      "items": [
+        "SAM-B 是 downsample 变体(全局注意力只在 4 层),输出 1024 维",
+        "SigLIP-L@384 也输出 1024 维",
+        "于是 aligner 的 input_dim 只有一个值 1024,两路共用一套投影逻辑"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "split 而不是先 concat 再一个 MLP",
+      "items": [
+        "projector_type = low_high_hybrid_split_mlp_gelu",
+        "高低两路先各自投影到 4096,再拼接融合",
+        "两路特征分布不同(分割预训练 vs 图文对齐),分投避免互相干扰"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "冻结的代价与收益",
+      "items": [
+        "收益:省算力 + 避免灾难性遗忘 + encoder 输出分布稳定",
+        "代价:两塔表达力封顶,高分辨率只能靠「换塔」不能「调塔」",
+        "所以 VL2 直接换成单个可训 SO400M —— 见后一张图"
+      ]
+    }
+  ]
+}

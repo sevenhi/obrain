@@ -1,0 +1,152 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "一次评测的执行流程",
+  "subtitle": "从部署到容量决策的完整链路",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-guidellm-run-flow.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "setup",
+   "label": "准备"
+  },
+  {
+   "id": "exec",
+   "label": "执行"
+  },
+  {
+   "id": "report",
+   "label": "汇总"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "dep",
+   "lane": "setup",
+   "col": 0,
+   "type": "backend",
+   "label": "部署目标服务",
+   "sublabel": "vLLM serve/k8s ingress"
+  },
+  {
+   "id": "sce",
+   "lane": "setup",
+   "col": 1,
+   "type": "backend",
+   "label": "定义 Scenario",
+   "sublabel": "backend+data+profile+constraints"
+  },
+  {
+   "id": "run",
+   "lane": "exec",
+   "col": 0,
+   "type": "frontend",
+   "label": "guidellm run",
+   "sublabel": "连接 Backend"
+  },
+  {
+   "id": "load",
+   "lane": "exec",
+   "col": 1,
+   "type": "frontend",
+   "label": "Request Loader",
+   "sublabel": "合成/HF/文件/多模态"
+  },
+  {
+   "id": "sch",
+   "lane": "exec",
+   "col": 2,
+   "type": "frontend",
+   "label": "Scheduler 发压",
+   "sublabel": "按 Profile"
+  },
+  {
+   "id": "smp",
+   "lane": "exec",
+   "col": 3,
+   "type": "frontend",
+   "label": "采样时间线",
+   "sublabel": "首 token/每 token/结束"
+  },
+  {
+   "id": "agg",
+   "lane": "report",
+   "col": 0,
+   "type": "backend",
+   "label": "汇总统计",
+   "sublabel": "分布/分位数/SLO"
+  },
+  {
+   "id": "out",
+   "lane": "report",
+   "col": 1,
+   "type": "backend",
+   "label": "输出报告",
+   "sublabel": "console/json/csv/html"
+  },
+  {
+   "id": "dec",
+   "lane": "report",
+   "col": 2,
+   "type": "frontend",
+   "label": "容量决策",
+   "sublabel": "并发上限/SLO 门禁"
+  }
+ ],
+ "edges": [
+  {
+   "from": "dep",
+   "to": "sce",
+   "label": "配置"
+  },
+  {
+   "from": "sce",
+   "to": "run",
+   "label": "启动",
+   "variant": "emphasis"
+  },
+  {
+   "from": "run",
+   "to": "load",
+   "label": "载入数据"
+  },
+  {
+   "from": "load",
+   "to": "sch",
+   "label": "按 Profile"
+  },
+  {
+   "from": "sch",
+   "to": "smp",
+   "label": "逐请求采样"
+  },
+  {
+   "from": "smp",
+   "to": "agg",
+   "label": "达到 Constraint 后汇总",
+   "variant": "emphasis"
+  },
+  {
+   "from": "agg",
+   "to": "out",
+   "label": "生成报告"
+  },
+  {
+   "from": "out",
+   "to": "dec",
+   "label": "决策"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "Constraint 何时停",
+   "items": [
+    "max_duration / max_requests",
+    "过饱和自动停止:吞吐不再上升只加延迟"
+   ]
+  }
+ ]
+}

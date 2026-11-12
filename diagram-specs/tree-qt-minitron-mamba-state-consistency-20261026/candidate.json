@@ -1,0 +1,59 @@
+{
+ "schema_version": 1,
+ "diagram_type": "tree",
+ "meta": {
+  "title": "Mamba hybrid 剪枝:三处「状态一致性」坑",
+  "subtitle": "剪枝=改结构,难点在切完后所有跟被切维度对齐的东西是否还对得上",
+  "locale": "zh-CN",
+  "output": "diagrams/qt-minitron-mamba-state-consistency.tree.html"
+ },
+ "nodes": [
+  {
+   "id": "root",
+   "label": "剪枝后派生状态失效"
+  },
+  {
+   "id": "c1",
+   "parent": "root",
+   "label": "① 派生缓存没跟着切",
+   "sublabel": "_A_neg_exp_cache 8 头 vs 6 头→形状错"
+  },
+  {
+   "id": "c2",
+   "parent": "root",
+   "label": "② 层列表索引元数据没切",
+   "sublabel": "zip(strict=True) 对齐→直接抛错"
+  },
+  {
+   "id": "c3",
+   "parent": "root",
+   "label": "③ 每层 config 副本没写",
+   "sublabel": "导出读到 device-side OOB"
+  },
+  {
+   "id": "c4",
+   "parent": "root",
+   "label": "④ dataclass init=False 字段",
+   "sublabel": "asdict 吐出→TypeError"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "cyan",
+   "title": "通用规则",
+   "items": [
+    "剪枝后所有「由被剪维度派生的缓存/统计量/scale」都失效",
+    "必须显式重建或标脏,别指望下游发现",
+    "列出所有 len() 依赖 num_layers/num_heads 的状态逐个确认"
+   ]
+  },
+  {
+   "dot": "rose",
+   "title": "与量化同构",
+   "items": [
+    "换 active heads 必须重算 scale 是同一类错误",
+    "缓存、执行列表、逐层 config、流水线切分计数,一个漏了就是形状错或静默错"
+   ]
+  }
+ ]
+}

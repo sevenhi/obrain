@@ -1,0 +1,71 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "检测难在哪:输出数量不定、位置任意、大小悬殊",
+    "subtitle": "分类网络输出固定 K 维,检测输出是「不定长集合」。三条主线其实是对「怎么把不定数量的预测对齐到不定数量的真值」的三种回答",
+    "locale": "zh-CN",
+    "output": "diagrams/cv-detection-core-difficulty.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_hard", "label": "① 三个难点" },
+    { "id": "ln_why", "label": "② 为什么难" },
+    { "id": "ln_ans", "label": "③ 三种回答" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "难点", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "根因", "fromCol": 1, "toCol": 1 },
+    { "id": "p3", "label": "主线", "fromCol": 2, "toCol": 2, "variant": "emphasis" }
+  ],
+  "nodes": [
+    { "id": "h1", "lane": "ln_hard", "col": 0, "type": "external", "label": "数量不定", "sublabel": "每图 0~几百个物体", "icon": "start" },
+    { "id": "h2", "lane": "ln_hard", "col": 1, "type": "external", "label": "大小悬殊", "sublabel": "20px 行人到 800px 卡车", "icon": "neutral" },
+    { "id": "h3", "lane": "ln_hard", "col": 2, "type": "external", "label": "同一物体重复预测", "sublabel": "多个位置各自出框", "icon": "neutral" },
+
+    { "id": "y1", "lane": "ln_why", "col": 0, "type": "security", "label": "固定维度对不上", "sublabel": "分类输出 K 维,检测输出集合", "icon": "neutral" },
+    { "id": "y2", "lane": "ln_why", "col": 1, "type": "security", "label": "单尺度特征不够", "sublabel": "要么 FPN 要么多 size anchor", "icon": "neutral" },
+    { "id": "y3", "lane": "ln_why", "col": 2, "type": "security", "label": "需要去重机制", "sublabel": "NMS 或一对一匹配", "icon": "neutral" },
+
+    { "id": "a1", "lane": "ln_ans", "col": 0, "type": "backend", "label": "anchor + NMS", "sublabel": "Faster R-CNN / YOLO 走这条", "icon": "active" },
+    { "id": "a2", "lane": "ln_ans", "col": 1, "type": "backend", "label": "query + 匈牙利匹配", "sublabel": "DETR:一个真值只配一个预测", "icon": "active" },
+    { "id": "a3", "lane": "ln_ans", "col": 2, "type": "backend", "label": "提示 + 多掩码输出", "sublabel": "SAM:不问类别,只问割哪", "icon": "success" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "h1", "to": "y1", "label": "集合 vs 定长向量", "role": "main" },
+    { "id": "e2", "from": "h2", "to": "y2", "label": "尺度要先覆盖住", "role": "main" },
+    { "id": "e3", "from": "h3", "to": "y3", "label": "重复就得处理", "role": "main" },
+    { "id": "e4", "from": "y1", "to": "a1", "label": "预设 anchor 当候选", "role": "main" },
+    { "id": "e5", "from": "y2", "to": "a2", "label": "全局注意力替代多尺度先验", "role": "main" },
+    { "id": "e6", "from": "y3", "to": "a3", "label": "干脆改成提示式", "role": "main" }
+  ],
+  "mainPath": ["h1", "y1", "a1"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "一句直觉例子",
+      "items": [
+        "给 ResNet 看一张街景,它只能说「图里有车」",
+        "你想要的却是「三辆车,分别在这三个框里,其中一辆被行人挡了一半」",
+        "检测 = 分类(是什么)+ 定位(框在哪);实例分割 = 再给每个物体一个像素级掩码"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "三条主线的本质差别在对齐方式",
+      "items": [
+        "anchor + NMS:先大量猜,再事后去重",
+        "query + 匈牙利匹配:训练时就强制一对一,推理免 NMS",
+        "提示 + 多掩码:不学类别,学「指哪割哪」,模糊时给多个候选"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "评价指标别只看一个数",
+      "items": [
+        "检测看 COCO mAP(AP^box,IoU 0.5:0.95 均值)",
+        "mAP@0.5 对小目标和定位精度远不如 mAP 50-95 敏感",
+        "分割用 mask AP 或 mIoU;SAM 类零样本模型看多 benchmark 迁移表"
+      ]
+    }
+  ]
+}

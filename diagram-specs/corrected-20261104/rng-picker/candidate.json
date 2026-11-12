@@ -1,0 +1,29 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {"title": "GPU RNG 选型：先分安全用途与统计模拟", "subtitle": "2026-11-04 纠错：统计检验不构成密码学安全证明；可复现必须固定算法与流映射。", "locale": "zh-CN", "quality_profile": "showcase", "output": "diagrams/rng-picker.workflow.html"},
+  "lanes": [{"id": "scope", "label": "用途边界"}, {"id": "simulation", "label": "统计模拟"}, {"id": "cooperation", "label": "协作状态"}],
+  "nodes": [
+    {"id": "need", "lane": "scope", "col": 0, "type": "frontend", "label": "随机数需求", "sublabel": "先区分用途"},
+    {"id": "secure", "lane": "scope", "col": 1, "type": "security", "label": "安全任务", "sublabel": "使用合适的 CSPRNG"},
+    {"id": "mapping", "lane": "simulation", "col": 1, "type": "backend", "label": "计数器流映射", "sublabel": "固定 key / counter / 轮数"},
+    {"id": "philox", "lane": "simulation", "col": 2, "type": "backend", "label": "Philox 候选", "sublabel": "整数流确定性"},
+    {"id": "validate", "lane": "simulation", "col": 3, "type": "backend", "label": "验证后使用", "sublabel": "质量、误差与性能"},
+    {"id": "state", "lane": "cooperation", "col": 1, "type": "database", "label": "长周期需求", "sublabel": "能接受 block 协作"},
+    {"id": "mtgp", "lane": "cooperation", "col": 2, "type": "backend", "label": "MTGP 候选", "sublabel": "参数与共享状态约束"}
+  ],
+  "edges": [
+    {"from": "need", "to": "secure", "label": "密码学用途", "role": "branch"},
+    {"from": "need", "to": "mapping", "label": "统计模拟", "role": "main"},
+    {"from": "mapping", "to": "philox", "label": "独立寻址", "role": "main"},
+    {"from": "mapping", "to": "state", "label": "另一候选", "role": "branch"},
+    {"from": "state", "to": "mtgp", "label": "协作递推", "role": "main"},
+    {"from": "philox", "to": "validate", "label": "应用验收", "role": "main"},
+    {"from": "mtgp", "to": "validate", "label": "应用验收", "role": "branch"}
+  ],
+  "cards": [
+    {"dot": "rose", "title": "安全边界", "items": ["Random123 明确 Philox/Threefry 不适用于密码学或安全用途。通过 BigCrush 不是安全认证。", "固定来源：https://github.com/DEShawResearch/random123/blob/726a093cd9a73f3ec3c8d7a70ff10ed8efec8d13/README.md"]},
+    {"dot": "cyan", "title": "复现与验收", "items": ["整数流确定性不自动保证浮点分布转换、归约或应用最终输出逐位一致；需记录版本、流映射与转换算法。", "统计检验失败需结合应用风险分析；本图不把某个生成器的历史吞吐或测试排名推广到所有 GPU。"]},
+    {"dot": "amber", "title": "MTGP 范围", "items": ["MTGP 是协作状态路线，不是所有长周期需求的唯一解；使用时核查实现的 block、线程数与参数约束。", "固定论文：https://arxiv.org/abs/1005.4973v1"]}
+  ]
+}

@@ -1,0 +1,167 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "MoE 的账怎么算:总参定显存、激活参定速度,负载靠 bias 均衡",
+    "subtitle": "router 对每个 token 选 top-K 个专家,只有被选中的参与计算;Mixtral 8x7B 用 13B 激活打平 Llama-2-70B,但显存要装 47B 全部权重",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-moe-accounting.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_in", "label": "输入" },
+    { "id": "ln_route", "label": "路由" },
+    { "id": "ln_exp", "label": "专家计算" },
+    { "id": "ln_bal", "label": "负载均衡" },
+    { "id": "ln_ledger", "label": "账本" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 打分与选专家", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 只算被选中的", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "③ 均衡与成本", "fromCol": 4, "toCol": 5 }
+  ],
+  "nodes": [
+    {
+      "id": "tok",
+      "lane": "ln_in",
+      "col": 0,
+      "type": "database",
+      "label": "token 表示 x",
+      "sublabel": "每层每个 token 各走一次",
+      "icon": "database"
+    },
+    {
+      "id": "gate",
+      "lane": "ln_route",
+      "col": 1,
+      "type": "backend",
+      "label": "router 线性层 G(x)",
+      "sublabel": "给 N 个专家各打一分",
+      "icon": "decision"
+    },
+    {
+      "id": "softmax",
+      "lane": "ln_route",
+      "col": 2,
+      "type": "backend",
+      "label": "softmax 得 p",
+      "sublabel": "V3 改用 sigmoid 打分",
+      "icon": "neutral"
+    },
+    {
+      "id": "topk",
+      "lane": "ln_exp",
+      "col": 3,
+      "type": "security",
+      "label": "只取 top-K 专家",
+      "sublabel": "Mixtral K=2;V3 是 8 路由 + 1 共享",
+      "icon": "active"
+    },
+    {
+      "id": "ffn",
+      "lane": "ln_exp",
+      "col": 4,
+      "type": "backend",
+      "label": "各专家独立 SwiGLU FFN",
+      "sublabel": "y = Σ p_i · E_i(x)",
+      "icon": "backend"
+    },
+    {
+      "id": "share",
+      "lane": "ln_exp",
+      "col": 5,
+      "type": "backend",
+      "label": "共享专家恒定激活",
+      "sublabel": "DeepSeekMoE 的改进:承接公共知识",
+      "icon": "success"
+    },
+    {
+      "id": "aux",
+      "lane": "ln_bal",
+      "col": 3,
+      "type": "security",
+      "label": "传统解法:辅助损失",
+      "sublabel": "鼓励均匀,但与主损失拉扯",
+      "icon": "failure"
+    },
+    {
+      "id": "bias",
+      "lane": "ln_bal",
+      "col": 5,
+      "type": "security",
+      "label": "V3:可学习 bias",
+      "sublabel": "只影响选谁,不改门控值",
+      "icon": "success"
+    },
+    {
+      "id": "mem",
+      "lane": "ln_ledger",
+      "col": 4,
+      "type": "database",
+      "label": "显存 = 总参",
+      "sublabel": "47B bf16 ≈ 94GB,别按 13B 估",
+      "icon": "database"
+    },
+    {
+      "id": "flops",
+      "lane": "ln_ledger",
+      "col": 5,
+      "type": "database",
+      "label": "速度 = 激活参",
+      "sublabel": "13B 激活 / 37B 激活",
+      "icon": "neutral"
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "tok", "to": "gate", "label": "所有 token 都过路由", "role": "main" },
+    { "id": "e2", "from": "gate", "to": "softmax", "label": "归一成概率", "role": "main" },
+    { "id": "e3", "from": "softmax", "to": "topk", "label": "排序取前 K", "role": "main" },
+    { "id": "e4", "from": "topk", "to": "ffn", "label": "只启动被选专家", "role": "main" },
+    { "id": "e5", "from": "ffn", "to": "share", "label": "加权求和 + 共享输出", "role": "main" },
+    { "id": "e6", "from": "gate", "to": "aux", "label": "热门专家被挤爆", "role": "error" },
+    { "id": "e7", "from": "aux", "to": "bias", "label": "V3 换成在线调 bias", "role": "branch" },
+    { "id": "e8", "from": "share", "to": "mem", "label": "权重全要常驻", "role": "main" },
+    { "id": "e9", "from": "share", "to": "flops", "label": "算力只花激活份", "role": "main" }
+  ],
+  "mainPath": ["tok", "gate", "softmax", "topk", "ffn", "share"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "为什么「8x7B」是营销记号",
+      "items": [
+        "Mixtral 8x7B = 8 个专家 + attention 共享 = 47B 总参",
+        "不是 56B(8×7B),也不是每 token 用 14B",
+        "每 token 激活 13B(2 专家 + attention)",
+        "Qwen 57B-A14B:A 后面的数字才是激活"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "DeepSeekMoE 的两个改进",
+      "items": [
+        "细粒度:把 N 个专家拆成 mN 个更小的,激活 mK 个 —— 组合更灵活",
+        "共享专家:隔离 K_s 个恒定激活,承接公共知识",
+        "数据:16B ≈ LLaMA2-7B 但只用 ~40% 计算;145B ≈ 67B 但只用 28.5%"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "V3 的工程约束值得单记",
+      "items": [
+        "671B 总 / 37B 激活,1+256 专家 top-8",
+        "每 token 最多发往 4 个节点 —— 限制 all-to-all 通信",
+        "aux-loss-free bias:训练期监控负载在线调,免去与主损失拉扯",
+        "MTP 深度 1:同一 token 预测下下个,可直接当投机解码草稿头"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "MoE 与推理引擎的关系",
+      "items": [
+        "痛点不是算力,是权重搬运与专家分布",
+        "专家并行(EP)跨节点分片,router 动态性要求 all-to-all",
+        "没有 NVLink/IB,all-to-all 会成为新瓶颈",
+        "vLLM 对 Mixtral 的支持走 Megablocks CUDA 内核"
+      ]
+    }
+  ]
+}

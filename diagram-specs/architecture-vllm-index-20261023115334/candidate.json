@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "vLLM 推理引擎架构:V1 分层与关键机制",
+    "subtitle": "API shim → EngineCore(调度) → Worker(Model Runner) → 可插拔注意力后端;PagedAttention 与连续批处理托底",
+    "output": "diagrams/vllm-index.architecture.html",
+    "animation": "trace",
+    "visual_preset": "blueprint",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    { "id": "client", "type": "external", "label": "客户端请求", "sublabel": "OpenAI 兼容 API", "pos": [40, 300], "size": [120, 60], "tag": "SSE 流式" },
+    { "id": "apiserver", "type": "frontend", "label": "API Server", "sublabel": "59 行 shim + 四件套子包", "pos": [220, 300], "size": [150, 62], "tag": "协议端点拆独立子包" },
+    { "id": "enginecore", "type": "backend", "label": "EngineCore", "sublabel": "V1 调度器(CPU 侧)", "pos": [440, 300], "size": [150, 62], "tag": "迭代级调度" },
+    { "id": "worker", "type": "backend", "label": "Worker / ModelRunner", "sublabel": "MRV2 默认启用(v0.32 main)", "pos": [660, 300], "size": [160, 62], "tag": "持久 batch + 快照缓冲" },
+    { "id": "attnbackend", "type": "security", "label": "Attention Backend", "sublabel": "可插拔:FA/FlashInfer/Triton/MLA 族", "pos": [900, 300], "size": [170, 62], "tag": "register_backend + priority" },
+    { "id": "pagedattn", "type": "database", "label": "PagedAttention", "sublabel": "block table 非连续 KV 分配", "pos": [440, 480], "size": [150, 62], "tag": "显存碎片 → 利用率 33%→84%" },
+    { "id": "contbatch", "type": "database", "label": "连续批处理", "sublabel": "统一 token 预算混批", "pos": [660, 480], "size": [150, 62], "tag": "吞吐 2-4×(vs Orca)" },
+    { "id": "registry", "type": "cloud", "label": "ModelRegistry", "sublabel": "架构名 → 实现类懒加载", "pos": [220, 480], "size": [150, 62], "tag": "Transformers 兜底" },
+    { "id": "executor", "type": "cloud", "label": "Executor 集群层", "sublabel": "vllm/v1/executor/ 三后端", "pos": [660, 160], "size": [150, 62], "tag": "Ray rank 重排" },
+    { "id": "quant", "type": "messagebus", "label": "量化支持", "sublabel": "GPTQ/AWQ/FP8 注册表分派", "pos": [440, 160], "size": [150, 62], "tag": "kernel 选型三分派链" },
+    { "id": "sampling", "type": "messagebus", "label": "Sampler 管线", "sublabel": "惩罚机制 + argmax 不变性", "pos": [220, 160], "size": [150, 62], "tag": "vllm/v1/sample/ops/" },
+    { "id": "ecosystem", "type": "external", "label": "生态构件(47 仓)", "sublabel": "路由/部署/压缩/投机/RL/评测", "pos": [1130, 300], "size": [150, 62], "tag": "九分组地图" }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "API 层(薄路由)", "wraps": ["apiserver", "sampling"] },
+    { "kind": "security-group", "label": "V1 引擎核心(vllm/v1/)", "wraps": ["enginecore", "worker", "pagedattn", "contbatch", "executor", "quant"] },
+    { "kind": "region", "label": "内核与生态", "wraps": ["attnbackend", "ecosystem"] }
+  ],
+  "connections": [
+    { "from": "client", "to": "apiserver", "label": "HTTP/JSON", "variant": "emphasis" },
+    { "from": "apiserver", "to": "enginecore", "label": "异步消息", "variant": "emphasis" },
+    { "from": "enginecore", "to": "worker", "label": "调度执行解耦", "variant": "emphasis" },
+    { "from": "worker", "to": "attnbackend", "label": "最小 priority 分派", "variant": "emphasis" },
+    { "from": "attnbackend", "to": "ecosystem", "label": "FA fork / FlashMLA", "variant": "dashed" },
+    { "from": "registry", "to": "enginecore", "label": "模型类注入", "variant": "dashed" },
+    { "from": "pagedattn", "to": "enginecore", "label": "KV 分页地基", "variant": "dashed" },
+    { "from": "contbatch", "to": "enginecore", "label": "混批填预算", "variant": "dashed" },
+    { "from": "quant", "to": "worker", "label": "量化 kernel 选型", "variant": "dashed" },
+    { "from": "executor", "to": "worker", "label": "多卡/多机 rank 编址", "variant": "dashed" },
+    { "from": "sampling", "to": "apiserver", "label": "三级回退参数", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "一句话定位",
+      "items": [
+        "高吞吐、低显存占用的开源 LLM 推理与服务引擎(Apache 2.0)",
+        "关键技术四块:PagedAttention、连续批处理、V1 引擎架构、优化注意力内核",
+        "V1(vllm/v1/)是主线组织方式;网上多数资料讲的 V0 不能直接套用"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "调度与执行解耦",
+      "items": [
+        "EngineCore(CPU 调度)与 Worker(GPU 执行)多进程分离 + 异步调度",
+        "MRV2 当前 main 默认启用:持久 batch、快照缓冲替代 barrier、StagedWriteTensor 只搬 diff",
+        "api_server.py 退化为 59 行 shim,协议端点拆独立子包"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "两大不变量",
+      "items": [
+        "PagedAttention:OS 虚拟内存式分页 KV,block table 非连续分配,消除碎片(SOSP 2023)",
+        "连续批处理:迭代级调度,decode+prefill 混批填满 max_num_batched_tokens",
+        "deepinfer 等生产改造也保留这两条不变量"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "版本口径警示",
+      "items": [
+        "官方文档 v0.32 时代(PyPI v0.32.0, 2026-10-18);本地多数概念篇基线是 v0.28.1rc0-40",
+        "不能把基线 commit 当作当前实现版本;MRV2 篇按 v0.32 main 一手实读",
+        "注意力后端枚举无 TRT-LLM;MLA 族 FlashMLA 双平台"
+      ]
+    }
+  ]
+}

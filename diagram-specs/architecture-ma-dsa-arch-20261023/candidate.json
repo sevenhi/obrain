@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "MLA 内部:DSA 如何并联插入(共享 q 低秩投影,各自独立 k 投影)",
+    "subtitle": "索引器复用主注意力的 qr latent,只新增自己的 wq_b 与独立的 wk;主 KV cache 存 512 维 latent,索引器另存一份 128 维 FP8 cache",
+    "locale": "zh-CN",
+    "output": "diagrams/ma-dsa-arch.architecture.html",
+    "viewBox": [1120, 660]
+  },
+  "components": [
+    { "id": "x", "type": "external", "label": "hidden x", "sublabel": "dim=7168", "pos": [40, 290], "size": [150, 80] },
+    { "id": "wqa", "type": "backend", "label": "wq_a + q_norm", "sublabel": "低秩 → qr(1536)", "pos": [260, 70], "size": [200, 84] },
+    { "id": "wqb", "type": "backend", "label": "主注意力 wq_b", "sublabel": "128 头 ×(128+64)", "pos": [520, 70], "size": [200, 84] },
+    { "id": "idxwqb", "type": "security", "label": "索引器 wq_b", "sublabel": "1536 → 64×128", "pos": [260, 210], "size": [200, 84] },
+    { "id": "score", "type": "security", "label": "fp8_index 打分", "sublabel": "Σ w·ReLU(q·k)", "pos": [520, 210], "size": [200, 84] },
+    { "id": "topk", "type": "security", "label": "Top-k 取 2048", "sublabel": "index_topk", "pos": [780, 210], "size": [190, 84] },
+    { "id": "wkv", "type": "backend", "label": "wkv_a", "sublabel": "→ kv latent 512", "pos": [260, 350], "size": [200, 84] },
+    { "id": "kvcache", "type": "database", "label": "kv_cache", "sublabel": "FP8 latent 512 维", "pos": [520, 350], "size": [200, 84] },
+    { "id": "idxwk", "type": "security", "label": "索引器 wk + LayerNorm", "sublabel": "7168 → 128", "pos": [260, 490], "size": [200, 84] },
+    { "id": "idxcache", "type": "database", "label": "索引器 k_cache", "sublabel": "FP8 128 维", "pos": [520, 490], "size": [200, 84] },
+    { "id": "sparse", "type": "frontend", "label": "稀疏加权输出 O", "sublabel": "非 top-k 位置 score = −inf", "pos": [790, 400], "size": [280, 96] }
+  ],
+  "boundaries": [
+    { "kind": "region", "label": "共享的低秩 query 路径(索引器复用,不新增参数)", "wraps": ["x", "wqa"] },
+    { "kind": "region", "label": "闪电索引器:只服务 DSA,FP8 域内打分与选 top-k", "wraps": ["idxwk", "idxwqb", "idxcache", "score", "topk"] }
+  ],
+  "connections": [
+    { "id": "c1", "from": "x", "to": "wqa", "label": "先降秩", "labelAt": [215, 175] },
+    { "id": "c2", "from": "wqa", "to": "wqb", "label": "qr 同一变量" },
+    { "id": "c3", "from": "wqa", "to": "idxwqb", "label": "复用同一 qr", "variant": "emphasis" },
+    { "id": "c4", "from": "x", "to": "wkv", "label": "KV 低秩压缩", "labelAt": [215, 330] },
+    { "id": "c5", "from": "x", "to": "idxwk", "label": "独立 k 投影", "variant": "emphasis", "labelAt": [215, 475] },
+    { "id": "c6", "from": "wkv", "to": "kvcache", "label": "act_quant 存 FP8" },
+    { "id": "c7", "from": "idxwk", "to": "idxcache", "label": "另一份 cache" },
+    { "id": "c8", "from": "idxwqb", "to": "score", "label": "q 经 RoPE+旋转+量化" },
+    { "id": "c9", "from": "idxcache", "to": "score", "label": "k 同款处理" },
+    { "id": "c10", "from": "score", "to": "topk", "label": "索引分数 I(t,s)" },
+    { "id": "c11", "from": "topk", "to": "sparse", "label": "index_mask", "variant": "dashed" },
+    { "id": "c12", "from": "kvcache", "to": "sparse", "label": "只在这 2048 个 latent 上加权" },
+    { "id": "c13", "from": "wqb", "to": "sparse", "label": "主注意力 q_A", "variant": "dashed" }
+  ],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "三个关键设计细节(源码直接证据)",
+      "items": [
+        "qr = q_norm(wq_a(x)) 与主注意力完全是同一个变量,索引器只加自己的 wq_b",
+        "key 侧是独立的 wk(7168→128),后接新增的 LayerNorm",
+        "索引器 k_cache 与主 kv_cache 必须分开:128 维 ≠ 512 维",
+        "参数增量极小,但显存多一份 128 维 FP8 cache"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "哈达玛旋转为什么是前提",
+      "items": [
+        "rotate_activation = hadamard_transform(x, scale=hidden^-0.5)",
+        "128 维是 2 的幂,满足 Hadamard 维度要求",
+        "在 RoPE 之后、FP8 量化之前做正交旋转",
+        "把激活大离群点摊平到所有维度 → FP8 量化误差可控"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "索引器维度(代码与 config 唯一对齐处)",
+      "items": [
+        "index_n_heads=64(主注意力 128 头的一半)",
+        "index_head_dim=128;index_topk=2048",
+        "索引器 RoPE 维 64,且用非交织(interleaved=False)",
+        "v32_model.py 的 ModelArgs 是降采样 smoke-test 配置,真实超参看 config.json"
+      ]
+    }
+  ]
+}

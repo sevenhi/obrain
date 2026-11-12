@@ -1,0 +1,144 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "插件加载路径:平台探测与单激活约束",
+  "subtitle": "out-of-tree 插件同时激活 ≥2 直接报错",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-hwp-load-path.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "resolve",
+   "label": "解析"
+  },
+  {
+   "id": "detect",
+   "label": "探测"
+  },
+  {
+   "id": "activate",
+   "label": "激活"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "a0",
+   "lane": "resolve",
+   "col": 0,
+   "type": "backend",
+   "label": "进程启动/首次 current_platform",
+   "sublabel": "resolve_current_platform_cls_qualname()"
+  },
+  {
+   "id": "cpu",
+   "lane": "resolve",
+   "col": 1,
+   "type": "backend",
+   "label": "VLLM_TARGET_DEVICE=cpu?",
+   "sublabel": "强制 CpuPlatform 优先",
+   "icon": "decision"
+  },
+  {
+   "id": "grp",
+   "lane": "detect",
+   "col": 0,
+   "type": "backend",
+   "label": "load_plugins_by_group",
+   "sublabel": "entry_points 发现"
+  },
+  {
+   "id": "built",
+   "lane": "detect",
+   "col": 1,
+   "type": "backend",
+   "label": "builtin 五探测器",
+   "sublabel": "tpu/cuda/rocm/xpu/cpu"
+  },
+  {
+   "id": "oot",
+   "lane": "detect",
+   "col": 2,
+   "type": "backend",
+   "label": "OOT 逐个 register 探测",
+   "sublabel": "ascend/metal/gaudi/neuron"
+  },
+  {
+   "id": "hit",
+   "lane": "activate",
+   "col": 0,
+   "type": "frontend",
+   "label": "恰一个命中→激活",
+   "sublabel": "platform_cls"
+  },
+  {
+   "id": "multi",
+   "lane": "activate",
+   "col": 1,
+   "type": "backend",
+   "label": "多个命中",
+   "sublabel": "RuntimeError",
+   "icon": "failure"
+  },
+  {
+   "id": "none",
+   "lane": "activate",
+   "col": 2,
+   "type": "backend",
+   "label": "无命中",
+   "sublabel": "UnspecifiedPlatform",
+   "icon": "neutral"
+  }
+ ],
+ "edges": [
+  {
+   "from": "a0",
+   "to": "cpu",
+   "label": "先查 CPU 优先",
+   "variant": "emphasis"
+  },
+  {
+   "from": "cpu",
+   "to": "grp",
+   "label": "否→发现插件"
+  },
+  {
+   "from": "grp",
+   "to": "built",
+   "label": "内置"
+  },
+  {
+   "from": "grp",
+   "to": "oot",
+   "label": "OOT"
+  },
+  {
+   "from": "oot",
+   "to": "hit",
+   "label": "恰一个命中",
+   "variant": "emphasis"
+  },
+  {
+   "from": "oot",
+   "to": "multi",
+   "label": "≥2 命中",
+   "variant": "dashed"
+  },
+  {
+   "from": "oot",
+   "to": "none",
+   "label": "无 OOT 且 builtin 无",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "rose",
+   "title": "单激活约束",
+   "items": [
+    "out-of-tree 平台插件同时激活 ≥2 直接 RuntimeError",
+    "多卡异构不是设计目标:一台机器一个加速卡族"
+   ]
+  }
+ ]
+}

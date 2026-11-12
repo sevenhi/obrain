@@ -1,0 +1,113 @@
+{
+ "schema_version": 2,
+ "diagram_type": "workflow",
+ "meta": {
+  "title": "三种执行器对比",
+  "subtitle": "进程模型 / uses_ray / supports_pp / 编排开销",
+  "locale": "zh-CN",
+  "output": "diagrams/vm-ray-executor-compare.workflow.html"
+ },
+ "lanes": [
+  {
+   "id": "uni",
+   "label": "UniProc"
+  },
+  {
+   "id": "mp",
+   "label": "Multiproc"
+  },
+  {
+   "id": "ray",
+   "label": "RayDistributed"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "u0",
+   "lane": "uni",
+   "col": 0,
+   "type": "backend",
+   "label": "单进程单 GPU",
+   "sublabel": "uses_ray=False"
+  },
+  {
+   "id": "u1",
+   "lane": "uni",
+   "col": 1,
+   "type": "backend",
+   "label": "supports_pp=False",
+   "sublabel": "不支持 PP"
+  },
+  {
+   "id": "m0",
+   "lane": "mp",
+   "col": 0,
+   "type": "backend",
+   "label": "本机多进程",
+   "sublabel": "uses_ray=False"
+  },
+  {
+   "id": "m1",
+   "lane": "mp",
+   "col": 1,
+   "type": "backend",
+   "label": "supports_pp=True",
+   "sublabel": "低编排开销"
+  },
+  {
+   "id": "r0",
+   "lane": "ray",
+   "col": 0,
+   "type": "backend",
+   "label": "跨节点 Ray actor",
+   "sublabel": "uses_ray=True"
+  },
+  {
+   "id": "r1",
+   "lane": "ray",
+   "col": 1,
+   "type": "backend",
+   "label": "supports_pp=True",
+   "sublabel": "placement group + rank 重排"
+  }
+ ],
+ "edges": [
+  {
+   "from": "u0",
+   "to": "u1",
+   "label": "能力边界"
+  },
+  {
+   "from": "m0",
+   "to": "m1",
+   "label": "能力"
+  },
+  {
+   "from": "r0",
+   "to": "r1",
+   "label": "能力"
+  },
+  {
+   "from": "u0",
+   "to": "m0",
+   "label": "升级多卡",
+   "variant": "dashed"
+  },
+  {
+   "from": "m0",
+   "to": "r0",
+   "label": "升级跨节点",
+   "variant": "dashed"
+  }
+ ],
+ "cards": [
+  {
+   "dot": "emerald",
+   "title": "选型判断",
+   "items": [
+    "单卡 UniProc;单节点多卡优先 Multiproc;跨节点才 Ray",
+    "PP 在 Multiproc 与 Ray 下均支持,仅 UniProc 不支持"
+   ]
+  }
+ ]
+}

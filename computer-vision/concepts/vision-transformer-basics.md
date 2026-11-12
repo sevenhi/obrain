@@ -3,12 +3,14 @@ title: Vision Transformer 基础机制 — patchify、CLS token 与 ViT 为什�
 type: concept
 tags: [vit, vision-transformer, patch-embedding, cls-token, position-embedding, self-attention, transformer, image-classification, DeiT]
 source:
+  - "code: torchvision v0.20.1 ViT_B_16_Weights.IMAGENET1K_V1（修改版 DeiT 配方从头训练） | https://github.com/pytorch/vision/blob/3ac97aa9120137381ed1060f37237e44485ac2aa/torchvision/models/vision_transformer.py#L351 | reviewed 2026-11-04"
   - "pdf: An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale (Dosovitskiy et al., 2020, ICLR 2021) | https://arxiv.org/abs/2010.11929 | 阅读日期 2026-10-14 ↑primary"
   - "pdf: ViT 论文 HTML 全文(Table 1 模型变体 / Table 2 & 5 精度) | https://arxiv.org/html/2010.11929v2 | 抓取日期 2026-10-14"
   - "code: ViT 官方仓库(google-research/vision_transformer) | https://github.com/google-research/vision_transformer | 论文 abstract 注明 finetune 代码与预训练模型发布处"
   - "pdf: Training data-efficient image transformers & distillation through attention (DeiT, Touvron et al., 2021, ICML 2021) | https://arxiv.org/abs/2012.12877 | 阅读日期 2026-10-14 ↑primary"
   - "pdf: End-to-End Object Detection with Transformers (DETR, 交叉注意力用于视觉的先例,ViT 论文引用) | https://arxiv.org/abs/2005.12872 | 阅读日期 2026-10-14"
 date: 2026-10
+reviewed: 2026-11-04
 ---
 
 # ViT 基础机制:把图像当「16×16 个词的序列」
@@ -23,7 +25,7 @@ ViT 的全部改动只有三步:①**patchify**——把 224×224 图像切成 1
 
 一个直觉例子:读一句话时,transformer 不关心「词」长什么样,只把它们当向量序列做自注意力——每个词和其他所有词算相关性。图像其实也能这样切:一张 224×224 的图,按 16×16 切格,得 14×14=**196 个 patch**;每个 patch 是 16×16×3=768 维的像素块,拉平再乘一个可学习矩阵投影到 D 维,就成了一个「视觉词」。于是「图像分类」变成「读一个 196 词(+1 个 [CLS])的句子,输出 [CLS] 位置的类别」。
 
-为什么这事 2020 年才成?ViT 论文 §1 说得很直白:此前不是没人试过(论文引用了 DETR 等把注意力用于视觉的工作),而是**专用 attention 模式难以在现代加速器上规模化**;ViT 的赌注是「用最标准的 transformer、最少的改动」,换来 NLP 十年积累的整条 scaling 基础设施(数据并行/优化器/预训练配方)直接可用。**代价是归纳偏置**:CNN 天生假设「邻近像素相关(局部性)、图案在哪都一样(平移等变)」,ViT 什么都没有,必须从数据里学——这就是它对数据量极度敏感的原因(下文 §数据敏感性)。
+ViT 论文 §1 指出,专用 attention 模式不易在现代加速器上规模化,因此尝试用标准 transformer 和较少架构改动做视觉分类。**它减少的是 CNN 式局部性与平移等变偏置,不是没有任何归纳偏置**:patch 划分、共享投影和位置编码本身仍约束模型。空间关系更多依赖数据学习,与训练配方一起影响其数据需求(下文 §数据敏感性)。
 
 ## 机制
 
@@ -68,7 +70,7 @@ x ∈ R^(224×224×3)
 
 ### 3. 数据敏感性:ViT 的成败分水岭(论文 Table 2/5 原数)
 
-> 下图对比小数据端与大图像数据端两条命运:CNN 先验是免费午餐还是天花板,ViT 何时反超:
+> 下图对比有限数据与大规模预训练下的论文结果:ViT 的 CNN 式偏置较少,但不是无偏置;DeiT 说明训练配方可改变小数据表现,不能把 CNN 先验普遍称作天花板:
 
 <div class="archify-figure">
 <iframe src="../../../diagrams/cv-vit-why-data.workflow.html"
@@ -140,7 +142,6 @@ print(vit(torch.rand(2, 3, 224, 224)).shape)               # torch.Size([2, 1000
 工程上不要自己造轮子,用官方权重:
 
 ```python
-# torchvision(>=0.13 起内置 ViT;IMAGENET1K_V1 权重源自 google-research 官方 JFT/IN21k 预训练体系——torchvision 复现了论文发布的权重,非独立私训)
 import torchvision
 m = torchvision.models.vit_b_16(weights="IMAGENET1K_V1").eval()
 
@@ -149,11 +150,13 @@ import timm
 m = timm.create_model("deit_base_patch16_224", pretrained=True).eval()
 ```
 
+权重来源不可混用：上例 torchvision `IMAGENET1K_V1` 按 v0.20.1 元数据，是用修改版 DeiT 配方从头训练的权重(ImageNet-1K acc@1=81.072)，不是 Google JFT/IN21k checkpoint 的转存。`IMAGENET1K_SWAG_*` 又是不同训练来源；若复核 ViT 论文结果，应选 Google 官方对应 checkpoint，并匹配预训练数据、微调分辨率与评测协议。
+
 ## 落地上手
 
-- [ ] **微调而非从头训**:没有 JFT 级数据就永远从预训练权重起步(ImageNet-21k 预训练的 ViT-B/16 是常见性价比点);输入分辨率可以改,位置编码需插值(官方仓库与 timm 均内置)。
+- [ ] **先评估微调基线**:数据/预算有限时优先预训练权重;DeiT 已证明适当配方下可只用 ImageNet-1k 从头训练,不能把 JFT 级数据当必要条件。输入分辨率变化时检查位置编码插值。
 - [ ] **patch 大小按算力预算选**:/32 快但糙,/16 是标准,/14 精度最高算力最贵;下游密集任务(检测/分割)输入分辨率大时优先 /16 起步,并用 [trt-vit-inference](trt-vit-inference.md) 的方法在目标硬件实测延迟。
-- [ ] **小数据集(<1M 图)**:按论文 Fig.4 与 DeiT 的结论,优先 CNN 或蒸馏版 DeiT + 强增强配方;纯 ViT 从头训基本必输。
+- [ ] **小数据集**:把 CNN、预训练 ViT 与 DeiT 配方作为实际对照;论文 Fig.4 的数据敏感性不等于任意小数据任务上 ViT 必输,结果还取决于增强、优化器、模型大小与预训练来源。
 - [ ] **导出部署**:ViT 的 LayerNorm/GELU/动态 shape 导出细节走 [ONNX→TensorRT 部署篇](../frameworks/onnx-tensorrt-deployment.md);TRT-ViT 的教训是**导出前先在 TensorRT 上实测延迟**,别信 FLOPs。
 - [ ] 训练配方参考 DeiT:AdamW、强增强(RandAugment+Mixup)、正则(Repeated Augmentation+stochastic depth)、长训练;ViT 对增广/正则比 CNN 敏感得多(DeiT 论文 §3 消融)。
 
@@ -171,5 +174,5 @@ m = timm.create_model("deit_base_patch16_224", pretrained=True).eval()
 - DeiT 一手:arXiv:2012.12877 abstract(2026-10-14 核对)——86M 参数、83.1% single-crop、单机 <3 天、蒸馏至 85.2%、「DeiT-B 结构=ViT-B」;训练配方细节出自其 §3(未逐项抄录)。
 - 交叉引用:DETR(arXiv:2005.12872)为 ViT 论文 §1 引用的「注意力用于视觉」先例,本库有独立篇([检测/分割篇](object-detection-segmentation.md));SAM 的 ViT-H 编码器见该篇 §4 与 SAM 论文(arXiv:2304.02643)。
 - Table 2 训练算力(2026-10-14 核对):ViT-H/14(JFT)2.5k、ViT-L/16(JFT)0.68k、ViT-L/16(I21k)0.23k TPUv3-core-days,对照 BiT-L 9.9k、Noisy Student 12.3k。
-- 待核项:torchvision `IMAGENET1K_V1` 权重与论文原始 checkpoint 的对应关系(来自 Google 发布体系,细节未逐一核对)。
+- 2026-11-04 复核:torchvision V1 权重来源已按固定版本源码纠正;论文精度数字是原文报告,未重新训练复现。数据敏感性图已同步删除“ViT 无先验/小数据必输”等概括,纠正 TPUv3-core-days 单位,并通过自动图检查与浏览器检查。
 - 全库链接索引见 [references.md](../references.md)。

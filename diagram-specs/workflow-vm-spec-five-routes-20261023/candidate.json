@@ -1,0 +1,157 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "五条草稿路线:草稿从哪来,决定接受率 α 和额外成本",
+    "subtitle": "vLLM 的速选逻辑:模型原生支持 MTP → 首选 MTP;要通用高增益 → EAGLE/EAGLE-3;零训练 → n-gram/suffix;有 MLP speculator → 但 V1 已禁用",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-spec-five-routes.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_q", "label": "选型入口" },
+    { "id": "ln_ext", "label": "需要外部模型" },
+    { "id": "ln_self", "label": "目标模型自身产出" },
+    { "id": "ln_verdict", "label": "结论" },
+    { "id": "ln_dead", "label": "已禁用" }
+  ],
+  "phases": [
+    { "id": "ph1", "label": "① 先问目标模型有没有原生头", "fromCol": 0, "toCol": 1 },
+    { "id": "ph2", "label": "② 没有才用外部/自投机", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "ph3", "label": "③ 零训练兜底", "fromCol": 4, "toCol": 5 }
+  ],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "ln_q",
+      "col": 0,
+      "type": "backend",
+      "label": "目标模型有原生草稿头?",
+      "sublabel": "MTP / DSpark / DFlash",
+      "icon": "decision"
+    },
+    {
+      "id": "mtp",
+      "lane": "ln_self",
+      "col": 1,
+      "type": "security",
+      "label": "MTP 多头预测",
+      "sublabel": "DeepSeek-V3/V4、Gemma 4、Qwen3.5",
+      "icon": "success"
+    },
+    {
+      "id": "mtp_note",
+      "lane": "ln_self",
+      "col": 2,
+      "type": "backend",
+      "label": "共享隐藏层,零外部模型",
+      "sublabel": "只在模型原生支持时可用",
+      "icon": "neutral"
+    },
+    {
+      "id": "eagle",
+      "lane": "ln_ext",
+      "col": 2,
+      "type": "backend",
+      "label": "EAGLE 族",
+      "sublabel": "末层特征外推,α 高",
+      "icon": "active"
+    },
+    {
+      "id": "draftm",
+      "lane": "ln_ext",
+      "col": 3,
+      "type": "backend",
+      "label": "独立草稿小模型",
+      "sublabel": "同 vocab,零训练,占额外显存",
+      "icon": "backend"
+    },
+    {
+      "id": "medusa",
+      "lane": "ln_self",
+      "col": 3,
+      "type": "backend",
+      "label": "Medusa 多解码头",
+      "sublabel": "并行出 γ 个,需训练头",
+      "icon": "backend"
+    },
+    {
+      "id": "ngram",
+      "lane": "ln_self",
+      "col": 4,
+      "type": "backend",
+      "label": "n-gram / suffix",
+      "sublabel": "查 prompt 里出现过的片段",
+      "icon": "neutral"
+    },
+    {
+      "id": "zerotrain",
+      "lane": "ln_verdict",
+      "col": 5,
+      "type": "security",
+      "label": "零训练、零额外显存",
+      "sublabel": "增益有限,适合兜底",
+      "icon": "success"
+    },
+    {
+      "id": "mlp",
+      "lane": "ln_dead",
+      "col": 5,
+      "type": "backend",
+      "label": "MLP Speculator:V1 已禁用",
+      "sublabel": "registry 里条目被注释",
+      "icon": "failure"
+    }
+  ],
+  "edges": [
+    { "id": "e1", "from": "start", "to": "mtp", "label": "有原生头:首选", "role": "main" },
+    { "id": "e2", "from": "mtp", "to": "mtp_note", "label": "零额外模型", "role": "main" },
+    { "id": "e3", "from": "start", "to": "eagle", "label": "没有:追高 α", "role": "branch" },
+    { "id": "e4", "from": "eagle", "to": "draftm", "label": "不想训就退回小模型", "role": "branch" },
+    { "id": "e5", "from": "start", "to": "medusa", "label": "能训头", "role": "branch" },
+    { "id": "e6", "from": "medusa", "to": "ngram", "label": "连头都不想训", "role": "branch" },
+    { "id": "e7", "from": "ngram", "to": "zerotrain", "label": "代价:α 最低", "role": "main" },
+    { "id": "e8", "from": "draftm", "to": "mlp", "label": "历史选项,现已关", "role": "error", "variant": "dashed" }
+  ],
+  "mainPath": ["start", "mtp", "mtp_note"],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "路线与接受率的对应关系",
+      "items": [
+        "特征级 draft(EAGLE)α 最高:在隐层空间外推,比 token 级准",
+        "MTP 次之:目标模型自己训的头,分布天然对齐",
+        "独立小模型 α 取决于两模型分布距离,vocab 必须对齐",
+        "n-gram/suffix α 最低,但零成本、零显存"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "高 QPS 场景增益普遍缩水",
+      "items": [
+        "验证阶段有效 batch = BS × K(候选数)",
+        "越过临界点后 memory-bound 变 compute-bound",
+        "草稿从「免费」变成「与真实 token 抢算力」",
+        "→ 要么开 dynamic SD,要么直接关掉"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "vLLM registry 里的真实条目",
+      "items": [
+        "_SPECULATIVE_DECODING_MODELS 在 registry.py 约行 596",
+        "EAGLE 族:EagleLlamaForCausalLM、Eagle3{...}、PEagleDraftModel",
+        "MTP 族:DeepSeekMTPModel、Gemma4MTPModel、Qwen3_5MTP 等一长串",
+        "DSpark/DFlash:DSparkDraftModel、DFlashDraftModel、Qwen3DSparkModel"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "MLP Speculator 别当成可用",
+      "items": [
+        "registry 末尾条目被注释(行 667-669)",
+        "注释原文:Temporarily disabled … once supported in V1",
+        "文档有 mlp.md 页,但代码里是关的 —— 文档与代码不同步"
+      ]
+    }
+  ]
+}

@@ -2,10 +2,16 @@
 title: deepseek-infra — DeepSeek 开源算力基础设施栈(昇腾 + NVIDIA 双平台 + 并行/存储)
 type: domain
 tags: [deepseek, ascend, nvidia, cuda, tilelang, deepgemm, deepep, deepjit, tilekernels, flashmla, deepselect, dualpipe, eplb, lplb, esft, engram, 3fs, smallpond, deepinfer, serving, npu, huawei, infra]
-date: 2026-10
+date: 2026-11
 ---
 
 # deepseek-infra — DeepSeek 开源算力基础设施栈(昇腾 + NVIDIA 双平台 + 并行/存储)
+
+**按任务进入**:
+- 移植/造内核:[适配原则](concepts/ascend-port-principles.md)、[TileLang](concepts/tilelang.md)、[DeepGEMM](concepts/deepgemm-nvidia-vs-ascend.md)、[FlashMLA](concepts/flashmla.md)。
+- 通信/并行:[DeepEP](concepts/deepep-nvidia-vs-ascend.md)、[训练并行 V3](concepts/training-parallelism-v3.md)、[负载均衡](concepts/lplb-epb-load-balancing.md)。
+- 生产/数据:[DeepInfer](concepts/deepinfer.md)、[3FS](concepts/3fs.md)、[smallpond](concepts/smallpond.md)、[部署清单](practices/ascend-deployment-checklist.md)。
+- 跨域主题:[mHC 机制与内核](concepts/mhc-manifold-hyper-connections.md)、[ESFT 操作](concepts/esft.md) / [机制主篇](../deepseek-models/concepts/deepseek-esft.md)、[来源](references.md)。
 
 > 本页是 deepseek-infra 领域的**导航起始页**。往下走:定位与关键事实 → 条目索引 → 更新维护。
 > **真正的可读正文在 `concepts/` 子目录**,每篇一个专题、可独立打开读懂。本页只做导航,不重复正文。
@@ -78,7 +84,7 @@ date: 2026-10
 | DeepEP-Ascend | [concepts/deepep-ascend.md](concepts/deepep-ascend.md) | MoE 专家并行通信库,EP all-to-all(dispatch/combine),EP≤32 dispatch 达 90–95% 物理带宽 | ✅ 已入库 |
 | TileKernels | [concepts/tilekernels.md](concepts/tilekernels.md) | TileLang 之上的 LLM 算子库(MoE routing/量化/Engram/mHC),v2.0.0 起支持昇腾(已合入 main),v2.1.0(2026-10)量化/Engram bug 修复,同一 Python API 跑 NVIDIA+华为 | ✅ 已入库 |
 | DeepSelect | [concepts/deepselect.md](concepts/deepselect.md) | DSA/Sampler 的定制 TopK 算子,2–20× vs torch.topk(口径:有效内存带宽);昇腾仅 bfloat16 | ✅ 已入库 |
-| FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | MLA 注意力内核库(dense+sparse),昇腾版 2026-09-30 已合入 main(commit 2e5429f,breaking change 三条已由 README 明写);410 TFlops 双义(平台要标清);2026-10-15 ABI 稳定化(构建层) | ✅ 已入库 |
+| FlashMLA | [concepts/flashmla.md](concepts/flashmla.md) | 以 2e5429f 快照区分 sparse prefill/decoding 与 dense MHA prefill/backward;旧 dense decode 不代表该快照支持。模型、平台与低精度 KV 限制见正文 | ✅ 已入库(2026-11 校正摘要) |
 
 ### NVIDIA 版对照 + 并行/工具/存储(NVIDIA 主线)
 

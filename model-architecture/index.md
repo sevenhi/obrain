@@ -14,13 +14,15 @@ source:
   - "pdf: LongRoPE (Ding et al.) | arXiv:2402.13753 (v1 2024-02)"
   - "pdf: Mixtral of Experts | arXiv:2401.04088"
   - "pdf: DeepSeek-V3 Technical Report | arXiv:2412.19437"
-date: 2026-10
+date: 2026-11
 ---
 
 # Model Architecture(通用 LLM 架构)
 
+**快速入口**:[LLM 组件](concepts/llm-architecture.md) · [头共享](concepts/attention-heads-mha-mqa-gqa.md) · [上下文扩展](concepts/context-extension.md) · [DeepSeek 结构谱系](concepts/deepseek-model-evolution.md) · [混合线性注意力](concepts/hybrid-linear-attention.md) · [来源](references.md)。
+
 > 领域索引(导航起始页)。领域知识本体在 `concepts/` 子目录,每篇一个专题、可独立打开读懂;本页放定位与导航。外部链接索引见 [references.md](references.md)。
-> 本域 2026-09 新建:原 attention 域的 `llama-architecture.md` 经 git mv 移入并扩展为**通用 LLM 架构篇**;同月补充三篇专题(注意力头结构 GQA、上下文扩展、开源模型谱系),2026-10 补开源谱系 2025-26 续篇;同月落 DeepSeek 网络结构演进四篇(3 子篇 + 1 主篇),现共 9 篇 concept。
+> 本域 2026-09 新建:原 attention 域的 `llama-architecture.md` 移入并扩展为通用 LLM 架构篇;后补头结构、上下文扩展、开源谱系及续篇、DeepSeek 结构四篇与混合线性注意力,现共 10 篇 concept。
 
 ## 一句话定位
 
@@ -39,7 +41,7 @@ date: 2026-10
 | [deepseek-arch-v1-moe-v2](concepts/deepseek-arch-v1-moe-v2.md) | concept(子篇) | 奠基段:V1(7B MHA/67B GQA)+ DeepSeekMoE(细粒度+共享专家)+ V2(MLA 低秩 KV + 解耦 RoPE + 160 专家 MoE,双主线首次合流);MHA/GQA/MLA KV cache 量化 | ✅ 已入库(2026-10) |
 | [deepseek-arch-v3](concepts/deepseek-arch-v3.md) | concept(子篇) | V3:MLA 规模化 + 256 专家 MoE(top-8,sigmoid 路由)+ MTP 多 token 预测 + aux-loss-free 负载均衡 + FP8;671B/37B、2.788M H800 小时训练 | ✅ 已入库(2026-10) |
 | [deepseek-arch-v32-r1](concepts/deepseek-arch-v32-r1.md) | concept(子篇) | V3.2(DSA 闪电索引器 + top-2048 稀疏选择,破 O(L²)→O(L·k))+ R1(无新结构,GRPO RL 推理时扩展);V3→V3.2 代码级 diff | ✅ 已入库(2026-10) |
-| [hybrid-linear-attention](concepts/hybrid-linear-attention.md) | concept | 混合线性注意力/SSM 第三主轴:核化线性注意力、RWKV 时间混合、Mamba/S6 选择性与 Mamba-2/SSD 对偶、Griffin/Jamba 混合层比、Gated DeltaNet→Qwen3-Next;训练并行 vs O(1) 状态两难与 hybrid 甜点;含 FLA `chunk_gated_delta_rule` 在 0.5.2 前对 packed 输入算错且不可复现的版本坑 | ✅ 已入库(2026-10) |
+| [hybrid-linear-attention](concepts/hybrid-linear-attention.md) | concept | 线性注意力/SSM 与混合架构:区分训练总工作量、decode 每步成本和状态大小;固定宽度递归层状态不随长度增长,full-attention 混合层仍需增长的 KV;Mamba 选择性参数与 Gated DeltaNet 谱系,含 FLA packed 输入版本风险 | ✅ 已入库(2026-11 校正摘要) |
 
 ## 关键事实速记
 

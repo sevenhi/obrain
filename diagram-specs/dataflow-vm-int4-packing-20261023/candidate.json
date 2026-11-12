@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "diagram_type": "dataflow",
+  "meta": {
+    "title": "int4 权重怎么塞进 int32:GPTQ 与 AWQ 的打包链",
+    "subtitle": "pack_factor = 32 // weight_bits,int4 时 8 个权重进一个 int32;AWQ 的 qweight/qzeros 按 packed_dim=1 列打包",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-int4-packing.dataflow.html"
+  },
+  "stages": [
+    { "label": "① 浮点权重" },
+    { "label": "② 分组量化" },
+    { "label": "③ 位打包" },
+    { "label": "④ 反量化恢复" }
+  ],
+  "nodes": [
+    {
+      "id": "fp16",
+      "type": "frontend",
+      "label": "FP16 权重",
+      "sublabel": "output × input",
+      "stage": 0,
+      "row": 0
+    },
+    {
+      "id": "group",
+      "type": "backend",
+      "label": "按 group_size 分组",
+      "sublabel": "组内共享一个 scale",
+      "stage": 1,
+      "row": 0
+    },
+    {
+      "id": "quant",
+      "type": "backend",
+      "label": "量化到 4bit",
+      "sublabel": "TYPE_MAP 只支持对称",
+      "stage": 1,
+      "row": 1
+    },
+    {
+      "id": "pack",
+      "type": "database",
+      "label": "打包成 int32",
+      "sublabel": "8 个权重 = 1 个 int32",
+      "icon": "database",
+      "stage": 2,
+      "row": 0
+    },
+    {
+      "id": "zeros",
+      "type": "database",
+      "label": "qzeros 一并打包",
+      "sublabel": "packed_dim=1 按列",
+      "stage": 2,
+      "row": 1
+    },
+    {
+      "id": "scales",
+      "type": "external",
+      "label": "scales 保持浮点",
+      "sublabel": "形状 num_groups × N",
+      "stage": 2,
+      "row": 2
+    },
+    {
+      "id": "deq",
+      "type": "cloud",
+      "label": "解包 + 反量化",
+      "sublabel": "w = (q − zero) × scale",
+      "stage": 3,
+      "row": 0
+    },
+    {
+      "id": "mm",
+      "type": "cloud",
+      "label": "matmul",
+      "sublabel": "cuBLAS 或专用 kernel",
+      "icon": "success",
+      "stage": 3,
+      "row": 1
+    }
+  ],
+  "flows": [
+    { "from": "fp16", "to": "group", "label": "按输入维度切组" },
+    { "from": "group", "to": "quant", "label": "组内缩放后取整" },
+    { "from": "quant", "to": "pack", "label": "4bit 值依次移位拼接" },
+    { "from": "quant", "to": "zeros", "label": "零点同样打包" },
+    { "from": "group", "to": "scales", "label": "scale 单独存" },
+    { "from": "pack", "to": "deq", "label": "运行期解包" },
+    { "from": "zeros", "to": "deq", "label": "配合零点恢复" },
+    { "from": "scales", "to": "deq", "label": "乘回真实幅度" },
+    { "from": "deq", "to": "mm", "label": "回到 FP16 再乘" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "两个可抄的数字",
+      "items": [
+        "pack_factor = 32 // weight_bits:int4 → 8,int8 → 4",
+        "TYPE_MAP 只给 (4bit/8bit, 对称):uint4b8 / uint8b128",
+        "所以 GPTQ/AWQ 在 vLLM 里没有非对称 int4 这条路"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "desc_act 的隐性降级",
+      "items": [
+        "desc_act and group_size == -1 → 强制降为 desc_act=False",
+        "原因:只有一组时 act_order(激活重排)无意义",
+        "这是配置里最容易漏的一条约束"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "TP 切分会撞形状校验",
+      "items": [
+        "input_size % group_size == 0",
+        "output_size % pack_factor == 0",
+        "TP 切得过碎时这两条先炸,排查 TP+AWQ 报错看这里"
+      ]
+    }
+  ]
+}

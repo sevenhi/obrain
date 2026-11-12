@@ -1,0 +1,67 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Online Softmax:m/l/O 三元组的增量更新",
+    "subtitle": "FA1 能分块计算的根本原因:每个 KV 块到来时,用 running max m 的 rescale 把新块信息增量并入全局统计,最后一次性归一化",
+    "locale": "zh-CN",
+    "output": "diagrams/fa-online-softmax.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_init", "label": "初始化(每个 Q 行块)" },
+    { "id": "ln_loop", "label": "逐 KV 块循环(核心)" },
+    { "id": "ln_rescale", "label": "max 变大时的 rescale" },
+    { "id": "ln_fin", "label": "收尾" }
+  ],
+  "nodes": [
+    { "id": "n_init", "lane": "ln_init", "col": 0, "type": "backend", "label": "载入 Q 块,初始化状态", "sublabel": "m=-inf, l=0, O=0(每行一份)", "icon": "start" },
+    { "id": "n_load", "lane": "ln_loop", "col": 1, "type": "database", "label": "载入 K/V 块到 SRAM", "sublabel": "HBM→片上,一次一列块", "icon": "database" },
+    { "id": "n_score", "lane": "ln_loop", "col": 2, "type": "backend", "label": "算分数块 S=Q@Kᵀ·scale", "sublabel": "只在 SRAM,不落 HBM" },
+    { "id": "n_dec", "lane": "ln_loop", "col": 3, "type": "security", "label": "m_new > m_old ?", "sublabel": "新块的 rowmax 是否超过旧 max", "icon": "decision" },
+    { "id": "n_merge", "lane": "ln_loop", "col": 4, "type": "backend", "label": "并入新块", "sublabel": "l+=Σe^(S-m_new); O+=e^(S-m_new)@V", "icon": "active" },
+    { "id": "n_more", "lane": "ln_loop", "col": 5, "type": "security", "label": "还有 KV 块?", "icon": "decision" },
+    { "id": "n_rescale", "lane": "ln_rescale", "col": 3, "type": "backend", "label": "整体收缩旧统计量", "sublabel": "旧 l、O 乘 e^(m_old-m_new)", "icon": "active" },
+    { "id": "n_norm", "lane": "ln_fin", "col": 5, "type": "database", "label": "最终归一化并写回 O=O/l", "sublabel": "整行只除一次,只写一次 O(N×d)", "icon": "success" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "n_init", "to": "n_load", "label": "进入逐块循环", "role": "main" },
+    { "id": "e2", "from": "n_load", "to": "n_score", "label": "K/V 块就绪", "role": "main" },
+    { "id": "e3", "from": "n_score", "to": "n_dec", "label": "S ∈ R^(Br×Bc)", "role": "main" },
+    { "id": "e4", "from": "n_dec", "to": "n_rescale", "label": "是:max 变大", "role": "branch" },
+    { "id": "e5", "from": "n_rescale", "to": "n_merge", "label": "收缩后并入", "role": "main" },
+    { "id": "e6", "from": "n_dec", "to": "n_merge", "label": "否:max 未变,直接并入", "role": "branch" },
+    { "id": "e7", "from": "n_merge", "to": "n_load", "label": "是:还有 KV 块(j+1)", "role": "branch", "variant": "dashed" },
+    { "id": "e9", "from": "n_merge", "to": "n_norm", "label": "否:KV 遍历结束", "role": "main" }
+  ],
+  "mainPath": ["n_init", "n_load", "n_score", "n_dec", "n_merge", "n_norm"],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "三元组的含义",
+      "items": [
+        "m:running max,每行的增量最大值(防 exp 溢出)",
+        "l:running sum,每行的未归一化分母 Σe^(s-m)",
+        "O:未归一化输出,每行一个 d 维向量",
+        "注意:是长度 Br 的行向量,不是全局标量"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "为什么数学上精确",
+      "items": [
+        "rescale 系数 e^(m_old-m_new) 恰好抵消旧 max 的影响",
+        "softmax 在此增量形式下\"变可结合\",块间可精确合并",
+        "去掉 rescale 数学上就错了(各块分母不一致)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "这就是 FA1 的根本",
+      "items": [
+        "完整 N×N softmax 从不物化,S/P 不出 SRAM",
+        "代价:每块两次标量 rescale(乘法)",
+        "收益:HBM 访存 Θ(Nd+N²) → Θ(N²d²/M)"
+      ]
+    }
+  ]
+}

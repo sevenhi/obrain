@@ -1,0 +1,78 @@
+{
+  "schema_version": 3,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "熔断状态机:Closed → Open → HalfOpen",
+    "subtitle": "连续失败 N 次断开,超时后放半开试探,连续成功 M 次恢复;重试覆盖 408/429/5xx",
+    "locale": "zh-CN",
+    "output": "diagrams/vm-router-circuit-breaker.lifecycle.html"
+  },
+  "mainPath": [
+    "closed",
+    "open",
+    "half"
+  ],
+  "states": [
+    {
+      "id": "closed",
+      "type": "start",
+      "label": "Closed",
+      "sublabel": "正常转发"
+    },
+    {
+      "id": "open",
+      "type": "failure",
+      "label": "Open",
+      "sublabel": "直接拒绝"
+    },
+    {
+      "id": "half",
+      "type": "waiting",
+      "label": "HalfOpen",
+      "sublabel": "放少量试探"
+    },
+    {
+      "id": "rec",
+      "type": "success",
+      "label": "恢复 Closed",
+      "sublabel": "连续成功 M 次"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "t1",
+      "from": "closed",
+      "to": "open",
+      "label": "连续失败 N 次"
+    },
+    {
+      "id": "t2",
+      "from": "open",
+      "to": "half",
+      "label": "超时后"
+    },
+    {
+      "id": "t3",
+      "from": "half",
+      "to": "rec",
+      "label": "连续成功 M 次"
+    },
+    {
+      "id": "t4",
+      "from": "half",
+      "to": "open",
+      "label": "再失败"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "企业级开关参数",
+      "items": [
+        "cb-failure-threshold 5 / success 2",
+        "cb-timeout 30s / window 60s",
+        "重试指数退避+抖动,覆盖 408/429/500/502/503/504"
+      ]
+    }
+  ]
+}

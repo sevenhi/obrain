@@ -1,0 +1,70 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "top_p 累积裁剪:每层选出「承担 20% 激活分数」的头部专家",
+    "subtitle": "不是固定选 k 个,而是按分数从高到低累加,累计到 top_p 就停——分数分布越集中,选中的专家越少",
+    "locale": "zh-CN",
+    "output": "diagrams/dm-esft-top-p.workflow.html"
+  },
+  "lanes": [
+    { "id": "ln_score", "label": "① 两种打分口径" },
+    { "id": "ln_algo", "label": "② 裁剪循环(每层独立做一遍)" },
+    { "id": "ln_out", "label": "③ 产物与开关" },
+    { "id": "ln_note", "label": "调参时的直觉" }
+  ],
+  "phases": [
+    { "id": "p1", "label": "打分", "fromCol": 0, "toCol": 0 },
+    { "id": "p2", "label": "排序与累加", "fromCol": 1, "toCol": 1, "variant": "emphasis" },
+    { "id": "p3", "label": "停止并输出", "fromCol": 2, "toCol": 2 }
+  ],
+  "nodes": [
+    { "id": "n_score", "lane": "ln_score", "col": 0, "type": "database", "label": "每层每专家一个分", "sublabel": "gate 软权重 / token 硬计数", "icon": "start" },
+    { "id": "n_sort", "lane": "ln_algo", "col": 1, "type": "backend", "label": "按分数降序排", "sublabel": "sorted(reverse=True)", "icon": "active" },
+    { "id": "n_acc", "lane": "ln_algo", "col": 2, "type": "security", "label": "累加并判停", "sublabel": "current >= top_p 就 break", "icon": "decision" },
+    { "id": "n_cfg", "lane": "ln_out", "col": 2, "type": "database", "label": "写进专家名单", "sublabel": "expert_cfg[experts][layer]", "icon": "success" },
+    { "id": "n_sw", "lane": "ln_out", "col": 1, "type": "external", "label": "两个附带开关", "sublabel": "shared / non_expert 是否也训", "icon": "neutral" },
+    { "id": "k1", "lane": "ln_note", "col": 2, "type": "cloud", "label": "top_p 太小会学不动", "sublabel": "该训的专家没解冻", "icon": "none" },
+    { "id": "k2", "lane": "ln_note", "col": 1, "type": "cloud", "label": "top_p 太大会退化成全量", "sublabel": "省参数的意义就没了", "icon": "none" }
+  ],
+  "edges": [
+    { "id": "e1", "from": "n_score", "to": "n_sort", "label": "每层独立处理", "role": "main" },
+    { "id": "e2", "from": "n_sort", "to": "n_acc", "label": "从高到低逐个看", "role": "main" },
+    { "id": "e3", "from": "n_acc", "to": "n_cfg", "label": "选中就 append", "role": "main" },
+    { "id": "e4", "from": "n_acc", "to": "n_sort", "label": "未到 top_p,看下一个", "variant": "dashed", "role": "branch" },
+    { "id": "e5", "from": "n_cfg", "to": "n_sw", "label": "名字 + 开关一起写", "variant": "dashed", "role": "async" },
+    { "id": "e6", "from": "n_acc", "to": "k1", "label": "", "variant": "dashed", "role": "async" },
+    { "id": "e7", "from": "n_sort", "to": "k2", "label": "", "variant": "dashed", "role": "async" }
+  ],
+  "mainPath": ["n_score", "n_sort", "n_acc", "n_cfg"],
+  "cards": [
+    {
+      "dot": "violet",
+      "title": "gate_scores vs token_scores 该用哪个",
+      "items": [
+        "gate_scores:累加门控给该专家的权重,反映「门控多重视它」",
+        "token_scores:每次被选中 +1/TOP_K,反映「多少 token 真的路过」",
+        "--score_function=token 即切到硬计数口径"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "为什么用累加而不是固定 k",
+      "items": [
+        "不同层的专家分布集中度差很多:有的层 2 个专家就占 40%",
+        "固定 k 会在「分布平坦」的层裁掉真正重要的专家",
+        "按分数质量裁剪,自动适配每层的集中度"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "读这段代码只需看三行",
+      "items": [
+        "sorted(..., key=分数, reverse=True) —— 排序",
+        "if current >= top_p: break —— 停止条件",
+        "current += score —— 唯一的累加动作",
+        "其余都是把结果塞进 dict"
+      ]
+    }
+  ]
+}

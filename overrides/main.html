@@ -24,8 +24,24 @@
     };
 
     function init() {
-      var isHome = document.title.indexOf('obrain - 个人大脑') === 0;
+      var h1 = document.querySelector('.md-content h1');
+      var isHome = !!h1 && h1.textContent.trim().indexOf('obrain - 个人大脑') === 0;
       document.body.classList.toggle('ob-home', isHome);
+      document.body.classList.remove('ob-has-diagram');
+
+      document.querySelectorAll('.ob-table-cards, .ob-table-qa').forEach(function (wrapper) {
+        wrapper.classList.remove('ob-table-cards', 'ob-table-qa');
+      });
+      if (isHome) {
+        var tableWrappers = document.querySelectorAll('.md-typeset__table');
+        var markTables = function () {
+          var current = document.querySelectorAll('.md-typeset__table');
+          if (current[0]) current[0].classList.add('ob-table-cards');
+          if (current[1]) current[1].classList.add('ob-table-qa');
+        };
+        markTables();
+        if (tableWrappers.length < 2) window.requestAnimationFrame(markTables);
+      }
 
       var internalHeadings = /^(相关条目|关键事实速记|已知缺口|溯源|阅读顺序建议)/;
       document.querySelectorAll('.md-content h2').forEach(function (heading) {
@@ -97,7 +113,7 @@
         var link = tab.querySelector('.md-tabs__link');
         return link && /deepseek-(infra|models|vision)/.test(link.getAttribute('href'));
       });
-      if (deepseekTabs.length > 1) {
+      if (deepseekTabs.length > 1 && !deepseekTabs[0].dataset.obMerged) {
         var deepseekTab = deepseekTabs[0];
         var deepseekMenu = deepseekTab.querySelector('.ob-mega-menu');
         deepseekTabs.slice(1).forEach(function (tab) {
@@ -112,6 +128,7 @@
         });
         var deepseekLabel = deepseekTab.querySelector('.md-ellipsis') || deepseekTab.querySelector('.md-tabs__link');
         if (deepseekLabel) deepseekLabel.textContent = 'DeepSeek';
+        deepseekTab.dataset.obMerged = '1';
       }
 
       document.querySelectorAll('.md-content iframe[src]').forEach(function (frame) {

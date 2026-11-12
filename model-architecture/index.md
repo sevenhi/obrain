@@ -1,5 +1,5 @@
 ---
-title: Model Architecture(通用 LLM 架构)
+title: 模型架构(通用 LLM 架构)
 type: domain
 tags: [llm-architecture, llama, rmsnorm, swiglu, rope, alibi, gqa, mqa, mla, context-extension, yarn, moe, mixtral, deepseek, qwen, rwkv, chinchilla, scaling-laws, gpt]
 source:
@@ -17,7 +17,7 @@ source:
 date: 2026-11
 ---
 
-# Model Architecture(通用 LLM 架构)
+# 模型架构(通用 LLM 架构)
 
 **快速入口**:[LLM 组件](concepts/llm-architecture.md) · [头共享](concepts/attention-heads-mha-mqa-gqa.md) · [上下文扩展](concepts/context-extension.md) · [DeepSeek 结构谱系](concepts/deepseek-model-evolution.md) · [混合线性注意力](concepts/hybrid-linear-attention.md) · [来源](references.md)。
 

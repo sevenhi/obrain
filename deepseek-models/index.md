@@ -1,11 +1,11 @@
 ---
-title: deepseek-models — DeepSeek 领域模型谱系(数学/定理证明/编码)
+title: DeepSeek 模型 — 领域模型谱系(数学/定理证明/编码)
 type: domain
 tags: [deepseek, math, theorem-proving, coding, grpo, rl, moe, lean4, fim, code-model, r1, reasoning, esft, domain-model]
 date: 2026-11
 ---
 
-# deepseek-models — DeepSeek 领域模型谱系(数学/定理证明/编码)
+# DeepSeek 模型 — 领域模型谱系(数学/定理证明/编码)
 
 **按目的进入**:
 - 领域模型/评测:[Math](concepts/deepseek-math.md)、[Prover](concepts/deepseek-prover.md)、[Coder](concepts/deepseek-coder.md)、[MoE](concepts/deepseek-moe.md)。

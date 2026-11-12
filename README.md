@@ -8,15 +8,15 @@
 | 领域入口 | 查什么 | 篇数 | 导航更新 |
 |---|---|---:|---|
 | [Attention](attention/index.md) | 注意力算法、FlashAttention 内核与 FlexAttention 接口 | 7 | 2026-11 |
-| [Model Architecture](model-architecture/index.md) | LLM 组件、模型谱系、DeepSeek 结构与混合线性注意力 | 10 | 2026-11 |
+| [模型架构](model-architecture/index.md) | LLM 组件、模型谱系、DeepSeek 结构与混合线性注意力 | 10 | 2026-11 |
 | [CUTLASS](cutlass/index.md) | GEMM/CuTe 机制、内核构建与性能调优 | 10 | 2026-11 |
 | [GPU 随机数生成](gpu-rng/index.md) | Philox/MTGP、cuRAND 与数值模拟的随机流 | 1 | 2026-11 |
 | [量化与压缩](quantization/index.md) | 权重/KV 量化、FP8/FP4、剪枝蒸馏、MoE 校准与验收 | 12 | 2026-11 |
 | [vLLM](vllm/index.md) | 引擎机制、Runner、部署选型与推理生态 | 24 | 2026-11 |
-| [Computer Vision](computer-vision/index.md) | ViT、检测分割、视觉表示与 ONNX/TensorRT 部署 | 7 | 2026-11 |
-| [DeepSeek Infra](deepseek-infra/index.md) | 算子、通信、并行、存储、双平台适配与 DeepInfer | 22 | 2026-11 |
-| [DeepSeek Vision](deepseek-vision/index.md) | VL/VL2、OCR/OCR-2、Janus 与 DreamCraft3D | 4 | 2026-11 |
-| [DeepSeek Models](deepseek-models/index.md) | 数学/证明/代码模型、R1/ESFT 训练与配套工具 | 9 | 2026-11 |
+| [计算机视觉](computer-vision/index.md) | ViT、检测分割、视觉表示与 ONNX/TensorRT 部署 | 7 | 2026-11 |
+| [DeepSeek 基建](deepseek-infra/index.md) | 算子、通信、并行、存储、双平台适配与 DeepInfer | 22 | 2026-11 |
+| [DeepSeek 视觉](deepseek-vision/index.md) | VL/VL2、OCR/OCR-2、Janus 与 DreamCraft3D | 4 | 2026-11 |
+| [DeepSeek 模型](deepseek-models/index.md) | 数学/证明/代码模型、R1/ESFT 训练与配套工具 | 9 | 2026-11 |
 
 目录是存储归属,不要求专题互斥。一条知识有一个主要维护入口,可以从多个领域导航;通用机制与产品实现用互链区分视角。
 

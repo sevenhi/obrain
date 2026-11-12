@@ -1,5 +1,5 @@
 ---
-title: Computer Vision
+title: 计算机视觉
 type: domain
 tags: [computer-vision, nerf, vit, cnn, reparameterization, inference, onnx, tensorrt, deployment]
 source:
@@ -9,7 +9,7 @@ source:
 date: 2026-11
 ---
 
-# Computer Vision
+# 计算机视觉
 
 **快速入口**:[ViT 基础与权重来源](concepts/vision-transformer-basics.md) · [检测/分割](concepts/object-detection-segmentation.md) · [NeRF 表示](concepts/nerf-view-synthesis.md) · [部署流程](frameworks/onnx-tensorrt-deployment.md) · [来源](references.md)。
 

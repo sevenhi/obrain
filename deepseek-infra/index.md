@@ -1,11 +1,11 @@
 ---
-title: deepseek-infra — DeepSeek 开源算力基础设施栈(昇腾 + NVIDIA 双平台 + 并行/存储)
+title: DeepSeek 基建 — 开源算力基础设施栈(昇腾 + NVIDIA 双平台 + 并行/存储)
 type: domain
 tags: [deepseek, ascend, nvidia, cuda, tilelang, deepgemm, deepep, deepjit, tilekernels, flashmla, deepselect, dualpipe, eplb, lplb, esft, engram, 3fs, smallpond, deepinfer, serving, npu, huawei, infra]
 date: 2026-11
 ---
 
-# deepseek-infra — DeepSeek 开源算力基础设施栈(昇腾 + NVIDIA 双平台 + 并行/存储)
+# DeepSeek 基建 — 开源算力基础设施栈(昇腾 + NVIDIA 双平台 + 并行/存储)
 
 **按任务进入**:
 - 移植/造内核:[适配原则](concepts/ascend-port-principles.md)、[TileLang](concepts/tilelang.md)、[DeepGEMM](concepts/deepgemm-nvidia-vs-ascend.md)、[FlashMLA](concepts/flashmla.md)。

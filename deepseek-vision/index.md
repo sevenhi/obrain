@@ -1,11 +1,11 @@
 ---
-title: deepseek-vision — DeepSeek 多模态/视觉家族(VL/VL2/OCR/OCR2/Janus/DreamCraft3D)
+title: DeepSeek 视觉 — 多模态/视觉家族(VL/VL2/OCR/OCR2/Janus/DreamCraft3D)
 type: domain
 tags: [deepseek, vision, multimodal, vl, vl2, ocr, janus, dreamcraft3d, siglip, sam, moe, vq, sds, 3d]
 date: 2026-11
 ---
 
-# deepseek-vision — DeepSeek 多模态/视觉家族
+# DeepSeek 视觉 — 多模态/视觉家族
 
 **快速入口**:[VL/VL2 图文理解](concepts/deepseek-vl-vl2.md) · [OCR/OCR-2 视觉压缩](concepts/deepseek-ocr-ocr2.md) · [Janus 理解/生成](concepts/janus.md) · [DreamCraft3D](concepts/dreamcraft3d.md) · [来源](references.md)。
 

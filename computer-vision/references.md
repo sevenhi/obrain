@@ -1,5 +1,5 @@
 ---
-title: Computer Vision - 参考资料索引
+title: 计算机视觉 - 参考资料索引
 type: reference
 tags: [nerf, vit, cnn, reparameterization, tensorrt, object-detection, segmentation, detr, yolo, sam]
 source: "web: 本域论文来源索引 | 见下方 arXiv/官方链接"

@@ -19,7 +19,7 @@ reviewed: 2026-11-04
 
 # 混合线性注意力/SSM 架构:Mamba、RWKV、Gated DeltaNet 与 Qwen3-Next
 
-## TL;DR
+## 速览
 
 softmax attention 之外的**序列混合路线**:线性注意力/选择性 SSM 用核化或递归状态,在固定模型宽度下获得线性全序列工作量与常数大小递归状态,并研究如何高效并行训练。hybrid 将递归层与 full 或 local attention 结合,用检索能力与状态成本作权衡;Qwen3-Next/Jamba 的 full-attention 层仍保存 O(n) KV,Griffin 的局部 attention 则按窗口预算。**常数状态是递归层性质,不是所有混合模型的性质**。config 中的 `layer_types`、`mamba`、`time_mix` 等只是识别入口,实际层型与状态还需对照 forward。
 

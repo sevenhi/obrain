@@ -11,7 +11,7 @@ source:
 
 # DeepSeek Harness(dsh)— everything-is-a-plugin 的 agent 框架
 
-> **TL;DR**:DeepSeek Harness(`dsh`)是 DeepSeek 开源的 **agent 框架**,TypeScript 写成,基于 **everything-is-a-plugin** 架构、底层跑在 **Cordis**(一个「时空可组合性」编程范式)之上。当前 **developer preview**,快速迭代、**会有破坏性变更**。一条命令 `npx @deepseek-ai/dsh web` 起 Web UI(默认 127.0.0.1:3080)。定位是工具类,与数学/编码谱系无关,归本域工具节。
+> **速览**:DeepSeek Harness(`dsh`)是 DeepSeek 开源的 **agent 框架**,TypeScript 写成,基于 **everything-is-a-plugin** 架构、底层跑在 **Cordis**(一个「时空可组合性」编程范式)之上。当前 **developer preview**,快速迭代、**会有破坏性变更**。一条命令 `npx @deepseek-ai/dsh web` 起 Web UI(默认 127.0.0.1:3080)。定位是工具类,与数学/编码谱系无关,归本域工具节。
 
 ## 1. 是什么
 

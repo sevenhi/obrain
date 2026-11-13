@@ -69,7 +69,7 @@ date: 2026-11
 | `implementation/`(attention 域) | concept | 弱约定;按实现层组织,不增加 type 词项 |
 | `algorithm/`(attention 域) | concept | 弱约定;按算法层组织,不增加 type 词项 |
 | `ecosystem/`(vllm 域) | concept(生态构件深读) | 弱约定;例外:vllm/ecosystem/guidellm-bench.md 为 howto(基准评测与容量规划) |
-| `notes/` | 源码一手实读笔记(**豁免** TL;DR/frontmatter 要求,见 §6) | 强约定(豁免) |
+| `notes/` | 源码一手实读笔记(**豁免** 速览(TL;DR)/frontmatter 要求,见 §6) | 强约定(豁免) |
 | `frameworks/` | howto(工具上手) | 弱约定;例外:attention/frameworks/flexattention.md 为 concept(编程模型+编译器机制深读,2026-10 登记) |
 | `references.md`(领域根) | reference(链接索引) | 补充映射 |
 | `index.md`(领域根) | domain(领域导航页) | 补充映射 |
@@ -80,7 +80,7 @@ type 表示主要阅读目的,不是禁止概念篇包含示例、短清单或�
 
 ## 6. notes/ 豁免条款
 
-`notes/` 目录定位是**源码一手实读笔记**(path:line 级参考材料),**豁免**知识条目的 TL;DR 与 YAML frontmatter 要求——它不是知识条目,是源码参考。给 notes 逐篇补 frontmatter/TL;DR 属于误用规范,不要做。
+`notes/` 目录定位是**源码一手实读笔记**(path:line 级参考材料),**豁免**知识条目的速览(TL;DR)与 YAML frontmatter 要求——它不是知识条目,是源码参考。给 notes 逐篇补 frontmatter/TL;DR 属于误用规范,不要做。
 
 ## 7. 索引/政策/链接索引页的 frontmatter 豁免
 

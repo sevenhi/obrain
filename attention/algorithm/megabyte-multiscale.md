@@ -11,7 +11,7 @@ date: 2026-09
 
 # MEGABYTE:大 Global 模型跨 patch + 小 Local 模型 patch 内逐字节
 
-## TL;DR
+## 速览
 
 MEGABYTE(Meta AI,NeurIPS 2023)把长字节序列切成固定大小的 **patch**,用**两层嵌套的 decoder-only Transformer** 建模:大 **Global 模型**在 patch 序列上做 self-attention(每 patch 一次,维度 P·D_G),小 **Local 模型**在 patch 内逐字节自回归预测(以 Global 输出为条件)。三个收益:① self-attention 从 O(T²) 降到 O(T²/P² + TP),取 P=T^{1/3} 得 **O(T^{4/3})**;② FFN 从 per-token 变 per-patch——**GPT-3 尺寸下 attention 只占 1.4% FLOPs、FFN 占绝对大头**,同样的算力可以给 Global 模型配 P 倍大的 FFN;③ 解码可 P 路并行,1.5B 的 MEGABYTE 比 350M 的标准 Transformer **生成快 40% 且 PPL 更低**。结果:**tokenization-free** 的字节级模型首次在长上下文语言建模上追平 subword 模型(PG-19 400B 字节规模 test PPL 36.4,vs BlockRecurrent subword 26.5——仍有差距但字节模型此前是 69+),ImageNet 64×64 密度估计以一半算力追平 Perceiver AR SOTA(3.40 bpb),2TB 原始音频直接建模(3.477 bpb)。定位:**架构分解路线**(与 FlashAttention 的内核路线、StreamingLLM 的 cache 路线正交)——不改 attention 数学,改"attention 应用在什么粒度的序列上"。
 

@@ -20,7 +20,7 @@ date: 2026-10
 
 # 大规模 MoE 的 GPTQ 工程化:逐专家 Hessian、逐层校准与内存预算
 
-> **TL;DR**:GPTQ 的算法(逐列贪心 + 逆 Hessian 误差补偿)早在 [PTQ 篇](ptq-gptq-awq-smoothquant.md)讲完;真正卡住大规模 MoE 的是**工程三件事**:①HF fused MoE 的专家权重是一个 3-D `gate_up_proj` + 一组 per-expert quantizer,**旧实现按 `is_quantized_linear` 过滤,直接跳过专家**——而 MoE 里专家就是绝大部分权重;②每个专家的 Hessian 是 `in_features²` fp32,MoE 一层就是 **13–23 GiB**、整模型 **638–945 GiB**,迫使校准必须**逐层**(一层一个 Hessian 集合);③逐层一开,原来"反正一次前向跑完 92 层"的隐含假设全失效,**校准 batch=1、多余的一次 max 前向、Hessian 被赶到 CPU** 三处白等一起暴露,Qwen3.8-Flash-Next 的逐层 GPTQ 从 **~20 h 降到 44 min**(>10×)。再往上,逐层校准把"整个模型驻留"降成"一层驻留":4.892 TB 的 Qwen3.8-2.4T-A95B 在**单张 GB300** 上 3 h 04 m 量化完、峰值 141.7 GB,产物 1.444 TB(3.4×)。
+> **速览**:GPTQ 的算法(逐列贪心 + 逆 Hessian 误差补偿)早在 [PTQ 篇](ptq-gptq-awq-smoothquant.md)讲完;真正卡住大规模 MoE 的是**工程三件事**:①HF fused MoE 的专家权重是一个 3-D `gate_up_proj` + 一组 per-expert quantizer,**旧实现按 `is_quantized_linear` 过滤,直接跳过专家**——而 MoE 里专家就是绝大部分权重;②每个专家的 Hessian 是 `in_features²` fp32,MoE 一层就是 **13–23 GiB**、整模型 **638–945 GiB**,迫使校准必须**逐层**(一层一个 Hessian 集合);③逐层一开,原来"反正一次前向跑完 92 层"的隐含假设全失效,**校准 batch=1、多余的一次 max 前向、Hessian 被赶到 CPU** 三处白等一起暴露,Qwen3.8-Flash-Next 的逐层 GPTQ 从 **~20 h 降到 44 min**(>10×)。再往上,逐层校准把"整个模型驻留"降成"一层驻留":4.892 TB 的 Qwen3.8-2.4T-A95B 在**单张 GB300** 上 3 h 04 m 量化完、峰值 141.7 GB,产物 1.444 TB(3.4×)。
 
 ## 1. 为什么"逐专家 Hessian"不是可选优化
 

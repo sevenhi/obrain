@@ -10,7 +10,7 @@ date: 2026-10
 
 # smallpond — 基于 DuckDB + 3FS 的轻量数据处理框架
 
-## TL;DR
+## 速览
 
 **smallpond 是 DeepSeek 的轻量数据处理框架,构建在 DuckDB + 3FS 之上**。定位:高性能(PB 级可扩展)、易用(无长驻服务)、数据管道友好。它是 3FS 的「加工层」——3FS 存数据,smallpond 算数据(GraySort 就是 smallpond 跑在 3FS 上,110.5 TiB 30 分 14 秒排序完)。
 

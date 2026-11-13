@@ -16,7 +16,7 @@ reviewed: 2026-11-04
 
 # FP8 / FP4 硬件原生低比特格式:E4M3、E5M2、NVFP4 与 scale 粒度
 
-> **TL;DR**:FP8/FP4 是低比特浮点格式,在支持的 GPU 上可使用原生低精度 Tensor Core 路径。**硬件支持不等于训练框架或推理服务默认启用**;实际路径由模型、recipe、checkpoint、硬件与 kernel 共同决定。它与 INT8/INT4 量化、QuIP#/AQLM 码本压缩的数值表示不同;AWQ 等 weight-only 格式也可能先反量化再做浮点 GEMM,不能一概当整数计算。可用性取决于格式、scale 粒度、统计策略、累加精度与 kernel 的匹配。
+> **速览**:FP8/FP4 是低比特浮点格式,在支持的 GPU 上可使用原生低精度 Tensor Core 路径。**硬件支持不等于训练框架或推理服务默认启用**;实际路径由模型、recipe、checkpoint、硬件与 kernel 共同决定。它与 INT8/INT4 量化、QuIP#/AQLM 码本压缩的数值表示不同;AWQ 等 weight-only 格式也可能先反量化再做浮点 GEMM,不能一概当整数计算。可用性取决于格式、scale 粒度、统计策略、累加精度与 kernel 的匹配。
 
 下面这张交互图展示了统一量化模板下的数据流:高精度输入如何经 scale 统计、格式 cast 走进低比特 GEMM,以及 FP8/FP4/梯度三条路径的分工:
 

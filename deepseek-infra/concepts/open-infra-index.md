@@ -10,7 +10,7 @@ date: 2026-10
 
 # open-infra-index — DeepSeek 开源基础设施总索引(开源周)
 
-## TL;DR
+## 速览
 
 **open-infra-index 是 DeepSeek 基础设施开源的「目录/门户」仓库**,把 DeepSeek 线上服务的「生产级基础设施」按时间线登记成索引:2025-02 的「Open-Source Week」(一天放一个 repo)、2024-2025 的论文、以及各子系统的 README 入口。它本身**不含实现代码**,价值在于**给了这套基建的官方定位、性能口径、以及「生产验证」的出处**。
 

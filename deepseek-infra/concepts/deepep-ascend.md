@@ -11,7 +11,7 @@ date: 2026-09
 
 # DeepEP-Ascend — MoE 专家并行通信库
 
-## TL;DR
+## 速览
 
 **DeepEP-Ascend** 是面向华为昇腾 NPU 的高性能训练/推理**通信库**,提供 MoE 的专家并行(EP)**all-to-all** 操作(dispatch/combine),支持 **FP8 dispatch** 和**延迟 epilogue**;此外还提供 PP、CP/DP 的 Bucket 集合通信,以及 Engram 远端内存访问(开发中)。**公开 buffer API 与 NVIDIA 版 DeepEP 对齐**。
 

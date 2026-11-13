@@ -13,7 +13,7 @@ date: 2026-10
 
 # DeepSeek 代码模型谱系:Coder → Coder-V2(FIM 填充 / MoE 代码模型)
 
-> **TL;DR**:DeepSeek 代码模型两代,走了一条「从 dense 专项 → MoE 通用」的路:**DeepSeek-Coder**(2024)是 1B~33B 的 dense 代码专项模型,从零训 2T tokens(87% 代码),杀手锏是 **FIM(fill-in-the-middle)填充**——不是只往后补,而是「中间挖洞、两头给上下文」的项目级补全;**DeepSeek-Coder-V2**(2024)换成 **DeepSeekMoE 底座**(16B/236B,激活 2.4B/21B),续训 6T tokens,编程语言从 86→338,上下文 16K→128K,HumanEval 90.2 打平 GPT-4-Turbo。核心结论:**代码模型的核心差异在「训练数据组织 + FIM 任务设计」,结构复用主模型(MoE)后反而更强、更省算力。**
+> **速览**:DeepSeek 代码模型两代,走了一条「从 dense 专项 → MoE 通用」的路:**DeepSeek-Coder**(2024)是 1B~33B 的 dense 代码专项模型,从零训 2T tokens(87% 代码),杀手锏是 **FIM(fill-in-the-middle)填充**——不是只往后补,而是「中间挖洞、两头给上下文」的项目级补全;**DeepSeek-Coder-V2**(2024)换成 **DeepSeekMoE 底座**(16B/236B,激活 2.4B/21B),续训 6T tokens,编程语言从 86→338,上下文 16K→128K,HumanEval 90.2 打平 GPT-4-Turbo。核心结论:**代码模型的核心差异在「训练数据组织 + FIM 任务设计」,结构复用主模型(MoE)后反而更强、更省算力。**
 
 ---
 

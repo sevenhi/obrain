@@ -14,7 +14,7 @@ date: 2026-09
 
 > 本文由 `notes/vllm-api-server-openai-compat-notes.md` 深度提炼而成(**notes 已删,以源码 commit b74ac0bc6 为准**)。源码基准 commit `b74ac0bc6`(v0.28.1rc0-40,2026-08-28)。path:line 均实际验证。
 
-## TL;DR
+## 速览
 
 网上多数资料讲的"数千行巨石 `api_server.py` + `serving_chat.py` "结构**在该版本已不存在**:`vllm/entrypoints/openai/api_server.py` 退化为 **59 行 deprecation shim**,转发到 `vllm.entrypoints.launchers`;每个协议端点拆成独立子包,固定四件套 `api_router.py`(路由)+ `serving.py`(业务)+ `protocol.py`(pydantic 模型)+ 可选 `batch_serving.py`。三条设计主线:① **薄路由 + 状态注入**——路由函数只从 `app.state` 取 serving 对象并做返回形态分流,业务全在 per-protocol serving 类;② **按模型能力条件化注册路由**——embedding 模型的服务器上根本不存在 `/v1/chat/completions` 路由;③ **多进程拓扑**——多 API server 经 fd 传 socket + `SO_REUSEPORT` 同端口内核级负载均衡。对引擎侧只依赖 `EngineClient` 协议(`AsyncLLM`),引擎架构详见 [v1-architecture.md](v1-architecture.md)。
 

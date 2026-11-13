@@ -11,7 +11,7 @@ date: 2026-10
 
 # LLM Compressor 压缩工具链
 
-> **TL;DR**：LLM Compressor（`llmcompressor`）是面向 vLLM 部署的**离线模型压缩工具链**：用一份 `Recipe`（一组 Modifier）对 Hugging Face 模型做量化/稀疏/旋转等变换，再以 **compressed-tensors** 格式保存，交给 vLLM/SGLang 直接加载。它解决的是「怎么把 FP16 模型变成可部署的低精度 checkpoint」，不做训练、不做在线推理优化。理解它要抓住三件事：**Modifier = 算法原语、Recipe = 算法编排、Pipeline = 校准数据怎么流过模型**。
+> **速览**：LLM Compressor（`llmcompressor`）是面向 vLLM 部署的**离线模型压缩工具链**：用一份 `Recipe`（一组 Modifier）对 Hugging Face 模型做量化/稀疏/旋转等变换，再以 **compressed-tensors** 格式保存，交给 vLLM/SGLang 直接加载。它解决的是「怎么把 FP16 模型变成可部署的低精度 checkpoint」，不做训练、不做在线推理优化。理解它要抓住三件事：**Modifier = 算法原语、Recipe = 算法编排、Pipeline = 校准数据怎么流过模型**。
 
 ## 1. 它在工具链中的位置
 

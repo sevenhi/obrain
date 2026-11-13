@@ -15,7 +15,7 @@ date: 2026-10
 
 - **v2.1.0(2026-10-14,HEAD c1cf914a)**:量化(norm_forward/backward、SwiGLU、cast)、Engram gate 前后向的**内核/测试 bug 修复与再优化**(含昇腾 Asc 后端同步),无新算子族、无公开 API 变更;昇腾支持延续 v2.0.0 口径。
 
-## TL;DR
+## 速览
 
 **TileKernels** 是构建在 TileLang 之上的 **LLM 算子库**(Python),封装了一批训练/推理高频算子:MoE routing、量化(FP8/FP4/E5M6 + fused SwiGLU+quant)、Transpose、Engram(融合 RMSNorm 前后向 + 权重梯度归约)、Manifold HyperConnection(mHC,Sinkhorn 归一化 + mix 拆分)、Modeling(autograd.Function 高层封装)。多数算子接近硬件算力/带宽极限,部分已用于内部训练与推理。
 

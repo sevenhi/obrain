@@ -14,7 +14,7 @@ date: 2026-10
 
 # AIBrix:K8s 原生的 GenAI 推理基础设施
 
-## TL;DR
+## 速览
 
 AIBrix 是 vLLM 生态里面向**生产集群**的控制面:它不替换 vLLM 引擎本身,而是补齐「多副本怎么放、怎么扩、怎么路由、怎么共享 LoRA/KV、怎么抗故障」这一层 Kubernetes 原生组件。核心抽象是几组 CRD(`PodAutoscaler` / `ModelAdapter` / `StormService` / `ModelClaim` …)+ 一个基于 Envoy ext_proc 的 **LLM Gateway**。设计目标与论文口径见白皮书 arXiv:2504.03648。
 

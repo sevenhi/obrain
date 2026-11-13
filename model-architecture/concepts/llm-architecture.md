@@ -22,7 +22,7 @@ date: 2026-09
 
 > 本篇原为《LLaMA 架构》,2026-09 移入 model-architecture 域并扩展为**通用 LLM 架构篇**:以 LLaMA 三件套(pre-RMSNorm + SwiGLU + RoPE)为定型锚点,向前补齐每个组件的演进谱系(GPT/GPT-2/GPT-3 基线)、向后延伸到 Llama 2(GQA/4k)与 Llama 3(128K vocab/15T tokens/RoPE θ=500k)。**原 LLaMA 篇全部内容保留**(§3 LLaMA 主体、Table/数据对比)。
 
-## 0. TL;DR(全篇)
+## 0. 速览(全篇)
 
 今天新起一个 decoder-only LLM,默认配方已被 LLaMA 定型:**pre-RMSNorm 归一化 + SwiGLU FFN((2/3)·4d 内维)+ RoPE 位置编码 + 因果 attention + "小模型多数据"训练哲学**。这套配方不是凭空来的,而是三条组件演进线在 2023 年的汇合:
 
@@ -100,7 +100,7 @@ FFN(逐位置前馈层)是 Transformer 里参数最多的组件(`4d×d×2` 每�
 
 (以下保留原《llama-architecture.md》全部内容,2026-09 由 attention 域移入。)
 
-### 3.0 LLaMA TL;DR
+### 3.0 LLaMA 速览
 
 LLaMA(Meta AI,2023-02)证明**只用公开数据**就能训出第一梯队基础模型:7B~65B 四档,1.0~1.4T tokens。**架构上对原始 Transformer 只做三处修改**——① pre-normalization + **RMSNorm**(GPT-3 路线,稳训练);② ReLU FFN → **SwiGLU**(PaLM 路线,内维取 (2/3)·4d 保持参数量对齐);③ 绝对正弦位置编码 → **RoPE** 每层旋转(GPT-NeoX 路线)。这三件套自此成为开源 LLM 事实标准(Llama 2/3、Qwen、Mistral 等全部沿用)。**训练哲学**是核心贡献:Hoffmann(Chinchilla)scaling law 只优化训练算力,LLaMA 把**推理预算**纳入——给定目标性能,推理最快的模型胜出,所以"小模型 + 远超 Chinchilla 建议量的数据"(7B 训 1T tokens,Chinchilla 建议 7B 只配 ~140B);结果 7B 在 1T tokens 后 loss 仍在降,**LLaMA-13B 多数基准超 GPT-3(175B,10× 大),LLaMA-65B 与 Chinchilla-70B/PaLM-540B 同档**。工程侧:65B 在 2048×A100-80G 上 380 tokens/s/GPU,1.4T tokens ≈ 21 天;attention 用 xformers 的高效因果实现(前向思想来自 Rabe & Staats 的 O(1) 注意力内存,反向来自 FlashAttention),加手工反向的选择性激活重计算 + 模型/序列并行 + 通信重叠。
 

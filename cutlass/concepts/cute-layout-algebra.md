@@ -13,7 +13,7 @@ date: 2026-09
 
 # CuTe 深度:Layout、Atom 与 TiledMMA——CUTLASS 3.x 的抽象底座
 
-## TL;DR
+## 速览
 
 CuTe(CUTLASS 3.x 的核心库)用三个递进抽象把"硬件上怎么铺数据、怎么算"**描述**出来,让高层算法代码与具体硬件解耦:
 

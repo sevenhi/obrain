@@ -13,7 +13,7 @@ date: 2026-10
 
 > 本篇是 deepseek-vision 域「图生 3D 谱系」的深度篇。与 VL/OCR/Janus 不同,DreamCraft3D 的「vision」不在编码器而在**扩散先验(diffusion prior)**,是 DeepSeek 视觉家族里唯一走 3D 生成路线的仓库。
 
-## TL;DR(30 秒结论)
+## 速览
 
 **DreamCraft3D 用「一张 2D 参考图」分层生成高保真 3D 物体:先「几何雕刻(geometry sculpting)」用视角依赖的扩散模型做分数蒸馏(SDS)把几何捏一致,再「纹理增强(texture boosting)」用引导式分数蒸馏(Bootstrapped Score Distillation, BSD)把纹理提上去——两级用不同的 3D 先验,交替优化「扩散先验 ↔ 3D 场景表示」互相增强。** 一句话:**DreamFusion 用单一 SDS 出几何,纹理糊;DreamCraft3D 把「几何一致性」与「纹理保真」拆成两级、各配专属 3D 先验,并用「引导式」交替优化把纹理拉到照片级。**
 

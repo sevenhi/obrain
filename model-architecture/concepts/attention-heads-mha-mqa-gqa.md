@@ -14,7 +14,7 @@ date: 2026-09
 
 # 注意力头结构 MHA/MQA/GQA:KV cache 驱动的共享谱系
 
-## TL;DR
+## 速览
 
 三种注意力头结构的差别只在**「K/V 投影头的数量」**:MHA(原始 Transformer)每层 H 个 Q 头配 H 个 K/V 头;MQA(Shazeer 2019)所有 Q 头共享**1 组** K/V;GQA(Ainslie 2023)把 Q 头分成 G 组、每组共享 1 组 K/V——G 在 1 和 H 之间插值,**GQA-1=MQA,GQA-H=MHA**。动机全部来自推理侧:自回归解码每步要把**全部历史 token 的 K/V(KV cache)从显存重新加载一遍**,解码是内存带宽瓶颈而非算力瓶颈;KV cache 大小正比于 K/V 头数,砍头=直接砍带宽与显存。**代价是模型容量**:MQA 质量掉得明显且训练不稳,GQA 用「组」保住大部分容量——T5-XXL 上 GQA-8 以 5% 原预训练算力从 MHA checkpoint uptrain 而来,平均质量 47.1 vs MHA 47.2(vs MQA 46.5),推理时间 0.28s vs 1.51s(接近 MQA 的 0.24s)。2023 年后 GQA 成为开源 LLM 事实标准:Llama 2 70B、Llama 3 全系(8 KV 头)、Mistral 7B(32 Q/8 KV)、Mixtral、Qwen 全系。DeepSeek 走得更远:MLA 把 KV 低秩压缩成单个 latent 向量(KV cache 再省 ~93%)。**读模型 config 时 `num_key_value_heads` < `num_attention_heads` 即是 GQA;比值 H/G 就是 KV cache 缩减倍数。**
 

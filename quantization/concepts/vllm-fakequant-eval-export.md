@@ -17,7 +17,7 @@ date: 2026-10
 
 # vLLM fake-quant 验收:把权重折进 BF16、把激活量化留在运行时的量化 checkpoint 评测路径
 
-> **TL;DR**:量化 checkpoint 的"能不能用"通常要等 kernel——vLLM 没有 NVFP4(Hopper)/GGML IQ2/自研格式的内核时,你根本跑不起来,更别说评测 QAD(量化感知蒸馏)训出来的模型到底掉了多少精度。**fake quantization 这条路把"缺失的 kernel"换成"BF16 上的 QDQ 仿真"**,关键在于**按"静态/动态"切开两份东西**:
+> **速览**:量化 checkpoint 的"能不能用"通常要等 kernel——vLLM 没有 NVFP4(Hopper)/GGML IQ2/自研格式的内核时,你根本跑不起来,更别说评测 QAD(量化感知蒸馏)训出来的模型到底掉了多少精度。**fake quantization 这条路把"缺失的 kernel"换成"BF16 上的 QDQ 仿真"**,关键在于**按"静态/动态"切开两份东西**:
 > ① **权重量化器可以离线折掉**——`mtq.fold_weight()` 把 `round(clamp(w/s))·s`(以及 pre-quant scale、旋转)直接写进 BF16 权重,量化器随即禁用、buffer 丢弃,于是**产物就是一个普通 BF16 模型**,连 stock `vllm serve` 都能加载;
 > ② **激活 / KV-cache 量化器不能折**——它们依赖运行时输入,只能由 vLLM 侧的 `FakeQuantWorker` 在 forward 里做 QDQ,参数放在两个 sidecar 里:`quantizer_state.pth`(ranges)与 `quant_recipe.yaml`(版本化的按 HF 命名组织的设置)。
 > 2026-10-24 的 PR #2889 把这条导出链从 ModelOpt 自家 Megatron exporter 换成 **Megatron-Bridge**(支持任意 TP/EP/PP 与 VLM),并修掉两个会"静默错"的折叠缺陷:**顺序量化器(W4A8 INT4+FP8)以前整个跳过、折叠后仍启用**(= 二次量化),**SVDQuant 的低秩修正项以前会在折叠时丢**。实测口径:**权重与旧导出器逐位相同、服务输出 8/8 greedy 一致(Δlogprob 0.0)**;跨引擎 per-token NLL 在 dense 模型上压到 0.0002(Nemotron-9B 2.3465 vs 2.3467),MoE 上因专家路由翻转放大到 0.016(Qwen3.6-35B-A3B 2.2844 vs 2.3008)。

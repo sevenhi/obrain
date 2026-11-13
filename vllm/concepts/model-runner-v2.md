@@ -14,7 +14,7 @@ reviewed: 2026-11-04
 
 # Model Runner V2(MRV2):vLLM 执行层的重设计
 
-> **TL;DR**:MRV2 不是"再快一点"的调优,而是把 V1 执行层里**耦合掉的东西拆开**——① 持久 batch 状态与每步输入张量解耦(请求拿到**永久行号**,preemption 当结束处理),于是不再需要 `CachedRequestState` 这份备份;② 明确以 **async-first** 为前提(执行 = 一条没有 CPU 同步点的 CUDA stream),用"状态不 pin + 每次 pin 一份临时副本"从根上消掉 V1 的 async barrier;③ 大状态(block table / `num_computed_tokens` / `all_token_ids`)改走 **`StagedWriteTensor` + UVA 环形缓冲**,只搬 diff、一次 kernel 落盘;④ 采样器 Triton 化(Gumbel-max 单遍、top-k logprob 只算选中的 token);⑤ CUDA Graph 有显式 `CudaGraphManager`,能把投机解码的多步 draft **融进一张图**。**默认已开**(2026-10 的 main:`use_v2_model_runner` 除非命中不支持特性/无 Triton/特定 ROCm 架构,否则为 True),所以"新代码跑在 MRV2 上"是默认事实,旧的 `gpu_model_runner.py` 只在回退路径里。
+> **速览**:MRV2 不是"再快一点"的调优,而是把 V1 执行层里**耦合掉的东西拆开**——① 持久 batch 状态与每步输入张量解耦(请求拿到**永久行号**,preemption 当结束处理),于是不再需要 `CachedRequestState` 这份备份;② 明确以 **async-first** 为前提(执行 = 一条没有 CPU 同步点的 CUDA stream),用"状态不 pin + 每次 pin 一份临时副本"从根上消掉 V1 的 async barrier;③ 大状态(block table / `num_computed_tokens` / `all_token_ids`)改走 **`StagedWriteTensor` + UVA 环形缓冲**,只搬 diff、一次 kernel 落盘;④ 采样器 Triton 化(Gumbel-max 单遍、top-k logprob 只算选中的 token);⑤ CUDA Graph 有显式 `CudaGraphManager`,能把投机解码的多步 draft **融进一张图**。**默认已开**(2026-10 的 main:`use_v2_model_runner` 除非命中不支持特性/无 Triton/特定 ROCm 架构,否则为 True),所以"新代码跑在 MRV2 上"是默认事实,旧的 `gpu_model_runner.py` 只在回退路径里。
 
 > ⚠ 官方文档原文仍写着 *"not yet feature-complete, not rigorously tested, and still has open design decisions"*——但代码里它已经是**默认路径**。正确姿势:**以源码为准判断"当前跑哪个 runner",以设计文档理解"为什么这么设计"**,两者都要看。
 

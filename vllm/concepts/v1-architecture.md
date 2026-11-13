@@ -11,7 +11,7 @@ date: 2026-09
 
 # vLLM V1 引擎架构:调度执行解耦的多进程心智模型
 
-## TL;DR
+## 速览
 
 **V1 把「调度(决策)」和「执行(算)」解耦**:一个 `EngineCore` 进程专职做调度决策、一个或多个 `Worker`(每 GPU 一个)专职跑模型前向。**注意:Worker 是否独立进程取决于 Executor(见 §5)——单 GPU 走 UniProcExecutor 时 Worker 与 EngineCore 同进程持有,跨进程保证的核心是 前端(AsyncLLM)↔ EngineCore**。调度在 GPU 上一步还跑着时,CPU 已把下一步排好队(**异步调度**,CPU/GPU 重叠)。整套结构从上到下三层:API 层(AsyncLLM)→ 调度核心(EngineCore)→ 执行层(Worker/GPUModelRunner)。理解 V1,只需要记住一句话:**调度搬进独立进程 + 每步全量重排 + 异步下发**——剩下的都是这条主线的展开。
 

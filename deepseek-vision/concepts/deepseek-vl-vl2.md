@@ -17,7 +17,7 @@ date: 2026-10
 
 > 本篇是 deepseek-vision 域「图文理解谱系」的深度篇:DeepSeek-VL(2024-03)与 DeepSeek-VL2(2024-12)两代,合一篇讲清「vision encoder 怎么接 LLM」这条主线的第一段。
 
-## TL;DR(30 秒结论)
+## 速览
 
 **DeepSeek-VL 到 VL2,是「视觉编码器怎么高效产出 LLM 能消费的 token」这条主线的第一步演进:VL 用「冻结的 SigLIP + SAM 双塔(Hybrid)」各自编码、MLP 投影拼接进 LLM;VL2 把视觉侧收敛成「单个可训的 SigLIP SO400M」+「动态分块 tiling」处理任意分辨率,把语言侧换成「DeepSeekMoE(MHA,config 实测)」的稀疏骨干。** 一句话:**VL 解决「高分辨率图怎么在固定 token 预算下编码」,VL2 解决「怎么用稀疏算力 + 动态分辨率同时吃掉性能与效率」。**
 

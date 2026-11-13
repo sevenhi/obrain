@@ -14,7 +14,7 @@ date: 2026-10
 
 # vLLM Production Stack:从单机到集群的参考部署
 
-## TL;DR
+## 速览
 
 Production Stack 是 vLLM 官方的**参考部署栈**:用 Helm 一键把「多个 vLLM 引擎 + 请求路由 + LMCache 分层缓存 + Prometheus/Grafana 观测」装进 Kubernetes,应用侧只需把 `base_url` 从 `http://localhost:8000` 换成集群 Service,**接口与单机 vLLM 完全一致(OpenAI 兼容)**。它的价值不是某个新算法,而是把生产化需要的拓扑、缓存、监控做成可复制的模板。
 

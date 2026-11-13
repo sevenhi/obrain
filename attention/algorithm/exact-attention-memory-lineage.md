@@ -17,7 +17,7 @@ reviewed: 2026-11-04
 
 > 定位:本篇是 attention 域**内核/实现层的上游前驱**。FA1 论文两处引它(附录 B.1 说"这一技巧已被用于证明 attention 不需要二次额外显存",B.5 专节做三点比较)。理解它 = 理解 FlashAttention 究竟"新"在哪里:**R&S 解决"显存占用",FA 解决"访存次数"**——两者都是精确(非近似)attention,但优化目标不同,后果是 FA 快 2-4×、R&S 与标准实现同速或略慢。
 
-## TL;DR
+## 速览
 
 Rabe & Staats(Google Research, arXiv:2112.05682)指出“self-attention 必须 O(n²) 额外显存”不是数学约束。**延迟 softmax 除法**并在线重归一后,固定头维下单 query 只维护向量与标量累加量,为 O(1) 额外空间;逐 query 处理时索引需 O(log n) 位,输入/输出空间另计。工程实现为利用并行采用分块,论文给出 O(√n) 额外空间方案;反向用 checkpointing。论文报告 n=16384 时推理/反传显存开销下降 59×/32×;孤立算子推理慢约 8–13%、反传慢约 30–35%,不是一概“只差几个百分点”。WMT en-de 100K step 的 **evaluation accuracy 为 62.69 vs 62.59**;BLEU 相近是 Figure 4 的另一个观察,不能把这两个数字当 BLEU。
 

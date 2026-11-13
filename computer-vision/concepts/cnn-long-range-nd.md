@@ -15,7 +15,7 @@ date: 2026-09
 
 > 论文阅读笔记(arXiv:2206.03398,ICML 2022 Continuous Time Methods Workshop;扩展版 arXiv:2301.10540,ICLR 2023)。作者阵容含 S4 一作 Albert Gu,定位是「CNN 路线对 S4 路线的回应」。
 
-## TL;DR
+## 速览
 
 标准 CNN 的卷积核是**离散权重表**:核大小=参数量,想建模长程依赖只能堆深度+pooling,而且核绑死在特定分辨率/维度上——换个任务(音频 16k 长序列 vs 32×32 图像 vs 点云)就得重新设计架构。CCNN(Continuous CNN)把卷积核换成**坐标的连续函数**:一个小 MLP(kernel generator,GKernel: R^D → R^{Nout×Nin})输入坐标 c_i、输出该位置的核值。核大小与参数量**解耦** → 每层都能用「与输入同长」的大核直接建模长程依赖(FFT 卷积算),不需要 downsampling 和任务定制深度;坐标维度 D 改一改,同一个网络就能处理 1D/2D/3D;分辨率变了只需换一套坐标采样,核函数不变(分辨率无关)。两个关键工程改进:①深度可分离版连续卷积(通道数从 30 提到 110/380 不加复杂度);②**kernel generator 的方差修正初始化**——普通 MLP 初始化让核方差=1,而卷积要求 Var(K)=gain²/(in_ch·kernel_size),否则逐层方差爆炸(CKCNN/FlexNet 初始 logits 达 1e19 量级)。结果:同一架构在 sMNIST 99.72、Speech Commands raw 98.44(超 S4 的 98.32)、LRA PathFinder 2D 96.00(比之前 SOTA 高近 10 个点)。
 

@@ -11,7 +11,7 @@ source:
 
 # deepseek-recipe — DeepSeek V4/V4.1 多格式 API 与 prompt 编解码库
 
-> **TL;DR**:deepseek-recipe 是一套 **Rust 库 + Python bindings**,把 Messages / Chat Completions / Responses 三种 API 请求格式统一转成 Conversation,再编码成 **DeepSeek V4 / V4.1** 的 prompt(或 token IDs);并把模型输出解析回对应格式的响应(含思考、工具调用、JSON、stop sequence)。**不含**模型推理、工具执行、HTTP 传输——由外部推理后端提供。定位是「推理后端 ↔ 多格式 API 服务」之间的**协议/词表胶水层**。
+> **速览**:deepseek-recipe 是一套 **Rust 库 + Python bindings**,把 Messages / Chat Completions / Responses 三种 API 请求格式统一转成 Conversation,再编码成 **DeepSeek V4 / V4.1** 的 prompt(或 token IDs);并把模型输出解析回对应格式的响应(含思考、工具调用、JSON、stop sequence)。**不含**模型推理、工具执行、HTTP 传输——由外部推理后端提供。定位是「推理后端 ↔ 多格式 API 服务」之间的**协议/词表胶水层**。
 
 ## 1. 是什么
 

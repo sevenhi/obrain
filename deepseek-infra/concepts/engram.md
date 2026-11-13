@@ -10,7 +10,7 @@ date: 2026-10
 
 # Engram — 条件记忆与可扩展查找(一条新的稀疏轴)
 
-## TL;DR
+## 速览
 
 **Engram 是 DeepSeek 提出的一条新的稀疏轴——「条件记忆(conditional memory)」**,它把经典的 N-gram embedding 现代化成 **O(1) 查找**模块,给 Transformer 补上一个原生缺失的原语:知识查找。MoE 用条件计算扩容量,Engram 用**静态记忆扩容量**,两者正交互补。
 

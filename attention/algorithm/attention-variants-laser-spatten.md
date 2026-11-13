@@ -12,7 +12,7 @@ date: 2026-09
 
 # 注意力变体:LASER 激活替换(训练侧)× SpAtten 稀疏剪枝(推理硬件侧)
 
-## TL;DR
+## 速览
 
 同一个 softmax(QKᵀ/√d)V,两篇论文从相反方向动刀:
 - **LASER**(ICML 2025,Google/UT Austin):**训练视角、改 V 不改打分**。发现 softmax 的 Jacobian 与注意力概率成正比,而 LLM 里 ~80% 概率 <10⁻³、~20% <10⁻⁷ → 反向传播经过 attention 时梯度被极度缩小(vanishing gradient 在 attention 内部的对应物)。改法:对 **exp(V)** 做标准 attention 再取 log:`laser(X)=log(softmax(QKᵀ)·exp(V))`(log-sum-exp 结构,可看作带注意力权重的 soft-max 检索)。Jacobian 上限从 a_j 级变成 ~1−a₁ 级(不饱和)。用 Log-Weighted-Sum-Exp trick 防溢出,**底层 attention kernel 一行不改**(FlashAttention 直接可用)。2.2B 模型达标 test loss 2.327 的训练时间 27.22h→24.88h(−9.4%);同等 loss 2.347 省 15.65% 参数;下游 one-shot 平均 63.39% vs 62.34%。

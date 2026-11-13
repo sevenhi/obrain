@@ -13,7 +13,7 @@ date: 2026-10
 
 # vLLM 硬件后端插件体系 — Platform/worker 注册与七家后端
 
-## TL;DR
+## 速览
 
 vLLM 本体只内置 TPU / CUDA / ROCm / XPU / CPU 五个平台探测器;其余加速卡(昇腾 NPU、Apple Silicon、Intel Gaudi、AWS Trainium/Neuron、OpenVINO CPU/GPU 等)全部走 **out-of-tree 插件**:各自独立仓、独立发版,通过 Python packaging 的 **entry points** 把 `register()` 挂进 vLLM,探测到本家硬件后返回一个 **Platform 类**,再由 Platform 解析出 **worker_cls / attention backend / 量化路径**。
 

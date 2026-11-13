@@ -16,12 +16,12 @@ date: 2026-10
 
 # DeepSeek 网络结构演进总览(V1 → V2 → V3 → V3.2)
 
-> 本页是 DeepSeek 网络结构演进的**导航主篇**:30 秒 TL;DR、逐代概览、代际 diff 总表、演进方向分析、溯源互链。三份逐代深挖见子篇:
+> 本页是 DeepSeek 网络结构演进的**导航主篇**:30 秒速览、逐代概览、代际 diff 总表、演进方向分析、溯源互链。三份逐代深挖见子篇:
 > - 奠基段(注意力 MHA→GQA→MLA、FFN dense→稀疏 MoE、V2 双线合流):[deepseek-arch-v1-moe-v2](deepseek-arch-v1-moe-v2.md)
 > - V3(MLA 规模化 + 256 专家 MoE + MTP + aux-loss-free + FP8):[deepseek-arch-v3](deepseek-arch-v3.md)
 > - V3.2 + R1(DSA 稀疏注意力破 O(n²) + RL 推理时扩展):[deepseek-arch-v32-r1](deepseek-arch-v32-r1.md)
 
-## TL;DR(30 秒结论)
+## 速览
 
 **DeepSeek 六代结构(DeepSeek-LLM → DeepSeekMoE → V2 → V3 → V3.1 → V3.2)沿着一条不变的工程主线演进:在「算力(FLOPs)」与「显存(KV cache)」双重约束下——用稀疏省算力、用低秩省显存、用训练质量机制保住效果,始终把「训练质量-部署效率」当作双目标。** 具体分三条并行的机制线:
 

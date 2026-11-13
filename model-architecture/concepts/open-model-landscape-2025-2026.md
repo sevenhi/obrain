@@ -15,7 +15,7 @@ date: 2026-10
 
 # 开源模型谱系 2025-2026:DeepSeek V3.2(DSA)/V4 与 Qwen3.x / Llama 4 续篇
 
-## TL;DR
+## 速览
 
 本篇是 [open-model-landscape.md](open-model-landscape.md)(2024-12 快照)的**续篇/增量**,覆盖 2025-2026 主线,不替代旧篇。三条主线:
 

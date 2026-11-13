@@ -13,7 +13,7 @@ date: 2026-09
 
 > 本文由 `notes/vllm-sampling-penalties-notes.md` 深度提炼而成(**notes 已删,以源码 commit b74ac0bc6 为准**)。源码基准 commit `b74ac0bc6`(v0.28.1rc0-40,2026-08-28)。path:line 均实际验证。
 
-## TL;DR
+## 速览
 
 V1 的采样是一条**单趟 GPU 管线**(`vllm/v1/sample/sampler.py` 的 `Sampler`):原始 logits 算 logprobs → float32 → 白名单/bad words → 非 argmax 不变 processor(min tokens/logit bias)→ **三类惩罚(repetition→frequency→presence)** → 温度 → argmax 不变 processor(min_p)→ top-k/top-p → 混合批逐行贪心/随机。三类惩罚是**两类数学**:repetition 是**乘性**(logit 正除负乘),presence/frequency 是**加性**(遵循 OpenAI API 语义)。整条管线的两个工程主题:**避免 CPU-GPU 同步**(指数竞赛替代 multinomial)与**按 argmax 不变性给 processor 排序**(min_p 在温度后,不影响贪心)。入口侧,OpenAI 请求参数经 `to_sampling_params` 三级回退 + `SamplingParams` 校验归一,才进入这条管线。
 

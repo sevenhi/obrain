@@ -24,7 +24,7 @@ date: 2026-10
 
 > 本篇由原 `io-aware-tiling.md`(FA1)、`work-partitioning.md`(FA2)、`fa3-hopper-async.md`(FA3)三篇于 2026-09 合成,按代次串成完整主线,全部内容(公式/伪代码/数据表/实践/溯源)保留。FA 前驱谱系(Rabe & Staats O(1) 显存)单独见 [../algorithm/exact-attention-memory-lineage.md](../algorithm/exact-attention-memory-lineage.md)。
 
-## 0. TL;DR:四代怎么解决"attention 访存受限"
+## 0. 速览:四代怎么解决"attention 访存受限"
 
 attention 的瓶颈不是计算,是**内存搬运**:标准实现要把 N×N 的 `S`/`P` 中间矩阵写进 HBM 再读回,访存 Θ(Nd + N²),长序列下时间全花在搬数据上。FlashAttention 家族四代,每代解决一层瓶颈:
 
@@ -795,7 +795,7 @@ commit 原话:`This was also the cause of the hd256 2CTA CLC exclusion, which st
         loading="eager" title="反向重算:算力换显存"></iframe>
 </div>
 
-TL;DR 里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统计量、反向重算**:
+速览里说"显存 O(N²)→O(N)",这个 O(N) 的胜利**来自前向只存统计量、反向重算**:
 
 - **前向不存中间矩阵**:FA 前向只保存每行的 **m、l(FA1)或合并的 logsumexp LSE = m + log l(FA2 起,少一次 HBM 读)** 等 O(N) 统计量,不存完整的 N×N attention matrix;
 - **反向重算 P**:反向时重新加载 Q/K/V 块,用存的 m、l **重算 attention scores/P**(而不是从显存读回),代价是约 **2× 的重复 FLOPs**;

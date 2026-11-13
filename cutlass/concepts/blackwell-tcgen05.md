@@ -13,7 +13,7 @@ date: 2026-10
 
 # Blackwell tcgen05 / UMMA:第五代 Tensor Core 指令与 TMEM
 
-## TL;DR
+## 速览
 
 **tcgen05 是 Blackwell(SM100)起的第五代 Tensor Core 指令集**,取代 Hopper 的 `wgmma.mma_async`。它的核心变化:MMA 升级为 **CTA-group 级异步操作**(单 CTA = `cta_group::1`、双 CTA 协作 = `cta_group::2`),累加器不再落寄存器而是落 **TMEM(tensor memory)**。CuTe 把它包装成 **`SM100_MMA_*`** 命名的 MMA atom(真实文件 `include/cute/arch/mma_sm100_umma.hpp`,2041 行),写法与 SM90 的 `SM90_64x64x16_*` 完全不同——**`SM100_MMA_F16BF16_SS` 这种命名,不再是 `SM90_64x64x16_*` 风格**。
 

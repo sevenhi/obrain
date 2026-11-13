@@ -15,7 +15,7 @@ date: 2026-09
 
 > 论文阅读笔记(arXiv:2205.09579v2,ByteDance)。**注意:这是长期 preprint(2022 挂出未见正式发表),官方代码未开源**(GitHub bytedance/TRT-ViT 不存在,curl 实测 404);引用的数字以论文表格为准,别当成已发表定论。
 
-## TL;DR
+## 速览
 
 FLOPs/参数量是**间接、片面、硬件不敏感**的效率指标——很多「高效 ViT」在真实部署里连 ResNet 都跑不过。TRT-ViT 的做法:**直接把目标硬件上 TensorRT 的延迟当效率度量**(它同时反映算力、访存、带宽),用 TeraFLOPS=FLOPs/Latency 与 TeraParams=Params/Latency 两个「密度」指标做受控实验,得出 4 条设计准则:①stage 级 Transformer 放后期;②stage 级浅前深后;③block 级 Transformer+BottleNeck 混合比纯 Transformer 高效;④block 级先全局后局部(global-then-local)。据此造出 MixBlockC(Transformer 分支与 7×7 BottleNeck 分支按 shrinking ratio R 串接)与五 stage 的 TRT-ViT-A/B/C/D。结果:82.7% ImageNet top-1 时比 CSWin 快 2.7×、比 Twins 快 2.0×;COCO 检测与 Twins 精度相当而推理快 2.8×;ADE20K 分割快 4.4×。核心洞见:**Transformer 的计算效率(TeraFLOPS)随分辨率变小迅速逼近 BottleNeck,所以它该出现在低分辨率的后期 stage**。
 

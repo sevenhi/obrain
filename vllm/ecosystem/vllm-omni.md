@@ -12,7 +12,7 @@ date: 2026-10
 
 # vLLM-Omni 全模态推理服务
 
-## TL;DR
+## 速览
 
 **vLLM-Omni 是 vLLM 的全模态扩展**:在文本自回归(AR)引擎之上,用**阶段(stage)流水线**把文本/图像/音频/视频/动作的输入输出、AR 与 DiT(扩散)生成、实时全双工会话统一到一个 serving 运行时。核心三件事:**① stage 化的异构流水线**(Thinker→Talker→Code2Wav 这类多组件模型被拆成可独立放置/批处理的阶段);**② 引擎持有的会话(engine-owned session)**(全双工实时对话的长会话身份、租约、账本归引擎管,而不是每个模型手搓);**③ 跨阶段传输**(AR 的 paged KV 与多模态 payload 可经 Mooncake/NIXL/共享内存交给下游 DiT 或解码器,而不走 CPU 序列化)。它按 **偶数小版本对齐上游 vLLM**(当前 0.30.0 rebase),复用 vLLM 的调度/KV cache/分布式原语,再把非文本、非 AR 的部分用 stage runtime 接上。
 

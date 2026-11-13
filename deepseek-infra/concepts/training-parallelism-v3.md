@@ -14,7 +14,7 @@ date: 2026-10
 
 > **定位**:算法域([model-architecture](../../model-architecture/concepts/deepseek-arch-v3.md))讲「网络长什么样」;**本域讲「怎么把它训出来」**——671B MoE 在 2048×H800 上的并行切分、通信重叠与显存账。DualPipe 的调度细节见 [dualpipe.md](dualpipe.md),DeepEP 的 dispatch/combine 内核见 [deepep-nvidia-vs-ascend.md](deepep-nvidia-vs-ascend.md);**本篇只做编排层总账,不重复单点机制**。
 
-## TL;DR
+## 速览
 
 **DeepSeek-V3 的训练并行编排(论文口径,arXiv:2412.19437 §3.2)是**:**16-way Pipeline Parallelism(PP)× 64-way Expert Parallelism(EP,跨 8 节点)× ZeRO-1 Data Parallelism(DP)**,跑在自研 **HAI-LLM** 框架上,**训练全程不用 Tensor Parallelism(TP)**。
 

@@ -35,7 +35,7 @@ PYTHONDONTWRITEBYTECODE=1 "$OBRAIN_PYTHON" -m unittest discover -s tools -p 'tes
 PYTHONDONTWRITEBYTECODE=1 "$OBRAIN_PYTHON" tools/build_site.py --mode portable --output /tmp/obrain-export-new
 ```
 
-Replace the example output path with a new path each time. The build checks source Markdown, parses frontmatter using PyYAML, requires title/type/tags/source/date on knowledge articles, applies the documented notes/index exemptions, checks TL;DR and source links, checks domain index coverage, validates diagram receipts and the asset manifest when present, then validates built HTML links, anchors and iframes. A failure returns nonzero and does not publish the temporary build to the requested output.
+Replace the example output path with a new path each time. The build checks source Markdown, parses frontmatter using PyYAML, requires title/type/tags/source/date on knowledge articles, applies the documented notes/index exemptions, checks 速览 (TL;DR) and source links, checks domain index coverage, validates diagram receipts and the asset manifest when present, then validates built HTML links, anchors and iframes. A failure returns nonzero and does not publish the temporary build to the requested output.
 
 Code examples are rendered as code before link inspection. README links are resolved by MkDocs to homepage/index URLs; built-link checking validates the actual result, not an invented source-to-URL mapping. External URLs are not fetched. Source-link checking does not validate anchors until after MkDocs rendering. Standalone diagram JavaScript is not executed by these checks, and dynamically generated diagram internals are not treated as ordinary content pages.
 

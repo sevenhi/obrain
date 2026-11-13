@@ -11,7 +11,7 @@ date: 2026-09
 
 # KV Cache 量化
 
-> **TL;DR**：KV cache 是每个请求运行时增长的状态，不应和静态权重量化混为一谈。长上下文、高并发和 beam/prefix caching 场景中，KV cache 可能比权重更快成为显存瓶颈。量化 KV cache 能提高可容纳 token 数，但会引入注意力分数误差；必须同时确定量化粒度、校准/scale、K/V 是否同精度，以及 attention kernel 是否真正支持该格式。
+> **速览**：KV cache 是每个请求运行时增长的状态，不应和静态权重量化混为一谈。长上下文、高并发和 beam/prefix caching 场景中，KV cache 可能比权重更快成为显存瓶颈。量化 KV cache 能提高可容纳 token 数，但会引入注意力分数误差；必须同时确定量化粒度、校准/scale、K/V 是否同精度，以及 attention kernel 是否真正支持该格式。
 
 ## 1. 显存账单
 

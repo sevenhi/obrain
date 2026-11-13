@@ -12,7 +12,7 @@ date: 2026-09
 
 > 本文由 `notes/vllm-model-registry-notes.md` 深度提炼而成(**notes 已删,以源码 commit b74ac0bc6 为准**)。源码基准 commit `b74ac0bc6`(v0.28.1rc0-40,2026-08-28)。path:line 均实际验证。
 
-## TL;DR
+## 速览
 
 vLLM 的模型注册表本质是一张 **"架构名字符串 → (模块相对名, 类名)"的扁平映射**,按任务类型分成 **10 个分类字典**再合并为 `_VLLM_MODELS`,运行时包装成 `_LazyRegisteredModel` 实现**零 import 成本的懒加载**。架构解析优先级:**Transformers 后端(显式或兜底)→ 注册表逐架构(含后缀归一化)→ 报错(区分加载失败/已废弃/插件外置/完全不支持四类)**。
 

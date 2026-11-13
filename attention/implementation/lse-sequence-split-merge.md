@@ -11,7 +11,7 @@ date: 2026-11
 
 # Attention 的 LSE 序列分块合并
 
-## TL;DR
+## 速览
 
 > **先记结论**：如果拆的是 **KV 的 sequence 维度**，每个 chunk 先得到局部输出 `O_c` 和局部 `LSE_c`，再用 `global_lse = logsumexp(LSE_c)` 恢复全局 softmax，最后按 `exp(LSE_c - global_lse)` 加权合并 `O_c`。如果拆的是 **Q 的 sequence 维度**，不同 query 行彼此独立，结果直接沿 sequence 维度拼接，不需要跨块 LSE 加权。
 

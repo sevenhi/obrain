@@ -13,7 +13,7 @@ date: 2026-10
 
 # 2-bit 权重量化前沿:QuIP# / AQLM
 
-> **TL;DR**:2-bit 权重量化是 PTQ 的「极限压缩」前沿,两大 SOTA 分别是 **QuIP#**(随机 Hadamard 变换打散 outlier + E8 格码本 + fine-tuning)和 **AQLM**(多低秩码本加和,GPTQ 作者参与)。二者在 2-bit 下常并列、AQLM 略胜精度,但 QuIP# 码本小能进 L1 cache、推理更快。关键认知:**3-bit 近无损、2-bit 仍有可感知 PPL 退化**——「2-bit 近无损」是假命题。2-bit 的价值在把超大模型塞进显存受限卡(2-bit vs 4-bit 权重存储省 ~50%),但引擎侧(vLLM)对 2-bit 权重支持有限,不是 `--dtype` 能直接点出来的。
+> **速览**:2-bit 权重量化是 PTQ 的「极限压缩」前沿,两大 SOTA 分别是 **QuIP#**(随机 Hadamard 变换打散 outlier + E8 格码本 + fine-tuning)和 **AQLM**(多低秩码本加和,GPTQ 作者参与)。二者在 2-bit 下常并列、AQLM 略胜精度,但 QuIP# 码本小能进 L1 cache、推理更快。关键认知:**3-bit 近无损、2-bit 仍有可感知 PPL 退化**——「2-bit 近无损」是假命题。2-bit 的价值在把超大模型塞进显存受限卡(2-bit vs 4-bit 权重存储省 ~50%),但引擎侧(vLLM)对 2-bit 权重支持有限,不是 `--dtype` 能直接点出来的。
 
 ---
 

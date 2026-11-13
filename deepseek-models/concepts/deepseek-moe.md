@@ -11,7 +11,7 @@ date: 2026-10
 
 # DeepSeekMoE — 细粒度专家 + 共享专家(数据/评测侧)
 
-> **TL;DR**:DeepSeekMoE 16B 是 DeepSeek 第一个稀疏 MoE 基座,总参 16.4B、激活 2.8B,从零训 2T 中英 token,**仅 40% 算力就打平 DeepSeek 7B 与 LLaMA2 7B**(后两者激活参数是它的 ~2.5×)。它贡献了 DeepSeek MoE 家族的两个支柱性设计——**细粒度专家分割**(fine-grained expert segmentation)与**共享专家隔离**(shared expert isolation),这两个设计被后续 V2/V3/Coder-V2 一路沿用。**本篇侧重数据与评测;结构机制细节见网络结构篇,此处不重复。**
+> **速览**:DeepSeekMoE 16B 是 DeepSeek 第一个稀疏 MoE 基座,总参 16.4B、激活 2.8B,从零训 2T 中英 token,**仅 40% 算力就打平 DeepSeek 7B 与 LLaMA2 7B**(后两者激活参数是它的 ~2.5×)。它贡献了 DeepSeek MoE 家族的两个支柱性设计——**细粒度专家分割**(fine-grained expert segmentation)与**共享专家隔离**(shared expert isolation),这两个设计被后续 V2/V3/Coder-V2 一路沿用。**本篇侧重数据与评测;结构机制细节见网络结构篇,此处不重复。**
 
 > 归属说明:本仓(DeepSeek-MoE)是「独立发布的 16B 基座模型 + 论文」,与网络结构篇 [deepseek-arch-v1-moe-v2](../../model-architecture/concepts/deepseek-arch-v1-moe-v2.md) 里讲的 DeepSeekMoE 结构是同一东西。按简报分工:结构/源码级机制在那篇,本域只补「**数据规模 + 评测结论 + 40% 算力这个核心卖点**」,不复制结构。
 

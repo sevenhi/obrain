@@ -12,7 +12,7 @@ date: 2026-09
 
 # 两级 Micro-kernel 抽象:CUTLASS 3.x 为什么长成这样
 
-## TL;DR
+## 速览
 
 CPU 世界有 BLIS:核心 microkernel 是**单线程 agent 发 SIMD 指令**,多线程切分只动最外层循环,所以"一次写 microkernel,处处能用"。GPU 抄不了这个作业——核心 microkernel 是**多线程 agent(warp/warpgroup,甚至 warp-specialized 生产者消费者)发 3D tensor core 指令**,且 copy 和 compute 的 partitioning 图案不一致、每代架构都变。CUTLASS 3.x 的答案是**两级 micro-kernel 抽象**:
 

@@ -17,7 +17,7 @@ reviewed: 2026-11-04
 
 > 新手友好篇。ViT(arXiv:2010.11929, Google Brain, ICLR 2021)证明:**不需要卷积**,纯 transformer 直接吃图像 patch 序列就能做分类。本域三篇(trt-vit-inference 硬件视角、[检测/分割篇](object-detection-segmentation.md) 的 DETR/SAM)都以此为机制底座。数字均核自论文 Table 1/2/5 与 DeiT abstract。
 
-## TL;DR
+## 速览
 
 ViT 的全部改动只有三步:①**patchify**——把 224×224 图像切成 16×16 的小块,每块拉平后线性投影成一个向量,得到 196 个「视觉词」;②**加 [CLS] token + 可学习 1D 位置编码**——拼一个可学习的分类 token 在序列头,让标准 transformer encoder 处理;③**预训练-微调范式**——在大私有集 JFT-300M(3 亿图)上预训练,迁移到 ImageNet 等下游。结论两半:数据够大时,ViT-H/14 达 **88.55% ImageNet top-1**,超越所有 CNN 且**训练算力更省**;数据不够时(只有 ImageNet-1k),ViT 输给 ResNet——**ViT 缺的是 CNN 自带的归纳偏置(局部性/平移等变),要靠大数据「学回来」**。DeiT(arXiv:2012.12877)随后证明只用 ImageNet-1k 训练 + 蒸馏 token 也能到 83.1%(86M 参数、单机 3 天内),把 ViT 平民化。落地:直接用 torchvision 的 `vit_b_16` 或 timm;硬件效率问题见 [trt-vit-inference](trt-vit-inference.md)。
 

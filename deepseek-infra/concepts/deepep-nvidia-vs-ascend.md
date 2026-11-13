@@ -11,7 +11,7 @@ date: 2026-10
 
 # DeepEP NVIDIA 版 vs Ascend 版 — MoE 专家并行通信库
 
-## TL;DR
+## 速览
 
 **DeepEP(Deep Expert Parallelism,专家并行通信库)** 是 DeepSeek 的 MoE **专家并行(EP)通信库**,提供 EP all-to-all 的 **dispatch**(token → 负责其 expert 的 rank)与 **combine**(expert 结果 → token 原 rank)两类高性能 GPU kernel,支持 FP8 dispatch、冗余专家(load balancing)的 NVLink 权重/梯度交换,以及 PP/CP/DP/Engram 的试验性原语。**2026-09-30 起有 NVIDIA 版(deepseek-ai/DeepEP)与昇腾版(deepseek-ai/DeepEP-Ascend),同一 API 跑两套后端**。
 

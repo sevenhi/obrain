@@ -14,7 +14,7 @@ date: 2026-10
 
 > **主线定位**:本代是 DeepSeek 谱系的**规模化 + 训练工程成熟化**段——沿用 V2 的 MLA（省显存）+ DeepSeekMoE（省算力），把优化重心转向「训练质量与效率」（aux-loss-free、MTP、FP8）。完整演进总览见主篇 [deepseek-model-evolution](deepseek-model-evolution.md);奠基段 V1/DeepSeekMoE/V2 见 [deepseek-arch-v1-moe-v2](deepseek-arch-v1-moe-v2.md);后续 V3.2(DSA 破 O(n²))+ R1 见 [deepseek-arch-v32-r1](deepseek-arch-v32-r1.md)。
 
-> **TL;DR** DeepSeek-V3(671B 总参数 / 37B 激活)把 V2 验证过的两大利器——**MLA(低秩 KV 压缩 + 解耦 RoPE,省 KV cache 显存)** 和 **DeepSeekMoE(1 共享 + 256 细粒度路由专家,top-8,省算力)**——继续做大做强,并在此之上新增两项:**aux-loss-free 免辅助损失负载均衡**(bias 项动态调节,消除负载均衡对模型质量的拉扯)和 **MTP 多 token 预测**(预测额外 1 个 token,密化训练信号 + 让模型"预规划"表示)。三大件组合 = "用稀疏 MoE 省 FLOPs、用低秩 MLA 省显存、用 aux-loss-free + MTP 保训练质量",最终用 2.788M H800 GPU 小时(≈$5.6M)训出超越当时所有开源模型的基座。
+> **速览** DeepSeek-V3(671B 总参数 / 37B 激活)把 V2 验证过的两大利器——**MLA(低秩 KV 压缩 + 解耦 RoPE,省 KV cache 显存)** 和 **DeepSeekMoE(1 共享 + 256 细粒度路由专家,top-8,省算力)**——继续做大做强,并在此之上新增两项:**aux-loss-free 免辅助损失负载均衡**(bias 项动态调节,消除负载均衡对模型质量的拉扯)和 **MTP 多 token 预测**(预测额外 1 个 token,密化训练信号 + 让模型"预规划"表示)。三大件组合 = "用稀疏 MoE 省 FLOPs、用低秩 MLA 省显存、用 aux-loss-free + MTP 保训练质量",最终用 2.788M H800 GPU 小时(≈$5.6M)训出超越当时所有开源模型的基座。
 
 ---
 

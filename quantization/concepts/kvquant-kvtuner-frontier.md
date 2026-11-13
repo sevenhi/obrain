@@ -13,7 +13,7 @@ date: 2026-10
 
 # KV cache 极低比特前沿:KVQuant / KVTuner
 
-> **TL;DR**:KVQuant(UC Berkeley,2401.18079)把 KV cache 压到 **3-bit 近无损(<0.1 PPL 退化)、2-bit 可接受**,靠四招:Per-Channel Key、**Pre-RoPE Key(RoPE 之前量化 K,关键创新)**、Non-Uniform per-layer datatype、Per-Vector Dense-and-Sparse;标题卖点是**单卡 A100 跑 1M、8 卡跑 10M context**。KVTuner(华为/CUHK,2502.04420)是**独立**的后续工作(baseline 用 KIVI,非 KVQuant),把「每层 KV 精度对」的粗粒度混合精度搜出来:**Llama-3.1-8B ≈3.25-bit、Qwen2.5-7B ≈4.0-bit 近无损**,吞吐比 KIVI-KV8 最高 +21.25%。两者一条线:**KV cache 的省显存杠杆在长上下文,2-3 bit 就能把 cache 显存砍掉 4-8 倍**。
+> **速览**:KVQuant(UC Berkeley,2401.18079)把 KV cache 压到 **3-bit 近无损(<0.1 PPL 退化)、2-bit 可接受**,靠四招:Per-Channel Key、**Pre-RoPE Key(RoPE 之前量化 K,关键创新)**、Non-Uniform per-layer datatype、Per-Vector Dense-and-Sparse;标题卖点是**单卡 A100 跑 1M、8 卡跑 10M context**。KVTuner(华为/CUHK,2502.04420)是**独立**的后续工作(baseline 用 KIVI,非 KVQuant),把「每层 KV 精度对」的粗粒度混合精度搜出来:**Llama-3.1-8B ≈3.25-bit、Qwen2.5-7B ≈4.0-bit 近无损**,吞吐比 KIVI-KV8 最高 +21.25%。两者一条线:**KV cache 的省显存杠杆在长上下文,2-3 bit 就能把 cache 显存砍掉 4-8 倍**。
 
 ---
 

@@ -12,7 +12,7 @@ date: 2026-09
 
 # StreamingLLM:attention sink + 滚动 KV cache
 
-## TL;DR
+## 速览
 
 **现象**:自回归 LLM 会把大量注意力分给最初几个 token,哪怕它们语义无关(把开头 4 个 token 换成 "\n" 后模型照样重度关注它们)——这些 token 是 **attention sink(注意力汇聚点)**。**根因**:softmax 强制注意力权重和为 1,当 query 与所有历史 token 都不匹配时,多余注意力必须"倒"进某个地方;开头 token 因对所有后续 token 可见,在预训练中最容易被训练成这个垃圾桶。**后果**:纯滑窗(window attention)一旦把开头 token 的 KV 逐出 cache,PPL 从 5.4 爆炸到 5158(Llama-2-13B)。**方案**:StreamingLLM = **保留开头 4 个 token(sink)+ 最近窗口 token 的 KV**,零微调让有限窗口训练的模型稳定处理 400 万+ token 流,比"滑窗重计算"基线快至多 22.2×。已被 HuggingFace Transformers、NVIDIA TensorRT-LLM、MLC LLM 等集成。**边界**:它不扩展上下文——被逐出的中间 token 找不回来,只保证"用窗口内内容稳定续写"。
 

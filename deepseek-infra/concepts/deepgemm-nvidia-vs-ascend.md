@@ -11,7 +11,7 @@ date: 2026-10
 
 # DeepGEMM NVIDIA 版 vs Ascend 版 — 同 API 不同后端
 
-## TL;DR
+## 速览
 
 **DeepGEMM 是 DeepSeek 的轻量高性能 tensor core 内核库**,把现代 LLM 的关键计算原语(FP8/FP4/BF16 GEMM、Mega MoE 融合 MoE、MQA 打分、HyperConnection)收进单一 CUDA 代码库。2026-09-30 起有两个后端:**NVIDIA 版**(deepseek-ai/DeepGEMM)与**昇腾版**(deepseek-ai/DeepGEMM-Ascend),**包名相同、API 完全兼容**,差别只在底层原语。
 

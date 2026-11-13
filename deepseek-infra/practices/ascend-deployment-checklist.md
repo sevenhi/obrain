@@ -13,7 +13,7 @@ date: 2026-10
 
 # DeepSeek 昇腾部署检查清单:环境两线与算子跑通顺序
 
-## TL;DR
+## 速览
 
 DeepSeek 昇腾基础设施栈的部署要**先把环境分成两条线**——950 超节点线与 A2/A3 旧线——别把两套版本要求混在一起(本域此前最易踩的坑)。**950 线(DeepEP-Ascend validated stack)**:CANN 9.2.0 + Python 3.12 + PyTorch 2.13.0+cpu + torch_npu 2.13.0rc1;**A2/A3 线(只适用 tilelang-ascend 独立仓)**:CANN 8.3.RC1+ / torch-npu 2.6.0.RC1+。算子跑通顺序:**TileLang(编程指南)→ DeepGEMM-Ascend → DeepEP-Ascend → FlashMLA → DeepSelect**。机制细节见各 concepts 篇,本篇只列可执行的检查清单。
 

@@ -12,7 +12,7 @@ date: 2026-09
 
 # CUTLASS 构建与上手:从 cmake 到第一个 kernel
 
-## TL;DR
+## 速览
 
 **CUTLASS 是 header-only 库**——直接用只需把 `include/` 加进 include path,**根本不需要构建**。构建只是编译**示例 / 测试 / profiler**。上手流程:
 

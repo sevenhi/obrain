@@ -16,7 +16,7 @@ reviewed: 2026-11-04
 
 # GPU 随机数生成:为什么是 counter-based 与 MTGP
 
-## TL;DR
+## 速览
 
 传统 PRNG(如 Mersenne Twister)是**有状态的顺序递推** `s_{n+1}=f(s_n)`,天生串行,搬到 GPU 上有两难:一线程一 generator → 每线程要存 ~2.5KB 状态,塞爆片上内存;共享一个 generator → 又是串行瓶颈。GPU 上跑出来两条主流路:
 

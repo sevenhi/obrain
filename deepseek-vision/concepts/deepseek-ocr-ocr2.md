@@ -18,7 +18,7 @@ reviewed: 2026-11-04
 
 > 本篇是 deepseek-vision 域「视觉压缩谱系」的深度篇:DeepSeek-OCR(2025-10)与 DeepSeek-OCR-2(2026-01)两代,合一篇讲清「vision encoder 把像素压成 LLM token」这条主线的第二段——**把图像当作文本的压缩容器**。
 
-## TL;DR(30 秒结论)
+## 速览
 
 **DeepSeek-OCR 用「光学压缩(Optical Compression)」重新定义 OCR:不把 OCR 当「看图识字」,而把图像当「文本的高压缩比载体」——一张文档图用几十到几百个 vision token 就能等价上千个 text token,LLM 负责「解压」。DeepSeek-OCR-2 再往前走一步:让 encoder 自己带「因果推理」,按语义(而非固定光栅顺序)重排 visual token,模拟人类扫读文档的因果顺序。** 一句话:**OCR 回答「vision token 能压多狠仍不失真」,OCR-2 回答「压完的 token 该按什么顺序喂给 LLM」。**
 

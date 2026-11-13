@@ -12,7 +12,7 @@ date: 2026-10
 
 # MoE 专家并行 PTQ 校准:DP=EP all-to-all 传输与 amax 覆盖面
 
-> **TL;DR**:大规模 MoE 的 PTQ 校准,两条现成路都不可行——复现(replicate)要每个 rank 装下整个模型;仅 FSDP2 分片虽然省了权重存储,但每次前向都把**所有专家 all-gather 回每个 rank**,显存根本没省下来。ModelOpt PR #2738(2026-10-24 合并,EP PTQ 系列 **1/21** 的第一块)加入 DP=EP 传输:稠密层 + router 走数据并行、专家按 rank 分片、token 走 plain NCCL `all_to_all_single` 的 dispatch/combine。它同时解决**显存**和**精度**两件事,后者才是关键:**每个专家看到来自所有 rank 路由给它的 token,amax 是在全局 token 池上统计的,而不是一个 rank 的那一份**——amax 的覆盖面本身就是精度变量。为保证导出的 activation scale 逐位可复现,combine 必须定序求和(旧 `index_add_` 版在 Qwen3-30B-A3B 上 **27% 的 input scale 与单卡不同、最大偏 28%**;GB200 EP=1 对照 `grouped_mm` 从 223 个差异元素降到 **0**),缓冲尽早释放把单层传输峰值 RSS 从 **2122 MiB 压到 706 MiB**。注意:本 PR 只是传输层,端到端 `hf_ptq.py` 的 EP 入口在 [21/21],**尚未全部落地**。
+> **速览**:大规模 MoE 的 PTQ 校准,两条现成路都不可行——复现(replicate)要每个 rank 装下整个模型;仅 FSDP2 分片虽然省了权重存储,但每次前向都把**所有专家 all-gather 回每个 rank**,显存根本没省下来。ModelOpt PR #2738(2026-10-24 合并,EP PTQ 系列 **1/21** 的第一块)加入 DP=EP 传输:稠密层 + router 走数据并行、专家按 rank 分片、token 走 plain NCCL `all_to_all_single` 的 dispatch/combine。它同时解决**显存**和**精度**两件事,后者才是关键:**每个专家看到来自所有 rank 路由给它的 token,amax 是在全局 token 池上统计的,而不是一个 rank 的那一份**——amax 的覆盖面本身就是精度变量。为保证导出的 activation scale 逐位可复现,combine 必须定序求和(旧 `index_add_` 版在 Qwen3-30B-A3B 上 **27% 的 input scale 与单卡不同、最大偏 28%**;GB200 EP=1 对照 `grouped_mm` 从 223 个差异元素降到 **0**),缓冲尽早释放把单层传输峰值 RSS 从 **2122 MiB 压到 706 MiB**。注意:本 PR 只是传输层,端到端 `hf_ptq.py` 的 EP 入口在 [21/21],**尚未全部落地**。
 
 ## 1. 为什么复现和纯 FSDP2 都不行
 

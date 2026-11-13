@@ -10,7 +10,7 @@ date: 2026-09
 
 # DeepSelect — DSA/Sampler 的 TopK 算子
 
-## TL;DR
+## 速览
 
 **DeepSelect** 是为 **DSA(DeepSeek Sparse Attention)** 和 **Sampler(采样器)** 定制的高性能 **TopK 算子**:支持 NVIDIA CUDA 与华为昇腾双平台,相比原生 `torch.topk` 加速 **2–20×**。**口径是有效内存带宽(不是 FLOPs)**——TopK 不做浮点运算,FLOP 率无意义。
 

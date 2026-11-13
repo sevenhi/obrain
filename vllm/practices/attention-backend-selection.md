@@ -13,7 +13,7 @@ date: 2026-10
 
 # vLLM V1 注意力后端选型:可插拔 backend 的机制、枚举与分派
 
-## TL;DR
+## 速览
 
 **vLLM V1 的注意力内核是「可插拔 backend」**:同一套调度/执行骨架下,具体 attention 前向由不同 backend 实现,启动时按硬件 + 配置自动选一个。**分派链路(无 `ATTN_BACKEND` 环境变量)**:`get_attn_backend()` → `current_platform.get_attn_backend_cls()` → `get_valid_backends()`(按 priority 排序逐个 `validate_configuration()` 过滤)→ 选**最小 priority** 的合法 backend;显式指定走 **`--attention-backend` CLI**(等价 `AttentionConfig.backend`)。
 

@@ -10,7 +10,7 @@ date: 2026-10
 
 # DeepGEMM-Ascend — 昇腾 GEMM 库
 
-## TL;DR
+## 速览
 
 **DeepGEMM-Ascend** 是 DeepGEMM 的**昇腾移植版**:新建独立仓、**API 完全兼容**(同包名),把 DeepGEMM 的「轻量、可读、极致性能 GEMM 内核」思路搬到华为昇腾。它对昇腾的 **MAD(matrix multiply-add)矩阵乘加原语**做了一层轻量抽象,**隐藏了 fractal 分形布局、对齐约束、地址计算、冗长低层参数**这些繁重细节,让 GEMM kernel 既简洁又高效。
 

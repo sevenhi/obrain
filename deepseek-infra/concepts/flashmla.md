@@ -14,7 +14,7 @@ reviewed: 2026-11-04
 
 # FlashMLA — MLA 注意力内核库(dense + sparse)
 
-## TL;DR
+## 速览
 
 **FlashMLA** 是 DeepSeek 的**注意力内核库**,支撑 DeepSeek-V4.1 在 NVIDIA GPU 与华为昇腾 NPU 上的推理。它含**两套内核**:
 

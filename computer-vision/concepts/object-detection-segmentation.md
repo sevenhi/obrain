@@ -19,7 +19,7 @@ date: 2026-10
 
 > 新手友好综述篇。三条主线:两阶段(Faster/Mask R-CNN)、单阶段(YOLO)、端到端 set prediction(DETR),外加把分割变成「可提示基础模型」的 SAM。所有数字均来自论文原文或官方仓库/文档(见 frontmatter source 与文末溯源),查不到的标「待核」。
 
-## TL;DR
+## 速览
 
 **目标检测** = 分类(是什么)+ 定位(框在哪);**实例分割** = 再进一步给每个物体一个像素级掩码。技术演进三跳:①**两阶段**(Faster R-CNN):先用 RPN 提候选框再分类回归,准但慢(VGG-16 全流水线 5fps);Mask R-CNN 加一条并行掩码分支就把实例分割做出来了(ResNet-101 mask AP 35.7,5fps)。②**单阶段**(YOLO):把检测直接当回归问题,一次前向出框+类别,快(原版 45fps;Ultralytics YOLO11x 在 T4+TensorRT10 上 11.3ms,54.7 COCO mAP)。③**端到端**(DETR):transformer 编码-解码 + 100 个可学习 object query + 匈牙利二分图匹配,**删掉 anchor/NMS 全部手工组件**,R50 42 AP 与 Faster R-CNN 打平但 FLOPs 减半。**SAM** 换了个玩法:不学「类别」,学「按提示(点/框)分割任何东西」,靠 11M 图 / 11 亿掩码的 SA-1B 数据引擎练成零样本基础模型。落地首选:通用检测/分割用 Ultralytics YOLO11 三行上手;需要精细交互式掩码用 SAM;研究端到端范式看 DETR。
 

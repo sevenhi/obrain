@@ -13,7 +13,7 @@ date: 2026-09
 
 # SpQR:稀疏+量化混合表示,近无损 LLM 权重压缩
 
-## TL;DR
+## 速览
 
 SpQR(Dettmers 等,arXiv:2306.03078,ICLR 2024)是**第一个把 LLM 权重压到 3-4 bit/参数仍近无损(perplexity 相对损失 <1%)**的后训练量化(PTQ)方法。核心两招:①**离群值隔离**——用 GPTQ 求解器动态算每个权重的量化敏感度,把 ~1% 的高敏感 outlier 抽出来存 16-bit(CSR 稀疏格式),其余压到 3-4 bit;②**两级量化(bilevel)**——group size 小到 16 的分组量化统计量(scale/zero)本身再量化成 3-bit,把"小组带来的元数据开销"压回去。结果:33B 模型塞进单张 24GB 消费级 GPU,LLaMA/Falcon 各尺寸 WikiText2 perplexity 距 FP16 <1%,推理还比 FP16 快 20-30%。
 

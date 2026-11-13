@@ -11,7 +11,7 @@ date: 2026-09
 
 # CUTLASS 性能调优:从 Profiler 到关键旋钮
 
-## TL;DR
+## 速览
 
 CUTLASS 性能调优有**清晰的方法论**,不是瞎试:
 

@@ -12,7 +12,7 @@ date: 2026-09
 
 # CUTLASS TileScheduler:谁来决定"哪个 threadblock 算哪块"
 
-## TL;DR
+## 速览
 
 GEMM 的输出矩阵被切成很多 tile。**TileScheduler(调度器)决定每个 threadblock 去算哪块、按什么顺序算**,直接决定负载均衡和 GPU 利用率。
 

@@ -13,7 +13,7 @@ date: 2026-10
 
 # DeepSeek 数学推理谱系:DeepSeekMath → DeepSeekMath-V2
 
-> **TL;DR**:DeepSeek 的数学能力走两步——**DeepSeekMath 7B**(2024)用「120B 数学 token 数据管道 + GRPO 强化学习」在 MATH 上做到 51.7%,开创了「领域数据续训 + RL」的范式;两年后 **DeepSeekMath-V2**(2025)把数学推到「**自验证**」:不再只追最终答案正确率,而是训练一个 verifier(验真器)判定证明对不对,再用 verifier 当 reward model 训 generator,让模型生成前自己审自己的证明。结果:IMO 2025 金牌、CMO 2024 金牌、Putnam 2024 118/120(超人类最高 90 分)。**核心结论:数学推理的瓶颈从「答案对不对」转移到「推理可不可验证」,自验证是测试时算力扩展(开放问题无已知答案)的关键。**
+> **速览**:DeepSeek 的数学能力走两步——**DeepSeekMath 7B**(2024)用「120B 数学 token 数据管道 + GRPO 强化学习」在 MATH 上做到 51.7%,开创了「领域数据续训 + RL」的范式;两年后 **DeepSeekMath-V2**(2025)把数学推到「**自验证**」:不再只追最终答案正确率,而是训练一个 verifier(验真器)判定证明对不对,再用 verifier 当 reward model 训 generator,让模型生成前自己审自己的证明。结果:IMO 2025 金牌、CMO 2024 金牌、Putnam 2024 118/120(超人类最高 90 分)。**核心结论:数学推理的瓶颈从「答案对不对」转移到「推理可不可验证」,自验证是测试时算力扩展(开放问题无已知答案)的关键。**
 
 ---
 

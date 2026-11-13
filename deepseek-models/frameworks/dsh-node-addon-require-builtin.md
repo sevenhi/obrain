@@ -11,7 +11,7 @@ source:
 
 # dsh-node-addon-require-builtin — 不亮 `--expose-internals` 拿到 Node 私有 `requireBuiltin` 的原生插件
 
-> **TL;DR**:DeepSeek 为 [deepseek-harness](./deepseek-harness.md)(`dsh`)开的本机 Node 插件(DeepSeek Harness 的内部组件,2026-09-30 建仓)。它让普通进程**不需要 `node --expose-internals` 启动**就能拿到 Node 引导用的私有 `requireBuiltin()` 函数,从而加载 `internal/modules/cjs|esm/loader` 这类内部模块。做法不是纯公开 N-API:插件通过一个稳定的 N-API v9 入口加载,却要**探测私有 Node/V8 运行时态**——动态解析 `node::PrincipalRealm::builtin_module_require()` 符号 → 解析该 getter 的机器码拿到 Realm 字段偏移 → 读 V8 embedder-data 里的 Realm 指针 → 按平台 C++ 调用约定回调 getter → 用公开 N-API 校验返回的确是函数 → 再冒烟自检。**核心设计哲学是 fail-closed**:任何一步不满足运行时不变量就拒绝加载,绝不猜偏移、绝不加载未检验的内部模块。
+> **速览**:DeepSeek 为 [deepseek-harness](./deepseek-harness.md)(`dsh`)开的本机 Node 插件(DeepSeek Harness 的内部组件,2026-09-30 建仓)。它让普通进程**不需要 `node --expose-internals` 启动**就能拿到 Node 引导用的私有 `requireBuiltin()` 函数,从而加载 `internal/modules/cjs|esm/loader` 这类内部模块。做法不是纯公开 N-API:插件通过一个稳定的 N-API v9 入口加载,却要**探测私有 Node/V8 运行时态**——动态解析 `node::PrincipalRealm::builtin_module_require()` 符号 → 解析该 getter 的机器码拿到 Realm 字段偏移 → 读 V8 embedder-data 里的 Realm 指针 → 按平台 C++ 调用约定回调 getter → 用公开 N-API 校验返回的确是函数 → 再冒烟自检。**核心设计哲学是 fail-closed**:任何一步不满足运行时不变量就拒绝加载,绝不猜偏移、绝不加载未检验的内部模块。
 
 ## 1. 是什么 / 解决什么问题
 

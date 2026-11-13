@@ -13,7 +13,7 @@ reviewed: 2026-11-04
 
 # DeepSeek-R1 推理谱系:训练策略视角(R1-Zero → R1 → 蒸馏)
 
-> **TL;DR**:DeepSeek-R1 回答的问题是「**推理能力能不能不靠人工标注、纯靠强化学习(RL)逼出来?**」——答案是能。三步谱系:**① R1-Zero**:直接在 DeepSeek-V3-Base 上做大规模 RL(GRPO + 纯规则 reward),不用任何 SFT,AIME 2024 从 15.6% 一路涨到 71.0%,并自发涌现反思、长思维链(CoT)和「aha moment」,但可读性差、语言混杂;**② R1**:四阶段流水线(冷启动 SFT → 推理 RL → 拒采样 SFT → 全场景 RL),修好可读性,做到 AIME 79.8%、MATH-500 97.3%,对标 OpenAI-o1-1217;**③ 蒸馏**:用 R1 生成的 800k 样本对小 dense 模型只做 SFT,Distill-Qwen-32B 在 AIME 上 72.6% 反超 o1-mini,且**蒸馏打赢了对同规模模型直接做 RL**(72.6 vs 47.0)。**核心结论:推理 RL 的事实标准配方 = GRPO + 规则 reward + 冷启动;小模型学推理,抄大模型的推理轨迹比自己 RL 更划算。**
+> **速览**:DeepSeek-R1 回答的问题是「**推理能力能不能不靠人工标注、纯靠强化学习(RL)逼出来?**」——答案是能。三步谱系:**① R1-Zero**:直接在 DeepSeek-V3-Base 上做大规模 RL(GRPO + 纯规则 reward),不用任何 SFT,AIME 2024 从 15.6% 一路涨到 71.0%,并自发涌现反思、长思维链(CoT)和「aha moment」,但可读性差、语言混杂;**② R1**:四阶段流水线(冷启动 SFT → 推理 RL → 拒采样 SFT → 全场景 RL),修好可读性,做到 AIME 79.8%、MATH-500 97.3%,对标 OpenAI-o1-1217;**③ 蒸馏**:用 R1 生成的 800k 样本对小 dense 模型只做 SFT,Distill-Qwen-32B 在 AIME 上 72.6% 反超 o1-mini,且**蒸馏打赢了对同规模模型直接做 RL**(72.6 vs 47.0)。**核心结论:推理 RL 的事实标准配方 = GRPO + 规则 reward + 冷启动;小模型学推理,抄大模型的推理轨迹比自己 RL 更划算。**
 >
 > **视角分工(先读这条)**:本篇讲 R1 的**训练策略/RL 谱系**(怎么训出来的)。R1 **没有任何新网络结构**(底座就是 V3-Base 的 MLA+MoE),结构侧解读见 [model-architecture/concepts/deepseek-arch-v32-r1.md](../../model-architecture/concepts/deepseek-arch-v32-r1.md)(该篇结论同样是「R1 无新结构,是 V3-Base 上的纯 RL 推理时扩展」),两篇不重复。
 

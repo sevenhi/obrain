@@ -12,7 +12,7 @@ date: 2026-09
 
 > 本文由 `notes/vllm-quantization-gptq-awq-fp8-notes.md` 深度提炼而成(**notes 已删,以源码 commit b74ac0bc6 为准**)。源码基准 commit `b74ac0bc61d8b8f74848664b1a3b4e878f047861`(v0.28.1rc0-40,2026-08-28)。全文 path:line 均为实际代码位置。
 
-## TL;DR
+## 速览
 
 vLLM 的量化是"**一条分派链 + 三个决策点**":用户/checkpoint 声明量化方法 → **注册表 `get_quantization_config()`** 映射到 Config 类 → **Config 按层类型分派 `get_quant_method()`** 到对应的 LinearMethod/MoE/KV-cache 实现 → **LinearMethod 选 kernel 后端**(int4/int8 走 Marlin/Triton,FP8 走 CUTLASS/DeepGEMM)。
 

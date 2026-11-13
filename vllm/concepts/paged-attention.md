@@ -12,7 +12,7 @@ date: 2026-09
 
 # PagedAttention 与分页 KV Cache
 
-## TL;DR
+## 速览
 
 **PagedAttention 把 KV cache 当成 OS 的虚拟内存来管**:物理块固定(默认 16 token/层),每个序列一张 **block table** 把逻辑位置映射到物理块,按需从全局块池懒分配。这一层"间接寻址"把 KV cache 的利用率从 naive 连续分配的 **~33% 提到 ~84%**(zeroentropy 玩具演示,对应 ~2.5× 并发),并构成 vLLM **相对 Orca(同为迭代级调度的整机)拿到 2-4× 同延迟吞吐提升**(论文实测)的**主要来源**(相比 HF 静态批处理的 14-24× 是另一口径全引擎收益(vs FasterTransformer/Orca 则是 2-4×),见 [continuous-batching.md](continuous-batching.md))。这层"间接寻址"还把跨请求前缀共享变成页表上的一个引用计数而不是架构改动。它同时是 vLLM 吞吐神话的**地基**(连续批处理、prefix caching、抢占全建立在"块可独立分配/释放"之上)。
 

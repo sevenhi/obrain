@@ -13,7 +13,7 @@ date: 2026-10
 
 # PD 分离：Prefill/Decode 解耦的服务架构与部署清单
 
-## TL;DR
+## 速览
 
 PD 分离（Prefill/Decode Disaggregation）把 **compute-bound 的 prefill** 与 **memory-bound 的 decode** 拆到不同实例乃至不同设备上，是 2025–26 在线服务架构的最大主题。收益是 TTFT 与 TPOT 可独立优化、算力与带宽各自贴合负载、吞吐/延迟 SLO 同时改善；代价是 **KV cache 跨实例传输**、调度与路由复杂度、以及多一套故障面。它不是 continuous batching / chunked prefill 的替代品，而是更硬的一层分离——先弄清瓶颈在算力还是带宽，再决定要不要拆。
 

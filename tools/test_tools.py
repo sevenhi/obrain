@@ -25,7 +25,7 @@ class ToolTests(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         return path
 
-    def article(self, metadata="source: [web]\ndate: 2026-11", body="## TL;DR\nSummary."):
+    def article(self, metadata="source: [web]\ndate: 2026-11", body="## 速览\nSummary."):
         self.write("topic/index.md", "---\ntitle: Topic\ntype: domain\ntags: [x]\n---\n[entry](concepts/entry.md)\n")
         return self.write("topic/concepts/entry.md", f"---\ntitle: Entry\ntype: concept\ntags: [x]\n{metadata}\n---\n{body}\n")
 
@@ -49,8 +49,8 @@ class ToolTests(unittest.TestCase):
         self.assertTrue(any("unsupported type" in issue for issue in validate_source(self.root)))
 
     def test_source_requires_tldr_outside_code(self):
-        self.article(body="```md\n## TL;DR\n```")
-        self.assertTrue(any("missing TL;DR" in issue for issue in validate_source(self.root)))
+        self.article(body="```md\n## 速览\n```")
+        self.assertTrue(any("missing 速览" in issue for issue in validate_source(self.root)))
 
     def test_source_notes_exemption(self):
         self.article()
@@ -63,7 +63,7 @@ class ToolTests(unittest.TestCase):
         self.assertTrue(any("does not index" in issue for issue in validate_source(self.root)))
 
     def test_source_missing_link(self):
-        self.article(body="## TL;DR\nSummary. [bad](missing.md)")
+        self.article(body="## 速览\nSummary. [bad](missing.md)")
         self.assertTrue(any("missing source target" in issue for issue in validate_source(self.root)))
 
     def test_built_anchor_iframe_and_directory_index(self):

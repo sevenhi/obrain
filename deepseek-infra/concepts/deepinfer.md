@@ -17,7 +17,7 @@ source:
 
 **按任务跳读**：[开源边界](#reading-scope) · [调度机制](#reading-scheduling) · [KV 状态与存储](#reading-cache) · [benchmark 口径](#reading-benchmark) · [与 vLLM 对照](#reading-comparison)。部署与性能数字是文中指定来源/版本的记录，不等同于本地复现结论。
 
-## TL;DR
+## 速览
 
 **DeepInfer 是 DeepSeek 自家大规模生产推理框架的首次开源**(2026-10-20),服务 DeepSeek-V4.1-Flash,同时支持 NVIDIA SM100 GPU 与昇腾 950 NPU。README Acknowledgment 明写它**最初主要基于 vLLM 构建**,另受 SGLang / TensorRT-LLM 启发——但它不是通用 serving 框架的 fork 维护版,而是围绕 DeepSeek 生产条件(EPD 分离、Wide-EP、低精度 KV、多厂商硬件)深度改造的**单模型引擎**:开源版只支持 V4.1-Flash 一个模型,且 KV cache 存储客户端与跨 DP 负载均衡器**不在开源范围内**(README「Required for a complete inference service (not included)」)。
 

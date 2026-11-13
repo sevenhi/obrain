@@ -11,7 +11,7 @@ date: 2026-10
 
 # Speculators 草稿模型训练与评测
 
-> **TL;DR**：Speculators 是 vLLM 社区的**草稿模型（draft model / speculator）端到端训练框架**：用 vLLM 生成训练数据与 verifier hidden states，训练 EAGLE-3 / MTP / DFlash / DSpark / P-EAGLE 等草稿模型，导出为 HF 兼容格式后直接在 vLLM 里做投机解码。它把「论文里的 draft 训练脚本」产品化成可复用流水线；**加速收益的唯一硬指标是接受率与接受长度**，训练只是手段。
+> **速览**：Speculators 是 vLLM 社区的**草稿模型（draft model / speculator）端到端训练框架**：用 vLLM 生成训练数据与 verifier hidden states，训练 EAGLE-3 / MTP / DFlash / DSpark / P-EAGLE 等草稿模型，导出为 HF 兼容格式后直接在 vLLM 里做投机解码。它把「论文里的 draft 训练脚本」产品化成可复用流水线；**加速收益的唯一硬指标是接受率与接受长度**，训练只是手段。
 
 ## 1. 原理回顾：为什么需要草稿模型
 

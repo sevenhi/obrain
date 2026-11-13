@@ -13,7 +13,7 @@ date: 2026-10
 
 # vLLM Router:高性能请求路由与负载均衡
 
-## TL;DR
+## 速览
 
 vLLM Router 是面向大规模 vLLM 部署的**轻量高性能请求转发层**(Rust 实现,另有 `vllm-router` Python 包)。它解决的核心问题很简单:**多份 vLLM 副本摆在那,一个请求该发给谁**。答案不是轮询就完事——LLM 负载有「会话亲和」「前缀缓存命中」「prefill/decode 异构」这些通用网关看不见的结构;Router 用一组针对性策略把这些结构吃掉。
 

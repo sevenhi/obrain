@@ -11,7 +11,7 @@ date: 2026-09
 
 # Transformer:纯注意力序列转导架构(2017)
 
-## TL;DR
+## 速览
 
 Transformer(原论文《Attention Is All You Need》,Vaswani et al., NIPS 2017)是**第一个完全抛弃 recurrence 和 convolution、仅靠 self-attention 构建的序列转导模型**。核心组件三件套:**缩放点积注意力**(softmax(QKᵀ/√d)V)+ **多头机制**(h 份低维投影并行,弥补单头平均化的分辨率损失)+ **位置编码**(正弦函数注入顺序信息)。收益:任意两位置的路径长度 O(1)(RNN 是 O(n))、每层可完全并行(sequential operations O(1))。WMT14 EN-DE 28.4 BLEU / EN-FR 41.8 BLEU,当时 SOTA,且训练成本只有先前最佳模型的零头(big 模型 2.3×10¹⁹ FLOPs,8×P100 训 3.5 天)。后续 BERT/GPT/LLaMA/vision 全部是它的直系后代。
 

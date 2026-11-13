@@ -10,7 +10,7 @@ date: 2026-10
 
 # ESFT — 专家特化微调(Expert-Specialized Fine-Tuning)
 
-## TL;DR
+## 速览
 
 **ESFT(Expert-Specialized Fine-Tuning)** 是 DeepSeek 的 MoE 高效微调方法(EMNLP 2024 Main Conference):**只微调与目标任务相关的 expert,冻结其余部分**,从而用更少的资源和存储高效定制 LLM。
 

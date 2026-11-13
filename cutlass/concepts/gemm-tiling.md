@@ -13,7 +13,7 @@ date: 2026-09
 
 # CUTLASS 分层 GEMM:把一次矩阵乘拆给 GPU 的每一层硬件
 
-## TL;DR
+## 速览
 
 GPU 上做一次矩阵乘 `C(M×N) = A(M×K) · B(K×N)`,不是把整块矩阵丢给一个"魔法函数"。CUTLASS 的核心是把这次计算**沿硬件并发层级层层分块(tiling)**,每一层 tile 对应一种并发粒度(threadblock / warp / Tensor Core),同时靠 shared memory 与 registers 两层局部性喂饱计算单元。
 

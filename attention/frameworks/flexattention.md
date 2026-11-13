@@ -20,7 +20,7 @@ date: 2026-10
 
 > 定位:本篇是 attention 域的**框架/工具层**(frameworks/)第一篇,讲「用户怎么用一个 API 声明任意注意力变体、编译器怎么自动把它落成高效 GPU 内核」。FA 内核本身四代怎么写的,见互补篇 [../implementation/flash-attention-implementation.md](../implementation/flash-attention-implementation.md);CuTe Layout 代数等底座概念见 [../../cutlass/index.md](../../cutlass/index.md)。
 
-## 0. TL;DR(30 秒)
+## 0. 速览(30 秒)
 
 - **FlexAttention 是 PyTorch 的一个 API**(`torch.nn.attention.flex_attention`):你用几行普通 Python 写一个 `score_mod`(改注意力分数)和/或 `mask_mod`(决定哪些位置不参与计算),`torch.compile` 就自动把它编译成**融合的 FlashAttention 风格内核**(不物化 N×N 中间矩阵),并**自动生成反向传播**——不用写一行 CUDA。(来源:PyTorch FlexAttention 官方博客,2024-08)
 - 机制上它只做了两件事:**① pre-softmax 分数的逐点修改(pointwise score modification,可带任意全局内存加载);② 前向+反向的块稀疏迭代(block-sparse iteration,用 BlockMask 数据结构编码运行时 data-dependent 稀疏)**。(来源:FA4 博客 recap 节)

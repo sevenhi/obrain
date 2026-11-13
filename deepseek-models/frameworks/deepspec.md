@@ -12,7 +12,7 @@ source:
 
 # DeepSpec — 投机解码草稿模型的训练与评测全栈
 
-> **TL;DR**:DeepSpec 是 DeepSeek 开源的**投机解码草稿模型(draft model)训练与评测全栈**,覆盖「数据准备 → 训练 → 评测」三阶段。内置三种草稿模型算法:**DSpark**(自研,confidence-scheduled + 半自回归)、**DFlash**、**Eagle3**。可对任意目标模型(Qwen3 / Gemma 等)训练草稿模型,在 gsm8k/math500/aime25/humaneval 等基准上量 acceptance。与库内 V3 的 MTP、[`vllm` 投机解码](../../vllm/concepts/speculative-decoding.md)同属「多 token / 草稿加速」谱系——DeepSpec 负责**把草稿模型练出来**,vLLM 负责**把投机解码跑起来**。
+> **速览**:DeepSpec 是 DeepSeek 开源的**投机解码草稿模型(draft model)训练与评测全栈**,覆盖「数据准备 → 训练 → 评测」三阶段。内置三种草稿模型算法:**DSpark**(自研,confidence-scheduled + 半自回归)、**DFlash**、**Eagle3**。可对任意目标模型(Qwen3 / Gemma 等)训练草稿模型,在 gsm8k/math500/aime25/humaneval 等基准上量 acceptance。与库内 V3 的 MTP、[`vllm` 投机解码](../../vllm/concepts/speculative-decoding.md)同属「多 token / 草稿加速」谱系——DeepSpec 负责**把草稿模型练出来**,vLLM 负责**把投机解码跑起来**。
 
 ## 1. 是什么
 

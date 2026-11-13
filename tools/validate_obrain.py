@@ -14,7 +14,7 @@ import yaml
 
 ROOT_EXEMPT = {"README.md", "DEPLOY.md", "DIAGRAM-INDEX.md", "OPTIMIZATION-SUMMARY.md"}
 FENCE_RE = re.compile(r"(?ms)^[ \t]*(`{3,}|~{3,})[^\n]*\n.*?^[ \t]*\1[ \t]*$")
-TLDR_RE = re.compile(r"(?mi)^(?:#{2,3}\s*(?:\d+[.、]?\s*)?TL;DR|>\s*(?:\*\*)?\s*TL;DR)")
+TLDR_RE = re.compile(r"(?mi)^(?:#{2,3}\s*(?:\d+[.、]?\s*)?(?:TL;DR|速览(?:\([^)\n]*\))?)|>\s*(?:\*\*)?\s*(?:TL;DR|速览))")
 ARTICLE_TYPES = {"concept", "case", "checklist", "howto", "reference", "domain", "comparison"}
 
 
@@ -90,7 +90,7 @@ def validate_source(root: Path) -> list[str]:
             if not isinstance(metadata.get("type"), str) or metadata["type"] not in ARTICLE_TYPES:
                 failures.append(f"{rel}: unsupported type {metadata.get('type')}")
         if is_article(root, path) and not TLDR_RE.search(FENCE_RE.sub("", body)):
-            failures.append(f"{rel}: missing TL;DR")
+            failures.append(f"{rel}: missing 速览 (TL;DR) section")
         for target in source_links(body):
             if is_external(target):
                 continue

@@ -16,7 +16,7 @@ date: 2026-10
 
 > **主线定位**:本代是 DeepSeek 谱系的**奠基段**——注意力 `MHA → GQA → MLA`、FFN `dense → 稀疏 MoE` 两条主线的起点与第一次合流。完整演进总览(逐代对照 + 代际 diff 总表 + 演进方向分析)见主篇 [deepseek-model-evolution](deepseek-model-evolution.md);后续 V3(MLA 规模化 + MTP + aux-loss-free)与 V3.2+R1(DSA 破 O(n²))见 [deepseek-arch-v3](deepseek-arch-v3.md)、[deepseek-arch-v32-r1](deepseek-arch-v32-r1.md)。
 
-> **TL;DR**：三代结构沿两条主线演进——**注意力**从 `MHA → GQA → MLA`（低秩压缩 KV cache），**FFN** 从 `dense → 稀疏 MoE（细粒度专家 + 共享专家）`。V1 是标准 dense decoder-only Transformer（7B 纯 MHA，67B 已用 GQA）；DeepSeekMoE 在 dense 骨架上把 FFN 换成「细粒度 + 共享专家」的稀疏 MoE；V2 同时引入 **MLA（Multi-head Latent Attention，KV 低秩压缩 + 解耦 RoPE）** 和 **DeepSeekMoE**，总参 236B / 激活 21B，KV cache 比 V1 67B 降 93.3%，训练成本省 42.5%。一句话主线：**算力(FLOPs)与显存(KV cache)双重约束下，用稀疏省算力、用低秩省显存，始终追求「训练质量-部署效率」双目标。**
+> **速览**：三代结构沿两条主线演进——**注意力**从 `MHA → GQA → MLA`（低秩压缩 KV cache），**FFN** 从 `dense → 稀疏 MoE（细粒度专家 + 共享专家）`。V1 是标准 dense decoder-only Transformer（7B 纯 MHA，67B 已用 GQA）；DeepSeekMoE 在 dense 骨架上把 FFN 换成「细粒度 + 共享专家」的稀疏 MoE；V2 同时引入 **MLA（Multi-head Latent Attention，KV 低秩压缩 + 解耦 RoPE）** 和 **DeepSeekMoE**，总参 236B / 激活 21B，KV cache 比 V1 67B 降 93.3%，训练成本省 42.5%。一句话主线：**算力(FLOPs)与显存(KV cache)双重约束下，用稀疏省算力、用低秩省显存，始终追求「训练质量-部署效率」双目标。**
 
 ---
 

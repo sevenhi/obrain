@@ -12,7 +12,7 @@ date: 2026-10-19
 
 # DeepJIT — xPU kernel 运行时 JIT 编译
 
-## TL;DR
+## 速览
 
 **DeepJIT 是一个轻量、header-only 的 C++20 JIT 运行时**,同时支持 **NVIDIA CUDA GPU** 与 **华为昇腾 NPU** 两种后端,给 C++/Python 扩展作者一个统一接口:运行时编译 kernel 源码 → 缓存编译产物(内存 + 磁盘)→ 加载到设备 → 按后端特定选项 launch。DeepSeek 的 DeepGEMM、DeepEP、DeepGEMM-Ascend、DeepEP-Ascend、TileKernels 等库都用它做运行时编译,从而**安装阶段零 CUDA/CANN 编译**。
 

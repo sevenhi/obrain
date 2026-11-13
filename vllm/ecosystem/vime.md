@@ -11,7 +11,7 @@ date: 2026-10
 
 # Vime：vLLM rollout 的 RL 后训练框架
 
-> **TL;DR**：Vime 是 vLLM 社区的 **RL scaling 后训练框架**，从 slime 演化而来：训练侧保留 **Megatron**，rollout（数据生成）侧默认换成 **vLLM + vllm-router**。它解决的是「RL 后训练里采样要占多少 GPU、采样与训练怎么耦合」这一工程问题——用 vLLM 做高性能生成，用 Megatron 做高效训练，中间用 Data Buffer 与权重同步把闭环接起来。同步（`train.py`）与异步（`train_async.py`）是两种吞吐/稳定性的折中，不是两个功能。
+> **速览**：Vime 是 vLLM 社区的 **RL scaling 后训练框架**，从 slime 演化而来：训练侧保留 **Megatron**，rollout（数据生成）侧默认换成 **vLLM + vllm-router**。它解决的是「RL 后训练里采样要占多少 GPU、采样与训练怎么耦合」这一工程问题——用 vLLM 做高性能生成，用 Megatron 做高效训练，中间用 Data Buffer 与权重同步把闭环接起来。同步（`train.py`）与异步（`train_async.py`）是两种吞吐/稳定性的折中，不是两个功能。
 
 ## 1. 为什么 RL 后训练要用 vLLM 做 rollout
 

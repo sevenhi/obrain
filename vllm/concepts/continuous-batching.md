@@ -18,7 +18,7 @@ date: 2026-09
 
 # 连续批处理(Continuous Batching)与统一 Token 预算调度
 
-## TL;DR
+## 速览
 
 **连续批处理 = 迭代级(iteration-level)调度**:不是"一批一起算完再换下一批",而是**每一步都重新调度整个 batch**——完成的请求立刻移出、等待中的新请求按预算补进来、运行中请求再续 1 个 token。配合 V1 的**统一 token 预算模型**,decode + prefill 在同一 step 混批(且 prefill 被 chunk;**V1 里 chunked prefill 条件允许即默认开启**,V0 是按模型特性条件启用),尽量(至多)把 GPU 每一轮填到 `max_num_batched_tokens`(默认 2048;低负载时填不满)。
 
@@ -50,7 +50,7 @@ date: 2026-09
 1. **等待浪费**:请求要攒够一批才开跑(延迟 + 吞吐双输);
 2. **decode 浪费**:batch 里请求步调不一致,短的先结束,GPU 越跑越空;decode 每请求每步只产 1 token,算术强度极低,GPU 在"算一点、等很多"。
 
-**ORCA 论文(2022)提出 iteration-level scheduling**:每次迭代都把新到达的请求加进正在跑的 batch、把完成的移出——这就是"连续批处理"的雏形。vLLM 是第一个把"连续批处理 + 分页 KV cache"做成**工业可用引擎**的(整机 vs Orca 2-4×,增量主要来自分页内存管理,见 TL;DR 口径)。
+**ORCA 论文(2022)提出 iteration-level scheduling**:每次迭代都把新到达的请求加进正在跑的 batch、把完成的移出——这就是"连续批处理"的雏形。vLLM 是第一个把"连续批处理 + 分页 KV cache"做成**工业可用引擎**的(整机 vs Orca 2-4×,增量主要来自分页内存管理,见速览口径)。
 
 ---
 

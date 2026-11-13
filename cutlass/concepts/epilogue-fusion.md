@@ -11,7 +11,7 @@ date: 2026-09
 
 # CUTLASS Epilogue:主循环悄悄干完的那些事
 
-## TL;DR
+## 速览
 
 **Epilogue(收尾)** 是 GEMM/卷积主循环(mainloop)算完 `C = A·B` 之后、把结果写回内存之前的所有后处理:`D = alpha·accumulator + beta·C`,以及和 bias / ReLU / GELU / softmax / layer-norm 等的**融合**。
 

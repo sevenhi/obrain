@@ -12,7 +12,7 @@ date: 2026-09
 
 > 本文由 `notes/vllm-distributed-ray-notes.md` 深度提炼而成(**notes 已删,以源码 commit b74ac0bc6 为准**)。源码基准 commit `b74ac0bc6`(v0.28.1rc0-40,2026-08-28)。path:line 均实际验证;notes 中标注"未深入"的(parallel_state 函数体、ColumnParallel 切分)在本文以"边界"明示,不推测。
 
-## TL;DR
+## 速览
 
 vLLM 的分布式执行是"**一层抽象 + 三条后端**":顶层 **`Executor` 抽象**(`vllm/v1/executor/abstract.py`)按 `distributed_executor_backend` 分派到 **UniProcExecutor(单卡)/ MultiprocExecutor(单节点多卡)/ RayDistributedExecutor(跨节点)**。跨节点走 Ray 时,真正的复杂度在**三件事**:① 用 placement group 为每个 rank 创建 Worker actor;② **重排 rank 以优化通信局部性**(driver 同节点优先、同节点 worker 数少者优先);③ 用 TCP rendezvous 地址 + 固定初始化序列建通信组。
 

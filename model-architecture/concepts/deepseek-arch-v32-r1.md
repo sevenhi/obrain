@@ -17,7 +17,7 @@ date: 2026-10
 
 > **主线定位**:本代是 DeepSeek 谱系的**破 O(n²)** 段——**唯一结构增量是 DSA 稀疏注意力**,以及正交支线 R1(纯 RL 推理时扩展,不动结构)。完整演进总览见主篇 [deepseek-model-evolution](deepseek-model-evolution.md);奠基段 V1/DeepSeekMoE/V2 见 [deepseek-arch-v1-moe-v2](deepseek-arch-v1-moe-v2.md);V3(规模 + MTP + aux-loss-free)见 [deepseek-arch-v3](deepseek-arch-v3.md)。
 
-## TL;DR
+## 速览
 
 **DeepSeek-V3.2-Exp 相对 V3.1-Terminus(即 V3 谱系)的唯一结构增量是 DSA(DeepSeek Sparse Attention,深度稀疏注意力)**,由**闪电索引器(Lightning Indexer)+ 细粒度 top-k token 选择**构成:索引器用一组**极轻量、FP8 可实现**的小头(`index_n_heads=64`、`index_head_dim=128`)计算索引分数 `I_{t,s} = Σ_j w^I_{t,j}·ReLU(q^I_{t,j}·k^I_s)`,选出每个 query 要 attend 的 **top-k=2048** 个 KV 条目,主注意力只对稀疏选中的 KV 做 MQA,把核心注意力复杂度从 **O(L²) 降到 O(L·k)**。**R1 没有新网络结构**——它是 V3-Base 上的纯 RL 推理时扩展(冷启动 + GRPO + 蒸馏)。
 

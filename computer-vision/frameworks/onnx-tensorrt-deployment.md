@@ -14,7 +14,7 @@ date: 2026-09
 
 # 视觉模型部署：PyTorch → ONNX → TensorRT / ONNX Runtime
 
-> **TL;DR**：部署不是“导出 ONNX 后就结束”。可靠流程是：固定模型与预处理 → 导出 → ONNX 图和数值验证 → 选择 runtime/backend → 构建并缓存 engine → 在目标输入形状上测准确率、延迟、吞吐、显存和稳定性。ONNX Runtime 适合作为跨平台基线和 Execution Provider 抽象；TensorRT 适合 NVIDIA GPU 上的深度优化，但 engine 与 TensorRT/CUDA/GPU 兼容性必须纳入发布物。
+> **速览**：部署不是“导出 ONNX 后就结束”。可靠流程是：固定模型与预处理 → 导出 → ONNX 图和数值验证 → 选择 runtime/backend → 构建并缓存 engine → 在目标输入形状上测准确率、延迟、吞吐、显存和稳定性。ONNX Runtime 适合作为跨平台基线和 Execution Provider 抽象；TensorRT 适合 NVIDIA GPU 上的深度优化，但 engine 与 TensorRT/CUDA/GPU 兼容性必须纳入发布物。
 
 ## 1. 两条部署路线
 

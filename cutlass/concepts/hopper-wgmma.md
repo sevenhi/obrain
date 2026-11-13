@@ -13,7 +13,7 @@ date: 2026-09
 
 # Hopper WGMMA:一条指令,一个 warpgroup,64×N×16
 
-## TL;DR
+## 速览
 
 **WGMMA**(`wgmma.mma_async`)是 Hopper(SM90)引入的 **warpgroup 级异步矩阵乘累加**指令:**4 个连续 warp(= 128 连续线程,首 warp 的 rank 是 4 的倍数)协同**执行一次 `C = A*B + C`(或禁用 C 输入的 `C = A*B`),累加器留在寄存器里跨指令复用。
 

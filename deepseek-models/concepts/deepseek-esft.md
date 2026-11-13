@@ -11,7 +11,7 @@ date: 2026-10
 
 # DeepSeek ESFT — 专家专精微调(模型领域视角:机制与源码)
 
-> **TL;DR**:ESFT(Expert-Specialized Fine-Tuning,EMNLP 2024)回答的问题是「**MoE 大模型做领域微调,能不能只动一小部分参数?**」——答案是:MoE 每层只激活少数专家,一个任务其实只重度依赖「一小撮专家」,**先统计任务数据上每个专家的激活分,再只解冻这批专家训练,其余全部冻结**。实现上极其轻巧:esft.py 用 PyTorch 的 `parameter ↔ buffer` 互换来开关「可训练」状态(冻结 = 把 nn.Parameter 降级成 buffer,优化器就看不见它),按层按专家 ID 查配置表决定谁升回 parameter。效果:少训参数、少存 checkpoint(adapter 只含被训专家的权重差异)、性能不打折。**一句话:把 PEFT「低秩旁路」的思路换成「按专家挑选」,让稀疏结构自己告诉你该训谁。**
+> **速览**:ESFT(Expert-Specialized Fine-Tuning,EMNLP 2024)回答的问题是「**MoE 大模型做领域微调,能不能只动一小部分参数?**」——答案是:MoE 每层只激活少数专家,一个任务其实只重度依赖「一小撮专家」,**先统计任务数据上每个专家的激活分,再只解冻这批专家训练,其余全部冻结**。实现上极其轻巧:esft.py 用 PyTorch 的 `parameter ↔ buffer` 互换来开关「可训练」状态(冻结 = 把 nn.Parameter 降级成 buffer,优化器就看不见它),按层按专家 ID 查配置表决定谁升回 parameter。效果:少训参数、少存 checkpoint(adapter 只含被训专家的权重差异)、性能不打折。**一句话:把 PEFT「低秩旁路」的思路换成「按专家挑选」,让稀疏结构自己告诉你该训谁。**
 >
 > **归属说明(先读这条)**:ESFT 的**操作流程/脚本用法/实践坑**已入库在 [deepseek-infra/concepts/esft.md](../../deepseek-infra/concepts/esft.md)(infra 域,「微调怎么省」环节)。本篇是**模型领域视角**:讲清它作为 DeepSeek MoE 谱系一环的「专家专精」思想、esft.py 的源码机制(parameter↔buffer 开关)、专家打分与 top_p 选专家算法。两篇互链、不重复:想上手跑脚本看 infra 篇,想懂「为什么这么设计、代码里发生了什么」看本篇。
 

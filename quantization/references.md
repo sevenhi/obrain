@@ -11,6 +11,8 @@ date: 2026-11
 
 ## 论文(arXiv)
 
+- MXAttention: Data-Free Optimal Scaling and Pre-Normalization Quantization for MXFP4 Attention — [arXiv:2607.24377](https://arxiv.org/abs/2607.24377)
+
 - HyQuant — [arXiv:2608.27875v3](https://arxiv.org/abs/2608.27875v3)(EMNLP 2026 Main)
 - SpQR — [arXiv:2306.03078](https://arxiv.org/abs/2306.03078)(ICLR 2024)
 - GPTQ — [arXiv:2210.17323](https://arxiv.org/abs/2210.17323)
@@ -80,6 +82,8 @@ date: 2026-11
 - ICLR 2024 SpQR poster(发表状态) — https://iclr.cc/virtual/2024/poster/18686
 
 ### FP8/FP4 格式(2026-10 补)
+
+- Huawei MindIE-SD MXAttention implementation — https://gitcode.com/Ascend/MindIE-SD/tree/master/mindiesd
 
 - DeepSeek-V3 Technical Report — https://arxiv.org/abs/2412.19437
 - OCP Microscaling Formats (MX) Specification — https://www.opencompute.org/documents/ocp-microscaling-formats-mx-v1-0-spec-final-pdf

@@ -17,6 +17,7 @@ date: 2026-11
 - SpAtten: Efficient Sparse Attention Architecture with Cascade Token and Head Pruning — https://arxiv.org/abs/2012.09852 (HPCA 2021;IEEE Xplore doc 9407256 对 curl 返回 202 反爬,以 arXiv 为准)
 - MEGABYTE: Predicting Million-byte Sequences with Multiscale Transformers — https://arxiv.org/abs/2305.07185 (NeurIPS 2023)
 - FlashAttention FA1 — https://arxiv.org/abs/2205.14135;FA2 — https://arxiv.org/abs/2307.08691;FA3 — https://arxiv.org/abs/2407.08608;FA4 (MLSys 2026) — arXiv:2603.05451(四代全部链接/博客口径见 [implementation/flash-attention-implementation.md](implementation/flash-attention-implementation.md) §7 溯源)
+- MXAttention: Data-Free Optimal Scaling and Pre-Normalization Quantization for MXFP4 Attention — https://arxiv.org/abs/2607.24377 (UOS/PNQ, 2026-07)
 - Self-Attention does not Need O(n²) Memory (Rabe & Staats, FA1 前驱) — https://arxiv.org/abs/2112.05682
 - Rabe & Staats v3 §5.3(evaluation accuracy 与 BLEU 是不同指标) — https://arxiv.org/html/2112.05682v3#S5.SS3
 - Online normalizer calculation for softmax (Milakov & Gimelshein, online softmax 最早出处) — https://arxiv.org/abs/1805.02867
@@ -31,6 +32,8 @@ date: 2026-11
 - StreamingLLM ICLR proceedings — https://proceedings.iclr.cc/paper_files/paper/2024/hash/5e5fd18f863cbe6d8ae392a93fd271c9-Abstract-Conference.html
 
 ## 项目页 / 代码
+
+- Huawei MindIE-SD MXAttention implementation — https://gitcode.com/Ascend/MindIE-SD/tree/master/mindiesd
 
 - StreamingLLM 项目页(MIT Han Lab)— https://hanlab.mit.edu/projects/streamingllm
 - StreamingLLM 代码 — https://github.com/mit-han-lab/streaming-llm

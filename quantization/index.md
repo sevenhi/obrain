@@ -24,7 +24,7 @@ date: 2026-11
 
 # 量化与压缩
 
-**按任务进入**:[PTQ 算法](concepts/ptq-gptq-awq-smoothquant.md) · [KV 量化](concepts/kv-cache-quantization.md) · [FP8/FP4 数值与 scale](concepts/fp8-fp4-formats.md) · [MoE 逐层校准](concepts/moe-gptq-layerwise-calibration.md) · [专家并行校准](concepts/expert-parallel-ptq-calibration.md) · [fake-quant 验收](concepts/vllm-fakequant-eval-export.md) · [来源](references.md)。
+**按任务进入**:[PTQ 算法](concepts/ptq-gptq-awq-smoothquant.md) · [KV 量化](concepts/kv-cache-quantization.md) · [FP8/FP4 数值与 scale](concepts/fp8-fp4-formats.md) · [MXAttention UOS/PNQ](../attention/implementation/mxattention-mxfp4.md) · [MoE 逐层校准](concepts/moe-gptq-layerwise-calibration.md) · [专家并行校准](concepts/expert-parallel-ptq-calibration.md) · [fake-quant 验收](concepts/vllm-fakequant-eval-export.md) · [来源](references.md)。
 
 **数值边界**:per-tensor 是每张量而非整网共享 scale;粒度与 Delayed/JIT 更新时间策略分开。E4M3 最小正规数 2^-6、最小非零子正规数 2^-9,实际下溢还要看 scale、舍入与 kernel 的 flush-to-zero。
 
@@ -55,6 +55,7 @@ date: 2026-11
 
 - [vLLM 量化:GPTQ / AWQ / FP8](../vllm/concepts/quantization-gptq-awq-fp8.md)——**engine 视角**:量化的注册/分派/内核集成如何在推理引擎里落地;本领域是**算法视角**(怎么量化、误差怎么控制),两者互补。
 - [attention/flash-attention-implementation](../attention/implementation/flash-attention-implementation.md)——FA3 的 FP8 block-quantize(Q/K/V 分块量化 + incoherent processing)是"量化进 attention kernel"的实例;HyQuant 的 dequantize-in-attention 同属此路线。
+- [attention/MXAttention](../attention/implementation/mxattention-mxfp4.md)——MXFP4 attention 的格式特例：UOS 处理 E8M0 边界，PNQ 处理 online-softmax 行和；本域格式篇只讲 MXFP4/NVFP4 定义，不重复其推导。
 - SpQR 的推理 kernel(稀疏 CSR matmul + dense 3/4-bit matmul)是 CUTLASS 域 GEMM 定制的应用场景(参见 [cutlass/](../cutlass/index.md))。
 
 ## 已知缺口

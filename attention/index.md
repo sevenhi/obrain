@@ -16,7 +16,7 @@ date: 2026-11
 
 # Attention(算法层 algorithm/ + 实现层 implementation/ + 框架层 frameworks/)
 
-**快速入口**:[Transformer 基础](algorithm/attention-is-all-you-need.md) · [流式 KV](algorithm/attention-sinks-streaming.md) · [精确省显存谱系](algorithm/exact-attention-memory-lineage.md) · [FA 四代内核](implementation/flash-attention-implementation.md) · [FlexAttention 接口](frameworks/flexattention.md) · [来源](references.md)。
+**快速入口**:[Transformer 基础](algorithm/attention-is-all-you-need.md) · [流式 KV](algorithm/attention-sinks-streaming.md) · [精确省显存谱系](algorithm/exact-attention-memory-lineage.md) · [FA 四代内核](implementation/flash-attention-implementation.md) · [MXAttention FP4](implementation/mxattention-mxfp4.md) · [FlexAttention 接口](frameworks/flexattention.md) · [来源](references.md)。
 
 > 领域索引(导航起始页)。**领域知识本体分三层目录:`algorithm/`(理论/算法)、`implementation/`(GPU 内核/工程)与 `frameworks/`(用户编程接口/编译器后端)**,每篇一个专题、可独立打开读懂;本页放定位、关键事实与导航,不重复正文。外部链接索引见 [references.md](references.md)。
 > 沿革:2026-09 由原 `attention-and-transformers` 与 `flash-attention` 两域合并;同月二次整合——concepts 平铺改为 algorithm/implementation 两层,三篇 FA 内核篇(io-aware-tiling/work-partitioning/fa3-hopper-async)合成为一篇 `implementation/flash-attention-implementation.md`,LLaMA 架构篇移出为独立域 [`model-architecture/`](../model-architecture/index.md)(扩展为通用 LLM 架构篇)。
@@ -35,11 +35,12 @@ date: 2026-11
 | [megabyte-multiscale](algorithm/megabyte-multiscale.md) | concept | 多尺度分解:Global(patch 间)+ Local(patch 内字节),attention O(T^4/3)、FFN per-patch → 同算力 P 倍大模型;tokenization-free 追平 subword | ✅ 已入库 |
 | [exact-attention-memory-lineage](algorithm/exact-attention-memory-lineage.md) | concept | FA 前驱:Rabe & Staats lazy softmax+在线 max 重归一 → O(1) 存注意力;R&S 省"显存峰值"、FA 省"访存次数"(arXiv 2112.05682) | ✅ 已入库 |
 
-## 实现层 implementation/(2 篇)
+## 实现层 implementation/(3 篇)
 
 | 条目 | 类型 | 一句话 | 状态 |
 |---|---|---|---|
 | [flash-attention-implementation](implementation/flash-attention-implementation.md) | concept | FA 四代主线合成篇:FA1 IO-aware tiling + online softmax(算法伪代码、Θ(N²d²/M) 推导、4d 块大小)→ FA2 work partitioning(减 non-matmul、warp 按 Q 行切、序列维并行)→ FA3 Hopper 异步(WGMMA/TMA/overlap/pingpong/FP8)→ FA4 Blackwell(CuTe DSL/UMMA/TMEM);反向重算、实践 checklist、全部溯源 | ✅ 已入库 |
+| [mxattention-mxfp4](implementation/mxattention-mxfp4.md) | concept | MXFP4 attention 深读:OCP/NVFP4 对照、两类数值失效、UOS `Qmax=7.25` 的 log-periodic 推导、PNQ 共享量化 tile 保行归一化、Wan2.2/HunyuanVideo 质量与回退口径 | ✅ 已入库 |
 | [lse-sequence-split-merge](implementation/lse-sequence-split-merge.md) | concept | KV sequence 分块(split-K)的局部输出+LSE如何恢复全局 softmax;`global_lse=logsumexp(local_lse)`、`exp(local_lse-global_lse)`加权合并;稳定`(m,l,acc)`状态、分布式归约、Q 分块直接 concat 与可运行 PyTorch 验证 | ✅ 已入库 |
 
 ## 框架层 frameworks/(1 篇)
